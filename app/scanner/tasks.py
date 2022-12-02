@@ -9,7 +9,7 @@ from .models import Machine
 from celery.exceptions import SoftTimeLimitExceeded
 
 @shared_task(time_limit=40)
-def scan(ip):
+def scan(ip, client):
     start_time = time.time()
     result = ""
     # output = subprocess.getoutput(f'nmap -Pn -sV {self.IPAddress} -p23,3389,445')
@@ -18,13 +18,13 @@ def scan(ip):
     header_regex = 'PORT\s+STATE'
     ports = list(re.finditer(search_regex, output))
     headers = re.search(header_regex, output)
-    machine = Machine.objects.filter(ip=ip)
+    machine = Machine.objects.filter(ip=ip, client=client)
     
     # If Scan thread is Terminated after 30s
     if not headers:
         print("====>>>>>>>>       ", "Background Thread Terminated", "       <<<<<<<<====")
         if not machine.exists():
-            data = Machine.objects.create(ip=ip,result=output, scanned=False)    
+            data = Machine.objects.create(ip=ip, client=client,result=output, scanned=False)    
         end_time = time.time()
         result += f"{fg('blue_3b')}Scan completed in {round(end_time-start_time)}s{attr('reset')}\n\n{fg('white')}{attr('bold')}Vulnerability Threat Level{attr('reset')}"
         return result
@@ -37,12 +37,12 @@ def scan(ip):
             
             data = machine.update(result=output, scanned=True)
         else:
-            data = Machine.objects.create(ip=ip, result=output, scanned=True)
+            data = Machine.objects.create(ip=ip, client=client, result=output, scanned=True)
     else:
         if machine.exists():
             data = machine.update(result=output, scanned=True)
         else:
-            data = Machine.objects.create(ip=ip, result=output, scanned=True)
+            data = Machine.objects.create(ip=ip, client=client, result=output, scanned=True)
     end_time = time.time()
     result += f"{fg('blue_3b')}Scan completed in {round(end_time-start_time)}s{attr('reset')}\n\n{fg('white')}{attr('bold')}Vulnerability Threat Level{attr('reset')}"
     return result 

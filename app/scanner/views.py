@@ -11,5 +11,6 @@ def scanHost(request):
         payload = IpSerializer(data = request.data) 
         if payload.is_valid(raise_exception=True):
             ip = request.data['ip']
-            scan.delay(ip)
+            client = request.data['client']
+            scan.delay(ip, client)
         return JsonResponse({"message":"success"})

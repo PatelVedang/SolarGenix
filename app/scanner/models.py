@@ -4,6 +4,7 @@ from datetime import datetime
 # Create your models here.
 class Machine(models.Model):
     ip = models.CharField(max_length=15,null=False)
+    client = models.CharField(max_length=15)
     result = models.TextField()
     scanned = models.BooleanField(default=False)
     created_at = models.DateTimeField(null=False, default=datetime.now())

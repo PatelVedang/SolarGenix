@@ -2,4 +2,6 @@ from django.contrib import admin
 from .models import Machine
 
 # Register your models here.
-admin.site.register(Machine)
+class MachineAdmin(admin.ModelAdmin):
+    readonly_fields = ('id',)
+admin.site.register(Machine, MachineAdmin)
