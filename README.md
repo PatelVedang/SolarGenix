@@ -2,7 +2,7 @@
 ### Step 1
  - Clone the repo: https://isaix.visualstudio.com/CyberApp/_git/CyberApp
 ### Step 2
--   cd ~/proj
+-   cd ~/CyberAPP
     
 ### Step 3
 - Run below command to install all the dependencies and to create the container(we create a new build to perform new migrations of project):
