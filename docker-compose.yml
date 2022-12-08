@@ -15,12 +15,14 @@ services:
   
   db:
     image: postgres:13.0-alpine
+    env_file:
+      - ./.env.dev
+    environment:
+      - POSTGRES_USER=cyber_db
+      - POSTGRES_PASSWORD=Cyber@001
+      - POSTGRES_DB=cyber_dev
     volumes:
       - postgres_data:/var/lib/postgresql/data/
-    environment:
-      - POSTGRES_USER=hello_django
-      - POSTGRES_PASSWORD=hello_django
-      - POSTGRES_DB=hello_django_dev
 
   # MQ BROKER (RabbitMQ)
   rabbitmq:

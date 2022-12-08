@@ -8,6 +8,7 @@ class Machine(models.Model):
     client = models.CharField(max_length=15)
     result = models.TextField()
     scanned = models.BooleanField(default=False)
+    bg_task_status =  models.BooleanField(default=False)
     created_at = models.DateTimeField(null=False, default=datetime.now())
     updated_at = models.DateTimeField(null=False,default=datetime.now())
 

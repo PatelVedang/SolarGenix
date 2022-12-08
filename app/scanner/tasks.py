@@ -23,50 +23,13 @@ def scan(ip, client):
     # If Scan thread is Terminated after 30s
     if not headers:
         print("====>>>>>>>>       ", "Background Thread Terminated", "       <<<<<<<<====")
-        if not machine.exists():
-            data = Machine.objects.create(ip=ip, client=client,result=output, scanned=False)    
+        machine.update(result=output, scanned=False, bg_task_status=True)
         end_time = time.time()
         result += f"{fg('blue_3b')}Scan completed in {round(end_time-start_time)}s{attr('reset')}\n\n{fg('white')}{attr('bold')}Vulnerability Threat Level{attr('reset')}"
         return result
     
-    if ports:
-        # smb = check_port_status(result, ports, 445,log=f"\n\t{bg('red')} high {fg('white')}{attr('reset')}{fg('dark_orange')} SBM Ports are Open over TCP.{attr('reset')}\n")
-        # telnet = check_port_status(result, ports, 23,log = f"\n\t{bg('purple_4b')} critical {fg('white')}{attr('reset')}{fg('dark_orange')} FTP Service detected.{attr('reset')}\n")
-        # rdp = check_port_status(result, ports, 3389, log = f"\n\t{bg('sandy_brown')} medium {fg('white')}{attr('reset')}{fg('dark_orange')} RDP Server Detected over TCP.{attr('reset')}\n")
-        if machine.exists():
-            
-            data = machine.update(result=output, scanned=True)
-        else:
-            data = Machine.objects.create(ip=ip, client=client, result=output, scanned=True)
-    else:
-        if machine.exists():
-            data = machine.update(result=output, scanned=True)
-        else:
-            data = Machine.objects.create(ip=ip, client=client, result=output, scanned=True)
+    machine.update(result=output, scanned=True, bg_task_status=True)
     end_time = time.time()
     result += f"{fg('blue_3b')}Scan completed in {round(end_time-start_time)}s{attr('reset')}\n\n{fg('white')}{attr('bold')}Vulnerability Threat Level{attr('reset')}"
-    return result 
-
-    
-# def check_port_status(result, ports, port,log):
-#     port_running = 0
-#     try:
-#         for port_text in ports:
-#             port_obj = port_text.groupdict()
-#             if int(port_obj['port'].split('/')[0]) == port:
-#                 if port_obj:
-#                     if port_obj.get('state') == 'open':
-#                         result += log
-#                         port_running = 1
-#                     else:
-#                         port_running = 0
-#                 else:
-#                     port_running = 0
-#                 return port_running
-#             else:
-#                 continue
-#     except Exception as e:
-#         print(e,"Exception Found")
-#         return port_running
-#     return port_running
+    return result
     
