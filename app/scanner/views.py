@@ -17,21 +17,22 @@ class ScanViewSet(viewsets.ModelViewSet):
     def create(self, request, *args, **kwargs):
         # provide payload to serializer
         serializer = self.serializer_class(data=request.data)
-
         #validate serializer with given payload 
         if serializer.is_valid(raise_exception=True):
-            ip = request.data['ip']
+            ip_addresses = request.data['ip']
             client = request.data['client']
-            
-            # Create record if it is not exist with provided ip and client  
-            record = Machine.objects.filter(ip=ip, client=client)
-            if not record.exists():
-                serializer.save()
-            else:
-                record.update(bg_task_status=True)
-            # run background function 
-            scan.delay(ip, client)
-        return response(data = serializer.data, status_code = status.HTTP_200_OK, message="host successfully added in queue")
+            for ip in ip_addresses:
+                #Create record if it is not exist with provided ip and client  
+                record = Machine.objects.filter(ip=ip, client=client)
+                if not record.exists():
+                    Machine.objects.create(ip=ip, client=client)
+                else:
+                    record.update(bg_task_status=True)
+                # run background function 
+                scan.delay(ip, client)
+        custom_response = ScannerResponseSerializer(Machine.objects.filter(ip__in=ip_addresses, client=client), many=True)
+        return response(data = custom_response.data, status_code = status.HTTP_200_OK, message="host successfully added in queue")
+
 
     # API to retrive any scaned host
     def retrieve(self, request, *args, **kwargs):
@@ -41,7 +42,7 @@ class ScanViewSet(viewsets.ModelViewSet):
 
     # API to get list of scan records
     # Query Params
-    # -client(client id), ip(ip in string), scanned(0 or 1), bg_task_status(0 or 1)
+    # client(client id), ip(ip in string), scanned(0 or 1), bg_task_status(0 or 1)
     def list(self, request, *args, **kwargs):
         result = Machine.objects.all()
         params = dict(request.query_params)

@@ -4,7 +4,7 @@ from django.core.validators import validate_ipv4_address
 
 class ScannerSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField(read_only=True)
-    ip = serializers.CharField(validators=[validate_ipv4_address])
+    ip = serializers.ListField(child=serializers.CharField(validators=[validate_ipv4_address]))
     client = serializers.CharField()
     class Meta:
         model = Machine
