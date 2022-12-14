@@ -10,14 +10,14 @@ RUN apk update && apk add nmap && apk add nmap-scripts
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 
-# install psycopg2 dependencies
-RUN apk update && apk add postgresql-dev gcc python3-dev musl-dev
+# install relational database dependemcy 
+RUN apk update && apk add musl-dev mariadb-dev gcc
 
 # install dependencies
 RUN pip install --upgrade pip
 COPY ./requirements.txt .
 RUN pip install wheel
-
+RUN pip install mysqlclient
 RUN pip install -r requirements.txt
 
 # copy entrypoint.sh
