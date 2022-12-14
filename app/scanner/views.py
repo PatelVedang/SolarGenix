@@ -12,24 +12,33 @@ from utils.make_response import response
 class ScanViewSet(viewsets.ModelViewSet):
     queryset = Machine.objects.all()
     serializer_class = ScannerSerializer
-    
+
+    def scanner(self, ip, client):
+        #Create record if it is not exist with provided ip and client  
+        record = Machine.objects.filter(ip=ip, client=client)
+        if not record.exists():
+            Machine.objects.create(ip=ip, client=client)
+        else:
+            record.update(bg_task_status=True)
+        # run background function 
+        scan.delay(ip, client)
+
     # API for create object
     def create(self, request, *args, **kwargs):
         # provide payload to serializer
         serializer = self.serializer_class(data=request.data)
         #validate serializer with given payload 
         if serializer.is_valid(raise_exception=True):
+            
             ip_addresses = request.data['ip']
             client = request.data['client']
+
+            if isinstance(ip_addresses, str):
+                ip_addresses = [ip_addresses]
+
             for ip in ip_addresses:
-                #Create record if it is not exist with provided ip and client  
-                record = Machine.objects.filter(ip=ip, client=client)
-                if not record.exists():
-                    Machine.objects.create(ip=ip, client=client)
-                else:
-                    record.update(bg_task_status=True)
-                # run background function 
-                scan.delay(ip, client)
+                self.scanner(ip, client)
+
         custom_response = ScannerResponseSerializer(Machine.objects.filter(ip__in=ip_addresses, client=client), many=True)
         return response(data = custom_response.data, status_code = status.HTTP_200_OK, message="host successfully added in queue")
 
@@ -50,6 +59,8 @@ class ScanViewSet(viewsets.ModelViewSet):
             result = result.filter(client=params.get('client')[0])
         if params.get('ip'):
             result = result.filter(ip=params.get('ip')[0])
+        if params.get('tool'):
+            result = result.filter(tool=params.get('tool')[0])
 
         try:
             if params.get('scanned'):
