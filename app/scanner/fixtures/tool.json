@@ -1,0 +1,11 @@
+[
+  {
+    "model": "scanner.tool",
+    "pk": 1,
+    "fields": {
+      "tool_name": "nmap",
+      "tool_cmd": "nmap -Pn -sV"
+    }
+  }
+  
+]

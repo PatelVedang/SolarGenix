@@ -9,14 +9,14 @@ from .models import Machine
 from celery.exceptions import SoftTimeLimitExceeded
 
 @shared_task(time_limit=40)
-def scan(ip, client):
+def scan(ip, client, tool):
     start_time = time.time()
     output = ""
-    machine = Machine.objects.filter(ip=ip, client=client)
-
+    machine = Machine.objects.filter(ip=ip, client=client, tool_id = tool)
+    tool_cmd = machine[0].tool.tool_cmd
     try:
         # output = subprocess.check_output(f"nmap -Pn -sV {ip} -p23,3389,445", shell=True, timeout=30).decode('utf-8')
-        output = subprocess.check_output(f"nmap -Pn -sV {ip}", shell=True, timeout=30).decode('utf-8')
+        output = subprocess.check_output(f"{tool_cmd} {ip}", shell=True, timeout=30).decode('utf-8')
     except Exception as e:
         print("====>>>>>>>>       ", "Background Thread Terminated", "       <<<<<<<<====")
         machine.update(result="The job has been terminated", scanned=False, bg_task_status=True)
