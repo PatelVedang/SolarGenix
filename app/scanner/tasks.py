@@ -19,7 +19,7 @@ def scan(ip, client, tool):
         output = subprocess.check_output(f"{tool_cmd} {ip}", shell=True, timeout=30).decode('utf-8')
     except Exception as e:
         print("====>>>>>>>>       ", "Background Thread Terminated", "       <<<<<<<<====")
-        machine.update(result="The job has been terminated", scanned=False, bg_task_status=True)
+        machine.update(result=str(e), scanned=False, bg_task_status=True)
         return False
 
     port_search_regex = '(?P<port>\d{1,4}/tcp)\s+(?P<state>(filtered|open|closed))'

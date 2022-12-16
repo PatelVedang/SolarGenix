@@ -6,7 +6,7 @@ class ScannerSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField(read_only=True)
     ip = serializers.ListField(child=serializers.CharField(validators=[validate_ipv4_address]))
     client = serializers.CharField()
-    tools_id = serializers.ListField(child=serializers.IntegerField())
+    tools_id = serializers.ListField(child=serializers.IntegerField(), allow_empty=False)
     class Meta:
         model = Machine
         fields = ['ip','client','id','tools_id']

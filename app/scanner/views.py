@@ -9,6 +9,7 @@ from rest_framework import viewsets, status
 # from utils.make_response import response
 from utils.make_response import response
 
+
 class ScanViewSet(viewsets.ModelViewSet):
     queryset = Machine.objects.all()
     serializer_class = ScannerSerializer
@@ -59,9 +60,15 @@ class ScanViewSet(viewsets.ModelViewSet):
         if params.get('client'):
             result = result.filter(client=params.get('client')[0])
         if params.get('ip'):
-            result = result.filter(ip=params.get('ip')[0])
+            if isinstance(params.get('ip')[0], str):
+                result = result.filter(ip__in=params.get('ip')[0].split(','))
+            if isinstance(params.get('ip')[0], int):
+                result = result.filter(tool=params.get('ip')[0])
         if params.get('tool'):
-            result = result.filter(tool=params.get('tool')[0])
+            if isinstance(params.get('tool')[0], str):
+                result = result.filter(tool__in=params.get('tool')[0].split(','))
+            if isinstance(params.get('tool')[0], int):
+                result = result.filter(tool=params.get('tool')[0])
 
         try:
             if params.get('scanned'):
