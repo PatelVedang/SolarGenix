@@ -6,13 +6,18 @@ from .tasks import scan
 from .serializers import ScannerSerializer, ScannerResponseSerializer
 from rest_framework.response import Response
 from rest_framework import viewsets, status
-# from utils.make_response import response
+from rest_framework.filters import SearchFilter 
 from utils.make_response import response
-
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework.filters import SearchFilter, OrderingFilter
 
 class ScanViewSet(viewsets.ModelViewSet):
     queryset = Machine.objects.all()
     serializer_class = ScannerSerializer
+    filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
+    # search_fields = ['id', 'client', 'ip', 'scanned', 'bg_task_status', 'tool']
+    filterset_fields = ['id', 'client', 'ip', 'scanned', 'bg_task_status', 'tool']
+    
 
     def scanner(self, ip, client, tool):
         #Create record if it is not exist with provided ip and client  
@@ -52,45 +57,12 @@ class ScanViewSet(viewsets.ModelViewSet):
         return response(data = serializer.data, status_code = status.HTTP_200_OK, message="record found successfully")
 
     # API to get list of scan records
-    # Query Params
-    # client(client id), ip(ip in string), scanned(0 or 1), bg_task_status(0 or 1)
-    def list(self, request, *args, **kwargs):
-        result = Machine.objects.all()
-        params = dict(request.query_params)
-        if params.get('client'):
-            result = result.filter(client=params.get('client')[0])
-        if params.get('ip'):
-            if isinstance(params.get('ip')[0], str):
-                result = result.filter(ip__in=params.get('ip')[0].split(','))
-            if isinstance(params.get('ip')[0], int):
-                result = result.filter(tool=params.get('ip')[0])
-        if params.get('tool'):
-            if isinstance(params.get('tool')[0], str):
-                result = result.filter(tool__in=params.get('tool')[0].split(','))
-            if isinstance(params.get('tool')[0], int):
-                result = result.filter(tool=params.get('tool')[0])
-
-        try:
-            if params.get('scanned'):
-                if params.get('scanned')[0] in ['0','1']:
-                    scanned = bool(int(params.get('scanned')[0]))
-                    result = result.filter(scanned=scanned)
-        except Exception as e:
-            pass
-        
-        try:
-            if params.get('bg_task_status'):
-                if params.get('bg_task_status')[0] in ['0','1']:
-                    bg_task_status = bool(int(params.get('bg_task_status')[0]))
-                    result = result.filter(bg_task_status=bg_task_status)
-        except Exception as e:
-            pass
-
-        message = "record found successfully"
-        if not result:
-            message = "record not found"
-    
+    def retrieve(self, request, *args, **kwargs):
         self.serializer_class = ScannerResponseSerializer
-        serializer = self.serializer_class(result, many=True)
-        return response(data = serializer.data, status_code = status.HTTP_200_OK, message=message)
-    
+        return super().retrieve(request, *args, **kwargs)
+
+    # client(client id), ip(ip in string), scanned(0 or 1), bg_task_status(0 or 1), id, tool
+    def list(self, request, *args, **kwargs):
+        self.serializer_class = ScannerResponseSerializer
+        data = super().list(request, *args, **kwargs)
+        return response(data = data.data, status_code = status.HTTP_200_OK, message="record found successfully")
