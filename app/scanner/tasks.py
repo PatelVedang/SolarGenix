@@ -9,30 +9,39 @@ from .models import Machine
 from celery.exceptions import SoftTimeLimitExceeded
 
 @shared_task(time_limit=40)
-def scan(ip, client, tool):
+def scan(id):
+    machine = Machine.objects.filter(id=id)
+    ip = machine[0].ip
+    print("====>>>>>>>>       ", f"IP:{ip} with id:{id} added to queue", "       <<<<<<<<====")
     start_time = time.time()
     output = ""
-    machine = Machine.objects.filter(ip=ip, client=client, tool_id = tool)
     tool_cmd = machine[0].tool.tool_cmd
-    try:
-        # output = subprocess.check_output(f"nmap -Pn -sV {ip} -p23,3389,445", shell=True, timeout=30).decode('utf-8')
-        output = subprocess.check_output(f"{tool_cmd} {ip}", shell=True, timeout=30).decode('utf-8')
-    except Exception as e:
-        print("====>>>>>>>>       ", "Background Thread Terminated", "       <<<<<<<<====")
-        machine.update(result=str(e), scanned=False, bg_task_status=True)
-        return False
+    if machine[0].status == 0:
+        machine.update(status = 1)
+    if machine[0].status == 1:
+        try:
+            print("====>>>>>>>>       ", f"Scanning began for IP:{ip} with id:{id}", "       <<<<<<<<====")
+            machine.update(status = 2)
+            output = subprocess.check_output(f"{tool_cmd} {ip}", shell=True, timeout=30).decode('utf-8')
+        except Exception as e:
+            print("====>>>>>>>>       ", f"Background thread for ip:{ip} with id:{id} has been terminated", "       <<<<<<<<====")
+            machine.update(result=str(e), status=3)
+            return False
 
-    port_search_regex = '(?P<port>\d{1,4}/tcp)\s+(?P<state>(filtered|open|closed))'
-    ignore_state_regex = "All 1000 scanned ports on \d{1,3}.\d{1,3}.\d{1,3}.\d{1,3} are in ignored states."
-    ports = list(re.finditer(port_search_regex, output))
-    
-    # If not found any open ports
-    if re.search(ignore_state_regex, output):
-        machine.update(result=output, scanned=True, bg_task_status=True)
-    
-    # If ports found in given time
-    elif ports:
-        machine.update(result=output, scanned=True, bg_task_status=True)
-    end_time = time.time()
-    return True
-    
+        port_search_regex = '(?P<port>\d{1,4}/tcp)\s+(?P<state>(filtered|open|closed))'
+        ignore_state_regex = "All 1000 scanned ports on \d{1,3}.\d{1,3}.\d{1,3}.\d{1,3} are in ignored states."
+        ports = list(re.finditer(port_search_regex, output))
+        
+        # If not found any open ports
+        if re.search(ignore_state_regex, output):
+            print("====>>>>>>>>       ", f"IP:{ip} with id:{id} has no open ports.", "       <<<<<<<<====")
+            machine.update(result=output, status=4)
+        
+        # If ports found in given time
+        elif ports:
+            print("====>>>>>>>>       ", f"Found open ports with IP:{ip} with id:{id}.", "       <<<<<<<<====")
+            machine.update(result=output, status=4)
+        end_time = time.time()
+        return True
+    else:
+        return False

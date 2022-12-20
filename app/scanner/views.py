@@ -15,19 +15,14 @@ class ScanViewSet(viewsets.ModelViewSet):
     queryset = Machine.objects.all()
     serializer_class = ScannerSerializer
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
-    # search_fields = ['id', 'client', 'ip', 'scanned', 'bg_task_status', 'tool']
-    filterset_fields = ['id', 'client', 'ip', 'scanned', 'bg_task_status', 'tool']
+    # search_fields = ['id', 'client', 'ip', 'status', 'tool']
+    filterset_fields = ['id', 'client', 'ip', 'status', 'tool']
     
 
     def scanner(self, ip, client, tool):
-        #Create record if it is not exist with provided ip and client  
-        record = Machine.objects.filter(ip=ip, client=client, tool_id=tool)
-        if not record.exists():
-            Machine.objects.create(ip=ip, client=client, tool_id=tool)
-        else:
-            record.update(bg_task_status=True)
+        record = Machine.objects.create(ip=ip, client=client, tool_id=tool)
         # run background function 
-        scan.delay(ip, client, tool)
+        scan.delay(record.id)
 
     # API for create object
     def create(self, request, *args, **kwargs):
