@@ -93,16 +93,6 @@ DATABASES = {
         'PORT': os.environ.get('MYSQL_DATABASE_PORT'),
     }
 }
-DATABASES = {
-    "default": {
-        'ENGINE': os.environ.get('MYSQL_ENGINE', 'django.db.backends.mysql'),
-        'NAME': os.environ.get('MYSQL_DATABASE', 'cyber_dev'),
-        'USER': os.environ.get('MYSQL_USER', 'cyber'),
-        'PASSWORD': os.environ.get('MYSQL_PASSWORD', 'Cyber@001'),
-        'HOST': os.environ.get('MYSQL_DATABASE_HOST', 'db'),
-        'PORT': os.environ.get('MYSQL_DATABASE_PORT', 3306),
-    }
-}
 
 
 # Password validation

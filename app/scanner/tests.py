@@ -1,3 +1,4 @@
-from django.test import TestCase
+from tasks import scan
 
-# Create your tests here.
+id = 30
+scan.delay(id)

@@ -1,12 +1,13 @@
 from django.shortcuts import render
-from .models import Machine
+from .models import Machine, Tool
 from django.http import HttpResponse, JsonResponse
 from rest_framework.decorators import api_view
 from .tasks import scan
-from .serializers import ScannerSerializer, ScannerResponseSerializer
+from .serializers import ScannerSerializer, ScannerResponseSerializer, ScannerQueueSerializer
 from rest_framework.response import Response
 from rest_framework import viewsets, status
 from rest_framework.filters import SearchFilter 
+from rest_framework.decorators import action
 from utils.make_response import response
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter, OrderingFilter
@@ -18,11 +19,16 @@ class ScanViewSet(viewsets.ModelViewSet):
     # search_fields = ['id', 'client', 'ip', 'status', 'tool']
     filterset_fields = ['id', 'client', 'ip', 'status', 'tool']
     
-
-    def scanner(self, ip, client, tool):
-        record = Machine.objects.create(ip=ip, client=client, tool_id=tool)
-        # run background function 
-        scan.delay(record.id)
+    @action(methods=['POST'], detail=False, url_path="add-in-queue")
+    def scanner(self, request, *args, **kwargs):
+        self.serializer_class = ScannerQueueSerializer
+        serializer = self.serializer_class(data=request.data)
+        if serializer.is_valid(raise_exception=True):
+            machines_id = serializer.data.get('machines_id')
+            for machine_id in machines_id: 
+                scan.delay(machine_id)
+        custom_response = ScannerResponseSerializer(Machine.objects.filter(id__in=machines_id), many=True)
+        return response(data = custom_response.data, status_code = status.HTTP_200_OK, message="host successfully added in queue")
 
     # API for create object
     def create(self, request, *args, **kwargs):
@@ -37,12 +43,13 @@ class ScanViewSet(viewsets.ModelViewSet):
                 ip_addresses = [ip_addresses]
             if isinstance(tools, int):
                 tools = [tools]
+            machines_list = []
             for ip in ip_addresses:
                 for tool in tools:
-                    self.scanner(ip, client, tool)
-
+                    machines_list.append(Machine(ip=ip,client=client, tool= Tool(id=tool)))
+                Machine.objects.bulk_create(machines_list)
         custom_response = ScannerResponseSerializer(Machine.objects.filter(ip__in=ip_addresses, tool_id__in=tools, client=client), many=True)
-        return response(data = custom_response.data, status_code = status.HTTP_200_OK, message="host successfully added in queue")
+        return response(data = custom_response.data, status_code = status.HTTP_200_OK, message="host successfully added in database")
 
 
     # API to retrive any scaned host

@@ -10,6 +10,13 @@ from celery.exceptions import SoftTimeLimitExceeded
 
 @shared_task(time_limit=40)
 def scan(id):
+    """
+    It takes the id of the machine object, and then it runs the tool command on the ip of the machine
+    object
+    
+    :param id: The id of the machine to be scanned
+    :return: The return value is a boolean value.
+    """
     machine = Machine.objects.filter(id=id)
     ip = machine[0].ip
     print("====>>>>>>>>       ", f"IP:{ip} with id:{id} added to queue", "       <<<<<<<<====")
