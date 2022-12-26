@@ -25,7 +25,7 @@ def scan(id):
     tool_cmd = machine[0].tool.tool_cmd
     if machine[0].status == 0:
         machine.update(status = 1)
-    if machine[0].status == 1:
+    if machine[0].status >= 1:
         try:
             print("====>>>>>>>>       ", f"Scanning began for IP:{ip} with id:{id}", "       <<<<<<<<====")
             machine.update(status = 2)

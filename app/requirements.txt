@@ -25,4 +25,4 @@ sqlparse==0.4.3
 vine==5.0.0
 wcwidth==0.2.5
 django-filter==22.1
-
+requests==2.28.1

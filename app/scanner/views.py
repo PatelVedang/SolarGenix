@@ -44,11 +44,14 @@ class ScanViewSet(viewsets.ModelViewSet):
             if isinstance(tools, int):
                 tools = [tools]
             machines_list = []
+            record_ids = []
             for ip in ip_addresses:
                 for tool in tools:
-                    machines_list.append(Machine(ip=ip,client=client, tool= Tool(id=tool)))
-                Machine.objects.bulk_create(machines_list)
-        custom_response = ScannerResponseSerializer(Machine.objects.filter(ip__in=ip_addresses, tool_id__in=tools, client=client), many=True)
+                    # machines_list.append(Machine(ip=ip,client=client, tool= Tool(id=tool)))
+                    obj = Machine.objects.create(ip=ip,client=client, tool= Tool(id=tool))
+                    record_ids.append(obj.id)
+                # Machine.objects.bulk_create(machines_list)
+        custom_response = ScannerResponseSerializer(Machine.objects.filter(id__in=record_ids), many=True)
         return response(data = custom_response.data, status_code = status.HTTP_200_OK, message="host successfully added in database")
 
 
