@@ -11,6 +11,8 @@ from rest_framework.decorators import action
 from utils.make_response import response
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter, OrderingFilter
+from drf_yasg.utils import swagger_auto_schema
+from drf_yasg import openapi
 
 class ScanViewSet(viewsets.ModelViewSet):
     queryset = Machine.objects.all()
@@ -19,6 +21,7 @@ class ScanViewSet(viewsets.ModelViewSet):
     # search_fields = ['id', 'client', 'ip', 'status', 'tool']
     filterset_fields = ['id', 'client', 'ip', 'status', 'tool']
     
+    @swagger_auto_schema(method = 'post', request_body=ScannerQueueSerializer)
     @action(methods=['POST'], detail=False, url_path="add-in-queue")
     def scanner(self, request, *args, **kwargs):
         self.serializer_class = ScannerQueueSerializer
@@ -31,8 +34,13 @@ class ScanViewSet(viewsets.ModelViewSet):
         return response(data = custom_response.data, status_code = status.HTTP_200_OK, message="host successfully added in queue")
 
     # API for create object
+    # @swagger_auto_schema(manual_parameters=[
+    #     openapi.Parameter('ip', openapi.IN_BODY,type=openapi.TYPE_ARRAY, required=True, items=openapi.Items(type=openapi.TYPE_STRING)),
+    # ], request_body= ScannerSerializer)
+    @swagger_auto_schema(request_body=ScannerSerializer)
     def create(self, request, *args, **kwargs):
         # provide payload to serializer
+        self.serializer_class = ScannerSerializer
         serializer = self.serializer_class(data=request.data)
         #validate serializer with given payload 
         if serializer.is_valid(raise_exception=True):
@@ -60,11 +68,6 @@ class ScanViewSet(viewsets.ModelViewSet):
         self.serializer_class = ScannerResponseSerializer
         serializer = super().retrieve(request, *args, **kwargs)
         return response(data = serializer.data, status_code = status.HTTP_200_OK, message="record found successfully")
-
-    # API to get list of scan records
-    def retrieve(self, request, *args, **kwargs):
-        self.serializer_class = ScannerResponseSerializer
-        return super().retrieve(request, *args, **kwargs)
 
     # client(client id), ip(ip in string), scanned(0 or 1), bg_task_status(0 or 1), id, tool
     def list(self, request, *args, **kwargs):
