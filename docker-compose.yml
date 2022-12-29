@@ -24,8 +24,12 @@ services:
       - mysql_data:/var/lib/mysql
     restart: unless-stopped
     env_file: .env.dev
+    environment:
+      MYSQL_TCP_PORT: 33062
     ports:
       - "33062:33062"
+    expose:
+      - 33062
     
   # MQ BROKER (RabbitMQ)
   rabbitmq:
