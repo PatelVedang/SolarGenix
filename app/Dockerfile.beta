@@ -21,13 +21,13 @@ RUN pip install mysqlclient
 RUN pip install -r requirements.txt
 
 # copy entrypoint.sh
-COPY ./entrypoint.sh .
-RUN sed -i 's/\r$//g' /usr/src/app/entrypoint.sh
-RUN chmod +x /usr/src/app/entrypoint.sh
+COPY ./entrypoint.beta.sh /usr/local/bin/
+RUN sed -i 's/\r$//g' /usr/local/bin/entrypoint.beta.sh
+RUN chmod +x /usr/local/bin/entrypoint.beta.sh
 
 
 # copy project
 COPY . .
 
 # run entrypoint.sh
-ENTRYPOINT ["./entrypoint.beta.sh"]
+ENTRYPOINT ["/usr/local/bin/entrypoint.beta.sh"]

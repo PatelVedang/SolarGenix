@@ -23,10 +23,9 @@ from drf_yasg import openapi
 schema_view = get_schema_view(
    openapi.Info(
       title="Cyber Appliance API",
-      default_version='1.0',
-      description="Test description"
+      default_version='1.0'
    ),
-   public=True,
+   public=True
 )
 
 urlpatterns = [
