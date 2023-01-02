@@ -37,6 +37,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+
     'rest_framework',
     'drf_yasg',
     'django_filters',
@@ -150,41 +151,19 @@ APPEND_SLASH = False
 
 
 SWAGGER_SETTINGS = {
-    # 'exclude_url_names': [],
-    # 'exclude_namespaces': [],
-    # 'api_version': '0.1',
-    # 'api_path': '/',
-    # 'relative_paths': False,
-    # 'enabled_methods': [
-    #     'get',
-    #     'post',
-    #     'put',
-    #     'patch',
-    #     'delete'
-    # ],
-    # 'api_key': '',
-    # 'is_authenticated': False,
-    # 'is_superuser': False,
-    # 'unauthenticated_user': 'django.contrib.auth.models.AnonymousUser',
-    # 'permission_denied_handler': None,
-    # 'resource_access_handler': None,
-    # 'base_path':'helloreverb.com/docs',
-    # 'info': {
-    #     'contact': 'apiteam@wordnik.com',
-    #     'description': 'This is a sample server Petstore server. '
-    #                    'You can find out more about Swagger at '
-    #                    '<a href="http://swagger.wordnik.com">'
-    #                    'http://swagger.wordnik.com</a> '
-    #                    'or on irc.freenode.net, #swagger. '
-    #                    'For this sample, you can use the api key '
-    #                    '"special-key" to test '
-    #                    'the authorization filters',
-    #     'license': 'Apache 2.0',
-    #     'licenseUrl': 'http://www.apache.org/licenses/LICENSE-2.0.html',
-    #     'termsOfServiceUrl': 'http://helloreverb.com/terms/',
-    #     'title': 'Swagger Sample App',
-    # },
-    # 'doc_expansion': 'none',
-    'USE_SESSION_AUTH' : False,
-    # 'SECURITY_DEFINITIONS': False,
+   'USE_SESSION_AUTH': False,
+   'SECURITY_DEFINITIONS': False,
 }
+
+CSRF_TRUSTED_ORIGINS = [
+    "http://localhost:8000",
+    "https://8570-219-91-134-123.in.ngrok.io"
+]
+
+# By pass http to https
+USE_X_FORWARDED_HOST = True
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+# DRF_YASG_EXCLUDE_VIEWS = [
+#     'rest_auth.views.LoginView',
+# ]

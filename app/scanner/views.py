@@ -13,17 +13,33 @@ from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter, OrderingFilter
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
+from rest_framework.permissions import AllowAny
+from braces.views import CsrfExemptMixin
+from django.views.decorators.csrf import csrf_exempt
 
 class ScanViewSet(viewsets.ModelViewSet):
     queryset = Machine.objects.all()
     serializer_class = ScannerSerializer
+    permission_classes = []
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     # search_fields = ['id', 'client', 'ip', 'status', 'tool']
     filterset_fields = ['id', 'client', 'ip', 'status', 'tool']
     
-    @swagger_auto_schema(method = 'post', request_body=ScannerQueueSerializer)
+    @swagger_auto_schema(
+        method = 'post',
+        request_body=ScannerQueueSerializer,
+        operation_description= "Set machines in queue.",
+        operation_summary="API to add machines in queue for scanning."
+
+    )
     @action(methods=['POST'], detail=False, url_path="add-in-queue")
     def scanner(self, request, *args, **kwargs):
+        """
+        It takes a list of machine ids, and for each machine id, it calls the scan function in the
+        tasks.py file
+        
+        :param request: The request object
+        """
         self.serializer_class = ScannerQueueSerializer
         serializer = self.serializer_class(data=request.data)
         if serializer.is_valid(raise_exception=True):
@@ -37,7 +53,12 @@ class ScanViewSet(viewsets.ModelViewSet):
     # @swagger_auto_schema(manual_parameters=[
     #     openapi.Parameter('ip', openapi.IN_BODY,type=openapi.TYPE_ARRAY, required=True, items=openapi.Items(type=openapi.TYPE_STRING)),
     # ], request_body= ScannerSerializer)
-    @swagger_auto_schema(request_body=ScannerSerializer)
+    @swagger_auto_schema(
+        request_body=ScannerSerializer,
+        operation_description= "Insert record in machine table.",
+        operation_summary="API to insert new machines."
+    )
+    # @csrf_exempt
     def create(self, request, *args, **kwargs):
         # provide payload to serializer
         self.serializer_class = ScannerSerializer
@@ -64,13 +85,65 @@ class ScanViewSet(viewsets.ModelViewSet):
 
 
     # API to retrive any scaned host
+    @swagger_auto_schema(
+        operation_description= "Retrive machine with specified id.",
+        operation_summary="API to rertive single machine record."
+    )
     def retrieve(self, request, *args, **kwargs):
+        """
+        It overrides the default retrieve function of the generic viewset and returns a custom response
+        
+        :param request: The request object
+        :return: The serializer.data is being returned.
+        """
         self.serializer_class = ScannerResponseSerializer
         serializer = super().retrieve(request, *args, **kwargs)
         return response(data = serializer.data, status_code = status.HTTP_200_OK, message="record found successfully")
 
-    # client(client id), ip(ip in string), scanned(0 or 1), bg_task_status(0 or 1), id, tool
+    @swagger_auto_schema(
+        operation_description= "Get list of machines.",
+        operation_summary="API to return list of machines.",
+        operation_id=None
+    )
     def list(self, request, *args, **kwargs):
+        """
+        A function that returns a response with the data and status code.
+        
+        :param request: The request object
+        :return: The data is being returned in the form of a list.
+        """
         self.serializer_class = ScannerResponseSerializer
         data = super().list(request, *args, **kwargs)
         return response(data = data.data, status_code = status.HTTP_200_OK, message="record found successfully")
+
+    @swagger_auto_schema(auto_schema=None)
+    def update(self, request, *args, **kwargs):
+        """
+        The update function is a function that is used to update the data in the database
+        
+        :param request: The request object
+        :return: The super class update method is being returned.
+        """
+        return super().update(request, *args, **kwargs)
+
+    @swagger_auto_schema(auto_schema=None)
+    def partial_update(self, request, *args, **kwargs):
+        """
+        It's a function that takes in a request, and then passes that request to the super class's
+        partial_update function
+        
+        :param request: The request object
+        :return: The partial update method is being returned.
+        """
+        return super().partial_update(request, *args, **kwargs)
+
+    @swagger_auto_schema(auto_schema=None)
+    def destroy(self, request, *args, **kwargs):
+        """
+        It returns the superclass's destroy method, which is the same as the destroy method in the
+        ModelViewSet class
+        
+        :param request: The request object
+        :return: The super class destroy method is being returned.
+        """
+        return super().destroy(request, *args, **kwargs)
