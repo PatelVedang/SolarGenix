@@ -14,8 +14,8 @@ from rest_framework.filters import SearchFilter, OrderingFilter
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 from rest_framework.permissions import AllowAny
-from braces.views import CsrfExemptMixin
-from django.views.decorators.csrf import csrf_exempt
+# from braces.views import CsrfExemptMixin
+# from django.views.decorators.csrf import csrf_exempt
 
 class ScanViewSet(viewsets.ModelViewSet):
     queryset = Machine.objects.all()

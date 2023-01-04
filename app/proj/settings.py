@@ -167,3 +167,9 @@ SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 # DRF_YASG_EXCLUDE_VIEWS = [
 #     'rest_auth.views.LoginView',
 # ]
+
+REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        'rest_framework.authentication.BasicAuthentication',
+    ],
+}
