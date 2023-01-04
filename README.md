@@ -73,4 +73,73 @@ cd ~/CyberAPP
 ### Step 2
 ##### Append ssh key in "~/.ssh/authorized_keys" file
 
-    
+# Run Live server without docker
+### Step 1 (Get latest code)
+##### Clone the repo: https://isaix.visualstudio.com/CyberApp/_git/CyberApp
+### Step 2(Make virtual environment)
+```
+python3 -m venv env
+```
+### Step 3(Activate virtual environment)
+##### For Windows
+#
+```
+cd env/Scripts
+activate
+cd ..
+cd ..
+```
+##### For Linux
+#
+```
+. env/bin/activate
+```
+### Step 4(Install system level dependencies)
+#### For Linux
+##### Install nmap
+#
+```
+sudo apt-get update
+sudo apt-get install nmap
+```
+##### Install MySQL development headers 
+#
+```
+sudo apt-get install python3-dev default-libmysqlclient-dev build-essential
+```
+##### Install rabbitMQ
+#
+```
+sudo apt-get install rabbitmq-server
+sudo systemctl start rabbitmq-server
+sudo systemctl enable rabbitmq-server
+sudo systemctl status rabbitmq-server
+```
+##### Install PM2 with NVM
+#
+```
+curl https://raw.githubusercontent.com/creationix/nvm/master/install.sh | bash
+source ~/.bashrc
+nvm install node
+npm install pm2 -g
+```
+### Step 5(Install requirements.txt)
+##### We have to run below commands, when we want to restart server with new python dependencies.
+#
+```
+cd ~/CyberApp/app/
+pip install -r requirements.txt
+```
+##### Note: Make sure you have activate the virtual enviorment before running the above command
+### Step 6(Apply latest migrations & fixtures)
+##### We have to run below command, when we have new database migrations changes.
+#
+```
+. ~/CyberApp/apply_migrations.sh
+```
+### Step 7(Run server with worker)
+##### Run below command to start, restart and stop the server.
+#
+```
+. ~/CyberApp/start-server.sh
+```

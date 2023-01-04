@@ -141,6 +141,7 @@ info.txt
 .env.prod.db
 .venv
 env/
+.vscode/
 venv/
 ENV/
 env.bak/

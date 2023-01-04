@@ -58,7 +58,6 @@ class ScanViewSet(viewsets.ModelViewSet):
         operation_description= "Insert record in machine table.",
         operation_summary="API to insert new machines."
     )
-    # @csrf_exempt
     def create(self, request, *args, **kwargs):
         # provide payload to serializer
         self.serializer_class = ScannerSerializer
