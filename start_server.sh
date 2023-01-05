@@ -15,7 +15,7 @@ echo "      |___/                          |_|   |_|                            
 
 printf "\n\n\nPlease select the option \n\n"
 printf "Start : 1 \n"
-printf "Restart : 2 \n\n"
+printf "Restart : 2 \n"
 printf "Stop : 3 \n\n"
 
 echo -n "Enter the value :  "
@@ -26,19 +26,24 @@ printf "You have entered : $option \n\n"
 
 
 
-if [ "$option" == "1"  ];
+if [ $option == 1 ];
 then
     # START
     printf "░░░░░░  Starting the app ░░░░░░ \n\n\n"
-    cd
     cd ~/CyberApp
     . env/bin/activate
     cd app
+    if [ $? -eq 1 ] 
+    then
+        printf " \n\n Oops 😟, Something Went Wrong \n\n"
+        return
+    fi
     pm2 start "python manage.py runserver 0.0.0.0:8000" --name cyber_appliance --max-memory-restart "100M" --no-autorestart
     printf "░░░░░░  Starting the worker ░░░░░░ \n\n\n"
     pm2 start "celery -A proj worker -l info" --name worker --max-memory-restart "200M"
     printf " \n\n Job Done 😎 \n\n"
-elif [ "$option" == "2"  ];
+    return
+elif [ $option == 2 ];
 then
     # RESTART
     printf "░░░░░░  Restarting the app ░░░░░░ \n\n\n"
@@ -46,14 +51,17 @@ then
     printf "░░░░░░  Restarting the worker ░░░░░░ \n\n\n"
     pm2 restart worker
     printf " \n\n Job Done 😎 \n\n"
-elif [ "$option" == "3"  ];
+    return
+elif [ $option == 3  ];
 then
     # STOP
     printf "░░░░░░  Stopping the app ░░░░░░ \n\n\n"
-    pm2 restart cyber_appliance
+    pm2 stop cyber_appliance
     printf "░░░░░░  Stopping the worker ░░░░░░ \n\n\n"
-    pm2 restart worker
+    pm2 stop worker
     printf " \n\n Job Done 😎 \n\n"
+    return
 else
     printf "Wrong Choice!!!😂 Try Again!!😜 \n"
+    return
 fi

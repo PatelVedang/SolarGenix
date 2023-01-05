@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/sh
 
 #clear the screen
 clear
@@ -14,8 +14,17 @@ echo "      |___/                          |_|   |_|                            
 
 
 printf "░░░░░░  Running the migrations ░░░░░░ \n\n\n"
+cd ~/CyberApp
+. env/bin/activate
+cd app
 python manage.py migrate --no-input
 printf "░░░░░░  Running the fixtures ░░░░░░ \n\n\n"
 python manage.py loaddata scanner/fixtures/superuser.json --app scanner.user
 python manage.py loaddata scanner/fixtures/tool.json --app scanner.tool
-printf " \n\n Job Done 😎 \n\n"
+
+if [ $? = 0 ] 
+then
+	printf " \n\n Job Done 😎 \n\n"
+else
+	printf " \n\n Oops 😟, Something Went Wrong \n\n"
+fi

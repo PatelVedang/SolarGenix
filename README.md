@@ -71,30 +71,12 @@ cd ~/CyberAPP
 ### Step 1
 ##### Connect with VM using ssh command
 ### Step 2
-##### Append ssh key in "~/.ssh/authorized_keys" file
+##### Append new ssh key in "~/.ssh/authorized_keys" file
 
 # Run Live server without docker
 ### Step 1 (Get latest code)
 ##### Clone the repo: https://isaix.visualstudio.com/CyberApp/_git/CyberApp
-### Step 2(Make virtual environment)
-```
-python3 -m venv env
-```
-### Step 3(Activate virtual environment)
-##### For Windows
-#
-```
-cd env/Scripts
-activate
-cd ..
-cd ..
-```
-##### For Linux
-#
-```
-. env/bin/activate
-```
-### Step 4(Install system level dependencies)
+### Step 2(Install system level dependencies)
 #### For Linux
 ##### Install nmap
 #
@@ -123,6 +105,25 @@ source ~/.bashrc
 nvm install node
 npm install pm2 -g
 ```
+### Step 3(Make virtual environment)
+```
+cd ~/CyberApp
+python3 -m venv env
+```
+### Step 4(Activate virtual environment)
+##### For Windows
+#
+```
+cd env/Scripts
+activate
+cd ..
+cd ..
+```
+##### For Linux
+#
+```
+. env/bin/activate
+```
 ### Step 5(Install requirements.txt)
 ##### We have to run below commands, when we want to restart server with new python dependencies.
 #
@@ -141,5 +142,5 @@ pip install -r requirements.txt
 ##### Run below command to start, restart and stop the server.
 #
 ```
-. ~/CyberApp/start-server.sh
+. ~/CyberApp/start_server.sh
 ```
