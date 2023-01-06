@@ -16,7 +16,8 @@ echo "      |___/                          |_|   |_|                            
 printf "\n\n\nPlease select the option \n\n"
 printf "Start : 1 \n"
 printf "Restart : 2 \n"
-printf "Stop : 3 \n\n"
+printf "Stop : 3 \n"
+printf "Delete : 4 \n\n"
 
 echo -n "Enter the value :  "
 read -r option
@@ -30,7 +31,6 @@ if [ $option == 1 ];
 then
     # START
     printf "░░░░░░  Starting the app ░░░░░░ \n\n\n"
-    cd ~/CyberApp
     . env/bin/activate
     cd app
     if [ $? -eq 1 ] 
@@ -41,6 +41,7 @@ then
     pm2 start "python manage.py runserver 0.0.0.0:8000" --name cyber_appliance --max-memory-restart "100M" --no-autorestart
     printf "░░░░░░  Starting the worker ░░░░░░ \n\n\n"
     pm2 start "celery -A proj worker -l info" --name worker --max-memory-restart "200M"
+    cd ..
     printf " \n\n Job Done 😎 \n\n"
     return
 elif [ $option == 2 ];
@@ -59,6 +60,15 @@ then
     pm2 stop cyber_appliance
     printf "░░░░░░  Stopping the worker ░░░░░░ \n\n\n"
     pm2 stop worker
+    printf " \n\n Job Done 😎 \n\n"
+    return
+elif [ $option == 4  ];
+then
+    # STOP
+    printf "░░░░░░  Deleting the app ░░░░░░ \n\n\n"
+    pm2 delete cyber_appliance
+    printf "░░░░░░  Deleting the worker ░░░░░░ \n\n\n"
+    pm2 delete worker
     printf " \n\n Job Done 😎 \n\n"
     return
 else

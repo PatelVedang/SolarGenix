@@ -14,13 +14,11 @@ echo "      |___/                          |_|   |_|                            
 
 
 printf "░░░░░░  Running the migrations ░░░░░░ \n\n\n"
-cd ~/CyberApp
 . env/bin/activate
-cd app
-python manage.py migrate --no-input
+python app/manage.py migrate --no-input
 printf "░░░░░░  Running the fixtures ░░░░░░ \n\n\n"
-python manage.py loaddata scanner/fixtures/superuser.json --app scanner.user
-python manage.py loaddata scanner/fixtures/tool.json --app scanner.tool
+python app/manage.py loaddata app/scanner/fixtures/superuser.json --app scanner.user
+python app/manage.py loaddata app/scanner/fixtures/tool.json --app scanner.tool
 
 if [ $? = 0 ] 
 then

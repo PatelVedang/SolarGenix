@@ -3,7 +3,7 @@ from .models import Machine, Tool
 from django.http import HttpResponse, JsonResponse
 from rest_framework.decorators import api_view
 from .tasks import scan
-from .serializers import ScannerSerializer, ScannerResponseSerializer, ScannerQueueSerializer
+from .serializers import ScannerSerializer, ScannerResponseSerializer, AddInQueueByIdsSerializer, AddInQueueByNumbersSerializer
 from rest_framework.response import Response
 from rest_framework import viewsets, status
 from rest_framework.filters import SearchFilter 
@@ -27,26 +27,40 @@ class ScanViewSet(viewsets.ModelViewSet):
     
     @swagger_auto_schema(
         method = 'post',
-        request_body=ScannerQueueSerializer,
-        operation_description= "Set machines in queue.",
-        operation_summary="API to add machines in queue for scanning."
+        request_body=AddInQueueByIdsSerializer,
+        operation_description= "Set machines in queue ids.",
+        operation_summary="API to add machines in queue for scanning by ids."
 
     )
-    @action(methods=['POST'], detail=False, url_path="add-in-queue")
-    def scanner(self, request, *args, **kwargs):
-        """
-        It takes a list of machine ids, and for each machine id, it calls the scan function in the
-        tasks.py file
-        
-        :param request: The request object
-        """
-        self.serializer_class = ScannerQueueSerializer
+    @action(methods=['POST'], detail=False, url_path="addByIds")
+    def scan_by_ids(self, request, *args, **kwargs):
+        self.serializer_class = AddInQueueByIdsSerializer
         serializer = self.serializer_class(data=request.data)
         if serializer.is_valid(raise_exception=True):
             machines_id = serializer.data.get('machines_id')
             for machine_id in machines_id: 
                 scan.delay(machine_id)
         custom_response = ScannerResponseSerializer(Machine.objects.filter(id__in=machines_id), many=True)
+        return response(data = custom_response.data, status_code = status.HTTP_200_OK, message="host successfully added in queue")
+        
+    @swagger_auto_schema(
+        method = 'post',
+        request_body=AddInQueueByNumbersSerializer,
+        operation_description= "Set n numbers of machine .",
+        operation_summary="API to add machines in queue for scanning by numbers."
+
+    )
+    @action(methods=['POST'], detail=False, url_path="addByNumbers")
+    def scan_by_numbers(self, request, *args, **kwargs):
+        self.serializer_class = AddInQueueByNumbersSerializer
+        serializer = self.serializer_class(data=request.data)
+        if serializer.is_valid(raise_exception=True):
+            # count
+            n = serializer.data.get('count')
+            records = Machine.objects.filter(status=0)[:n]
+            for record in records: 
+                scan.delay(record.id)
+        custom_response = ScannerResponseSerializer(records, many=True)
         return response(data = custom_response.data, status_code = status.HTTP_200_OK, message="host successfully added in queue")
 
     # API for create object

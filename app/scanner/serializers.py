@@ -35,7 +35,7 @@ class ScannerResponseSerializer(serializers.ModelSerializer):
 
 # The ScannerQueueSerializer class is a serializer for the Machine model. It has a field called ids
 # which is a list of integers
-class ScannerQueueSerializer(serializers.ModelSerializer):
+class AddInQueueByIdsSerializer(serializers.ModelSerializer):
     machines_id = serializers.ListField(child = serializers.IntegerField(), allow_empty=False)
     class Meta:
         model = Machine
@@ -47,3 +47,9 @@ class ScannerQueueSerializer(serializers.ModelSerializer):
             if not Machine.objects.filter(id=machine_id).exists():
                 raise serializers.DjangoValidationError(f"Machine does not exist with id {machine_id}")
         return super().validate(attrs)
+        
+class AddInQueueByNumbersSerializer(serializers.ModelSerializer):
+    count = serializers.IntegerField()
+    class Meta:
+        model = Machine
+        fields = ['count']

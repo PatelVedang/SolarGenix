@@ -8,7 +8,7 @@ from colored import fg, bg, attr
 from .models import Machine
 from celery.exceptions import SoftTimeLimitExceeded
 
-@shared_task(time_limit=40)
+@shared_task(time_limit=40, ignore_result=True)
 def scan(id):
     """
     It takes the id of the machine object, and then it runs the tool command on the ip of the machine

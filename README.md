@@ -76,7 +76,13 @@ cd ~/CyberAPP
 # Run Live server without docker
 ### Step 1 (Get latest code)
 ##### Clone the repo: https://isaix.visualstudio.com/CyberApp/_git/CyberApp
-### Step 2(Install system level dependencies)
+### Step 2(Set .env in proj folder)
+```
+cd ~/CyberApp/app/proj
+nano .env
+```
+##### Note: Use .env variables(content) from .env_example file
+### Step 3(Install system level dependencies)
 #### For Linux
 ##### Install nmap
 #
@@ -105,12 +111,12 @@ source ~/.bashrc
 nvm install node
 npm install pm2 -g
 ```
-### Step 3(Make virtual environment)
+### Step 4(Make virtual environment)
 ```
-cd ~/CyberApp
+cd CyberApp
 python3 -m venv env
 ```
-### Step 4(Activate virtual environment)
+### Step 5(Activate virtual environment)
 ##### For Windows
 #
 ```
@@ -124,23 +130,22 @@ cd ..
 ```
 . env/bin/activate
 ```
-### Step 5(Install requirements.txt)
+### Step 6(Install requirements.txt)
 ##### We have to run below commands, when we want to restart server with new python dependencies.
 #
 ```
-cd ~/CyberApp/app/
-pip install -r requirements.txt
+pip install -r app/requirements.txt
 ```
 ##### Note: Make sure you have activate the virtual enviorment before running the above command
-### Step 6(Apply latest migrations & fixtures)
+### Step 7(Apply latest migrations & fixtures)
 ##### We have to run below command, when we have new database migrations changes.
 #
 ```
-. ~/CyberApp/apply_migrations.sh
+. apply_migrations.sh
 ```
-### Step 7(Run server with worker)
+### Step 8(Run server with worker)
 ##### Run below command to start, restart and stop the server.
 #
 ```
-. ~/CyberApp/start_server.sh
+. server.sh
 ```
