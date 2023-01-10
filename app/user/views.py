@@ -14,6 +14,11 @@ class RegisterView(generics.CreateAPIView):
     serializer_class = RegisterSerializer
     # permission_classes = [AllowAny]
     
+    @swagger_auto_schema(
+        tags=['Auth'],
+        operation_description= "This API will provide created user record as a response.",
+        operation_summary="API to create new user."
+    )
     def post(self, request, *args, **kwargs):
         register_serializer = self.serializer_class(data=request.data)
         if register_serializer.is_valid(raise_exception=True):
@@ -23,6 +28,11 @@ class RegisterView(generics.CreateAPIView):
 class LoginView(TokenObtainPairView):
     serializer_class = LoginSerializer
 
+    @swagger_auto_schema(
+        tags=['Auth'],
+        operation_description= "This API will provide access and refresh token as response.",
+        operation_summary="Login API."
+    )
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid(raise_exception=True):
@@ -31,6 +41,11 @@ class LoginView(TokenObtainPairView):
 class RefreshTokenView(TokenObtainPairView):
     serializer_class = CustomTokenRefreshSerializer
 
+    @swagger_auto_schema(
+        tags=['Auth'],
+        operation_description= "This API will provide new access and refresh token as a reponse. We will call this API when our main access token was expired. This API will take refresh token in payload.",
+        operation_summary="Refresh Token API."
+    )
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid(raise_exception=True):
