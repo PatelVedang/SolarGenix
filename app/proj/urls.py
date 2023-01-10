@@ -20,18 +20,41 @@ from rest_framework import permissions
 from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
 
+# from drf_yasg.generators import OpenAPISchemaGenerator
+
+# class CustomOpenAPISchemaGenerator(OpenAPISchemaGenerator):
+#   def get_schema(self, request=None, public=False):
+#     """Generate a :class:`.Swagger` object with custom tags"""
+
+#     swagger = super().get_schema(request, public)
+#     swagger.tags = [
+#         {
+#             "name": "Auth",
+#             "description": "everything about your API"
+#         },
+#         {
+#             "name": "scan",
+#             "description": "everything about your users"
+#         },
+#     ]
+
+#     return swagger
+
+
 schema_view = get_schema_view(
    openapi.Info(
       title="Cyber Appliance API",
       default_version='1.0'
    ),
-   public=True
+   public=True,
+#    generator_class=CustomOpenAPISchemaGenerator
 )
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('',include([
         path('',include('scanner.urls')),
+        path('api/auth/',include('user.urls')),
         path('swagger',schema_view.with_ui('swagger', cache_timeout=0), name='swagger-schema')
     ])),
 ]

@@ -12,6 +12,8 @@ https://docs.djangoproject.com/en/4.1/ref/settings/
 import os
 from pathlib import Path
 import environ
+from datetime import timedelta
+
 env = environ.Env()
 environ.Env.read_env()
 
@@ -23,7 +25,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/4.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-k(@&f8m^rp0ve5&x#xz_j=3f#^*k_f@4+j!d54aduw6w$8)=1n'
+SECRET_KEY = env('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = env('DEBUG')
@@ -44,6 +46,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'drf_yasg',
     'django_filters',
+    'user',
     'scanner',
     'celery',
     # 'django_celery_beat'
@@ -150,7 +153,14 @@ APPEND_SLASH = False
 
 SWAGGER_SETTINGS = {
    'USE_SESSION_AUTH': False,
-   'SECURITY_DEFINITIONS': False,
+   'SECURITY_DEFINITIONS': {
+        'Bearer': {
+            'type': 'apiKey',
+            'scheme': 'bearer',
+            'in': 'header',
+            'name': 'Authorization',
+        }
+    },
 }
 
 CSRF_TRUSTED_ORIGINS = [
@@ -168,8 +178,19 @@ SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 #     'rest_auth.views.LoginView',
 # ]
 
+# Django Rest Framework and JWT and CORS
 REST_FRAMEWORK = {
-    "DEFAULT_AUTHENTICATION_CLASSES": [
-        'rest_framework.authentication.BasicAuthentication',
-    ],
+    "DEFAULT_AUTHENTICATION_CLASSES": (
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
+    ),
 }
+
+# SIMPLE_JWT
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(days=1),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=30),
+    'ALGORITHM': 'HS256',
+    'SIGNING_KEY': env('SECRET_KEY')
+}
+
+AUTH_USER_MODEL = "user.User"

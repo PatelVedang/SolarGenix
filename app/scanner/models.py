@@ -15,12 +15,10 @@ class Machine(models.Model):
     ip = models.CharField(max_length=15,null=False)
     client = models.CharField(max_length=15)
     result = models.TextField()
-    # scanned = models.BooleanField(default=False)
-    # bg_task_status =  models.BooleanField(default=False)
     status = models.IntegerField(choices=STATUS_CHOICES, default=0)
     tool = models.ForeignKey("Tool", on_delete=models.CASCADE , null=True)
-    created_at = models.DateTimeField(null=False, default=datetime.now())
-    updated_at = models.DateTimeField(null=False,default=datetime.now())
+    created_at = models.DateTimeField(auto_now_add=True, null=True)
+    updated_at = models.DateTimeField(auto_now=True, null=True)
 
     def __str__(self):
         return self.ip
@@ -28,9 +26,8 @@ class Machine(models.Model):
 class Tool(models.Model):
     tool_name = models.CharField(max_length= 50)
     tool_cmd = models.CharField(max_length=500)
-    created_at = models.DateTimeField(null=False, default=datetime.now())
-    updated_at = models.DateTimeField(null=False,default=datetime.now())
+    created_at = models.DateTimeField(auto_now_add=True, null=True)
+    updated_at = models.DateTimeField(auto_now=True, null=True)
 
     def __str__(self):
         return self.tool_name
-    
