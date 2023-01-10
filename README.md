@@ -141,11 +141,11 @@ pip install -r app/requirements.txt
 ##### We have to run below command, when we have new database migrations changes.
 #
 ```
-. apply_migrations.sh
+bash apply_migrations.sh
 ```
 ### Step 8(Run server with worker)
 ##### Run below command to start, restart and stop the server.
 #
 ```
-. server.sh
+bash server.sh
 ```
