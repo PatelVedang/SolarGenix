@@ -1,9 +1,10 @@
 from django.shortcuts import render
 from .models import Machine, Tool
+from user.models import User
 from django.http import HttpResponse, JsonResponse
 from rest_framework.decorators import api_view
 from .tasks import scan
-from .serializers import ScannerSerializer, ScannerResponseSerializer, AddInQueueByIdsSerializer, AddInQueueByNumbersSerializer
+from .serializers import ScannerSerializer, ScannerResponseSerializer, AddInQueueByIdsSerializer, AddInQueueByNumbersSerializer, ToolSerializer
 from rest_framework.response import Response
 from rest_framework import viewsets, status
 from rest_framework.filters import SearchFilter 
@@ -14,20 +15,25 @@ from rest_framework.filters import SearchFilter, OrderingFilter
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 from rest_framework.permissions import IsAuthenticated
+from django.utils.decorators import method_decorator
 
+@method_decorator(name='destroy', decorator=swagger_auto_schema(tags=['scan'], auto_schema=None))
+@method_decorator(name='partial_update', decorator=swagger_auto_schema(tags=['scan'], auto_schema=None))
+@method_decorator(name='update', decorator=swagger_auto_schema(tags=['scan'], auto_schema=None))
 class ScanViewSet(viewsets.ModelViewSet):
     queryset = Machine.objects.all()
     serializer_class = ScannerSerializer
     permission_classes = [IsAuthenticated]
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
-    # search_fields = ['id', 'client', 'ip', 'status', 'tool']
-    filterset_fields = ['id', 'client', 'ip', 'status', 'tool']
+    # search_fields = ['id', 'ip', 'scan_by', 'status', 'tool']
+    filterset_fields = ['id', 'ip', 'scan_by', 'status', 'tool']
     
     @swagger_auto_schema(
         method = 'post',
         request_body=AddInQueueByIdsSerializer,
         operation_description= "Set machines in queue ids.",
-        operation_summary="API to add machines in queue for scanning by ids."
+        operation_summary="API to add machines in queue for scanning by ids.",
+        tags=['Scan']
 
     )
     @action(methods=['POST'], detail=False, url_path="addByIds")
@@ -45,7 +51,8 @@ class ScanViewSet(viewsets.ModelViewSet):
         method = 'post',
         request_body=AddInQueueByNumbersSerializer,
         operation_description= "Set n numbers of machine .",
-        operation_summary="API to add machines in queue for scanning by numbers."
+        operation_summary="API to add machines in queue for scanning by numbers.",
+        tags=['Scan']
 
     )
     @action(methods=['POST'], detail=False, url_path="addByNumbers")
@@ -68,7 +75,8 @@ class ScanViewSet(viewsets.ModelViewSet):
     @swagger_auto_schema(
         request_body=ScannerSerializer,
         operation_description= "Insert record in machine table.",
-        operation_summary="API to insert new machines."
+        operation_summary="API to insert new machines.",
+        tags=['Scan']
     )
     def create(self, request, *args, **kwargs):
         # provide payload to serializer
@@ -77,20 +85,17 @@ class ScanViewSet(viewsets.ModelViewSet):
         #validate serializer with given payload 
         if serializer.is_valid(raise_exception=True):
             ip_addresses = serializer.data.get('ip')
-            client = serializer.data.get('client')
             tools = serializer.data.get('tools_id')
+            scan_by = serializer.data.get('scan_by')
             if isinstance(ip_addresses, str):
                 ip_addresses = [ip_addresses]
             if isinstance(tools, int):
                 tools = [tools]
-            machines_list = []
             record_ids = []
             for ip in ip_addresses:
                 for tool in tools:
-                    # machines_list.append(Machine(ip=ip,client=client, tool= Tool(id=tool)))
-                    obj = Machine.objects.create(ip=ip,client=client, tool= Tool(id=tool))
+                    obj = Machine.objects.create(ip=ip, scan_by=User(id=scan_by),tool=Tool(id=tool))
                     record_ids.append(obj.id)
-                # Machine.objects.bulk_create(machines_list)
         custom_response = ScannerResponseSerializer(Machine.objects.filter(id__in=record_ids), many=True)
         return response(data = custom_response.data, status_code = status.HTTP_200_OK, message="host successfully added in database")
 
@@ -98,7 +103,8 @@ class ScanViewSet(viewsets.ModelViewSet):
     # API to retrive any scaned host
     @swagger_auto_schema(
         operation_description= "Retrive machine with specified id.",
-        operation_summary="API to rertive single machine record."
+        operation_summary="API to rertive single machine record.",
+        tags=['Scan']
     )
     def retrieve(self, request, *args, **kwargs):
         """
@@ -114,7 +120,8 @@ class ScanViewSet(viewsets.ModelViewSet):
     @swagger_auto_schema(
         operation_description= "Get list of machines.",
         operation_summary="API to return list of machines.",
-        operation_id=None
+        operation_id=None,
+        tags=['Scan']
     )
     def list(self, request, *args, **kwargs):
         """
@@ -127,34 +134,37 @@ class ScanViewSet(viewsets.ModelViewSet):
         data = super().list(request, *args, **kwargs)
         return response(data = data.data, status_code = status.HTTP_200_OK, message="record found successfully")
 
-    @swagger_auto_schema(auto_schema=None)
-    def update(self, request, *args, **kwargs):
-        """
-        The update function is a function that is used to update the data in the database
-        
-        :param request: The request object
-        :return: The super class update method is being returned.
-        """
-        return super().update(request, *args, **kwargs)
 
-    @swagger_auto_schema(auto_schema=None)
+@method_decorator(name='list', decorator=swagger_auto_schema(tags=['Tool'], operation_description= "List API.", operation_summary="API to get list of records."))
+@method_decorator(name='create', decorator=swagger_auto_schema(tags=['Tool'], operation_description= "Create API.", operation_summary="API to create new record."))
+@method_decorator(name='retrieve', decorator=swagger_auto_schema(tags=['Tool'], operation_description= "Retrive API.", operation_summary="API for retrive single record by id."))
+@method_decorator(name='update', decorator=swagger_auto_schema(tags=['Tool'], auto_schema=None))
+@method_decorator(name='partial_update', decorator=swagger_auto_schema(tags=['Tool'], operation_description= "Partial update API.", operation_summary="API for partial update record."))
+@method_decorator(name='destroy', decorator=swagger_auto_schema(tags=['Tool'], operation_description= "Delete API.", operation_summary="API to delete single record by id."))
+class ToolViewSet(viewsets.ModelViewSet):
+    queryset = Tool.objects.all()
+    serializer_class = ToolSerializer
+    permission_classes = [IsAuthenticated]
+
+    def list(self, request, *args, **kwargs):
+        serializer = super().list(request, *args, **kwargs)
+        return response(data = serializer.data, status_code = status.HTTP_200_OK, message="record found successfully")
+
+    def create(self, request, *args, **kwargs):
+         serializer = super().create(request, *args, **kwargs)
+         return response(data = serializer.data, status_code = status.HTTP_200_OK, message="record successfully added in database.")
+
     def partial_update(self, request, *args, **kwargs):
-        """
-        It's a function that takes in a request, and then passes that request to the super class's
-        partial_update function
-        
-        :param request: The request object
-        :return: The partial update method is being returned.
-        """
-        return super().partial_update(request, *args, **kwargs)
+        serializer = super().partial_update(request, *args, **kwargs)
+        return response(data = serializer.data, status_code = status.HTTP_200_OK, message="record successfully updated in database.")
 
-    @swagger_auto_schema(auto_schema=None)
+    def retrieve(self, request, *args, **kwargs):
+        serializer = super().retrieve(request, *args, **kwargs)
+        return response(data = serializer.data, status_code = status.HTTP_200_OK, message="record found successfully")
+
     def destroy(self, request, *args, **kwargs):
-        """
-        It returns the superclass's destroy method, which is the same as the destroy method in the
-        ModelViewSet class
-        
-        :param request: The request object
-        :return: The super class destroy method is being returned.
-        """
-        return super().destroy(request, *args, **kwargs)
+        serializer = super().destroy(request, *args, **kwargs)
+        return response(data = serializer.data, status_code = status.HTTP_200_OK, message="record deleted successfully")
+
+
+     

@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from .models import Machine, Tool
+from user.models import User
 from django.core.validators import validate_ipv4_address
 
 # This class is a serializer for the Machine model. It has a custom validation method that checks if
@@ -7,11 +8,10 @@ from django.core.validators import validate_ipv4_address
 class ScannerSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField(read_only=True)
     ip = serializers.ListField(child=serializers.CharField(validators=[validate_ipv4_address]))
-    client = serializers.CharField()
     tools_id = serializers.ListField(child=serializers.IntegerField(), allow_empty=False)
     class Meta:
         model = Machine
-        fields = ['ip','client','id','tools_id']
+        fields = ['ip','id','tools_id', 'scan_by']
 
     def validate(self, attrs):
         tools_id = attrs['tools_id']
@@ -30,7 +30,8 @@ class ScannerResponseSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
-        data['tool']= instance.tool.tool_name
+        data['tool']= Tool.objects.filter(id=instance.tool.id).values('id', 'tool_name', 'tool_cmd')[0]
+        data['scan_by'] = User.objects.filter(id=instance.scan_by.id).values('id', 'email', 'first_name', 'last_name')[0]
         return data
 
 # The ScannerQueueSerializer class is a serializer for the Machine model. It has a field called ids
@@ -53,3 +54,9 @@ class AddInQueueByNumbersSerializer(serializers.ModelSerializer):
     class Meta:
         model = Machine
         fields = ['count']
+
+
+class ToolSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Tool
+        fields = '__all__'

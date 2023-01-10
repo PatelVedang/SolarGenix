@@ -13,7 +13,7 @@ class RegisterView(generics.CreateAPIView):
     queryset = User.objects.all()
     serializer_class = RegisterSerializer
     # permission_classes = [AllowAny]
-    
+        
     @swagger_auto_schema(
         tags=['Auth'],
         operation_description= "This API will provide created user record as a response.",

@@ -1,6 +1,7 @@
 from django.db import models
 from datetime import datetime
 from django.contrib.auth.models import User
+from user.models import User
 
 STATUS_CHOICES = [
     (0, "Created"),
@@ -13,10 +14,10 @@ STATUS_CHOICES = [
 # Create your models here.
 class Machine(models.Model):
     ip = models.CharField(max_length=15,null=False)
-    client = models.CharField(max_length=15)
     result = models.TextField()
     status = models.IntegerField(choices=STATUS_CHOICES, default=0)
-    tool = models.ForeignKey("Tool", on_delete=models.CASCADE , null=True)
+    tool = models.ForeignKey("Tool", on_delete=models.CASCADE, default=1)
+    scan_by = models.ForeignKey(User, on_delete=models.CASCADE, default=1)
     created_at = models.DateTimeField(auto_now_add=True, null=True)
     updated_at = models.DateTimeField(auto_now=True, null=True)
 
