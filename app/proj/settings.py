@@ -25,7 +25,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/4.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = env('SECRET_KEY')
+SECRET_KEY = os.environ.get('SECRET_KEY', env('SECRET_KEY'))
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = env('DEBUG')
@@ -95,12 +95,12 @@ WSGI_APPLICATION = 'proj.wsgi.application'
 
 DATABASES = {
     "default": {
-        'ENGINE': env('MYSQL_ENGINE'),
-        'NAME': env('MYSQL_DATABASE'),
-        'USER': env('MYSQL_USER'),
-        'PASSWORD': env('MYSQL_PASSWORD'),
-        'HOST': env('MYSQL_DATABASE_HOST'),
-        'PORT': env('MYSQL_DATABASE_PORT'),
+        'ENGINE': os.environ.get('MYSQL_ENGINE', env('MYSQL_ENGINE')),
+        'NAME': os.environ.get('MYSQL_DATABASE', env('MYSQL_DATABASE')),
+        'USER': os.environ.get('MYSQL_USER', env('MYSQL_USER')),
+        'PASSWORD': os.environ.get('MYSQL_PASSWORD', env('MYSQL_PASSWORD')),
+        'HOST': os.environ.get('MYSQL_DATABASE_HOST', env('MYSQL_DATABASE_HOST')),
+        'PORT': os.environ.get('MYSQL_DATABASE_PORT', env('MYSQL_DATABASE_PORT')),
     }
 }
 
@@ -190,7 +190,7 @@ SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(days=1),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=30),
     'ALGORITHM': 'HS256',
-    'SIGNING_KEY': env('SECRET_KEY')
+    'SIGNING_KEY': os.environ.get('SECRET_KEY', env('SECRET_KEY'))
 }
 
 AUTH_USER_MODEL = "user.User"
