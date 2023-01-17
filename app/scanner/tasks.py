@@ -7,6 +7,7 @@ import time
 from colored import fg, bg, attr
 from .models import Machine
 from celery.exceptions import SoftTimeLimitExceeded
+import platform
 
 @shared_task(time_limit=40, ignore_result=True)
 def scan(id):
@@ -29,7 +30,10 @@ def scan(id):
         try:
             print("====>>>>>>>>       ", f"Scanning began for IP:{ip} with id:{id}", "       <<<<<<<<====")
             machine.update(status = 2)
-            output = subprocess.check_output(f"{tool_cmd} {ip}", shell=True, timeout=30).decode('utf-8')
+            if platform.uname().system == 'Windows':
+                output = subprocess.check_output(f"{tool_cmd} {ip}", shell=False, timeout=30).decode('utf-8')
+            else:
+                output = subprocess.check_output(f"{tool_cmd} {ip}", shell=True, timeout=30).decode('utf-8')
         except Exception as e:
             print("====>>>>>>>>       ", f"Background thread for ip:{ip} with id:{id} has been terminated", "       <<<<<<<<====")
             machine.update(result=str(e), status=3)

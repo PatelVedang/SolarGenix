@@ -111,6 +111,24 @@ source ~/.bashrc
 nvm install node
 npm install pm2 -g
 ```
+#### For Windows
+##### Install nmap using below link
+#
+```
+https://nmap.org/dist/nmap-7.92-setup.exe
+```
+##### Install rabbitMQ server using below 
+#
+```
+https://github.com/rabbitmq/rabbitmq-server/releases/download/v3.11.6/rabbitmq-server-3.11.6.exe
+```
+##### Install PM2 and Concurrently packages with NVM
+#
+```
+curl https://raw.githubusercontent.com/creationix/nvm/master/install.sh | bash
+nvm install node
+npm i -g concurrently pm2
+```
 ### Step 4(Make virtual environment)
 ```
 cd CyberApp
@@ -120,14 +138,13 @@ python3 -m venv env
 ##### For Windows
 #
 ```
-cd env/Scripts
-activate
-cd ..
-cd ..
+cd CyberApp
+env\Scripts\activate
 ```
 ##### For Linux
 #
 ```
+cd CyberApp
 . env/bin/activate
 ```
 ### Step 6(Install requirements.txt)
@@ -139,13 +156,25 @@ pip install -r app/requirements.txt
 ##### Note: Make sure you have activate the virtual enviorment before running the above command
 ### Step 7(Apply latest migrations & fixtures)
 ##### We have to run below command, when we have new database migrations changes.
+##### For Linux
 #
 ```
 bash apply_migrations.sh
 ```
+##### For Windows
+#
+```
+apply_migrations.bat
+```
 ### Step 8(Run server with worker)
-##### Run below command to start, restart and stop the server.
+##### Run below command to start, stop, restart and delete a server process with worker.
+##### For Linux
 #
 ```
 bash server.sh
+```
+##### For Windows
+#
+```
+server.bat
 ```

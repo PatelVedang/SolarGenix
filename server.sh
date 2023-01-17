@@ -64,7 +64,7 @@ then
     return
 elif [ $option == 4  ];
 then
-    # STOP
+    # DELETE
     printf "░░░░░░  Deleting the app ░░░░░░ \n\n\n"
     pm2 delete cyber_appliance
     printf "░░░░░░  Deleting the worker ░░░░░░ \n\n\n"
