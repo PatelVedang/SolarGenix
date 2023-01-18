@@ -122,10 +122,12 @@ https://nmap.org/dist/nmap-7.92-setup.exe
 ```
 https://github.com/rabbitmq/rabbitmq-server/releases/download/v3.11.6/rabbitmq-server-3.11.6.exe
 ```
-##### Install PM2 and Concurrently packages with NVM
+##### Install PM2 and Concurrently packages with NVM, After downloading and installing nvm setup you have to run other two commands in new terminal 
 #
 ```
-curl https://raw.githubusercontent.com/creationix/nvm/master/install.sh | bash
+https://github.com/coreybutler/nvm-windows/releases/download/1.1.10/nvm-setup.exe
+```
+```
 nvm install node
 npm i -g concurrently pm2
 ```
@@ -177,4 +179,8 @@ bash server.sh
 #
 ```
 server.bat
+```
+### Step 9(View server logs)
+```
+pm2 logs
 ```
