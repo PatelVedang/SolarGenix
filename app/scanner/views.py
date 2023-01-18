@@ -14,7 +14,8 @@ from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter, OrderingFilter
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, IsAdminUser
+from .permissions import MachineRetrievePremission
 from django.utils.decorators import method_decorator
 
 @method_decorator(name='destroy', decorator=swagger_auto_schema(tags=['scan'], auto_schema=None))
@@ -23,10 +24,10 @@ from django.utils.decorators import method_decorator
 class ScanViewSet(viewsets.ModelViewSet):
     queryset = Machine.objects.all()
     serializer_class = ScannerSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, MachineRetrievePremission]
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     # search_fields = ['id', 'ip', 'scan_by', 'status', 'tool']
-    filterset_fields = ['id', 'ip', 'scan_by', 'status', 'tool']
+    filterset_fields = ['id', 'ip', 'status', 'tool']
     
     @swagger_auto_schema(
         method = 'post',
@@ -42,7 +43,7 @@ class ScanViewSet(viewsets.ModelViewSet):
         serializer = self.serializer_class(data=request.data)
         if serializer.is_valid(raise_exception=True):
             machines_id = serializer.data.get('machines_id')
-            for machine_id in machines_id: 
+            for machine_id in machines_id:
                 scan.delay(machine_id)
         custom_response = ScannerResponseSerializer(Machine.objects.filter(id__in=machines_id), many=True)
         return response(data = custom_response.data, status_code = status.HTTP_200_OK, message="host successfully added in queue")
@@ -62,7 +63,10 @@ class ScanViewSet(viewsets.ModelViewSet):
         if serializer.is_valid(raise_exception=True):
             # count
             n = serializer.data.get('count')
-            records = Machine.objects.filter(status=0)[:n]
+            if (not request.user.is_staff) and (not request.user.is_superuser):
+                records = Machine.objects.filter(status=0, scan_by=request.user)[:n]
+            else:
+                records = Machine.objects.filter(status=0)[:n]
             for record in records: 
                 scan.delay(record.id)
         custom_response = ScannerResponseSerializer(records, many=True)
@@ -94,15 +98,15 @@ class ScanViewSet(viewsets.ModelViewSet):
             record_ids = []
             for ip in ip_addresses:
                 for tool in tools:
-                    obj = Machine.objects.create(ip=ip, scan_by=User(id=scan_by),tool=Tool(id=tool))
+                    obj = Machine.objects.create(ip=ip, scan_by=request.user,tool=Tool(id=tool))
                     record_ids.append(obj.id)
         custom_response = ScannerResponseSerializer(Machine.objects.filter(id__in=record_ids), many=True)
         return response(data = custom_response.data, status_code = status.HTTP_200_OK, message="host successfully added in database")
 
 
-    # API to retrive any scaned host
+    # API to retrieve any scaned host
     @swagger_auto_schema(
-        operation_description= "Retrive machine with specified id.",
+        operation_description= "Retrieve machine with specified id.",
         operation_summary="API to rertive single machine record.",
         tags=['Scan']
     )
@@ -130,6 +134,8 @@ class ScanViewSet(viewsets.ModelViewSet):
         :param request: The request object
         :return: The data is being returned in the form of a list.
         """
+        if (not request.user.is_staff) and (not request.user.is_superuser):
+            self.queryset = Machine.objects.filter(scan_by = request.user.id)
         self.serializer_class = ScannerResponseSerializer
         data = super().list(request, *args, **kwargs)
         return response(data = data.data, status_code = status.HTTP_200_OK, message="record found successfully")
@@ -137,14 +143,14 @@ class ScanViewSet(viewsets.ModelViewSet):
 
 @method_decorator(name='list', decorator=swagger_auto_schema(tags=['Tool'], operation_description= "List API.", operation_summary="API to get list of records."))
 @method_decorator(name='create', decorator=swagger_auto_schema(tags=['Tool'], operation_description= "Create API.", operation_summary="API to create new record."))
-@method_decorator(name='retrieve', decorator=swagger_auto_schema(tags=['Tool'], operation_description= "Retrive API.", operation_summary="API for retrive single record by id."))
+@method_decorator(name='retrieve', decorator=swagger_auto_schema(tags=['Tool'], operation_description= "Retrieve API.", operation_summary="API for retrieve single record by id."))
 @method_decorator(name='update', decorator=swagger_auto_schema(tags=['Tool'], auto_schema=None))
 @method_decorator(name='partial_update', decorator=swagger_auto_schema(tags=['Tool'], operation_description= "Partial update API.", operation_summary="API for partial update record."))
 @method_decorator(name='destroy', decorator=swagger_auto_schema(tags=['Tool'], operation_description= "Delete API.", operation_summary="API to delete single record by id."))
 class ToolViewSet(viewsets.ModelViewSet):
     queryset = Tool.objects.all()
     serializer_class = ToolSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsAdminUser]
 
     def list(self, request, *args, **kwargs):
         serializer = super().list(request, *args, **kwargs)

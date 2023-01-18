@@ -11,7 +11,7 @@ class ScannerSerializer(serializers.ModelSerializer):
     tools_id = serializers.ListField(child=serializers.IntegerField(), allow_empty=False)
     class Meta:
         model = Machine
-        fields = ['ip','id','tools_id', 'scan_by']
+        fields = ['ip','id','tools_id']
 
     def validate(self, attrs):
         tools_id = attrs['tools_id']
@@ -48,7 +48,7 @@ class AddInQueueByIdsSerializer(serializers.ModelSerializer):
             if not Machine.objects.filter(id=machine_id).exists():
                 raise serializers.DjangoValidationError(f"Machine does not exist with id {machine_id}")
         return super().validate(attrs)
-        
+
 class AddInQueueByNumbersSerializer(serializers.ModelSerializer):
     count = serializers.IntegerField()
     class Meta:
