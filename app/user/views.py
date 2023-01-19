@@ -8,6 +8,7 @@ from utils.make_response import response
 from rest_framework import status
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework.permissions import AllowAny
+from rest_framework_simplejwt.serializers import TokenVerifySerializer
 
 class RegisterView(generics.CreateAPIView):
     queryset = User.objects.all()
@@ -23,7 +24,7 @@ class RegisterView(generics.CreateAPIView):
         register_serializer = self.serializer_class(data=request.data)
         if register_serializer.is_valid(raise_exception=True):
             result = super().create(request, *args, **kwargs) 
-            return response(data = result.data, status_code = status.HTTP_200_OK, message="user created successfully.")
+            return response(status=True, data=result.data, status_code=status.HTTP_200_OK, message="user created successfully.")
 
 class LoginView(TokenObtainPairView):
     serializer_class = LoginSerializer
@@ -36,7 +37,7 @@ class LoginView(TokenObtainPairView):
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid(raise_exception=True):
-            return response(data = serializer.validated_data, status_code = status.HTTP_200_OK, message="user login successfully.")
+            return response(status=True, data=serializer.validated_data, status_code=status.HTTP_200_OK, message="user login successfully.")
 
 class RefreshTokenView(TokenObtainPairView):
     serializer_class = CustomTokenRefreshSerializer
@@ -49,4 +50,17 @@ class RefreshTokenView(TokenObtainPairView):
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid(raise_exception=True):
-            return response(data = serializer.validated_data, status_code = status.HTTP_200_OK, message="user login successfully.")
+            return response(status=True, data=serializer.validated_data, status_code=status.HTTP_200_OK, message="user login successfully.")
+
+class VerifyTokenView(TokenObtainPairView):
+    serializer_class = TokenVerifySerializer
+
+    @swagger_auto_schema(
+        tags=['Auth'],
+        operation_description= "This API will verify existing token. This API will take refresh/access token in payload.",
+        operation_summary="Verify Token API."
+    )
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        if serializer.is_valid(raise_exception=True):
+            return response(status=True, data={}, status_code=status.HTTP_200_OK, message="token verified successfully.")

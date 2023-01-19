@@ -46,7 +46,7 @@ class ScanViewSet(viewsets.ModelViewSet):
             for machine_id in machines_id:
                 scan.delay(machine_id)
         custom_response = ScannerResponseSerializer(Machine.objects.filter(id__in=machines_id), many=True)
-        return response(data = custom_response.data, status_code = status.HTTP_200_OK, message="host successfully added in queue")
+        return response(status=True, data=custom_response.data, status_code=status.HTTP_200_OK, message="host successfully added in queue")
         
     @swagger_auto_schema(
         method = 'post',
@@ -70,7 +70,7 @@ class ScanViewSet(viewsets.ModelViewSet):
             for record in records: 
                 scan.delay(record.id)
         custom_response = ScannerResponseSerializer(records, many=True)
-        return response(data = custom_response.data, status_code = status.HTTP_200_OK, message="host successfully added in queue")
+        return response(status=True, data=custom_response.data, status_code=status.HTTP_200_OK, message="host successfully added in queue")
 
     # API for create object
     # @swagger_auto_schema(manual_parameters=[
@@ -101,7 +101,7 @@ class ScanViewSet(viewsets.ModelViewSet):
                     obj = Machine.objects.create(ip=ip, scan_by=request.user,tool=Tool(id=tool))
                     record_ids.append(obj.id)
         custom_response = ScannerResponseSerializer(Machine.objects.filter(id__in=record_ids), many=True)
-        return response(data = custom_response.data, status_code = status.HTTP_200_OK, message="host successfully added in database")
+        return response(status=True, data=custom_response.data, status_code=status.HTTP_200_OK, message="host successfully added in database")
 
 
     # API to retrieve any scaned host
@@ -119,7 +119,7 @@ class ScanViewSet(viewsets.ModelViewSet):
         """
         self.serializer_class = ScannerResponseSerializer
         serializer = super().retrieve(request, *args, **kwargs)
-        return response(data = serializer.data, status_code = status.HTTP_200_OK, message="record found successfully")
+        return response(status=True, data=serializer.data, status_code=status.HTTP_200_OK, message="record found successfully")
 
     @swagger_auto_schema(
         operation_description= "Get list of machines.",
@@ -138,7 +138,7 @@ class ScanViewSet(viewsets.ModelViewSet):
             self.queryset = Machine.objects.filter(scan_by = request.user.id)
         self.serializer_class = ScannerResponseSerializer
         data = super().list(request, *args, **kwargs)
-        return response(data = data.data, status_code = status.HTTP_200_OK, message="record found successfully")
+        return response(status=True, data=data.data, status_code=status.HTTP_200_OK, message="record found successfully")
 
 
 @method_decorator(name='list', decorator=swagger_auto_schema(tags=['Tool'], operation_description= "List API.", operation_summary="API to get list of records."))
@@ -154,23 +154,23 @@ class ToolViewSet(viewsets.ModelViewSet):
 
     def list(self, request, *args, **kwargs):
         serializer = super().list(request, *args, **kwargs)
-        return response(data = serializer.data, status_code = status.HTTP_200_OK, message="record found successfully")
+        return response(status=True, data=serializer.data, status_code=status.HTTP_200_OK, message="record found successfully")
 
     def create(self, request, *args, **kwargs):
          serializer = super().create(request, *args, **kwargs)
-         return response(data = serializer.data, status_code = status.HTTP_200_OK, message="record successfully added in database.")
+         return response(status=True, data=serializer.data, status_code=status.HTTP_200_OK, message="record successfully added in database.")
 
     def partial_update(self, request, *args, **kwargs):
         serializer = super().partial_update(request, *args, **kwargs)
-        return response(data = serializer.data, status_code = status.HTTP_200_OK, message="record successfully updated in database.")
+        return response(status=True, data=serializer.data, status_code=status.HTTP_200_OK, message="record successfully updated in database.")
 
     def retrieve(self, request, *args, **kwargs):
         serializer = super().retrieve(request, *args, **kwargs)
-        return response(data = serializer.data, status_code = status.HTTP_200_OK, message="record found successfully")
+        return response(status=True, data=serializer.data, status_code=status.HTTP_200_OK, message="record found successfully")
 
     def destroy(self, request, *args, **kwargs):
         serializer = super().destroy(request, *args, **kwargs)
-        return response(data = serializer.data, status_code = status.HTTP_200_OK, message="record deleted successfully")
+        return response(status=True, data=serializer.data, status_code=status.HTTP_200_OK, message="record deleted successfully")
 
 
      
