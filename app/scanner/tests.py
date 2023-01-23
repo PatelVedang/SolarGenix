@@ -123,4 +123,68 @@ class ScanTest(BaseAPITestCase):
         self.set_response(self.client.get(f'{self.prefix}scan/{obj.id}/', format = "json"))
         self.match_success_response()
 
+
+# It tests the CRUD operations of the Tool app.
+class ToolTest(BaseAPITestCase):
+    prefix = '/api/'
+
+    def insert_records(self):
+        """
+        It creates a new record in the database with the tool_name and tool_cmd values
+        """
+        self._data = {
+            "tool_name": "nmap",
+            "tool_cmd": "nmap -Pn -sV"
+        }
+        self.set_response(self.client.post(f'{self.prefix}tool/', data=self._data , format = "json"))
+
+    def test_create_api(self):
+        """
+        It logs in, inserts records, and matches the success response
+        """
+        self.login()
+        self.insert_records()
+        self.match_success_response()
+
+    def test_update_api(self):
+        """
+        It updates the tool name and tool command of the first tool in the database.
+        """
+        self.login()
+        self.insert_records()
+        obj = Tool.objects.first()
+        self._data = {
+            "tool_name": "nmap v7.92",
+            "tool_cmd": "nmap -Pn -sV"
+        }
+        self.set_response(self.client.patch(f'{self.prefix}tool/{obj.id}/', data= self._data, format="json"))
+        self.match_success_response()
+
+    def test_retrieve_api(self):
+        """
+        It tests the retrieve API endpoint for the Tool app
+        """
+        self.login()
+        self.insert_records()
+        obj = Tool.objects.first()
+        self.set_response(self.client.get(f'{self.prefix}tool/{obj.id}/', format = "json"))
+        self.match_success_response()
+
+    def test_list_api(self):
+        """
+        It tests the list API of the tool app
+        """
+        self.login()
+        self.set_response(self.client.get(f'{self.prefix}tool/', format = "json"))
+        self.match_success_response()
+    
+    def test_delete_api(self):
+        """
+        It deletes the first record in the Tool table.
+        """
+        self.login()
+        self.insert_records()
+        obj = Tool.objects.first()
+        self.set_response(self.client.delete(f'{self.prefix}tool/{obj.id}/', format = "json"))
+        self.match_success_response()
     
