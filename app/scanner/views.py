@@ -107,7 +107,7 @@ class ScanViewSet(viewsets.ModelViewSet):
     # API to retrieve any scaned host
     @swagger_auto_schema(
         operation_description= "Retrieve machine with specified id.",
-        operation_summary="API to rertive single machine record.",
+        operation_summary="API to retrieve single machine record.",
         tags=['Scan']
     )
     def retrieve(self, request, *args, **kwargs):

@@ -16,6 +16,7 @@ cd ~/CyberAPP
     docker-compose up
 ##### or
 #
+#
 ##### To Run server in detached mode( Means here run server in background)
 #
 
@@ -24,7 +25,9 @@ cd ~/CyberAPP
 ##### Run below command to build and run server with single command:
 #
     docker-compose up --build
-    
+#
+#
+#
 # Some docker command which we are frequently use
 ##### Run below command to get IP Address of database container(Only for local use)
 #
@@ -40,7 +43,9 @@ cd ~/CyberAPP
 ##### Run below command to build and run server with single command:
 #
     docker-compose up --build
-    
+#
+#
+#
 # Add a user to the VM instance's MySQL database and grant all user access to the database. 
 ### Step 1
 ##### Connect with mysql using root user using below command
@@ -60,11 +65,13 @@ cd ~/CyberAPP
 ##### Note: Make sure to run below command to apply changes which make in MySQL.
 #
     FLUSH PRIVILEGES;
-
+#
+#
+#
 # Run BETA server with live database
 ##### All the steps are same as running local database, just change was use -f flag to provide docker-compose.yml file rather than docker-compose.yml, because if i'm using docker-compose up at that time, it will use docker-compose.yml file in background. 
 ##### For example "docker-compose -f docker-compose.beta.yml build" to build the project for BETA enviorment.
-
+#
 #
 #
 # Steps to add ssh key in Azure VM instance
@@ -72,7 +79,24 @@ cd ~/CyberAPP
 ##### Connect with VM using ssh command
 ### Step 2
 ##### Append new ssh key in "~/.ssh/authorized_keys" file
-
+#
+#
+#
+# Steps to run unit testing
+### Linux
+```
+cd CyberApp
+bash unit_test.sh
+```
+### Windows
+```
+cd CyberApp
+unit_test.bat
+```
+##### Note: All test_<current_database_name> database rights must be granted to the current database username. For instance, if the database name is db_dev then the username must have all the rights of the test_db_dev database. If you want add to privileges then use this "GRANT ALL PRIVILEGES" command of section "Add a user to the VM instance’s MySQL database and grant all user access to the database". 
+#
+#
+#
 # Run Live server without docker
 ### Step 1 (Get latest code)
 ##### Clone the repo: https://isaix.visualstudio.com/CyberApp/_git/CyberApp

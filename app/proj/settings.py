@@ -29,6 +29,8 @@ SECRET_KEY = os.environ.get('SECRET_KEY', env('SECRET_KEY'))
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DEBUG', env('DEBUG'))
+UNIT_TEST_USER_EMAIL = os.environ.get('UNIT_TEST_USER_EMAIL', env('UNIT_TEST_USER_EMAIL'))
+UNIT_TEST_USER_PASSWORD = os.environ.get('UNIT_TEST_USER_PASSWORD', env('UNIT_TEST_USER_PASSWORD'))
 
 ALLOWED_HOSTS = ["*"]
 
@@ -47,7 +49,7 @@ INSTALLED_APPS = [
     'drf_yasg',
     'django_filters',
     'user',
-    'scanner',
+    'scanner',a
     'celery',
     # 'django_celery_beat'
     ]

@@ -42,6 +42,7 @@ then
     printf "░░░░░░  Starting the worker ░░░░░░ \n\n\n"
     pm2 start "celery -A proj worker -l info" --name worker --max-memory-restart "200M"
     cd ..
+    deactivate
     printf " \n\n Job Done 😎 \n\n"
     return
 elif [ $option == 2 ];

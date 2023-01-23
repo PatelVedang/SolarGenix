@@ -4,12 +4,6 @@ from .make_response import response
 def custom_exception_handler(exc, context):
     try:
         exception_class = exc.__class__.__name__
-        print(">"*30," "*15,"Exception message start", " "*15,"<"*30)
-        print("\n\n",str(exc), "\n\n")
-        print(">"*30," "*15,"Exception message end", " "*15,"<"*30)
-        print(">"*30," "*15,"Exception class", " "*15,"<"*30)
-        print("\n\n",exception_class, "\n\n")
-        print(">"*30," "*15,"Exception class end", " "*15,"<"*30)
 
         handlers = {
             'NotAuthenticated' : _handler_authentication_error,
@@ -22,21 +16,33 @@ def custom_exception_handler(exc, context):
         else:
             message = str(exc)
         
+        print(">"*30," "*15,"Exception message start", " "*15,"<"*30)
+        print("\n\n",message, "\n\n")
+        print(">"*30," "*15,"Exception message end", " "*15,"<"*30)
+        print(">"*30," "*15,"Exception class", " "*15,"<"*30)
+        print("\n\n",exception_class, "\n\n")
+        print(">"*30," "*15,"Exception class end", " "*15,"<"*30)
         return response(status=False, data={}, status_code= res.get('status_code',401) if res else 401, message=message)
     except Exception as e:
         print(e)
 
 
 def _handler_authentication_error(exc, context, response):
-    return "Authorization token not provided."
+    return "An authorization token is not provided."
 
 def _handler_invalid_token_error(exc, context, response):
-    return "Authorization token not valid."
+    return "An authorization token is not valid."
 
 def _handler_validation_error(exc, context, response):
+    print(list(list(exc.__dict__.values())[0].values())[0][0][0],"=>>>")
     key = list(list(exc.__dict__.values())[0].keys())[0]
-    code = list(list(exc.__dict__.values())[0].values())[0][0].__dict__['code']
-    value = list(list(exc.__dict__.values())[0].values())[0][0]
+    try:
+        code = list(list(exc.__dict__.values())[0].values())[0][0].__dict__['code']
+        value = list(list(exc.__dict__.values())[0].values())[0][0]
+
+    except:
+        code = list(list(exc.__dict__.values())[0].values())[0][0][0].__dict__['code']
+        value = list(list(exc.__dict__.values())[0].values())[0][0][0]
 
     custom_msg_code = ["required", "null", "blank"]
     if code in custom_msg_code:

@@ -13,15 +13,13 @@ echo " \____\__, |_.__/ \___|_|    /_/   \_\ .__/| .__/|_|_|\__,_|_| |_|\___\___
 echo "      |___/                          |_|   |_|                             "
 
 
-printf "░░░░░░  Running the migrations ░░░░░░ \n\n\n"
+printf "░░░░░░  Running the test cases ░░░░░░ \n\n\n"
 . env/bin/activate
-python app/manage.py migrate --no-input
-printf "░░░░░░  Running the fixtures ░░░░░░ \n\n\n"
-python app/manage.py loaddata app/user/fixtures/superuser.json --app user.user
-python app/manage.py loaddata app/scanner/fixtures/tool.json --app scanner.tool
+cd app
+python manage.py test
+cd ..
 deactivate
-
-if [ $? = 0 ] 
+if [ $? = 0 ]
 then
 	printf " \n\n Job Done 😎 \n\n"
 else
