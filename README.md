@@ -114,6 +114,11 @@ nano .env
 sudo apt-get update
 sudo apt-get install nmap
 ```
+##### Install wkhtmltopdf
+#
+```
+sudo apt-get install wkhtmltopdf
+```
 ##### Install MySQL development headers 
 #
 ```
@@ -140,6 +145,12 @@ npm install pm2 -g
 #
 ```
 https://nmap.org/dist/nmap-7.92-setup.exe
+```
+##### Install wkhtmltopdf using below link
+###### Note: Must set wkhtmltopdf path in environment variable
+#
+```
+https://github.com/wkhtmltopdf/packaging/releases/download/0.12.6-1/wkhtmltox-0.12.6-1.msvc2015-win64.exe
 ```
 ##### Install rabbitMQ server using below 
 #
