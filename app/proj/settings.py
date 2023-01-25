@@ -49,7 +49,7 @@ INSTALLED_APPS = [
     'drf_yasg',
     'django_filters',
     'user',
-    'scanner',a
+    'scanner',
     'celery',
     # 'django_celery_beat'
     ]
@@ -197,3 +197,9 @@ SIMPLE_JWT = {
 }
 
 AUTH_USER_MODEL = "user.User"
+
+# Base url to serve media files
+MEDIA_URL = '/media/'
+
+# Path where media is stored
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media/')

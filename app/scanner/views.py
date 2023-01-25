@@ -6,7 +6,7 @@ from rest_framework.decorators import api_view
 from .tasks import scan
 from .serializers import ScannerSerializer, ScannerResponseSerializer, AddInQueueByIdsSerializer, AddInQueueByNumbersSerializer, ToolSerializer
 from rest_framework.response import Response
-from rest_framework import viewsets, status
+from rest_framework import viewsets, status, generics
 from rest_framework.filters import SearchFilter 
 from rest_framework.decorators import action
 from utils.make_response import response
@@ -17,6 +17,7 @@ from drf_yasg import openapi
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from .permissions import MachineRetrievePremission
 from django.utils.decorators import method_decorator
+from utils.pdf import PDF
 
 @method_decorator(name='destroy', decorator=swagger_auto_schema(tags=['scan'], auto_schema=None))
 @method_decorator(name='partial_update', decorator=swagger_auto_schema(tags=['scan'], auto_schema=None))
@@ -139,6 +140,51 @@ class ScanViewSet(viewsets.ModelViewSet):
         self.serializer_class = ScannerResponseSerializer
         data = super().list(request, *args, **kwargs)
         return response(status=True, data=data.data, status_code=status.HTTP_200_OK, message="record found successfully")
+
+    @swagger_auto_schema(
+        method = 'get',
+        operation_description= "Generate pdf from a scan result. And provide url of pdf as aresponse.",
+        operation_summary="API to generate pdf url.",
+        request_body=None,
+        tags=['Scan']
+
+    )
+    @action(methods=['GET'], detail=True, url_path="generatePDF")
+    def generate_pdf(self, request, *args, **kwargs):
+        """
+        It takes the id of the user and the id of the response and generates a pdf file url
+        
+        :param request: The request object
+        :return: A PDF file url
+        """
+        self.serializer_class = ScannerResponseSerializer
+        serializer = super().retrieve(request, *args, **kwargs)
+        pdf= PDF()
+        pdf_path, pdf_name, file_url = pdf.generate(request.user.id, serializer.data.get('id'), host=request.headers.get('Host'))
+
+        data = {
+            'file_path':file_url
+        }
+        return response(status=True, data=data, status_code=status.HTTP_200_OK, message="PDF generated successfully")
+    
+    @swagger_auto_schema(
+        method = 'get',
+        operation_description= "Generate pdf from a scan result. And provide pdf file as a response.",
+        operation_summary="API to provide pdf file.",
+        request_body=None,
+        tags=['Scan']
+
+    )
+    @action(methods=['GET'], detail=True, url_path="fakePDFGenerator")
+    def generate_fake_pdf(self, request, *args, **kwargs):
+        self.serializer_class = ScannerResponseSerializer
+        serializer = super().retrieve(request, *args, **kwargs)
+        pdf= PDF()
+        pdf_path, pdf_name, file_url = pdf.generate(request.user.id, serializer.data.get('id'), host=request.headers.get('Host'))
+        FilePointer = open(pdf_path,"rb")
+        response = HttpResponse(FilePointer,content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename={pdf_name}'
+        return response
 
 
 @method_decorator(name='list', decorator=swagger_auto_schema(tags=['Tool'], operation_description= "List API.", operation_summary="API to get list of records."))
