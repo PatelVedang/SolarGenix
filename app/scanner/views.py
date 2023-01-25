@@ -186,6 +186,26 @@ class ScanViewSet(viewsets.ModelViewSet):
         response['Content-Disposition'] = f'attachment; filename={pdf_name}'
         return response
 
+    @swagger_auto_schema(
+        method = 'get',
+        operation_description= "Generate html content from a scan result. And provide html content as a response.",
+        operation_summary="API to generate html content.",
+        request_body=None,
+        tags=['Scan']
+
+    )
+    @action(methods=['GET'], detail=True, url_path="generateHTML")
+    def generate_html(self, request, *args, **kwargs):
+        self.serializer_class = ScannerResponseSerializer
+        serializer = super().retrieve(request, *args, **kwargs)
+        pdf= PDF()
+        html_data = pdf.generate(request.user.id, serializer.data.get('id'), host=request.headers.get('Host'), generate_pdf=False)
+
+        data = {
+            'html_content':html_data
+        }
+        return response(status=True, data=data, status_code=status.HTTP_200_OK, message="HTML generated successfully") 
+
 
 @method_decorator(name='list', decorator=swagger_auto_schema(tags=['Tool'], operation_description= "List API.", operation_summary="API to get list of records."))
 @method_decorator(name='create', decorator=swagger_auto_schema(tags=['Tool'], operation_description= "Create API.", operation_summary="API to create new record."))
