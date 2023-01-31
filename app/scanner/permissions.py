@@ -21,4 +21,17 @@ class MachineRetrievePremission(permissions.BasePermission):
             if request.user.is_staff and request.user.is_superuser:
                 return True
             return obj.scan_by == request.user
+        return obj.scan_by == request.user
+
+class IsAdminUserOrList(permissions.IsAdminUser):
+    def has_permission(self, request, view):
+        if request.method == 'GET':
+            return True
+        return super().has_permission(request, view)
+
+class IsAuthenticatedOrList(permissions.IsAuthenticated):
+    def has_permission(self, request, view):
+        if request.method == 'GET':
+            return True
+        return super().has_permission(request, view)
         

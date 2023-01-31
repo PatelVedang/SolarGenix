@@ -1,8 +1,10 @@
 from rest_framework.views import exception_handler
 from .make_response import response
+import traceback
 
 def custom_exception_handler(exc, context):
     try:
+        traceback.print_exc()
         exception_class = exc.__class__.__name__
 
         handlers = {

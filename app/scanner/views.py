@@ -15,11 +15,11 @@ from rest_framework.filters import SearchFilter, OrderingFilter
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
-from .permissions import MachineRetrievePremission
+from .permissions import MachineRetrievePremission, IsAuthenticatedOrList, IsAdminUserOrList
 from django.utils.decorators import method_decorator
 from utils.pdf import PDF
 
-@method_decorator(name='destroy', decorator=swagger_auto_schema(tags=['scan'], auto_schema=None))
+
 @method_decorator(name='partial_update', decorator=swagger_auto_schema(tags=['scan'], auto_schema=None))
 @method_decorator(name='update', decorator=swagger_auto_schema(tags=['scan'], auto_schema=None))
 class ScanViewSet(viewsets.ModelViewSet):
@@ -205,6 +205,15 @@ class ScanViewSet(viewsets.ModelViewSet):
             'html_content':html_data
         }
         return response(status=True, data=data, status_code=status.HTTP_200_OK, message="HTML generated successfully") 
+    
+    @swagger_auto_schema(
+        tags=['Scan'],
+        operation_description= "Delete a host.",
+        operation_summary="API to delete a host."
+    )
+    def destroy(self, request, *args, **kwargs):
+        serializer = super().destroy(request, *args, **kwargs)
+        return response(status=True, data=serializer.data, status_code=status.HTTP_200_OK, message="record deleted successfully")
 
 
 @method_decorator(name='list', decorator=swagger_auto_schema(tags=['Tool'], operation_description= "List API.", operation_summary="API to get list of records."))
@@ -216,7 +225,7 @@ class ScanViewSet(viewsets.ModelViewSet):
 class ToolViewSet(viewsets.ModelViewSet):
     queryset = Tool.objects.all()
     serializer_class = ToolSerializer
-    permission_classes = [IsAuthenticated, IsAdminUser]
+    permission_classes = [IsAuthenticatedOrList, IsAdminUserOrList]
 
     def list(self, request, *args, **kwargs):
         serializer = super().list(request, *args, **kwargs)
