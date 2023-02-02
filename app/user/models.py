@@ -20,6 +20,8 @@ class User(AbstractBaseUser, PermissionsMixin):
     role = models.CharField(max_length=1, default=2)
     is_staff = models.BooleanField(default=False)
     is_superuser = models.BooleanField(default=False)
+    otp = models.CharField(max_length=6, null=True)
+    otp_expires = models.DateTimeField(auto_now_add=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True, null=True)
     updated_at = models.DateTimeField(auto_now=True, null=True)
 

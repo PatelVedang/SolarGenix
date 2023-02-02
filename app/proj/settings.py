@@ -28,7 +28,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.environ.get('SECRET_KEY', env('SECRET_KEY'))
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.environ.get('DEBUG', env('DEBUG'))
+DEBUG = 1
 UNIT_TEST_USER_EMAIL = os.environ.get('UNIT_TEST_USER_EMAIL', env('UNIT_TEST_USER_EMAIL'))
 UNIT_TEST_USER_PASSWORD = os.environ.get('UNIT_TEST_USER_PASSWORD', env('UNIT_TEST_USER_PASSWORD'))
 
@@ -218,3 +218,11 @@ MEDIA_URL = '/media/'
 
 # Path where media is stored
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media/')
+
+
+#EMAIL
+EMAIL_HOST=os.environ.get('EMAIL_HOST', env('EMAIL_HOST'))
+EMAIL_PORT=os.environ.get('EMAIL_PORT', env('EMAIL_PORT'))
+EMAIL_HOST_USER=os.environ.get('EMAIL_HOST_USER', env('EMAIL_HOST_USER'))
+EMAIL_HOST_PASSWORD=os.environ.get('EMAIL_HOST_PASSWORD', env('EMAIL_HOST_PASSWORD'))
+EMAIL_USE_TLS=os.environ.get('EMAIL_USE_TLS', env('EMAIL_USE_TLS'))

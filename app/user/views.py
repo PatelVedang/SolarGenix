@@ -9,6 +9,8 @@ from rest_framework import status
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework.permissions import AllowAny
 from rest_framework_simplejwt.serializers import TokenVerifySerializer
+from rest_framework.permissions import IsAuthenticated
+from django.utils.decorators import method_decorator 
 
 class RegisterView(generics.CreateAPIView):
     queryset = User.objects.all()
@@ -64,3 +66,65 @@ class VerifyTokenView(TokenObtainPairView):
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid(raise_exception=True):
             return response(status=True, data={}, status_code=status.HTTP_200_OK, message="token verified successfully.")
+
+class ForgotPasswordView(generics.CreateAPIView):
+    serializer_class = ForgotPasswordSerializer
+
+    @swagger_auto_schema(
+        tags=['Auth']
+    )
+    def post(self, request):
+        serializer = self.serializer_class(data=request.data, context={"request": request})
+        if serializer.is_valid(raise_exception=True):
+            serializer.save()
+            user = User.objects.get(email=serializer.validated_data["email"])
+            return response(status=True, data={'success': True, 'otp': int(user.otp), 'expire_time': user.otp_expires}, status_code=status.HTTP_200_OK, message="successfully sent an OTP in mail. Please check your inbox.")
+
+
+class ValidateOTPView(generics.GenericAPIView):
+    serializer_class = OTPValidateSerializer
+
+    @swagger_auto_schema(
+        tags=['Auth']
+    )
+    def post(self, request):
+        serializer = self.serializer_class(data=request.data, context={"request": request})
+        if serializer.is_valid(raise_exception=True):
+            return response(status=True, data={}, status_code=status.HTTP_200_OK, message="OTP has successfully validated.")
+        
+
+
+class ResetPasswordView(generics.GenericAPIView):
+    serializer_class = ResetPasswordSerializer
+
+    @swagger_auto_schema(
+        tags=['Auth']
+    )
+    def post(self, request):
+        serializer = self.serializer_class(data=request.data,context={'request':request})
+        
+        if serializer.is_valid(raise_exception=True):
+            serializer.save()
+            return response(status=True, data={}, status_code=status.HTTP_200_OK, message="successful changing of the password.")
+
+
+@method_decorator(name='get', decorator=swagger_auto_schema(tags=['Users']))
+@method_decorator(name='put', decorator=swagger_auto_schema(auto_schema=None))
+@method_decorator(name='patch', decorator=swagger_auto_schema(tags=['Users']))
+class ProfileView(generics.RetrieveUpdateAPIView):
+    serializer_class = UpdateProfileSerializer
+    # queryset = User.objects.all()
+    permission_classes = [IsAuthenticated]
+
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.request.user
+        serializer = self.get_serializer(instance)
+        return response(status=True, data=serializer.data, status_code=status.HTTP_200_OK, message="profile found successfully.")
+
+    def patch(self, request, *args, **kwargs):
+        partial = kwargs.pop('partial', False)
+        instance = self.request.user
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        if serializer.is_valid(raise_exception=True):
+            serializer.save()
+            return response(status=True, data=serializer.data, status_code=status.HTTP_200_OK, message="profile updated successfully.")
