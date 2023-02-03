@@ -71,7 +71,9 @@ class ForgotPasswordView(generics.CreateAPIView):
     serializer_class = ForgotPasswordSerializer
 
     @swagger_auto_schema(
-        tags=['Auth']
+        tags=['Auth'],
+        operation_description= "This API takes the email address of the user as input and sends an OTP to the user's email address.",
+        operation_summary="formgot Password API."
     )
     def post(self, request):
         serializer = self.serializer_class(data=request.data, context={"request": request})
@@ -85,7 +87,9 @@ class ValidateOTPView(generics.GenericAPIView):
     serializer_class = OTPValidateSerializer
 
     @swagger_auto_schema(
-        tags=['Auth']
+        tags=['Auth'],
+        operation_description=" The API will verify the OTP against the user's email address and then allow the user to reset their password.",
+        operation_summary="Verify OTP API."
     )
     def post(self, request):
         serializer = self.serializer_class(data=request.data, context={"request": request})
@@ -98,7 +102,9 @@ class ResetPasswordView(generics.GenericAPIView):
     serializer_class = ResetPasswordSerializer
 
     @swagger_auto_schema(
-        tags=['Auth']
+        tags=['Auth'],
+        operation_description="This API allows users to reset their password. It requires the user to submit both a new password and a confirmation of the new password in the payload. Upon successful submission, the user's password is reset.",
+        operation_summary="Reset Password API"
     )
     def post(self, request):
         serializer = self.serializer_class(data=request.data,context={'request':request})
@@ -108,9 +114,17 @@ class ResetPasswordView(generics.GenericAPIView):
             return response(status=True, data={}, status_code=status.HTTP_200_OK, message="successful changing of the password.")
 
 
-@method_decorator(name='get', decorator=swagger_auto_schema(tags=['Users']))
+@method_decorator(name='get', decorator=swagger_auto_schema(
+    tags=['Users'],
+    operation_description="The Retrieve user profile API is an API that allows users to access their profile information.",
+    operation_summary="Retrieve user profile API."
+))
 @method_decorator(name='put', decorator=swagger_auto_schema(auto_schema=None))
-@method_decorator(name='patch', decorator=swagger_auto_schema(tags=['Users']))
+@method_decorator(name='patch', decorator=swagger_auto_schema(
+    tags=['Users'],
+    operation_description="The update profile API can be used to update a profile’s information in a given database.",
+    operation_summary="Update user profile API."
+))
 class ProfileView(generics.RetrieveUpdateAPIView):
     serializer_class = UpdateProfileSerializer
     # queryset = User.objects.all()

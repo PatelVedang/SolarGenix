@@ -99,8 +99,8 @@ class OTPValidateSerializer(serializers.Serializer):
         if not user.exists():
             raise serializers.ValidationError("Invalid OTP.")
         
-        datetime_diff = (int(datetime.utcnow().strftime('%s')) - int(user[0].otp_expires.strftime('%s')))/60
-        if datetime_diff > 0:
+        datetime_diff = (datetime.strptime(user[0].otp_expires.strftime('%Y-%m-%d %H:%M:%S'),"%Y-%m-%d %H:%M:%S") - datetime.utcnow()).total_seconds()/60
+        if datetime_diff <= 0:
             raise serializers.ValidationError('OTP expired.')
         return attrs
 
@@ -121,8 +121,8 @@ class ResetPasswordSerializer(serializers.Serializer):
         if not user.exists():
             raise serializers.ValidationError("Something went wrong.")
         
-        datetime_diff = (int(datetime.utcnow().strftime('%s')) - int(user[0].otp_expires.strftime('%s')))/60
-        if datetime_diff > 0:
+        datetime_diff = (datetime.strptime(user[0].otp_expires.strftime('%Y-%m-%d %H:%M:%S'),"%Y-%m-%d %H:%M:%S") - datetime.utcnow()).total_seconds()/60
+        if datetime_diff <= 0:
             raise serializers.ValidationError('OTP session expired.')
         
         if attrs.get('password') != attrs.get('confirm_password'):
