@@ -1,5 +1,5 @@
 from django.shortcuts import render
-from .models import Machine, Tool
+from .models import Target, Tool
 from user.models import User
 from django.http import HttpResponse, JsonResponse
 from rest_framework.decorators import api_view
@@ -20,22 +20,23 @@ from django.utils.decorators import method_decorator
 from utils.pdf import PDF
 
 
-@method_decorator(name='partial_update', decorator=swagger_auto_schema(tags=['scan'], auto_schema=None))
-@method_decorator(name='update', decorator=swagger_auto_schema(tags=['scan'], auto_schema=None))
+@method_decorator(name='partial_update', decorator=swagger_auto_schema(tags=['Targets'], auto_schema=None))
+@method_decorator(name='update', decorator=swagger_auto_schema(tags=['Targets'], auto_schema=None))
 class ScanViewSet(viewsets.ModelViewSet):
-    queryset = Machine.objects.all()
+    queryset = Target.objects.all()
     serializer_class = ScannerSerializer
     permission_classes = [IsAuthenticated, MachineRetrievePremission]
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
-    # search_fields = ['id', 'ip', 'scan_by', 'status', 'tool']
+    search_fields = ['ip', 'scan_by__first_name', 'scan_by__last_name', 'tool__tool_name', 'updated_at']
     filterset_fields = ['id', 'ip', 'status', 'tool']
-    
+    ordering_fields = ['tool__tool_name', 'ip', 'id', 'created_at', 'updated_at', 'status__TARGET_STATUS_CHOICES']
+
     @swagger_auto_schema(
         method = 'post',
         request_body=AddInQueueByIdsSerializer,
-        operation_description= "Set machines in queue ids.",
-        operation_summary="API to add machines in queue for scanning by ids.",
-        tags=['Scan']
+        operation_description= "Set targets in queue ids.",
+        operation_summary="API to add targets in queue for scanning by ids.",
+        tags=['Targets']
 
     )
     @action(methods=['POST'], detail=False, url_path="addByIds")
@@ -46,15 +47,15 @@ class ScanViewSet(viewsets.ModelViewSet):
             machines_id = serializer.data.get('machines_id')
             for machine_id in machines_id:
                 scan.delay(machine_id)
-        custom_response = ScannerResponseSerializer(Machine.objects.filter(id__in=machines_id), many=True)
+        custom_response = ScannerResponseSerializer(Target.objects.filter(id__in=machines_id), many=True)
         return response(status=True, data=custom_response.data, status_code=status.HTTP_200_OK, message="host successfully added in queue")
         
     @swagger_auto_schema(
         method = 'post',
         request_body=AddInQueueByNumbersSerializer,
         operation_description= "Set n numbers of machine .",
-        operation_summary="API to add machines in queue for scanning by numbers.",
-        tags=['Scan']
+        operation_summary="API to add targets in queue for scanning by numbers.",
+        tags=['Targets']
 
     )
     @action(methods=['POST'], detail=False, url_path="addByNumbers")
@@ -65,9 +66,9 @@ class ScanViewSet(viewsets.ModelViewSet):
             # count
             n = serializer.data.get('count')
             if (not request.user.is_staff) and (not request.user.is_superuser):
-                records = Machine.objects.filter(status=0, scan_by=request.user)[:n]
+                records = Target.objects.filter(status=0, scan_by=request.user)[:n]
             else:
-                records = Machine.objects.filter(status=0)[:n]
+                records = Target.objects.filter(status=0)[:n]
             for record in records: 
                 scan.delay(record.id)
         custom_response = ScannerResponseSerializer(records, many=True)
@@ -80,8 +81,8 @@ class ScanViewSet(viewsets.ModelViewSet):
     @swagger_auto_schema(
         request_body=ScannerSerializer,
         operation_description= "Insert record in machine table.",
-        operation_summary="API to insert new machines.",
-        tags=['Scan']
+        operation_summary="API to insert new targets.",
+        tags=['Targets']
     )
     def create(self, request, *args, **kwargs):
         # provide payload to serializer
@@ -99,9 +100,9 @@ class ScanViewSet(viewsets.ModelViewSet):
             record_ids = []
             for ip in ip_addresses:
                 for tool in tools:
-                    obj = Machine.objects.create(ip=ip, scan_by=request.user,tool=Tool(id=tool))
+                    obj = Target.objects.create(ip=ip, scan_by=request.user,tool=Tool(id=tool))
                     record_ids.append(obj.id)
-        custom_response = ScannerResponseSerializer(Machine.objects.filter(id__in=record_ids), many=True)
+        custom_response = ScannerResponseSerializer(Target.objects.filter(id__in=record_ids), many=True)
         return response(status=True, data=custom_response.data, status_code=status.HTTP_200_OK, message="host successfully added in database")
 
 
@@ -109,7 +110,7 @@ class ScanViewSet(viewsets.ModelViewSet):
     @swagger_auto_schema(
         operation_description= "Retrieve machine with specified id.",
         operation_summary="API to retrieve single machine record.",
-        tags=['Scan']
+        tags=['Targets']
     )
     def retrieve(self, request, *args, **kwargs):
         """
@@ -123,10 +124,10 @@ class ScanViewSet(viewsets.ModelViewSet):
         return response(status=True, data=serializer.data, status_code=status.HTTP_200_OK, message="record found successfully")
 
     @swagger_auto_schema(
-        operation_description= "Get list of machines.",
-        operation_summary="API to return list of machines.",
+        operation_description= "Get list of targets.",
+        operation_summary="API to return list of targets.",
         operation_id=None,
-        tags=['Scan']
+        tags=['Targets']
     )
     def list(self, request, *args, **kwargs):
         """
@@ -136,7 +137,7 @@ class ScanViewSet(viewsets.ModelViewSet):
         :return: The data is being returned in the form of a list.
         """
         if (not request.user.is_staff) and (not request.user.is_superuser):
-            self.queryset = Machine.objects.filter(scan_by = request.user.id)
+            self.queryset = Target.objects.filter(scan_by = request.user.id)
         self.serializer_class = ScannerResponseSerializer
         data = super().list(request, *args, **kwargs)
         return response(status=True, data=data.data, status_code=status.HTTP_200_OK, message="record found successfully")
@@ -146,7 +147,7 @@ class ScanViewSet(viewsets.ModelViewSet):
         operation_description= "Generate pdf from a scan result. And provide url of pdf as aresponse.",
         operation_summary="API to generate pdf url.",
         request_body=None,
-        tags=['Scan']
+        tags=['Targets']
 
     )
     @action(methods=['GET'], detail=True, url_path="generatePDF")
@@ -172,7 +173,7 @@ class ScanViewSet(viewsets.ModelViewSet):
         operation_description= "Generate pdf from a scan result. And provide pdf file as a response.",
         operation_summary="API to provide pdf file.",
         request_body=None,
-        tags=['Scan']
+        tags=['Targets']
 
     )
     @action(methods=['GET'], detail=True, url_path="fakePDFGenerator")
@@ -191,7 +192,7 @@ class ScanViewSet(viewsets.ModelViewSet):
         operation_description= "Generate html content from a scan result. And provide html content as a response.",
         operation_summary="API to generate html content.",
         request_body=None,
-        tags=['Scan']
+        tags=['Targets']
 
     )
     @action(methods=['GET'], detail=True, url_path="generateHTML")
@@ -207,7 +208,7 @@ class ScanViewSet(viewsets.ModelViewSet):
         return response(status=True, data=data, status_code=status.HTTP_200_OK, message="HTML generated successfully") 
     
     @swagger_auto_schema(
-        tags=['Scan'],
+        tags=['Targets'],
         operation_description= "Delete a host.",
         operation_summary="API to delete a host."
     )
@@ -215,7 +216,7 @@ class ScanViewSet(viewsets.ModelViewSet):
         serializer = super().destroy(request, *args, **kwargs)
         return response(status=True, data=serializer.data, status_code=status.HTTP_200_OK, message="record deleted successfully")
 
-
+# , manual_parameters={'sny': openapi.Schema(type=openapi.TYPE_INTEGER, description='Donor ID')}
 @method_decorator(name='list', decorator=swagger_auto_schema(tags=['Tool'], operation_description= "List API.", operation_summary="API to get list of records."))
 @method_decorator(name='create', decorator=swagger_auto_schema(tags=['Tool'], operation_description= "Create API.", operation_summary="API to create new record."))
 @method_decorator(name='retrieve', decorator=swagger_auto_schema(tags=['Tool'], operation_description= "Retrieve API.", operation_summary="API for retrieve single record by id."))
@@ -226,6 +227,10 @@ class ToolViewSet(viewsets.ModelViewSet):
     queryset = Tool.objects.all()
     serializer_class = ToolSerializer
     permission_classes = [IsAuthenticatedOrList, IsAdminUserOrList]
+    filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
+    search_fields = ['tool_name', 'tool_cmd', 'subscription__plan_type']
+    filterset_fields = ['tool_name', 'tool_cmd', 'subscription__plan_type']
+    pagination_class = None
 
     def list(self, request, *args, **kwargs):
         serializer = super().list(request, *args, **kwargs)

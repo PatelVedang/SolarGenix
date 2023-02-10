@@ -1,16 +1,16 @@
 from rest_framework import serializers
-from .models import Machine, Tool
+from .models import Target, Tool
 from user.models import User
 from django.core.validators import validate_ipv4_address
 
-# This class is a serializer for the Machine model. It has a custom validation method that checks if
+# This class is a serializer for the Target model. It has a custom validation method that checks if
 # the tools_id field is a list of integers that correspond to existing Tool objects
 class ScannerSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField(read_only=True)
     ip = serializers.ListField(child=serializers.CharField(validators=[validate_ipv4_address]))
     tools_id = serializers.ListField(child=serializers.IntegerField(), allow_empty=False)
     class Meta:
-        model = Machine
+        model = Target
         fields = ['ip','id','tools_id']
 
     def validate(self, attrs):
@@ -25,7 +25,7 @@ class ScannerSerializer(serializers.ModelSerializer):
 # overridden to add the tool name to the serialized data
 class ScannerResponseSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Machine
+        model = Target
         fields = '__all__'
 
     def to_representation(self, instance):
@@ -34,25 +34,25 @@ class ScannerResponseSerializer(serializers.ModelSerializer):
         data['scan_by'] = User.objects.filter(id=instance.scan_by.id).values('id', 'email', 'first_name', 'last_name')[0]
         return data
 
-# The ScannerQueueSerializer class is a serializer for the Machine model. It has a field called ids
+# The ScannerQueueSerializer class is a serializer for the Target model. It has a field called ids
 # which is a list of integers
 class AddInQueueByIdsSerializer(serializers.ModelSerializer):
     machines_id = serializers.ListField(child = serializers.IntegerField(), allow_empty=False)
     class Meta:
-        model = Machine
+        model = Target
         fields = ['machines_id']
 
     def validate(self, attrs):
         machines_id = attrs['machines_id']
         for machine_id in machines_id:
-            if not Machine.objects.filter(id=machine_id).exists():
-                raise serializers.DjangoValidationError(f"Machine does not exist with id {machine_id}")
+            if not Target.objects.filter(id=machine_id).exists():
+                raise serializers.DjangoValidationError(f"Target does not exist with id {machine_id}")
         return super().validate(attrs)
 
 class AddInQueueByNumbersSerializer(serializers.ModelSerializer):
     count = serializers.IntegerField()
     class Meta:
-        model = Machine
+        model = Target
         fields = ['count']
 
 

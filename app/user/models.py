@@ -17,7 +17,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     is_deleted = models.BooleanField(default=False)
     first_name = models.CharField(max_length=50) 
     last_name = models.CharField(max_length=50)
-    role = models.CharField(max_length=1, default=2)
+    role = models.IntegerField(default=2)
     is_staff = models.BooleanField(default=False)
     is_superuser = models.BooleanField(default=False)
     otp = models.CharField(max_length=6, null=True)

@@ -3,7 +3,7 @@ from datetime import datetime
 from django.contrib.auth.models import User
 from user.models import User
 
-STATUS_CHOICES = [
+TARGET_STATUS_CHOICES = [
     (0, "Created"),
     (1, "Queued"),
     (2, "Scan started"),
@@ -11,13 +11,18 @@ STATUS_CHOICES = [
     (4, "Scan finished")
 ]
 
+PAYMENT_STATUS_CHOICES = [
+    (0, "Fail"),
+    (1, "Success")
+]
+
 # Create your models here.
-class Machine(models.Model):
+class Target(models.Model):
     ip = models.CharField(max_length=15,null=False)
     result = models.TextField()
-    status = models.IntegerField(choices=STATUS_CHOICES, default=0)
+    status = models.IntegerField(choices=TARGET_STATUS_CHOICES, default=0)
     tool = models.ForeignKey("Tool", on_delete=models.CASCADE, default=1)
-    scan_by = models.ForeignKey(User, on_delete=models.CASCADE, default=1)
+    scan_by = models.ForeignKey(User, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True, null=True)
     updated_at = models.DateTimeField(auto_now=True, null=True)
     pdf_path = models.FileField(null=True, blank=True)
@@ -28,8 +33,30 @@ class Machine(models.Model):
 class Tool(models.Model):
     tool_name = models.CharField(max_length= 50)
     tool_cmd = models.CharField(max_length=500)
+    subscription = models.ForeignKey("Subscription", on_delete=models.CASCADE, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True, null=True)
     updated_at = models.DateTimeField(auto_now=True, null=True)
 
     def __str__(self):
         return self.tool_name
+
+class Subscription(models.Model):
+    day_limit = models.IntegerField()
+    price = models.DecimalField(max_digits=11, decimal_places=2)
+    plan_type = models.CharField(max_length=255)
+    is_active = models.BooleanField(default=True)
+    is_deleted = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True, null=True)
+    updated_at = models.DateTimeField(auto_now=True, null=True)
+
+    def __str__(self):
+        return self.plan_type
+
+class SubscriptionHistory(models.Model):
+    buyer = models.ForeignKey(User, on_delete=models.CASCADE)
+    tools_ids = models.TextField(default="1")
+    total_price = models.DecimalField(max_digits=11, decimal_places=2)
+    start_date = models.DateTimeField()
+    end_date = models.DateTimeField()
+    status = models.IntegerField(choices=PAYMENT_STATUS_CHOICES, default=0)
+    transaction_payload = models.JSONField(default=dict)

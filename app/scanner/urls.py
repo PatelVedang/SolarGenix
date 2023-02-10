@@ -7,7 +7,7 @@ from drf_yasg.utils import swagger_auto_schema
 # decorated_login_view = swagger_auto_schema(method='get')(ToolViewSet.as_view())
 
 router = routers.DefaultRouter()
-router.register('scan', ScanViewSet,basename='scan')
+router.register('targets', ScanViewSet,basename='targets')
 router.register('tool', ToolViewSet,basename='tool')
 
 urlpatterns = [

@@ -13,5 +13,6 @@ fi
 python manage.py migrate --no-input
 python manage.py loaddata user/fixtures/superuser.json --app user.user
 python manage.py loaddata scanner/fixtures/tool.json --app scanner.tool
+python manage.py loaddata scanner/fixtures/subscription.json --app scanner.subscription
 
 exec "$@"

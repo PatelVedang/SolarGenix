@@ -1,0 +1,13 @@
+[
+    {
+      "model": "scanner.subscription",
+      "pk": 1,
+      "fields": {
+        "day_limit": 0,
+        "price": 0.00,
+        "plan_type" : "FREE"
+      }
+    }
+    
+  ]
+  

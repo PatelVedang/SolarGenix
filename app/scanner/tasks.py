@@ -5,7 +5,7 @@ import subprocess
 import re
 import time
 from colored import fg, bg, attr
-from .models import Machine
+from .models import Target
 from celery.exceptions import SoftTimeLimitExceeded
 import platform
 
@@ -18,7 +18,7 @@ def scan(id):
     :param id: The id of the machine to be scanned
     :return: The return value is a boolean value.
     """
-    machine = Machine.objects.filter(id=id)
+    machine = Target.objects.filter(id=id)
     ip = machine[0].ip
     print("====>>>>>>>>       ", f"IP:{ip} with id:{id} added to queue", "       <<<<<<<<====")
     start_time = time.time()

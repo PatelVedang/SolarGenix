@@ -102,7 +102,7 @@ unit_test.bat
 ##### Clone the repo: https://isaix.visualstudio.com/CyberApp/_git/CyberApp
 ### Step 2(Set .env in proj folder)
 ```
-cd ~/CyberApp/app/proj
+cd CyberApp/app/proj
 nano .env
 ```
 ##### Note: Use .env variables(content) from .env_example file
@@ -137,7 +137,7 @@ sudo systemctl status rabbitmq-server
 ```
 curl https://raw.githubusercontent.com/creationix/nvm/master/install.sh | bash
 source ~/.bashrc
-nvm install node
+nvm install latest
 npm install pm2 -g
 ```
 #### For Windows
@@ -163,7 +163,7 @@ https://github.com/rabbitmq/rabbitmq-server/releases/download/v3.11.6/rabbitmq-s
 https://github.com/coreybutler/nvm-windows/releases/download/1.1.10/nvm-setup.exe
 ```
 ```
-nvm install node
+nvm install latest
 npm i -g concurrently pm2
 ```
 ### Step 4(Make virtual environment)

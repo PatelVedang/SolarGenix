@@ -2,7 +2,7 @@ from django.conf import settings
 import pdfkit
 import re
 import uuid
-from scanner.models import Machine
+from scanner.models import Target
 import os
 
 class PDF:
@@ -23,7 +23,7 @@ class PDF:
 
     def generate(self, user_id, machine_id, host, generate_pdf=True):
         search_regex = '(?P<port>\d{1,4}/tcp)\s+(?P<state>(filtered|open|closed))'
-        machine_obj = Machine.objects.get(id=machine_id)
+        machine_obj = Target.objects.get(id=machine_id)
         scan_result = machine_obj.result
         ports = list(re.finditer(search_regex, scan_result))
         self.result = ""
@@ -87,7 +87,7 @@ class PDF:
             file_path = f'{self.path}/{new_pdf_name}'
             pdfkit.from_string(html_data, output_path=file_path)
             file_path_for_db = file_path.replace(str(settings.MEDIA_ROOT), '')
-            Machine.objects.filter(id=machine_id).update(pdf_path=file_path_for_db)
+            Target.objects.filter(id=machine_id).update(pdf_path=file_path_for_db)
             file_url = f"http://{host}/media/{file_path_for_db}"
             return file_path, new_pdf_name, file_url
         else:

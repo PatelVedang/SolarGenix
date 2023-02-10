@@ -1,5 +1,5 @@
 from user.tests import BaseAPITestCase
-from scanner.models import Machine, Tool
+from scanner.models import Target, Tool
 
 # It tests the exception handlers
 class ExceptionHandlerTest(BaseAPITestCase):
@@ -91,7 +91,7 @@ class ScanTest(BaseAPITestCase):
         """
         self.login()
         self.insert_records()
-        obj = Machine.objects.first()
+        obj = Target.objects.first()
         self._data = {
             "machines_id": [
                 obj.id
@@ -115,11 +115,11 @@ class ScanTest(BaseAPITestCase):
     
     def test_retrieve_api(self):
         """
-        It tests the retrieve API endpoint for the Machine app
+        It tests the retrieve API endpoint for the Target app
         """
         self.login()
         self.insert_records()
-        obj = Machine.objects.first()
+        obj = Target.objects.first()
         self.set_response(self.client.get(f'{self.prefix}scan/{obj.id}/', format = "json"))
         self.match_success_response()
 
