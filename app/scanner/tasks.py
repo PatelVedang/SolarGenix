@@ -1,16 +1,13 @@
-from time import sleep
-from django.core.mail import send_mail
-from celery import shared_task
+from celery import Celery
 import subprocess
 import re
 import time
-from colored import fg, bg, attr
-from .models import Target
-from celery.exceptions import SoftTimeLimitExceeded
+from .models import Target, TargetLog
 import platform
 
-@shared_task(time_limit=40, ignore_result=True)
-def scan(id):
+c = Celery('proj')
+@c.task
+def scan(id, time_limit):
     """
     It takes the id of the machine object, and then it runs the tool command on the ip of the machine
     object
@@ -19,24 +16,28 @@ def scan(id):
     :return: The return value is a boolean value.
     """
     machine = Target.objects.filter(id=id)
+
     ip = machine[0].ip
     print("====>>>>>>>>       ", f"IP:{ip} with id:{id} added to queue", "       <<<<<<<<====")
     start_time = time.time()
     output = ""
     tool_cmd = machine[0].tool.tool_cmd
+    time_limit = machine[0].tool.time_limit
     if machine[0].status == 0:
-        machine.update(status = 1)
+        machine.update(status=1)
+        TargetLog.objects.create(target=Target(id), action=2)
     if machine[0].status >= 1:
         try:
             print("====>>>>>>>>       ", f"Scanning began for IP:{ip} with id:{id}", "       <<<<<<<<====")
             machine.update(status = 2)
             if platform.uname().system == 'Windows':
-                output = subprocess.check_output(f"{tool_cmd} {ip}", shell=False, timeout=30).decode('utf-8')
+                output = subprocess.check_output(f"{tool_cmd} {ip}", shell=False, timeout=time_limit).decode('utf-8')
             else:
-                output = subprocess.check_output(f"{tool_cmd} {ip}", shell=True, timeout=30).decode('utf-8')
+                output = subprocess.check_output(f"{tool_cmd} {ip}", shell=True, timeout=time_limit).decode('utf-8')
         except Exception as e:
             print("====>>>>>>>>       ", f"Background thread for ip:{ip} with id:{id} has been terminated", "       <<<<<<<<====")
             machine.update(result=str(e), status=3)
+            TargetLog.objects.create(target=Target(id), action=3)
             return False
 
         port_search_regex = '(?P<port>\d{1,4}/tcp)\s+(?P<state>(filtered|open|closed))'
@@ -47,11 +48,13 @@ def scan(id):
         if re.search(ignore_state_regex, output):
             print("====>>>>>>>>       ", f"IP:{ip} with id:{id} has no open ports.", "       <<<<<<<<====")
             machine.update(result=output, status=4)
+            TargetLog.objects.create(target=Target(id), action=4)
         
         # If ports found in given time
         elif ports:
             print("====>>>>>>>>       ", f"Found open ports with IP:{ip} with id:{id}.", "       <<<<<<<<====")
             machine.update(result=output, status=4)
+            TargetLog.objects.create(target=Target(id), action=4)
         end_time = time.time()
         return True
     else:

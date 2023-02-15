@@ -1,10 +1,10 @@
 from django.shortcuts import render
-from .models import Target, Tool
+from .models import Target, Tool, TargetLog
 from user.models import User
 from django.http import HttpResponse, JsonResponse
 from rest_framework.decorators import api_view
 from .tasks import scan
-from .serializers import ScannerSerializer, ScannerResponseSerializer, AddInQueueByIdsSerializer, AddInQueueByNumbersSerializer, ToolSerializer
+from .serializers import ScannerSerializer, ScannerResponseSerializer, AddInQueueByIdsSerializer, AddInQueueByNumbersSerializer, ToolSerializer, ToolPayloadSerializer
 from rest_framework.response import Response
 from rest_framework import viewsets, status, generics
 from rest_framework.filters import SearchFilter 
@@ -15,9 +15,10 @@ from rest_framework.filters import SearchFilter, OrderingFilter
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
-from .permissions import MachineRetrievePremission, IsAuthenticatedOrList, IsAdminUserOrList
+from .permissions import MachineRetrievePremission, IsAdminUserOrList
 from django.utils.decorators import method_decorator
 from utils.pdf import PDF
+from django.shortcuts import get_object_or_404
 
 
 @method_decorator(name='partial_update', decorator=swagger_auto_schema(tags=['Targets'], auto_schema=None))
@@ -29,7 +30,7 @@ class ScanViewSet(viewsets.ModelViewSet):
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     search_fields = ['ip', 'scan_by__first_name', 'scan_by__last_name', 'tool__tool_name', 'updated_at']
     filterset_fields = ['id', 'ip', 'status', 'tool']
-    ordering_fields = ['tool__tool_name', 'ip', 'id', 'created_at', 'updated_at', 'status__TARGET_STATUS_CHOICES']
+    ordering_fields = ['tool__tool_name', 'ip', 'id', 'created_at', 'updated_at', 'status']
 
     @swagger_auto_schema(
         method = 'post',
@@ -44,10 +45,12 @@ class ScanViewSet(viewsets.ModelViewSet):
         self.serializer_class = AddInQueueByIdsSerializer
         serializer = self.serializer_class(data=request.data)
         if serializer.is_valid(raise_exception=True):
-            machines_id = serializer.data.get('machines_id')
-            for machine_id in machines_id:
-                scan.delay(machine_id)
-        custom_response = ScannerResponseSerializer(Target.objects.filter(id__in=machines_id), many=True)
+            targets_id = serializer.data.get('targets_id')
+            for target_id in targets_id:
+                target_obj = Target.objects.get(id=target_id)
+                tool_time_limit = Target.objects.get(id=6).tool.time_limit
+                scan.apply_async(args=[], kwargs={'id':target_id, 'time_limit':tool_time_limit}, time_limit=tool_time_limit+10, ignore_result=True)
+        custom_response = ScannerResponseSerializer(Target.objects.filter(id__in=targets_id), many=True)
         return response(status=True, data=custom_response.data, status_code=status.HTTP_200_OK, message="host successfully added in queue")
         
     @swagger_auto_schema(
@@ -69,8 +72,9 @@ class ScanViewSet(viewsets.ModelViewSet):
                 records = Target.objects.filter(status=0, scan_by=request.user)[:n]
             else:
                 records = Target.objects.filter(status=0)[:n]
-            for record in records: 
-                scan.delay(record.id)
+            for record in records:
+                tool_time_limit = record.tool.time_limit
+                scan.apply_async(args=[], kwargs={'id':record.id, 'time_limit':tool_time_limit}, time_limit=tool_time_limit+10, ignore_result=True)
         custom_response = ScannerResponseSerializer(records, many=True)
         return response(status=True, data=custom_response.data, status_code=status.HTTP_200_OK, message="host successfully added in queue")
 
@@ -166,6 +170,7 @@ class ScanViewSet(viewsets.ModelViewSet):
         data = {
             'file_path':file_url
         }
+        TargetLog.objects.create(target=Target(serializer.data.get('id')), action=6)
         return response(status=True, data=data, status_code=status.HTTP_200_OK, message="PDF generated successfully")
     
     @swagger_auto_schema(
@@ -205,6 +210,8 @@ class ScanViewSet(viewsets.ModelViewSet):
         data = {
             'html_content':html_data
         }
+
+        TargetLog.objects.create(target=Target(serializer.data.get('id')), action=7)
         return response(status=True, data=data, status_code=status.HTTP_200_OK, message="HTML generated successfully") 
     
     @swagger_auto_schema(
@@ -213,10 +220,9 @@ class ScanViewSet(viewsets.ModelViewSet):
         operation_summary="API to delete a host."
     )
     def destroy(self, request, *args, **kwargs):
-        serializer = super().destroy(request, *args, **kwargs)
-        return response(status=True, data=serializer.data, status_code=status.HTTP_200_OK, message="record deleted successfully")
+        self.get_object().soft_delete()
+        return response(status=True, data={}, status_code=status.HTTP_200_OK, message="record deleted successfully")
 
-# , manual_parameters={'sny': openapi.Schema(type=openapi.TYPE_INTEGER, description='Donor ID')}
 @method_decorator(name='list', decorator=swagger_auto_schema(tags=['Tool'], operation_description= "List API.", operation_summary="API to get list of records."))
 @method_decorator(name='create', decorator=swagger_auto_schema(tags=['Tool'], operation_description= "Create API.", operation_summary="API to create new record."))
 @method_decorator(name='retrieve', decorator=swagger_auto_schema(tags=['Tool'], operation_description= "Retrieve API.", operation_summary="API for retrieve single record by id."))
@@ -226,7 +232,7 @@ class ScanViewSet(viewsets.ModelViewSet):
 class ToolViewSet(viewsets.ModelViewSet):
     queryset = Tool.objects.all()
     serializer_class = ToolSerializer
-    permission_classes = [IsAuthenticatedOrList, IsAdminUserOrList]
+    permission_classes = [IsAuthenticated, IsAdminUserOrList]
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     search_fields = ['tool_name', 'tool_cmd', 'subscription__plan_type']
     filterset_fields = ['tool_name', 'tool_cmd', 'subscription__plan_type']
@@ -237,10 +243,12 @@ class ToolViewSet(viewsets.ModelViewSet):
         return response(status=True, data=serializer.data, status_code=status.HTTP_200_OK, message="record found successfully")
 
     def create(self, request, *args, **kwargs):
-         serializer = super().create(request, *args, **kwargs)
-         return response(status=True, data=serializer.data, status_code=status.HTTP_200_OK, message="record successfully added in database.")
+        self.serializer_class = ToolPayloadSerializer
+        serializer = super().create(request, *args, **kwargs)
+        return response(status=True, data=serializer.data, status_code=status.HTTP_200_OK, message="record successfully added in database.")
 
     def partial_update(self, request, *args, **kwargs):
+        self.serializer_class = ToolPayloadSerializer
         serializer = super().partial_update(request, *args, **kwargs)
         return response(status=True, data=serializer.data, status_code=status.HTTP_200_OK, message="record successfully updated in database.")
 
@@ -249,8 +257,8 @@ class ToolViewSet(viewsets.ModelViewSet):
         return response(status=True, data=serializer.data, status_code=status.HTTP_200_OK, message="record found successfully")
 
     def destroy(self, request, *args, **kwargs):
-        serializer = super().destroy(request, *args, **kwargs)
-        return response(status=True, data=serializer.data, status_code=status.HTTP_200_OK, message="record deleted successfully")
+        self.get_object().soft_delete()
+        return response(status=True, data={}, status_code=status.HTTP_200_OK, message="record deleted successfully")
 
 
      

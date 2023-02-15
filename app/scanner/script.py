@@ -3,17 +3,17 @@ import json
 import os
 import argparse
 
-def scan_without_auth(machines_id, origin):
+def scan_without_auth(targets_id, origin):
     """
     It takes a list of machine IDs, and sends a POST request to the API endpoint `/scan/add-in-queue/`
     with the list of machine IDs as the payload
     
-    :param machines_id: The ID of the machine you want to scan
+    :param targets_id: The ID of the machine you want to scan
     """
     try:
         url = f"{origin}/api/scan/addByIds/"
         payload = json.dumps({
-        "machines_id": machines_id
+        "targets_id": targets_id
         })
         headers = {
         'Content-Type': 'application/json'
@@ -28,17 +28,17 @@ def scan_without_auth(machines_id, origin):
         print(str(e))
         print(">"*30," "*15,"Exception content end", " "*15,"<"*30)
 
-def scan_with_auth(machines_id, origin, token):
+def scan_with_auth(targets_id, origin, token):
     """
     It takes a list of machine IDs, and sends a POST request to the API endpoint `/scan/add-in-queue/`
     with the list of machine IDs as the payload
     
-    :param machines_id: The ID of the machine you want to scan
+    :param targets_id: The ID of the machine you want to scan
     """
     try:
         url = f"{origin}/api/scan/addByIds/"
         payload = json.dumps({
-        "machines_id": machines_id
+        "targets_id": targets_id
         })
         headers = {
         'Content-Type': 'application/json',
@@ -58,12 +58,12 @@ def scan_with_auth(machines_id, origin, token):
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--origin', '-o', type=str, required=True, help="origin to call API")
-parser.add_argument("--machines_id", '-ids', type=str ,required=True, help="ids of machines or hosts in format something like 1,2,3")
+parser.add_argument("--targets_id", '-ids', type=str ,required=True, help="ids of machines or hosts in format something like 1,2,3")
 parser.add_argument("--token", '-t', type=str ,required=True, help="Authorization token")
 # group = parser.add_mutually_exclusive_group(required=True)
-# group.add_argument("--machines_id", type=str ,required=False)
+# group.add_argument("--targets_id", type=str ,required=False)
 args = parser.parse_args()
 origin = args.origin
-machines_id = args.machines_id.split(",")
+targets_id = args.targets_id.split(",")
 token = args.token
-scan_with_auth(machines_id , origin, token)
+scan_with_auth(targets_id , origin, token)

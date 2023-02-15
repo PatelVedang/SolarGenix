@@ -21,10 +21,10 @@ class PDF:
                 os.mkdir(path)
             self.path = path
 
-    def generate(self, user_id, machine_id, host, generate_pdf=True):
+    def generate(self, user_id, target_id, host, generate_pdf=True):
         search_regex = '(?P<port>\d{1,4}/tcp)\s+(?P<state>(filtered|open|closed))'
-        machine_obj = Target.objects.get(id=machine_id)
-        scan_result = machine_obj.result
+        target_obj = Target.objects.get(id=target_id)
+        scan_result = target_obj.result
         ports = list(re.finditer(search_regex, scan_result))
         self.result = ""
         susceptible_ports = []
@@ -77,17 +77,17 @@ class PDF:
         </html>"""
 
         if generate_pdf:
-            self.make_path(f'{self.PDF_PATH}/{user_id}/{machine_id}')
+            self.make_path(f'{self.PDF_PATH}/{user_id}/{target_id}')
                 
-            if machine_obj.pdf_path:
-                if os.path.exists(f'{settings.MEDIA_ROOT}/{machine_obj.pdf_path}'):
-                    os.remove(f'{settings.MEDIA_ROOT}/{machine_obj.pdf_path}')
+            if target_obj.pdf_path:
+                if os.path.exists(f'{settings.MEDIA_ROOT}/{target_obj.pdf_path}'):
+                    os.remove(f'{settings.MEDIA_ROOT}/{target_obj.pdf_path}')
 
             new_pdf_name = f'{str(uuid.uuid4())}.pdf'
             file_path = f'{self.path}/{new_pdf_name}'
             pdfkit.from_string(html_data, output_path=file_path)
             file_path_for_db = file_path.replace(str(settings.MEDIA_ROOT), '')
-            Target.objects.filter(id=machine_id).update(pdf_path=file_path_for_db)
+            Target.objects.filter(id=target_id).update(pdf_path=file_path_for_db)
             file_url = f"http://{host}/media/{file_path_for_db}"
             return file_path, new_pdf_name, file_url
         else:

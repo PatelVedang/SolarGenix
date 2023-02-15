@@ -4,7 +4,8 @@
     "pk": 1,
     "fields": {
       "tool_name": "nmap",
-      "tool_cmd": "nmap -Pn -sV"
+      "tool_cmd": "nmap -Pn -sV",
+      "time_limit": 30
     }
   }
   

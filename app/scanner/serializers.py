@@ -37,16 +37,16 @@ class ScannerResponseSerializer(serializers.ModelSerializer):
 # The ScannerQueueSerializer class is a serializer for the Target model. It has a field called ids
 # which is a list of integers
 class AddInQueueByIdsSerializer(serializers.ModelSerializer):
-    machines_id = serializers.ListField(child = serializers.IntegerField(), allow_empty=False)
+    targets_id = serializers.ListField(child = serializers.IntegerField(), allow_empty=False)
     class Meta:
         model = Target
-        fields = ['machines_id']
+        fields = ['targets_id']
 
     def validate(self, attrs):
-        machines_id = attrs['machines_id']
-        for machine_id in machines_id:
-            if not Target.objects.filter(id=machine_id).exists():
-                raise serializers.DjangoValidationError(f"Target does not exist with id {machine_id}")
+        targets_id = attrs['targets_id']
+        for target_id in targets_id:
+            if not Target.objects.filter(id=target_id).exists():
+                raise serializers.DjangoValidationError(f"Target does not exist with id {target_id}")
         return super().validate(attrs)
 
 class AddInQueueByNumbersSerializer(serializers.ModelSerializer):
@@ -56,7 +56,14 @@ class AddInQueueByNumbersSerializer(serializers.ModelSerializer):
         fields = ['count']
 
 
+class ToolPayloadSerializer(serializers.ModelSerializer):
+    id = serializers.IntegerField(read_only=True)
+    class Meta:
+        model = Tool
+        exlude = ['is_deleted']
+        fields = ['id','tool_name','tool_cmd', 'time_limit']
+
 class ToolSerializer(serializers.ModelSerializer):
     class Meta:
         model = Tool
-        fields = '__all__'
+        fields = ['id', 'is_deleted', 'is_active', 'tool_name', 'tool_cmd', 'time_limit']

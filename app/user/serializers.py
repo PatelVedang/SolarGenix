@@ -9,6 +9,8 @@ from .tasks import send_email
 import random
 from django.conf import settings
 from datetime import datetime, timedelta
+import re
+from django.conf import settings
 
 class UserSerializer(serializers.ModelSerializer):
 
@@ -26,6 +28,10 @@ class RegisterSerializer(serializers.ModelSerializer):
         fields = ['id', 'first_name', 'last_name', 'email', 'password']
     
     def validate_password(self, value):
+        if not re.search(settings.PASSWORD_VALIDATE_REGEX, value):
+            raise serializers.ValidationError(
+                settings.PASSWORD_VALIDATE_STRING
+            )
         return make_password(value)
 
 
@@ -125,6 +131,11 @@ class ResetPasswordSerializer(serializers.Serializer):
         if datetime_diff <= 0:
             raise serializers.ValidationError('OTP session expired.')
         
+        if not re.search(settings.PASSWORD_VALIDATE_REGEX, attrs.get('password')):
+            raise serializers.ValidationError(
+                settings.PASSWORD_VALIDATE_STRING
+            )
+
         if attrs.get('password') != attrs.get('confirm_password'):
             raise serializers.ValidationError("Password and confirmation password were different.")
         return attrs

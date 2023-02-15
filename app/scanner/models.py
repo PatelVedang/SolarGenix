@@ -16,13 +16,48 @@ PAYMENT_STATUS_CHOICES = [
     (1, "Success")
 ]
 
+ACTION_CHOICES = (
+        (1, "TARGET_CREATED"),
+        (2, "TARGET_IN_QUEUE"),
+        (3, "TARGET_TERMINATED"),
+        (4, "TARGET_SCANNED"),
+        (5, "TARGET_DELETED"),
+        (6, "GENERATE_PDF"),
+        (7, "GENERATE_HTML")
+    )
+
+
+class NonDeleted(models.Manager):
+    def get_queryset(self):
+        return super().get_queryset().filter(is_deleted = False)
+    
+
+class SoftDelete(models.Model):
+    is_deleted = models.BooleanField(default=False)
+
+    default = models.Manager()
+    objects = NonDeleted()
+
+    def soft_delete(self):
+        self.is_deleted = True
+        self.save()
+
+    def restore(self):
+        self.is_deleted = False
+        self.save()
+
+    class Meta:
+        abstract = True
+        
+
 # Create your models here.
-class Target(models.Model):
+class Target(SoftDelete):
     ip = models.CharField(max_length=15,null=False)
     result = models.TextField()
     status = models.IntegerField(choices=TARGET_STATUS_CHOICES, default=0)
-    tool = models.ForeignKey("Tool", on_delete=models.CASCADE, default=1)
-    scan_by = models.ForeignKey(User, on_delete=models.CASCADE)
+    tool = models.ForeignKey("Tool", on_delete=models.SET_NULL, default=1, null=True)
+    scan_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+    is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True, null=True)
     updated_at = models.DateTimeField(auto_now=True, null=True)
     pdf_path = models.FileField(null=True, blank=True)
@@ -30,22 +65,23 @@ class Target(models.Model):
     def __str__(self):
         return self.ip
 
-class Tool(models.Model):
+class Tool(SoftDelete):
     tool_name = models.CharField(max_length= 50)
     tool_cmd = models.CharField(max_length=500)
-    subscription = models.ForeignKey("Subscription", on_delete=models.CASCADE, null=True, blank=True)
+    subscription = models.ForeignKey("Subscription", on_delete=models.SET_NULL, null=True, blank=True)
+    time_limit = models.BigIntegerField(default=30) 
+    is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True, null=True)
     updated_at = models.DateTimeField(auto_now=True, null=True)
 
     def __str__(self):
         return self.tool_name
 
-class Subscription(models.Model):
+class Subscription(SoftDelete):
     day_limit = models.IntegerField()
     price = models.DecimalField(max_digits=11, decimal_places=2)
     plan_type = models.CharField(max_length=255)
     is_active = models.BooleanField(default=True)
-    is_deleted = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True, null=True)
     updated_at = models.DateTimeField(auto_now=True, null=True)
 
@@ -60,3 +96,8 @@ class SubscriptionHistory(models.Model):
     end_date = models.DateTimeField()
     status = models.IntegerField(choices=PAYMENT_STATUS_CHOICES, default=0)
     transaction_payload = models.JSONField(default=dict)
+
+class TargetLog(models.Model):
+    target = models.ForeignKey(Target, on_delete=models.SET_NULL, null=True)
+    action = models.IntegerField(choices=ACTION_CHOICES)
+    created_at = models.DateTimeField(auto_now_add=True, null=True)

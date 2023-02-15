@@ -15,7 +15,7 @@ from django.utils.decorators import method_decorator
 class RegisterView(generics.CreateAPIView):
     queryset = User.objects.all()
     serializer_class = RegisterSerializer
-    # permission_classes = [AllowAny]
+    permission_classes = [AllowAny]
         
     @swagger_auto_schema(
         tags=['Auth'],
@@ -30,6 +30,7 @@ class RegisterView(generics.CreateAPIView):
 
 class LoginView(TokenObtainPairView):
     serializer_class = LoginSerializer
+    permission_classes = [AllowAny]
 
     @swagger_auto_schema(
         tags=['Auth'],
@@ -43,6 +44,7 @@ class LoginView(TokenObtainPairView):
 
 class RefreshTokenView(TokenObtainPairView):
     serializer_class = CustomTokenRefreshSerializer
+    permission_classes = [AllowAny]
 
     @swagger_auto_schema(
         tags=['Auth'],
@@ -56,6 +58,7 @@ class RefreshTokenView(TokenObtainPairView):
 
 class VerifyTokenView(TokenObtainPairView):
     serializer_class = TokenVerifySerializer
+    permission_classes = [AllowAny]
 
     @swagger_auto_schema(
         tags=['Auth'],
@@ -69,6 +72,7 @@ class VerifyTokenView(TokenObtainPairView):
 
 class ForgotPasswordView(generics.CreateAPIView):
     serializer_class = ForgotPasswordSerializer
+    permission_classes = [AllowAny]
 
     @swagger_auto_schema(
         tags=['Auth'],
@@ -85,6 +89,7 @@ class ForgotPasswordView(generics.CreateAPIView):
 
 class ValidateOTPView(generics.GenericAPIView):
     serializer_class = OTPValidateSerializer
+    permission_classes = [AllowAny]
 
     @swagger_auto_schema(
         tags=['Auth'],
@@ -100,6 +105,7 @@ class ValidateOTPView(generics.GenericAPIView):
 
 class ResetPasswordView(generics.GenericAPIView):
     serializer_class = ResetPasswordSerializer
+    permission_classes = [AllowAny]
 
     @swagger_auto_schema(
         tags=['Auth'],

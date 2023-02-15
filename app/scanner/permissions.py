@@ -5,12 +5,12 @@ class MachineRetrievePremission(permissions.BasePermission):
     def has_permission(self, request, view):
         result = True
         if request.method == 'POST':
-            if request.data.get('machines_id'):
+            if request.data.get('targets_id'):
                 if request.user.is_staff and request.user.is_superuser:
                     return True
-                machines_id = request.data.get('machines_id')
-                for machine_id in machines_id:
-                    obj = Target.objects.get(id=machine_id)
+                targets_id = request.data.get('targets_id')
+                for target_id in targets_id:
+                    obj = Target.objects.get(id=target_id)
                     if obj.scan_by != request.user:
                         return False
             return result
@@ -24,12 +24,6 @@ class MachineRetrievePremission(permissions.BasePermission):
         return obj.scan_by == request.user
 
 class IsAdminUserOrList(permissions.IsAdminUser):
-    def has_permission(self, request, view):
-        if request.method == 'GET':
-            return True
-        return super().has_permission(request, view)
-
-class IsAuthenticatedOrList(permissions.IsAuthenticated):
     def has_permission(self, request, view):
         if request.method == 'GET':
             return True

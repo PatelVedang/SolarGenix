@@ -93,7 +93,7 @@ class ScanTest(BaseAPITestCase):
         self.insert_records()
         obj = Target.objects.first()
         self._data = {
-            "machines_id": [
+            "targets_id": [
                 obj.id
             ]
         }
