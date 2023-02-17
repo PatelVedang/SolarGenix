@@ -48,7 +48,7 @@ class ScanViewSet(viewsets.ModelViewSet):
             targets_id = serializer.data.get('targets_id')
             for target_id in targets_id:
                 target_obj = Target.objects.get(id=target_id)
-                tool_time_limit = Target.objects.get(id=6).tool.time_limit
+                tool_time_limit = target_obj.tool.time_limit
                 scan.apply_async(args=[], kwargs={'id':target_id, 'time_limit':tool_time_limit}, time_limit=tool_time_limit+10, ignore_result=True)
         custom_response = ScannerResponseSerializer(Target.objects.filter(id__in=targets_id), many=True)
         return response(status=True, data=custom_response.data, status_code=status.HTTP_200_OK, message="host successfully added in queue")
