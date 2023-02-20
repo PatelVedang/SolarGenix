@@ -165,8 +165,9 @@ class ScanViewSet(viewsets.ModelViewSet):
         self.serializer_class = ScannerResponseSerializer
         serializer = super().retrieve(request, *args, **kwargs)
         pdf= PDF()
-        pdf_path, pdf_name, file_url = pdf.generate(request.user.id, serializer.data.get('id'), host=request.headers.get('Host'))
 
+        pdf_path, pdf_name, file_url = pdf.generate(request.user.id, serializer.data.get('id'))
+        
         data = {
             'file_path':file_url
         }
@@ -186,7 +187,7 @@ class ScanViewSet(viewsets.ModelViewSet):
         self.serializer_class = ScannerResponseSerializer
         serializer = super().retrieve(request, *args, **kwargs)
         pdf= PDF()
-        pdf_path, pdf_name, file_url = pdf.generate(request.user.id, serializer.data.get('id'), host=request.headers.get('Host'))
+        pdf_path, pdf_name, file_url = pdf.generate(request.user.id, serializer.data.get('id'))
         FilePointer = open(pdf_path,"rb")
         response = HttpResponse(FilePointer,content_type='application/pdf')
         response['Content-Disposition'] = f'attachment; filename={pdf_name}'

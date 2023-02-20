@@ -21,7 +21,7 @@ class PDF:
                 os.mkdir(path)
             self.path = path
 
-    def generate(self, user_id, target_id, host, generate_pdf=True):
+    def generate(self, user_id, target_id, generate_pdf=True):
         search_regex = '(?P<port>\d{1,4}/tcp)\s+(?P<state>(filtered|open|closed))'
         target_obj = Target.objects.get(id=target_id)
         scan_result = target_obj.result
@@ -88,7 +88,7 @@ class PDF:
             pdfkit.from_string(html_data, output_path=file_path)
             file_path_for_db = file_path.replace(str(settings.MEDIA_ROOT), '')
             Target.objects.filter(id=target_id).update(pdf_path=file_path_for_db)
-            file_url = f"http://{host}/media/{file_path_for_db}"
+            file_url = f"{settings.PDF_DOWNLOAD_ORIGIN}/media/{file_path_for_db}"
             return file_path, new_pdf_name, file_url
         else:
             return html_data.replace("\n","")
