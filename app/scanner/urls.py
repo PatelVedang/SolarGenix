@@ -12,4 +12,5 @@ router.register('tool', ToolViewSet,basename='tool')
 
 urlpatterns = [
     path('', include(router.urls)),
+    path('sendMessage/', views.SendMessageView.as_view(), name='Message'),
 ]

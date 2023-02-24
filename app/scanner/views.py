@@ -19,7 +19,11 @@ from .permissions import MachineRetrievePremission, IsAdminUserOrList
 from django.utils.decorators import method_decorator
 from utils.pdf import PDF
 from django.shortcuts import get_object_or_404
-
+from utils.message import send
+from web_socket.serializers import SendMessageSerializer
+import time
+from datetime import datetime
+from django.conf import settings
 
 @method_decorator(name='partial_update', decorator=swagger_auto_schema(tags=['Targets'], auto_schema=None))
 @method_decorator(name='update', decorator=swagger_auto_schema(tags=['Targets'], auto_schema=None))
@@ -49,7 +53,7 @@ class ScanViewSet(viewsets.ModelViewSet):
             for target_id in targets_id:
                 target_obj = Target.objects.get(id=target_id)
                 tool_time_limit = target_obj.tool.time_limit
-                scan.apply_async(args=[], kwargs={'id':target_id, 'time_limit':tool_time_limit}, time_limit=tool_time_limit+10, ignore_result=True)
+                scan.apply_async(args=[], kwargs={'id':target_id, 'time_limit':tool_time_limit, 'token':request.headers.get('Authorization')}, time_limit=tool_time_limit+10, ignore_result=True)
         custom_response = ScannerResponseSerializer(Target.objects.filter(id__in=targets_id), many=True)
         return response(status=True, data=custom_response.data, status_code=status.HTTP_200_OK, message="host successfully added in queue")
         
@@ -74,7 +78,7 @@ class ScanViewSet(viewsets.ModelViewSet):
                 records = Target.objects.filter(status=0)[:n]
             for record in records:
                 tool_time_limit = record.tool.time_limit
-                scan.apply_async(args=[], kwargs={'id':record.id, 'time_limit':tool_time_limit}, time_limit=tool_time_limit+10, ignore_result=True)
+                scan.apply_async(args=[], kwargs={'id':record.id, 'time_limit':tool_time_limit, 'token':request.headers.get('Authorization')}, time_limit=tool_time_limit+10, ignore_result=True)
         custom_response = ScannerResponseSerializer(records, many=True)
         return response(status=True, data=custom_response.data, status_code=status.HTTP_200_OK, message="host successfully added in queue")
 
@@ -261,5 +265,22 @@ class ToolViewSet(viewsets.ModelViewSet):
         self.get_object().soft_delete()
         return response(status=True, data={}, status_code=status.HTTP_200_OK, message="record deleted successfully")
 
+@method_decorator(name='get', decorator=swagger_auto_schema(auto_schema=None))
+class SendMessageView(generics.GenericAPIView):
+    serializer_class = ScannerResponseSerializer
+    permission_classes = [IsAuthenticated]
 
-     
+    def get(self, request, *args, **kwargs):
+        start_time = datetime.utcnow()
+        params = request.query_params
+        while True:
+            target = Target.objects.filter(id=params.get('id'))
+            serializer = self.serializer_class(target[0])
+            diff= (datetime.utcnow() - start_time).total_seconds()
+            api_progress = round(diff*100/(target[0].tool.time_limit), 2)
+            record_obj = {**serializer.data, **{'api_progress':api_progress}}
+            send(str(record_obj['scan_by']['id']),record_obj)
+            if record_obj.get('status') >= 3:
+                break
+            time.sleep(round(float(settings.WEB_SOCKET_INTERVAL),2))
+        return HttpResponse("Done")

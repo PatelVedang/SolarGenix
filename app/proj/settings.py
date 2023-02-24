@@ -38,6 +38,7 @@ ALLOWED_HOSTS = ["*"]
 # Application definition
 
 INSTALLED_APPS = [
+    'daphne',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -45,13 +46,15 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
 
+    'channels',
     'rest_framework',
     'drf_yasg',
     'django_filters',
     'user',
     'scanner',
     'celery',
-    'corsheaders'
+    'corsheaders',
+    # 'web_socket'
     ]
 
 MIDDLEWARE = [
@@ -70,7 +73,7 @@ ROOT_URLCONF = 'proj.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [os.path.join(BASE_DIR,'scanner/templates')],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -84,6 +87,7 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'proj.wsgi.application'
+ASGI_APPLICATION = 'proj.asgi.application'
 
 
 # Database
@@ -219,3 +223,14 @@ PASSWORD_VALIDATE_REGEX = "^(?=\S*[a-z])(?=\S*[A-Z])(?=\S*\d)(?=\S*[^\w\s])\S{8,
 
 #PDF
 PDF_DOWNLOAD_ORIGIN=os.environ.get('PDF_DOWNLOAD_ORIGIN', env('PDF_DOWNLOAD_ORIGIN'))
+
+#Django channels
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_rabbitmq.core.RabbitmqChannelLayer",
+        "CONFIG": {
+            "host": "amqp://guest:guest@localhost:5672/%2F",
+        },
+    },
+}
+WEB_SOCKET_INTERVAL=os.environ.get('WEB_SOCKET_INTERVAL', env('WEB_SOCKET_INTERVAL'))
