@@ -10,6 +10,9 @@ from channels.layers import get_channel_layer
 import json
 import requests
 from celery import shared_task
+import logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 c = Celery('proj')
 @c.task
@@ -24,7 +27,7 @@ def scan(id, time_limit, token):
     """
     target = Target.objects.filter(id=id)
     ip = target[0].ip
-    print("====>>>>>>>>       ", f"IP:{ip} with id:{id} added to queue", "       <<<<<<<<====")
+    logger.info(f"====>>>>>>>>       \nIP:{ip} with id:{id} added to queue\n       <<<<<<<<====")
     start_time = time.time()
     output = ""
     tool_cmd = target[0].tool.tool_cmd
@@ -34,14 +37,14 @@ def scan(id, time_limit, token):
         TargetLog.objects.create(target=Target(id), action=2)
     if target[0].status >= 1:
         try:
-            print("====>>>>>>>>       ", f"Scanning began for IP:{ip} with id:{id}", "       <<<<<<<<====")
+            logger.info(f"====>>>>>>>>       \nScanning began for IP:{ip} with id:{id}\n       <<<<<<<<====")
             target.update(status = 2)
             if platform.uname().system == 'Windows':
                 output = subprocess.check_output(f"{tool_cmd} {ip}", shell=False, timeout=time_limit).decode('utf-8')
             else:
                 output = subprocess.check_output(f"{tool_cmd} {ip}", shell=True, timeout=time_limit).decode('utf-8')
         except Exception as e:
-            print("====>>>>>>>>       ", f"Background thread for ip:{ip} with id:{id} has been terminated", "       <<<<<<<<====")
+            logger.info(f"====>>>>>>>>       \nBackground thread for ip:{ip} with id:{id} has been terminated\n       <<<<<<<<====")
             target.update(result=str(e), status=3)
             TargetLog.objects.create(target=Target(id), action=3)
             return False
@@ -53,17 +56,17 @@ def scan(id, time_limit, token):
         
         # If not found any open ports
         if (re.search(ignore_state_regex, output) or re.search(filtered_state_regex, output)):
-            print("====>>>>>>>>       ", f"IP:{ip} with id:{id} has no open ports.", "       <<<<<<<<====")
+            logger.info(f"====>>>>>>>>       \nIP:{ip} with id:{id} has no open ports.\n       <<<<<<<<====")
             target.update(result=output, status=4)
             TargetLog.objects.create(target=Target(id), action=4)
         
         # If ports found in given time
         elif ports:
-            print("====>>>>>>>>       ", f"Found open ports with IP:{ip} with id:{id}.", "       <<<<<<<<====")
+            logger.info(f"====>>>>>>>>       \nFound open ports with IP:{ip} with id:{id}.\n       <<<<<<<<====")
             target.update(result=output, status=4)
             TargetLog.objects.create(target=Target(id), action=4)
         else:
-            print("====>>>>>>>>       ", f"IP:{ip} with id:{id} is not match any condition.", "       <<<<<<<<====")
+            logger.info(f"====>>>>>>>>       \nIP:{ip} with id:{id} is not match any condition.\n       <<<<<<<<====")
             target.update(result=output, status=4)
             TargetLog.objects.create(target=Target(id), action=4)
 
@@ -74,4 +77,5 @@ def scan(id, time_limit, token):
 
 @shared_task
 def send_message(id, token):
+    logger.info(f"====>>>>>>>>       \nWebsocket API trigger for target id:{id}\n       <<<<<<<<====")
     response = requests.get(f'http://localhost:8000/api/sendMessage/?id={id}', headers={'Authorization': token})

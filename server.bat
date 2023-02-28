@@ -30,7 +30,7 @@ if "%option%"=="1" (
     echo.
     call "env\Scripts\activate.bat"
     cd app
-    concurrently "pm2 start celery --name worker --max-memory-restart \"200M\" -- --app proj worker -l info --pool=solo" "pm2 start manage.py --name cyber_appliance --max-memory-restart \"100M\" --no-autorestart -- runserver 0.0.0.0:8000"
+    concurrently "pm2 start celery --name worker --max-memory-restart \"200M\" -- --app proj worker --pool=gevent --concurrency=10 --loglevel=info" "pm2 start manage.py --name cyber_appliance --max-memory-restart \"100M\" --no-autorestart -- runserver 0.0.0.0:8000"
     cd ..
     call "env\Scripts\deactivate.bat"
     echo.

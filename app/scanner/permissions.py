@@ -1,5 +1,8 @@
 from rest_framework import permissions
 from .models import Target
+import logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 class MachineRetrievePremission(permissions.BasePermission):
     def has_permission(self, request, view):
@@ -28,4 +31,15 @@ class IsAdminUserOrList(permissions.IsAdminUser):
         if request.method == 'GET':
             return True
         return super().has_permission(request, view)
+    
+class IsAuthenticated(permissions.BasePermission):
+    """
+    Allows access only to authenticated users.
+    """
+
+    def has_permission(self, request, view):
+        logging.info(">"*90)
+        logging.info(f"A request was submitted by user {request.user.first_name} {request.user.last_name}, whose email address is {request.user.email}.")
+        logging.info("<"*90)
+        return bool(request.user and request.user.is_authenticated)
         

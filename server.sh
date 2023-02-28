@@ -36,15 +36,13 @@ then
     if [ $? -eq 1 ] 
     then
         printf " \n\n Oops 😟, Something Went Wrong \n\n"
-        return
     fi
     pm2 start "python manage.py runserver 0.0.0.0:8000" --name cyber_appliance --max-memory-restart "100M" --no-autorestart
     printf "░░░░░░  Starting the worker ░░░░░░ \n\n\n"
-    pm2 start "celery -A proj worker -l info" --name worker --max-memory-restart "200M"
+    pm2 start "celery -A proj worker --pool=gevent --concurrency=10 --loglevel=info" --name worker --max-memory-restart "200M"
     cd ..
     deactivate
     printf " \n\n Job Done 😎 \n\n"
-    return
 elif [ $option == 2 ];
 then
     # RESTART
@@ -53,7 +51,6 @@ then
     printf "░░░░░░  Restarting the worker ░░░░░░ \n\n\n"
     pm2 restart worker
     printf " \n\n Job Done 😎 \n\n"
-    return
 elif [ $option == 3  ];
 then
     # STOP
@@ -62,7 +59,6 @@ then
     printf "░░░░░░  Stopping the worker ░░░░░░ \n\n\n"
     pm2 stop worker
     printf " \n\n Job Done 😎 \n\n"
-    return
 elif [ $option == 4  ];
 then
     # DELETE
@@ -71,8 +67,6 @@ then
     printf "░░░░░░  Deleting the worker ░░░░░░ \n\n\n"
     pm2 delete worker
     printf " \n\n Job Done 😎 \n\n"
-    return
 else
     printf "Wrong Choice!!!😂 Try Again!!😜 \n"
-    return
 fi

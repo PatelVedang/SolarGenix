@@ -2,11 +2,15 @@ from celery import shared_task
 from django.conf import settings
 from django.core.mail import send_mail
 from django.template.loader import render_to_string
+import logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 
 @shared_task
 def send_email(subject, body, sender, recipients, fail_silently, otp = ""):
-    print(f"***************** SEND MAIL  *****************")
-    print(f"Recipients: {recipients}")
+    logger.info(f"***************** SEND MAIL  *****************")
+    logger.info(f"Recipients: {recipients}")
     try:
         if otp:
             html_message = render_to_string('reset-password.html', {'otp': otp})
@@ -26,7 +30,7 @@ def send_email(subject, body, sender, recipients, fail_silently, otp = ""):
                 recipient_list=recipients,
                 fail_silently=fail_silently
             )
-        print("response", sent)
-        print(f"Please check your inbox.")
+        logger.info(f"response {sent}")
+        logger.info(f"Please check your inbox.")
     except Exception as e:
         print(f"Error: {str(e)}")

@@ -14,8 +14,8 @@ from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter, OrderingFilter
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
-from rest_framework.permissions import IsAuthenticated, IsAdminUser
-from .permissions import MachineRetrievePremission, IsAdminUserOrList
+from rest_framework.permissions import IsAdminUser
+from .permissions import MachineRetrievePremission, IsAdminUserOrList, IsAuthenticated
 from django.utils.decorators import method_decorator
 from utils.pdf import PDF
 from django.shortcuts import get_object_or_404
@@ -24,7 +24,12 @@ from web_socket.serializers import SendMessageSerializer
 import time
 from datetime import datetime
 from django.conf import settings
+import logging
+logging.basicConfig(level=logging.info)
+logger = logging.getLogger(__name__)
 
+
+import json
 @method_decorator(name='partial_update', decorator=swagger_auto_schema(tags=['Targets'], auto_schema=None))
 @method_decorator(name='update', decorator=swagger_auto_schema(tags=['Targets'], auto_schema=None))
 class ScanViewSet(viewsets.ModelViewSet):
@@ -46,9 +51,11 @@ class ScanViewSet(viewsets.ModelViewSet):
     )
     @action(methods=['POST'], detail=False, url_path="addByIds")
     def scan_by_ids(self, request, *args, **kwargs):
+        logger.info(f"====>>>>>>>>       \nScanByIds API call with payload:{request.data}\n       <<<<<<<<====")
         self.serializer_class = AddInQueueByIdsSerializer
         serializer = self.serializer_class(data=request.data)
         if serializer.is_valid(raise_exception=True):
+            logger.info(f"====>>>>>>>>       \nserializer validate successfully in ScanByIds API with data:{request.data}\n       <<<<<<<<====")
             targets_id = serializer.data.get('targets_id')
             for target_id in targets_id:
                 target_obj = Target.objects.get(id=target_id)
@@ -67,9 +74,11 @@ class ScanViewSet(viewsets.ModelViewSet):
     )
     @action(methods=['POST'], detail=False, url_path="addByNumbers")
     def scan_by_numbers(self, request, *args, **kwargs):
+        logger.info(f"====>>>>>>>>       \nScanByNumbers API call with payload:{request.data}\n       <<<<<<<<====")
         self.serializer_class = AddInQueueByNumbersSerializer
         serializer = self.serializer_class(data=request.data)
         if serializer.is_valid(raise_exception=True):
+            logger.info(f"====>>>>>>>>       \nserializer validate successfully in ScanByNumbers API with data:{request.data}\n       <<<<<<<<====")
             # count
             n = serializer.data.get('count')
             if (not request.user.is_staff) and (not request.user.is_superuser):
@@ -93,11 +102,13 @@ class ScanViewSet(viewsets.ModelViewSet):
         tags=['Targets']
     )
     def create(self, request, *args, **kwargs):
+        logger.info(f"====>>>>>>>>       \nAdd target API call with payload:{request.data}\n       <<<<<<<<====")
         # provide payload to serializer
         self.serializer_class = ScannerSerializer
         serializer = self.serializer_class(data=request.data)
         #validate serializer with given payload 
         if serializer.is_valid(raise_exception=True):
+            logger.info(f"====>>>>>>>>       \nserializer validate successfully in Add target API with data:{request.data}\n       <<<<<<<<====")
             ip_addresses = serializer.data.get('ip')
             tools = serializer.data.get('tools_id')
             scan_by = serializer.data.get('scan_by')
@@ -121,6 +132,7 @@ class ScanViewSet(viewsets.ModelViewSet):
         tags=['Targets']
     )
     def retrieve(self, request, *args, **kwargs):
+        logger.info(f"====>>>>>>>>       \nRetrive target API call with id:{kwargs.get('pk')}\n       <<<<<<<<====")
         """
         It overrides the default retrieve function of the generic viewset and returns a custom response
         
@@ -138,6 +150,7 @@ class ScanViewSet(viewsets.ModelViewSet):
         tags=['Targets']
     )
     def list(self, request, *args, **kwargs):
+        logger.info(f"====>>>>>>>>       \nTarget List API call\n       <<<<<<<<====")
         """
         A function that returns a response with the data and status code.
         
@@ -160,6 +173,7 @@ class ScanViewSet(viewsets.ModelViewSet):
     )
     @action(methods=['GET'], detail=True, url_path="generatePDF")
     def generate_pdf(self, request, *args, **kwargs):
+        logger.info(f"====>>>>>>>>       \nGenerate PDF API call for target id:{kwargs.get('pk')}\n       <<<<<<<<====")
         """
         It takes the id of the user and the id of the response and generates a pdf file url
         
@@ -188,6 +202,7 @@ class ScanViewSet(viewsets.ModelViewSet):
     )
     @action(methods=['GET'], detail=True, url_path="fakePDFGenerator")
     def generate_fake_pdf(self, request, *args, **kwargs):
+        logger.info(f"====>>>>>>>>       \nGenerate Fake PDF API call for target id:{kwargs.get('pk')}\n       <<<<<<<<====")
         self.serializer_class = ScannerResponseSerializer
         serializer = super().retrieve(request, *args, **kwargs)
         pdf= PDF()
@@ -207,6 +222,7 @@ class ScanViewSet(viewsets.ModelViewSet):
     )
     @action(methods=['GET'], detail=True, url_path="generateHTML")
     def generate_html(self, request, *args, **kwargs):
+        logger.info(f"====>>>>>>>>       \nGenerate HTML API call for target id:{kwargs.get('pk')}\n       <<<<<<<<====")
         self.serializer_class = ScannerResponseSerializer
         serializer = super().retrieve(request, *args, **kwargs)
         pdf= PDF()
@@ -225,6 +241,7 @@ class ScanViewSet(viewsets.ModelViewSet):
         operation_summary="API to delete a host."
     )
     def destroy(self, request, *args, **kwargs):
+        logger.info(f"====>>>>>>>>       \nDelete Target API call for target id:{kwargs.get('pk')}\n       <<<<<<<<====")
         self.get_object().soft_delete()
         return response(status=True, data={}, status_code=status.HTTP_200_OK, message="record deleted successfully")
 
@@ -244,24 +261,29 @@ class ToolViewSet(viewsets.ModelViewSet):
     pagination_class = None
 
     def list(self, request, *args, **kwargs):
+        logger.info(f"====>>>>>>>>       \nList tool API call\n       <<<<<<<<====")
         serializer = super().list(request, *args, **kwargs)
         return response(status=True, data=serializer.data, status_code=status.HTTP_200_OK, message="record found successfully")
 
     def create(self, request, *args, **kwargs):
+        logger.info(f"====>>>>>>>>       \nAdd Tool API with payload:{request.data}\n       <<<<<<<<====")
         self.serializer_class = ToolPayloadSerializer
         serializer = super().create(request, *args, **kwargs)
         return response(status=True, data=serializer.data, status_code=status.HTTP_200_OK, message="record successfully added in database.")
 
     def partial_update(self, request, *args, **kwargs):
+        logger.info(f"====>>>>>>>>       \nUpdate Tool of id:{kwargs.get('pk')} with payload:{request.data}\n       <<<<<<<<====")
         self.serializer_class = ToolPayloadSerializer
         serializer = super().partial_update(request, *args, **kwargs)
         return response(status=True, data=serializer.data, status_code=status.HTTP_200_OK, message="record successfully updated in database.")
 
     def retrieve(self, request, *args, **kwargs):
+        logger.info(f"====>>>>>>>>       \nRetrive Tool API call with id:{kwargs.get('pk')}\n       <<<<<<<<====")
         serializer = super().retrieve(request, *args, **kwargs)
         return response(status=True, data=serializer.data, status_code=status.HTTP_200_OK, message="record found successfully")
 
     def destroy(self, request, *args, **kwargs):
+        logger.info(f"====>>>>>>>>       \nDelete Tool API call with id:{kwargs.get('pk')}\n       <<<<<<<<====")
         self.get_object().soft_delete()
         return response(status=True, data={}, status_code=status.HTTP_200_OK, message="record deleted successfully")
 
@@ -277,7 +299,7 @@ class SendMessageView(generics.GenericAPIView):
             target = Target.objects.filter(id=params.get('id'))
             serializer = self.serializer_class(target[0])
             diff= (datetime.utcnow() - start_time).total_seconds()
-            api_progress = round(diff*100/(target[0].tool.time_limit), 2)
+            api_progress = round(diff*100/((target[0].tool.time_limit+10)), 2)
             record_obj = {**serializer.data, **{'api_progress':api_progress}}
             send(str(record_obj['scan_by']['id']),record_obj)
             if record_obj.get('status') >= 3:
