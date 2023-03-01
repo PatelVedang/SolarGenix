@@ -17,14 +17,23 @@ logger = logging.getLogger(__name__)
 c = Celery('proj')
 @c.task
 def scan(id, time_limit, token):
-    send_message.delay(id, token)
     """
-    It takes the id of the target object, and then it runs the tool command on the ip of the target
-    object
+    It takes the id of the target, the time limit and the token as parameters and then sends a message
+    to the user with the id and token. Then it gets the target with the given id and gets the ip of the
+    target. Then it logs the ip and id of the target. Then it starts the timer. Then it creates an empty
+    string for the output. Then it gets the command of the tool and the time limit of the tool. Then it
+    checks if the status of the target is 0. If it is, it updates the status of the target to 1 and
+    creates a log for the target with the action 2. Then it checks if the status of the target is
+    greater than or equal to 1. If it is, it tries to scan the target. If it can't scan the target, it
+    logs the error and updates the status of the target to 3 and creates a log for the target with the
+    action 3. If it can scan the target, it gets
     
     :param id: The id of the target to be scanned
-    :return: The return value is a boolean value.
+    :param time_limit: The time limit for the scan
+    :param token: The token of the user who added the target
+    :return: the result of the scan.
     """
+    send_message.delay(id, token)
     target = Target.objects.filter(id=id)
     ip = target[0].ip
     logger.info(f"====>>>>>>>>       \nIP:{ip} with id:{id} added to queue\n       <<<<<<<<====")
@@ -77,5 +86,11 @@ def scan(id, time_limit, token):
 
 @shared_task
 def send_message(id, token):
+    """
+    This function sends a request to the API to send a message to the target user
+    
+    :param id: The id of the target user
+    :param token: The token you get from the login API
+    """
     logger.info(f"====>>>>>>>>       \nWebsocket API trigger for target id:{id}\n       <<<<<<<<====")
     response = requests.get(f'http://localhost:8000/api/sendMessage/?id={id}', headers={'Authorization': token})

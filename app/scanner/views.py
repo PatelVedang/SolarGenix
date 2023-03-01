@@ -51,6 +51,12 @@ class ScanViewSet(viewsets.ModelViewSet):
     )
     @action(methods=['POST'], detail=False, url_path="addByIds")
     def scan_by_ids(self, request, *args, **kwargs):
+        """
+        It adds the target to the queue by list of ids.
+        
+        :param request: The request object
+        :return: The response is a list of targets.
+        """
         logger.info(f"====>>>>>>>>       \nScanByIds API call with payload:{request.data}\n       <<<<<<<<====")
         self.serializer_class = AddInQueueByIdsSerializer
         serializer = self.serializer_class(data=request.data)
@@ -74,6 +80,12 @@ class ScanViewSet(viewsets.ModelViewSet):
     )
     @action(methods=['POST'], detail=False, url_path="addByNumbers")
     def scan_by_numbers(self, request, *args, **kwargs):
+        """
+        It adds the n number targets to the queue.
+        
+        :param request: The request object
+        :return: The response is a list of dictionaries.
+        """
         logger.info(f"====>>>>>>>>       \nScanByNumbers API call with payload:{request.data}\n       <<<<<<<<====")
         self.serializer_class = AddInQueueByNumbersSerializer
         serializer = self.serializer_class(data=request.data)
@@ -102,6 +114,11 @@ class ScanViewSet(viewsets.ModelViewSet):
         tags=['Targets']
     )
     def create(self, request, *args, **kwargs):
+        """
+        It creates a target in the database.
+        
+        :param request: The request object
+        """
         logger.info(f"====>>>>>>>>       \nAdd target API call with payload:{request.data}\n       <<<<<<<<====")
         # provide payload to serializer
         self.serializer_class = ScannerSerializer
@@ -132,13 +149,13 @@ class ScanViewSet(viewsets.ModelViewSet):
         tags=['Targets']
     )
     def retrieve(self, request, *args, **kwargs):
-        logger.info(f"====>>>>>>>>       \nRetrive target API call with id:{kwargs.get('pk')}\n       <<<<<<<<====")
         """
         It overrides the default retrieve function of the generic viewset and returns a custom response
         
         :param request: The request object
         :return: The serializer.data is being returned.
         """
+        logger.info(f"====>>>>>>>>       \nRetrive target API call with id:{kwargs.get('pk')}\n       <<<<<<<<====")
         self.serializer_class = ScannerResponseSerializer
         serializer = super().retrieve(request, *args, **kwargs)
         return response(status=True, data=serializer.data, status_code=status.HTTP_200_OK, message="record found successfully")
@@ -150,13 +167,13 @@ class ScanViewSet(viewsets.ModelViewSet):
         tags=['Targets']
     )
     def list(self, request, *args, **kwargs):
-        logger.info(f"====>>>>>>>>       \nTarget List API call\n       <<<<<<<<====")
         """
         A function that returns a response with the data and status code.
         
         :param request: The request object
         :return: The data is being returned in the form of a list.
         """
+        logger.info(f"====>>>>>>>>       \nTarget List API call\n       <<<<<<<<====")
         if (not request.user.is_staff) and (not request.user.is_superuser):
             self.queryset = Target.objects.filter(scan_by = request.user.id)
         self.serializer_class = ScannerResponseSerializer
@@ -173,13 +190,13 @@ class ScanViewSet(viewsets.ModelViewSet):
     )
     @action(methods=['GET'], detail=True, url_path="generatePDF")
     def generate_pdf(self, request, *args, **kwargs):
-        logger.info(f"====>>>>>>>>       \nGenerate PDF API call for target id:{kwargs.get('pk')}\n       <<<<<<<<====")
         """
         It takes the id of the user and the id of the response and generates a pdf file url
         
         :param request: The request object
         :return: A PDF file url
         """
+        logger.info(f"====>>>>>>>>       \nGenerate PDF API call for target id:{kwargs.get('pk')}\n       <<<<<<<<====")
         self.serializer_class = ScannerResponseSerializer
         serializer = super().retrieve(request, *args, **kwargs)
         pdf= PDF()
@@ -202,6 +219,13 @@ class ScanViewSet(viewsets.ModelViewSet):
     )
     @action(methods=['GET'], detail=True, url_path="fakePDFGenerator")
     def generate_fake_pdf(self, request, *args, **kwargs):
+        """
+        It takes a target id, retrieves the target data from the database, generates a PDF file from the
+        data, and returns the PDF file to the user
+        
+        :param request: The request object
+        :return: The PDF file is being returned.
+        """
         logger.info(f"====>>>>>>>>       \nGenerate Fake PDF API call for target id:{kwargs.get('pk')}\n       <<<<<<<<====")
         self.serializer_class = ScannerResponseSerializer
         serializer = super().retrieve(request, *args, **kwargs)
@@ -222,6 +246,12 @@ class ScanViewSet(viewsets.ModelViewSet):
     )
     @action(methods=['GET'], detail=True, url_path="generateHTML")
     def generate_html(self, request, *args, **kwargs):
+        """
+        It takes a target id, generates a PDF, and returns the HTML content of the PDF
+        
+        :param request: The request object
+        :return: The HTML content of the report
+        """
         logger.info(f"====>>>>>>>>       \nGenerate HTML API call for target id:{kwargs.get('pk')}\n       <<<<<<<<====")
         self.serializer_class = ScannerResponseSerializer
         serializer = super().retrieve(request, *args, **kwargs)
@@ -241,6 +271,12 @@ class ScanViewSet(viewsets.ModelViewSet):
         operation_summary="API to delete a host."
     )
     def destroy(self, request, *args, **kwargs):
+        """
+        It deletes the record from the database.
+        
+        :param request: The request object
+        :return: The response is being returned.
+        """
         logger.info(f"====>>>>>>>>       \nDelete Target API call for target id:{kwargs.get('pk')}\n       <<<<<<<<====")
         self.get_object().soft_delete()
         return response(status=True, data={}, status_code=status.HTTP_200_OK, message="record deleted successfully")
@@ -261,28 +297,57 @@ class ToolViewSet(viewsets.ModelViewSet):
     pagination_class = None
 
     def list(self, request, *args, **kwargs):
+        """
+        A function that returns a list of records in response.
+        
+        :param request: The request object
+        :return: The response is being returned.
+        """
         logger.info(f"====>>>>>>>>       \nList tool API call\n       <<<<<<<<====")
         serializer = super().list(request, *args, **kwargs)
         return response(status=True, data=serializer.data, status_code=status.HTTP_200_OK, message="record found successfully")
 
     def create(self, request, *args, **kwargs):
+        """
+        A function that creates a new record in the database.
+        
+        :param request: The request object
+        :return: The response is being returned.
+        """
         logger.info(f"====>>>>>>>>       \nAdd Tool API with payload:{request.data}\n       <<<<<<<<====")
         self.serializer_class = ToolPayloadSerializer
         serializer = super().create(request, *args, **kwargs)
         return response(status=True, data=serializer.data, status_code=status.HTTP_200_OK, message="record successfully added in database.")
 
     def partial_update(self, request, *args, **kwargs):
+        """
+        It updates the tool with the given id.
+        
+        :param request: The request object
+        :return: The response is being returned.
+        """
         logger.info(f"====>>>>>>>>       \nUpdate Tool of id:{kwargs.get('pk')} with payload:{request.data}\n       <<<<<<<<====")
         self.serializer_class = ToolPayloadSerializer
         serializer = super().partial_update(request, *args, **kwargs)
         return response(status=True, data=serializer.data, status_code=status.HTTP_200_OK, message="record successfully updated in database.")
 
     def retrieve(self, request, *args, **kwargs):
+        """
+        It retrieves the data from the database and returns it to the user.
+        
+        :param request: The request object
+        """
         logger.info(f"====>>>>>>>>       \nRetrive Tool API call with id:{kwargs.get('pk')}\n       <<<<<<<<====")
         serializer = super().retrieve(request, *args, **kwargs)
         return response(status=True, data=serializer.data, status_code=status.HTTP_200_OK, message="record found successfully")
 
     def destroy(self, request, *args, **kwargs):
+        """
+        It deletes the record from the database.
+        
+        :param request: The request object
+        :return: The response is being returned.
+        """
         logger.info(f"====>>>>>>>>       \nDelete Tool API call with id:{kwargs.get('pk')}\n       <<<<<<<<====")
         self.get_object().soft_delete()
         return response(status=True, data={}, status_code=status.HTTP_200_OK, message="record deleted successfully")
@@ -293,13 +358,22 @@ class SendMessageView(generics.GenericAPIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, *args, **kwargs):
+        """
+        It takes the id of the target from the query params, gets the target object, serializes it,
+        calculates the progress of the scan, adds the progress to the serialized data, sends the data to
+        the websocket server and returns a response
+        
+        :param request: The request object
+        :return: The above code is returning the status of the scan.
+        """
         start_time = datetime.utcnow()
         params = request.query_params
         while True:
             target = Target.objects.filter(id=params.get('id'))
             serializer = self.serializer_class(target[0])
             diff= (datetime.utcnow() - start_time).total_seconds()
-            api_progress = round(diff*100/((target[0].tool.time_limit+10)), 2)
+            # api_progress = round(diff*100/((target[0].tool.time_limit+10)), 2)
+            api_progress = int(diff*100/((target[0].tool.time_limit+10)))
             record_obj = {**serializer.data, **{'api_progress':api_progress}}
             send(str(record_obj['scan_by']['id']),record_obj)
             if record_obj.get('status') >= 3:

@@ -26,6 +26,11 @@ class RegisterView(generics.CreateAPIView):
         operation_summary="API to create new user."
     )
     def post(self, request, *args, **kwargs):
+        """
+        A post method of a viewset. It is used to create a user.
+        
+        :param request: The request object
+        """
         logger.info(f"====>>>>>>>>       \nRegister API call with payload:{request.data}\n       <<<<<<<<====")
         register_serializer = self.serializer_class(data=request.data)
         if register_serializer.is_valid(raise_exception=True):
@@ -43,6 +48,11 @@ class LoginView(TokenObtainPairView):
         operation_summary="Login API."
     )
     def post(self, request, *args, **kwargs):
+        """
+        It is a post method of a class. By using this method user will login into the app.
+        
+        :param request: The request object
+        """
         logger.info(f"====>>>>>>>>       \nLogin API call with payload:{request.data}\n       <<<<<<<<====")
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid(raise_exception=True):
@@ -59,6 +69,12 @@ class RefreshTokenView(TokenObtainPairView):
         operation_summary="Refresh Token API."
     )
     def post(self, request, *args, **kwargs):
+        """
+        A function that is used to refresh the token.
+        
+        :param request: The request object
+        :return: The response is being returned.
+        """
         logger.info(f"====>>>>>>>>       \nRefresh Token API call with payload:{request.data}\n       <<<<<<<<====")
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid(raise_exception=True):
@@ -75,6 +91,11 @@ class VerifyTokenView(TokenObtainPairView):
         operation_summary="Verify Token API."
     )
     def post(self, request, *args, **kwargs):
+        """
+        A function that verifies the token.
+        
+        :param request: The request object
+        """
         logger.info(f"====>>>>>>>>       \nVerify Token API call with payload:{request.data}\n       <<<<<<<<====")
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid(raise_exception=True):
@@ -91,6 +112,12 @@ class ForgotPasswordView(generics.CreateAPIView):
         operation_summary="Forgot Password API."
     )
     def post(self, request):
+        """
+        A function which send the forgot password email to given email in request object
+        
+        :param request: The request object
+        :return: A response object is being returned.
+        """
         logger.info(f"====>>>>>>>>       \nForgot password API call with payload:{request.data}\n       <<<<<<<<====")
         serializer = self.serializer_class(data=request.data, context={"request": request})
         if serializer.is_valid(raise_exception=True):
@@ -110,6 +137,12 @@ class ValidateOTPView(generics.GenericAPIView):
         operation_summary="Verify OTP API."
     )
     def post(self, request):
+        """
+        It validates the OTP.
+        
+        :param request: The request object
+        :return: The response is being returned.
+        """
         logger.info(f"====>>>>>>>>       \nValidate OTP API call with payload:{request.data}\n       <<<<<<<<====")
         serializer = self.serializer_class(data=request.data, context={"request": request})
         if serializer.is_valid(raise_exception=True):
@@ -128,6 +161,11 @@ class ResetPasswordView(generics.GenericAPIView):
         operation_summary="Reset Password API"
     )
     def post(self, request):
+        """
+        A function that is used to reset the password of a user.
+        
+        :param request: The request object
+        """
         logger.info(f"====>>>>>>>>       \nReset Password API call with payload:{request.data}\n       <<<<<<<<====")
         serializer = self.serializer_class(data=request.data,context={'request':request})
         
@@ -154,12 +192,22 @@ class ProfileView(generics.RetrieveUpdateAPIView):
     permission_classes = [IsAuthenticated]
 
     def retrieve(self, request, *args, **kwargs):
+        """
+        It retrieves the profile of the user.
+        
+        :param request: The request object
+        """
         logger.info(f"====>>>>>>>>       \nRetrive profile API call with id:{kwargs.get('pk')}\n       <<<<<<<<====")
         instance = self.request.user
         serializer = self.get_serializer(instance)
         return response(status=True, data=serializer.data, status_code=status.HTTP_200_OK, message="profile found successfully.")
 
     def patch(self, request, *args, **kwargs):
+        """
+        It updates the profile of the user.
+        
+        :param request: The request object
+        """
         logger.info(f"====>>>>>>>>       \nUpdate profile of id:{kwargs.get('pk')} with payload:{request.data}\n       <<<<<<<<====")
         partial = kwargs.pop('partial', False)
         instance = self.request.user
