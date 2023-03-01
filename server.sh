@@ -39,7 +39,7 @@ then
     fi
     pm2 start "python manage.py runserver 0.0.0.0:8000" --name cyber_appliance --max-memory-restart "100M" --no-autorestart
     printf "░░░░░░  Starting the worker ░░░░░░ \n\n\n"
-    pm2 start "celery -A proj worker --pool=gevent --concurrency=10 --loglevel=info" --name worker --max-memory-restart "200M"
+    pm2 start "celery -A proj worker --pool=prefork --concurrency=10 --loglevel=info" --name worker --max-memory-restart "200M"
     cd ..
     deactivate
     printf " \n\n Job Done 😎 \n\n"
