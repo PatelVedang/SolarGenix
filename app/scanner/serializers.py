@@ -2,6 +2,9 @@ from rest_framework import serializers
 from .models import Target, Tool
 from user.models import User
 from django.core.validators import validate_ipv4_address
+import logging
+logger = logging.getLogger('django')
+import json
 
 # This class is a serializer for the Target model. It has a custom validation method that checks if
 # the tools_id field is a list of integers that correspond to existing Tool objects
@@ -14,6 +17,7 @@ class ScannerSerializer(serializers.ModelSerializer):
         fields = ['ip','id','tools_id']
 
     def validate(self, attrs):
+        logger.info(f'serialize_data: {json.dumps(attrs)}')
         tools_id = attrs['tools_id']
         for tool_id in tools_id:
             if not Tool.objects.filter(id=tool_id).exists():
@@ -33,6 +37,10 @@ class ScannerResponseSerializer(serializers.ModelSerializer):
         data['tool']= Tool.objects.filter(id=instance.tool.id).values('id', 'tool_name', 'tool_cmd')[0]
         data['scan_by'] = User.objects.filter(id=instance.scan_by.id).values('id', 'email', 'first_name', 'last_name')[0]
         return data
+    
+    def validate(self, attrs):
+        logger.info(f'serialize_data: {json.dumps(attrs)}')
+        return super().validate(attrs)
 
 # The ScannerQueueSerializer class is a serializer for the Target model. It has a field called ids
 # which is a list of integers
@@ -43,6 +51,7 @@ class AddInQueueByIdsSerializer(serializers.ModelSerializer):
         fields = ['targets_id']
 
     def validate(self, attrs):
+        logger.info(f'serialize_data: {json.dumps(attrs)}')
         targets_id = attrs['targets_id']
         for target_id in targets_id:
             if not Target.objects.filter(id=target_id).exists():
@@ -55,6 +64,10 @@ class AddInQueueByNumbersSerializer(serializers.ModelSerializer):
         model = Target
         fields = ['count']
 
+    def validate(self, attrs):
+        logger.info(f'serialize_data: {json.dumps(attrs)}')
+        return super().validate(attrs)
+
 
 class ToolPayloadSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField(read_only=True)
@@ -63,7 +76,15 @@ class ToolPayloadSerializer(serializers.ModelSerializer):
         exlude = ['is_deleted']
         fields = ['id','tool_name','tool_cmd', 'time_limit']
 
+    def validate(self, attrs):
+        logger.info(f'serialize_data: {json.dumps(attrs)}')
+        return super().validate(attrs)
+
 class ToolSerializer(serializers.ModelSerializer):
     class Meta:
         model = Tool
         fields = ['id', 'is_deleted', 'is_active', 'tool_name', 'tool_cmd', 'time_limit']
+
+    def validate(self, attrs):
+        logger.info(f'serialize_data: {json.dumps(attrs)}')
+        return super().validate(attrs)

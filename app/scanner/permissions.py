@@ -1,8 +1,7 @@
 from rest_framework import permissions
 from .models import Target
 import logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('django')
 
 class MachineRetrievePremission(permissions.BasePermission):
     def has_permission(self, request, view):
@@ -38,8 +37,10 @@ class IsAuthenticated(permissions.BasePermission):
     """
 
     def has_permission(self, request, view):
-        logging.info(">"*90)
-        logging.info(f"A request was submitted by user {request.user.first_name} {request.user.last_name}, whose email address is {request.user.email}.")
-        logging.info("<"*90)
+        logger.info(f'method:{request.method} path: {request.path}')
+        if request.data:
+            logger.info(f'payload: {request.data}')
+        if request.query_params:
+            logger.info(f'params: {request.data}')
         return bool(request.user and request.user.is_authenticated)
         

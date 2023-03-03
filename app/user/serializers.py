@@ -11,12 +11,19 @@ from django.conf import settings
 from datetime import datetime, timedelta
 import re
 from django.conf import settings
+import logging
+logger = logging.getLogger('django')
+import json
 
 class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
         fields = ['id', 'email']
+
+    def validate(self, attrs):
+        logger.info(f'serialize_data: {json.dumps(attrs)}')
+        return super().validate(attrs)
 
 
 class RegisterSerializer(serializers.ModelSerializer):
@@ -26,6 +33,10 @@ class RegisterSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['id', 'first_name', 'last_name', 'email', 'password']
+
+    def validate(self, attrs):
+        logger.info(f'serialize_data: {json.dumps(attrs)}')
+        return super().validate(attrs)
     
     def validate_password(self, value):
         if not re.search(settings.PASSWORD_VALIDATE_REGEX, value):
@@ -55,6 +66,7 @@ class LoginSerializer(TokenObtainPairSerializer):
 
 class CustomTokenRefreshSerializer(TokenRefreshSerializer):
     def validate(self, attrs):
+        logger.info(f'serialize_data: {json.dumps(attrs)}')
         refresh = self.token_class(attrs['refresh'])
         data = super(CustomTokenRefreshSerializer, self).validate(attrs)
         data['refresh'] = str(refresh)
@@ -68,6 +80,7 @@ class ForgotPasswordSerializer(serializers.Serializer):
         model = User
         fields = ["email"]
     def validate(self, attrs):
+        logger.info(f'serialize_data: {json.dumps(attrs)}')
         email = attrs.get("email", "")
         
         if User.objects.filter(email=email).exists():
@@ -99,6 +112,7 @@ class OTPValidateSerializer(serializers.Serializer):
         fields = ['phone_number','otp']
 
     def validate(self, attrs):
+        logger.info(f'serialize_data: {json.dumps(attrs)}')
         otp = attrs.get('otp')
         email = attrs.get("email", "")
         user = User.objects.filter(otp=otp, email=email)
@@ -121,6 +135,7 @@ class ResetPasswordSerializer(serializers.Serializer):
         fields = ["email", "otp", "password", "confirm_password"]
     
     def validate(self, attrs):
+        logger.info(f'serialize_data: {json.dumps(attrs)}')
         email = attrs.get("email", "")
         otp = attrs.get('otp')
         user = User.objects.filter(otp=otp, email=email)
@@ -156,3 +171,7 @@ class UpdateProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['id', 'first_name', 'last_name']
+
+    def validate(self, attrs):
+        logger.info(f'serialize_data: {json.dumps(attrs)}')
+        return super().validate(attrs)

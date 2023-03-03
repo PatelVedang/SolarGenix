@@ -11,8 +11,7 @@ import json
 import requests
 from celery import shared_task
 import logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('django')
 
 c = Celery('proj')
 @c.task

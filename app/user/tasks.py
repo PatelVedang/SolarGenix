@@ -3,8 +3,7 @@ from django.conf import settings
 from django.core.mail import send_mail
 from django.template.loader import render_to_string
 import logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('django')
 
 
 @shared_task
@@ -33,4 +32,4 @@ def send_email(subject, body, sender, recipients, fail_silently, otp = ""):
         logger.info(f"response {sent}")
         logger.info(f"Please check your inbox.")
     except Exception as e:
-        print(f"Error: {str(e)}")
+        logger.error(str(e))

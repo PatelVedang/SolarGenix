@@ -235,21 +235,55 @@ CHANNEL_LAYERS = {
 }
 WEB_SOCKET_INTERVAL=os.environ.get('WEB_SOCKET_INTERVAL', env('WEB_SOCKET_INTERVAL'))
 
+# Create Logs folder
+if not os.path.exists(f'{BASE_DIR}/logs/'):
+    os.mkdir(f'{BASE_DIR}/logs/')
+
+# Create log file is not exist
+if not os.path.exists(f'{BASE_DIR}/logs/info.log'):
+    f = open(f'{BASE_DIR}/logs/info.log', 'w')
+    f.close()
+
+if not os.path.exists(f'{BASE_DIR}/logs/error.log'):
+    f = open(f'{BASE_DIR}/logs/error.log', 'w')
+    f.close()
+
 # Logging
-# LOGGING = {
-#     'version': 1,
-#     'disable_existing_loggers': False,
-#     'handlers': {
-#         'console': {
-#             'level': 'INFO',
-#             'class': 'logging.StreamHandler',
-#         },
-#     },
-#     'loggers': {
-#         'django': {
-#             'handlers': ['console'],
-#             'level': 'INFO',
-#             'propagate': True,
-#         },
-#     },
-# }
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False if DEBUG else True,
+    'handlers':{
+        'info':{
+            'level':'INFO',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': f'{BASE_DIR}/logs/info.log',
+            'maxBytes': 30 * 1024 * 1024, # 30M Log Size
+            'backupCount': 10,
+            'formatter':'info',
+        },
+        'error':{
+            'level':'ERROR',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': f'{BASE_DIR}/logs/error.log',
+            'maxBytes': 30 * 1024 * 1024, # 30M Log Size
+            'backupCount':5,
+            'formatter':'error',
+        },
+    },
+    'loggers':{
+        'django':{
+            'handlers':['info', 'error'],
+            'level':'INFO',
+            'propagate': True,
+        },
+
+    },
+    'formatters':{
+        'info':{
+            'format': '%(levelname)s %(asctime)s %(module)s %(lineno)s %(message)s',
+        },
+        'error':{
+            'format': '%(asctime)s [%(module)s | %(levelname)s] %(message)s @ %(pathname)s : %(lineno)d : %(funcName)s',
+        }
+    }
+}

@@ -7,18 +7,17 @@ from rest_framework import generics
 from utils.make_response import response
 from rest_framework import status
 from drf_yasg.utils import swagger_auto_schema
-from rest_framework.permissions import AllowAny
+from .permissions import  AllowAny, AllowAnyWithoutLog
 from rest_framework_simplejwt.serializers import TokenVerifySerializer
-from rest_framework.permissions import IsAuthenticated
+from scanner.permissions import IsAuthenticated
 from django.utils.decorators import method_decorator 
 import logging
-logging.basicConfig(level=logging.info)
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('django')
 
 class RegisterView(generics.CreateAPIView):
     queryset = User.objects.all()
     serializer_class = RegisterSerializer
-    permission_classes = [AllowAny]
+    permission_classes = [AllowAnyWithoutLog]
         
     @swagger_auto_schema(
         tags=['Auth'],
@@ -31,16 +30,14 @@ class RegisterView(generics.CreateAPIView):
         
         :param request: The request object
         """
-        logger.info(f"====>>>>>>>>       \nRegister API call with payload:{request.data}\n       <<<<<<<<====")
         register_serializer = self.serializer_class(data=request.data)
         if register_serializer.is_valid(raise_exception=True):
-            logger.info(f"====>>>>>>>>       \nserializer validate successfully in Regieter API with data:{request.data}\n       <<<<<<<<====")
             result = super().create(request, *args, **kwargs) 
             return response(status=True, data=result.data, status_code=status.HTTP_200_OK, message="user created successfully.")
 
 class LoginView(TokenObtainPairView):
     serializer_class = LoginSerializer
-    permission_classes = [AllowAny]
+    permission_classes = [AllowAnyWithoutLog]
 
     @swagger_auto_schema(
         tags=['Auth'],
@@ -53,10 +50,8 @@ class LoginView(TokenObtainPairView):
         
         :param request: The request object
         """
-        logger.info(f"====>>>>>>>>       \nLogin API call with payload:{request.data}\n       <<<<<<<<====")
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid(raise_exception=True):
-            logger.info(f"====>>>>>>>>       \nserializer validate successfully in Login API with data:{request.data}\n       <<<<<<<<====")
             return response(status=True, data=serializer.validated_data, status_code=status.HTTP_200_OK, message="user login successfully.")
 
 class RefreshTokenView(TokenObtainPairView):
@@ -75,10 +70,8 @@ class RefreshTokenView(TokenObtainPairView):
         :param request: The request object
         :return: The response is being returned.
         """
-        logger.info(f"====>>>>>>>>       \nRefresh Token API call with payload:{request.data}\n       <<<<<<<<====")
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid(raise_exception=True):
-            logger.info(f"====>>>>>>>>       \nserializer validate successfully in Refresh Token API with data:{request.data}\n       <<<<<<<<====")
             return response(status=True, data=serializer.validated_data, status_code=status.HTTP_200_OK, message="user login successfully.")
 
 class VerifyTokenView(TokenObtainPairView):
@@ -96,10 +89,8 @@ class VerifyTokenView(TokenObtainPairView):
         
         :param request: The request object
         """
-        logger.info(f"====>>>>>>>>       \nVerify Token API call with payload:{request.data}\n       <<<<<<<<====")
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid(raise_exception=True):
-            logger.info(f"====>>>>>>>>       \nserializer validate successfully in Verify Token API with data:{request.data}\n       <<<<<<<<====")
             return response(status=True, data={}, status_code=status.HTTP_200_OK, message="token verified successfully.")
 
 class ForgotPasswordView(generics.CreateAPIView):
@@ -118,10 +109,8 @@ class ForgotPasswordView(generics.CreateAPIView):
         :param request: The request object
         :return: A response object is being returned.
         """
-        logger.info(f"====>>>>>>>>       \nForgot password API call with payload:{request.data}\n       <<<<<<<<====")
         serializer = self.serializer_class(data=request.data, context={"request": request})
         if serializer.is_valid(raise_exception=True):
-            logger.info(f"====>>>>>>>>       \nserializer validate successfully in Forgot Password API with data:{request.data}\n       <<<<<<<<====")
             serializer.save()
             user = User.objects.get(email=serializer.validated_data["email"])
             return response(status=True, data={'success': True, 'otp': int(user.otp), 'expire_time': user.otp_expires}, status_code=status.HTTP_200_OK, message="successfully sent an OTP in mail. Please check your inbox.")
@@ -143,10 +132,8 @@ class ValidateOTPView(generics.GenericAPIView):
         :param request: The request object
         :return: The response is being returned.
         """
-        logger.info(f"====>>>>>>>>       \nValidate OTP API call with payload:{request.data}\n       <<<<<<<<====")
         serializer = self.serializer_class(data=request.data, context={"request": request})
         if serializer.is_valid(raise_exception=True):
-            logger.info(f"====>>>>>>>>       \nserializer validate successfully in Verify OTP API with data:{request.data}\n       <<<<<<<<====")
             return response(status=True, data={}, status_code=status.HTTP_200_OK, message="OTP has successfully validated.")
         
 
@@ -166,11 +153,9 @@ class ResetPasswordView(generics.GenericAPIView):
         
         :param request: The request object
         """
-        logger.info(f"====>>>>>>>>       \nReset Password API call with payload:{request.data}\n       <<<<<<<<====")
         serializer = self.serializer_class(data=request.data,context={'request':request})
         
         if serializer.is_valid(raise_exception=True):
-            logger.info(f"====>>>>>>>>       \nserializer validate successfully in Reset Password API with data:{request.data}\n       <<<<<<<<====")
             serializer.save()
             return response(status=True, data={}, status_code=status.HTTP_200_OK, message="successful changing of the password.")
 
@@ -197,7 +182,6 @@ class ProfileView(generics.RetrieveUpdateAPIView):
         
         :param request: The request object
         """
-        logger.info(f"====>>>>>>>>       \nRetrive profile API call with id:{kwargs.get('pk')}\n       <<<<<<<<====")
         instance = self.request.user
         serializer = self.get_serializer(instance)
         return response(status=True, data=serializer.data, status_code=status.HTTP_200_OK, message="profile found successfully.")
@@ -208,11 +192,9 @@ class ProfileView(generics.RetrieveUpdateAPIView):
         
         :param request: The request object
         """
-        logger.info(f"====>>>>>>>>       \nUpdate profile of id:{kwargs.get('pk')} with payload:{request.data}\n       <<<<<<<<====")
         partial = kwargs.pop('partial', False)
         instance = self.request.user
         serializer = self.get_serializer(instance, data=request.data, partial=partial)
         if serializer.is_valid(raise_exception=True):
-            logger.info(f"====>>>>>>>>       \nserializer validate successfully in update profile API with data:{request.data}\n       <<<<<<<<====")
             serializer.save()
             return response(status=True, data=serializer.data, status_code=status.HTTP_200_OK, message="profile updated successfully.")

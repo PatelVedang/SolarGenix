@@ -1,6 +1,8 @@
 from rest_framework.views import exception_handler
 from .make_response import response
 import traceback
+import logging
+logger = logging.getLogger('django')
 
 def custom_exception_handler(exc, context):
     try:
@@ -26,7 +28,7 @@ def custom_exception_handler(exc, context):
         print(">"*30," "*15,"Exception class end", " "*15,"<"*30)
         return response(status=False, data={}, status_code= res.get('status_code',401) if res else 401, message=message)
     except Exception as e:
-        print(e)
+        logger.error(str(e))
 
 
 def _handler_authentication_error(exc, context, response):

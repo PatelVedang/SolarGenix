@@ -25,9 +25,7 @@ import time
 from datetime import datetime
 from django.conf import settings
 import logging
-logging.basicConfig(level=logging.info)
-logger = logging.getLogger(__name__)
-
+logger = logging.getLogger('django')
 
 import json
 @method_decorator(name='partial_update', decorator=swagger_auto_schema(tags=['Targets'], auto_schema=None))
@@ -57,11 +55,9 @@ class ScanViewSet(viewsets.ModelViewSet):
         :param request: The request object
         :return: The response is a list of targets.
         """
-        logger.info(f"====>>>>>>>>       \nScanByIds API call with payload:{request.data}\n       <<<<<<<<====")
         self.serializer_class = AddInQueueByIdsSerializer
         serializer = self.serializer_class(data=request.data)
         if serializer.is_valid(raise_exception=True):
-            logger.info(f"====>>>>>>>>       \nserializer validate successfully in ScanByIds API with data:{request.data}\n       <<<<<<<<====")
             targets_id = serializer.data.get('targets_id')
             for target_id in targets_id:
                 target_obj = Target.objects.get(id=target_id)
@@ -86,11 +82,9 @@ class ScanViewSet(viewsets.ModelViewSet):
         :param request: The request object
         :return: The response is a list of dictionaries.
         """
-        logger.info(f"====>>>>>>>>       \nScanByNumbers API call with payload:{request.data}\n       <<<<<<<<====")
         self.serializer_class = AddInQueueByNumbersSerializer
         serializer = self.serializer_class(data=request.data)
         if serializer.is_valid(raise_exception=True):
-            logger.info(f"====>>>>>>>>       \nserializer validate successfully in ScanByNumbers API with data:{request.data}\n       <<<<<<<<====")
             # count
             n = serializer.data.get('count')
             if (not request.user.is_staff) and (not request.user.is_superuser):
@@ -119,13 +113,11 @@ class ScanViewSet(viewsets.ModelViewSet):
         
         :param request: The request object
         """
-        logger.info(f"====>>>>>>>>       \nAdd target API call with payload:{request.data}\n       <<<<<<<<====")
         # provide payload to serializer
         self.serializer_class = ScannerSerializer
         serializer = self.serializer_class(data=request.data)
         #validate serializer with given payload 
         if serializer.is_valid(raise_exception=True):
-            logger.info(f"====>>>>>>>>       \nserializer validate successfully in Add target API with data:{request.data}\n       <<<<<<<<====")
             ip_addresses = serializer.data.get('ip')
             tools = serializer.data.get('tools_id')
             scan_by = serializer.data.get('scan_by')
@@ -155,7 +147,6 @@ class ScanViewSet(viewsets.ModelViewSet):
         :param request: The request object
         :return: The serializer.data is being returned.
         """
-        logger.info(f"====>>>>>>>>       \nRetrive target API call with id:{kwargs.get('pk')}\n       <<<<<<<<====")
         self.serializer_class = ScannerResponseSerializer
         serializer = super().retrieve(request, *args, **kwargs)
         return response(status=True, data=serializer.data, status_code=status.HTTP_200_OK, message="record found successfully")
@@ -173,7 +164,6 @@ class ScanViewSet(viewsets.ModelViewSet):
         :param request: The request object
         :return: The data is being returned in the form of a list.
         """
-        logger.info(f"====>>>>>>>>       \nTarget List API call\n       <<<<<<<<====")
         if (not request.user.is_staff) and (not request.user.is_superuser):
             self.queryset = Target.objects.filter(scan_by = request.user.id)
         self.serializer_class = ScannerResponseSerializer
@@ -196,7 +186,6 @@ class ScanViewSet(viewsets.ModelViewSet):
         :param request: The request object
         :return: A PDF file url
         """
-        logger.info(f"====>>>>>>>>       \nGenerate PDF API call for target id:{kwargs.get('pk')}\n       <<<<<<<<====")
         self.serializer_class = ScannerResponseSerializer
         serializer = super().retrieve(request, *args, **kwargs)
         pdf= PDF()
@@ -226,7 +215,6 @@ class ScanViewSet(viewsets.ModelViewSet):
         :param request: The request object
         :return: The PDF file is being returned.
         """
-        logger.info(f"====>>>>>>>>       \nGenerate Fake PDF API call for target id:{kwargs.get('pk')}\n       <<<<<<<<====")
         self.serializer_class = ScannerResponseSerializer
         serializer = super().retrieve(request, *args, **kwargs)
         pdf= PDF()
@@ -252,7 +240,6 @@ class ScanViewSet(viewsets.ModelViewSet):
         :param request: The request object
         :return: The HTML content of the report
         """
-        logger.info(f"====>>>>>>>>       \nGenerate HTML API call for target id:{kwargs.get('pk')}\n       <<<<<<<<====")
         self.serializer_class = ScannerResponseSerializer
         serializer = super().retrieve(request, *args, **kwargs)
         pdf= PDF()
@@ -277,7 +264,6 @@ class ScanViewSet(viewsets.ModelViewSet):
         :param request: The request object
         :return: The response is being returned.
         """
-        logger.info(f"====>>>>>>>>       \nDelete Target API call for target id:{kwargs.get('pk')}\n       <<<<<<<<====")
         self.get_object().soft_delete()
         return response(status=True, data={}, status_code=status.HTTP_200_OK, message="record deleted successfully")
 
@@ -303,7 +289,6 @@ class ToolViewSet(viewsets.ModelViewSet):
         :param request: The request object
         :return: The response is being returned.
         """
-        logger.info(f"====>>>>>>>>       \nList tool API call\n       <<<<<<<<====")
         serializer = super().list(request, *args, **kwargs)
         return response(status=True, data=serializer.data, status_code=status.HTTP_200_OK, message="record found successfully")
 
@@ -314,7 +299,6 @@ class ToolViewSet(viewsets.ModelViewSet):
         :param request: The request object
         :return: The response is being returned.
         """
-        logger.info(f"====>>>>>>>>       \nAdd Tool API with payload:{request.data}\n       <<<<<<<<====")
         self.serializer_class = ToolPayloadSerializer
         serializer = super().create(request, *args, **kwargs)
         return response(status=True, data=serializer.data, status_code=status.HTTP_200_OK, message="record successfully added in database.")
@@ -326,7 +310,6 @@ class ToolViewSet(viewsets.ModelViewSet):
         :param request: The request object
         :return: The response is being returned.
         """
-        logger.info(f"====>>>>>>>>       \nUpdate Tool of id:{kwargs.get('pk')} with payload:{request.data}\n       <<<<<<<<====")
         self.serializer_class = ToolPayloadSerializer
         serializer = super().partial_update(request, *args, **kwargs)
         return response(status=True, data=serializer.data, status_code=status.HTTP_200_OK, message="record successfully updated in database.")
@@ -337,7 +320,6 @@ class ToolViewSet(viewsets.ModelViewSet):
         
         :param request: The request object
         """
-        logger.info(f"====>>>>>>>>       \nRetrive Tool API call with id:{kwargs.get('pk')}\n       <<<<<<<<====")
         serializer = super().retrieve(request, *args, **kwargs)
         return response(status=True, data=serializer.data, status_code=status.HTTP_200_OK, message="record found successfully")
 
@@ -348,7 +330,6 @@ class ToolViewSet(viewsets.ModelViewSet):
         :param request: The request object
         :return: The response is being returned.
         """
-        logger.info(f"====>>>>>>>>       \nDelete Tool API call with id:{kwargs.get('pk')}\n       <<<<<<<<====")
         self.get_object().soft_delete()
         return response(status=True, data={}, status_code=status.HTTP_200_OK, message="record deleted successfully")
 
