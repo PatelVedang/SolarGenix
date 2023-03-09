@@ -243,7 +243,7 @@ class ScanViewSet(viewsets.ModelViewSet):
         self.serializer_class = ScannerResponseSerializer
         serializer = super().retrieve(request, *args, **kwargs)
         pdf= PDF()
-        html_data = pdf.generate(request.user.id, serializer.data.get('id'), host=request.headers.get('Host'), generate_pdf=False)
+        html_data = pdf.generate(request.user.id, serializer.data.get('id'), generate_pdf=False)
 
         data = {
             'html_content':html_data

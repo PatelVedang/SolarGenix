@@ -7,6 +7,8 @@ import os
 from bs4 import BeautifulSoup
 import requests
 from html import escape
+import logging
+logger = logging.getLogger('django')
 
 class PDF:
     PDF_PATH = f'{settings.MEDIA_ROOT}pdf'
@@ -37,6 +39,7 @@ class PDF:
         :param generate_pdf: If you want to generate a pdf file, set it to True, defaults to True
         (optional)
         """
+        logger.info(f'Generate PDF UTIL call for target id {target_id}')
         port_search_regex = '(?P<port>\d{1,4}/tcp)\s+(?P<state>(filtered|open|closed)).*(\n)'
         target_obj = Target.objects.get(id=target_id)
         self.scan_result = target_obj.result
@@ -81,6 +84,7 @@ class PDF:
 
             new_pdf_name = f'{str(uuid.uuid4())}.pdf'
             file_path = f'{self.path}/{new_pdf_name}'
+            logger.info(f'Pdf generated successfully by user id {user_id} for target id {target_id} which is stored in path {file_path}')
             options={
             '--page-size': 'A4',
             'margin-top': '0.5in',
@@ -94,6 +98,7 @@ class PDF:
             file_url = f"{settings.PDF_DOWNLOAD_ORIGIN}/media/{file_path_for_db}"
             return file_path, new_pdf_name, file_url
         else:
+            logger.info(f'HTML Genrated successfully by user id {user_id} for target id {target_id}')
             return html_data.replace("\n","")
         
     def get_cve_details(self, cve):
@@ -126,6 +131,7 @@ class PDF:
                 'error_type': cvv2.split(" ")[1] if cvv2 and cvv2!='N/A' else 'N/A'
             }
         }}
+        logger.info(f'CVE details {cve_details}')
         return cve_details
 
     
