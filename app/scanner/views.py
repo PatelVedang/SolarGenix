@@ -169,6 +169,9 @@ class ScanViewSet(viewsets.ModelViewSet):
         """
         if (not request.user.is_staff) and (not request.user.is_superuser):
             self.queryset = Target.objects.filter(scan_by = request.user.id)
+        if request.query_params.get('order'):
+            order_id = request.query_params.get('order')
+            self.queryset.filter(order_id=order_id)
         self.serializer_class = ScannerResponseSerializer
         data = super().list(request, *args, **kwargs)
         return response(status=True, data=data.data, status_code=status.HTTP_200_OK, message="record found successfully")
@@ -461,6 +464,8 @@ class OrderViewSet(viewsets.ModelViewSet):
         :param request: The request object
         :return: The response is being returned.
         """
+        if (not request.user.is_staff) and (not request.user.is_superuser):
+            self.queryset = Order.objects.filter(client_id = request.user.id)
         self.serializer_class = OrderResponseSerailizer
         data = super().list(request, *args, **kwargs)
         return response(status=True, data=data.data, status_code=status.HTTP_200_OK, message="record found successfully")
@@ -498,6 +503,12 @@ class OrderViewSet(viewsets.ModelViewSet):
     )
     @action(methods=['POST'], detail=False, url_path="addByIds")
     def scan_by_ids(self, request, *args, **kwargs):
+        """
+        It takes a list of order ids, and for each order id, it takes all the targets associated with
+        that order id, and adds them to the queue
+        
+        :param request: The request object
+        """
         self.serializer_class = AddInQueueByOrderIdsSerializer
         serializer = self.serializer_class(data=request.data)
         if serializer.is_valid(raise_exception=True):
