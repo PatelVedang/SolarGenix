@@ -2,6 +2,7 @@ from django.db import models
 from datetime import datetime
 from django.contrib.auth.models import User
 from user.models import User
+import socket
 
 TARGET_STATUS_CHOICES = [
     (0, "Created"),
@@ -9,6 +10,13 @@ TARGET_STATUS_CHOICES = [
     (2, "Scan started"),
     (3, "Scan terminated"),
     (4, "Scan finished")
+]
+
+ORDER_STATUS_CHOICES = [
+    (0, "Created"),
+    (1, "Queued"),
+    (2, "Failed"),
+    (3, "Finished")
 ]
 
 PAYMENT_STATUS_CHOICES = [
@@ -52,15 +60,18 @@ class SoftDelete(models.Model):
 
 # Create your models here.
 class Target(SoftDelete):
-    ip = models.CharField(max_length=15,null=False)
-    result = models.TextField()
+    ip = models.CharField(max_length=100,null=False)
+    raw_result = models.TextField()
+    compose_result = models.TextField(default="")
     status = models.IntegerField(choices=TARGET_STATUS_CHOICES, default=0)
     tool = models.ForeignKey("Tool", on_delete=models.SET_NULL, default=1, null=True)
+    order = models.ForeignKey("Order", on_delete=models.SET_NULL, null=True, related_name="targets") 
     scan_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True, null=True)
     updated_at = models.DateTimeField(auto_now=True, null=True)
     pdf_path = models.FileField(null=True, blank=True)
+    retry= models.BigIntegerField(default=0)
 
     def __str__(self):
         return self.ip
@@ -101,3 +112,14 @@ class TargetLog(models.Model):
     target = models.ForeignKey(Target, on_delete=models.SET_NULL, null=True)
     action = models.IntegerField(choices=ACTION_CHOICES)
     created_at = models.DateTimeField(auto_now_add=True, null=True)
+
+
+class Order(SoftDelete):
+    client = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+    subscrib = models.ForeignKey(Subscription, on_delete=models.SET_NULL, null=True, blank=True)
+    target_ip = models.CharField(max_length=100,null=False)
+    status = models.IntegerField(choices=ORDER_STATUS_CHOICES, default=0)
+    retry= models.BigIntegerField(default=0)
+    pdf_path = models.FileField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True, null=True)
+    updated_at = models.DateTimeField(auto_now=True, null=True)

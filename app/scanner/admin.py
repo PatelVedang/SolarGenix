@@ -1,17 +1,36 @@
 from django.contrib import admin
-from .models import Target, Tool, Subscription, SubscriptionHistory, TargetLog
+from .models import Target, Tool, Subscription, SubscriptionHistory, TargetLog, Order
+
 
 # Register your models here.
 class TargetAdmin(admin.ModelAdmin):
-    readonly_fields = ('id',)
+    readonly_fields = ('id','retry')
     list_display = [
-        'id', 'ip','get_full_name','status', 'tool'
+        'id', 'ip','get_full_name','status', 'tool', 'is_deleted','order_id'
     ]
     search_fields = ('ip','id')
 
     def get_full_name(self, obj):
         return f'{obj.scan_by.first_name} {obj.scan_by.last_name}'
     get_full_name.short_description = 'Scan By'
+
+class OrderAdmin(admin.ModelAdmin):
+    readonly_fields = ('id','retry')
+    search_fields = ('target_ip','id')
+    list_display = [
+        'id','target_ip', 'status', 'get_full_name', 'get_targets_count', 'is_deleted'
+    ]
+
+    def get_full_name(self, obj):
+        return f'{obj.client.first_name} {obj.client.last_name}'
+    get_full_name.short_description = 'Client'
+    
+    def get_targets_count(self, obj):
+        targets = Target.objects.filter(order=obj).count()
+        return f'{targets}'
+    get_targets_count.short_description = 'Total Targets'
+
+
 
 class ToolAdmin(admin.ModelAdmin):
     readonly_fields = ('id',)
@@ -40,3 +59,4 @@ admin.site.register(Tool, ToolAdmin)
 admin.site.register(Subscription)
 admin.site.register(SubscriptionHistory, SubscriptionHistoryAdmin)
 admin.site.register(TargetLog, TargetLogsAdmin)
+admin.site.register(Order, OrderAdmin)

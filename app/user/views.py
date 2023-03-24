@@ -32,7 +32,7 @@ class RegisterView(generics.CreateAPIView):
         """
         register_serializer = self.serializer_class(data=request.data)
         if register_serializer.is_valid(raise_exception=True):
-            result = super().create(request, *args, **kwargs) 
+            result = super().create(request, *args, **kwargs)
             return response(status=True, data=result.data, status_code=status.HTTP_200_OK, message="user created successfully.")
 
 class LoginView(TokenObtainPairView):

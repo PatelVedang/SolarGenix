@@ -1,6 +1,6 @@
 from django.urls import path, include
 from . import views
-from .views import ScanViewSet, ToolViewSet
+from .views import ScanViewSet, ToolViewSet, OrderViewSet
 from rest_framework import routers
 from drf_yasg.utils import swagger_auto_schema
 
@@ -9,6 +9,7 @@ from drf_yasg.utils import swagger_auto_schema
 router = routers.DefaultRouter()
 router.register('targets', ScanViewSet,basename='targets')
 router.register('tool', ToolViewSet,basename='tool')
+router.register('orders', OrderViewSet,basename='order')
 
 urlpatterns = [
     path('', include(router.urls)),

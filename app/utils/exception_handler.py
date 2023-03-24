@@ -38,7 +38,6 @@ def _handler_invalid_token_error(exc, context, response):
     return "An authorization token is not valid."
 
 def _handler_validation_error(exc, context, response):
-    print(list(list(exc.__dict__.values())[0].values())[0][0][0],"=>>>")
     key = list(list(exc.__dict__.values())[0].keys())[0]
     try:
         code = list(list(exc.__dict__.values())[0].values())[0][0].__dict__['code']

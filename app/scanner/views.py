@@ -1,10 +1,10 @@
 from django.shortcuts import render
-from .models import Target, Tool, TargetLog
+from .models import Target, Tool, TargetLog, Order
 from user.models import User
 from django.http import HttpResponse, JsonResponse
 from rest_framework.decorators import api_view
 from .tasks import scan
-from .serializers import ScannerSerializer, ScannerResponseSerializer, AddInQueueByIdsSerializer, AddInQueueByNumbersSerializer, ToolSerializer, ToolPayloadSerializer
+from .serializers import *
 from rest_framework.response import Response
 from rest_framework import viewsets, status, generics
 from rest_framework.filters import SearchFilter 
@@ -36,8 +36,9 @@ class ScanViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated, MachineRetrievePremission]
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     search_fields = ['ip', 'scan_by__first_name', 'scan_by__last_name', 'tool__tool_name', 'updated_at']
-    filterset_fields = ['id', 'ip', 'status', 'tool']
+    filterset_fields = ['id', 'ip', 'status', 'tool', 'order']
     ordering_fields = ['tool__tool_name', 'ip', 'id', 'created_at', 'updated_at', 'status']
+    # filterset_class = MetricFilter
 
     @swagger_auto_schema(
         method = 'post',
@@ -62,7 +63,7 @@ class ScanViewSet(viewsets.ModelViewSet):
             for target_id in targets_id:
                 target_obj = Target.objects.get(id=target_id)
                 tool_time_limit = target_obj.tool.time_limit
-                scan.apply_async(args=[], kwargs={'id':target_id, 'time_limit':tool_time_limit, 'token':request.headers.get('Authorization')}, time_limit=tool_time_limit+10, ignore_result=True)
+                scan.apply_async(args=[], kwargs={'id':target_id, 'time_limit':tool_time_limit, 'token':request.headers.get('Authorization'), 'order_id': target_obj.order_id, 'batch_scan': False}, time_limit=tool_time_limit+10, ignore_result=True)
         custom_response = ScannerResponseSerializer(Target.objects.filter(id__in=targets_id), many=True)
         return response(status=True, data=custom_response.data, status_code=status.HTTP_200_OK, message="host successfully added in queue")
         
@@ -93,14 +94,10 @@ class ScanViewSet(viewsets.ModelViewSet):
                 records = Target.objects.filter(status=0)[:n]
             for record in records:
                 tool_time_limit = record.tool.time_limit
-                scan.apply_async(args=[], kwargs={'id':record.id, 'time_limit':tool_time_limit, 'token':request.headers.get('Authorization')}, time_limit=tool_time_limit+10, ignore_result=True)
+                scan.apply_async(args=[], kwargs={'id':record.id, 'time_limit':tool_time_limit, 'token':request.headers.get('Authorization'), 'order_id': record.order_id, 'batch_scan': False}, time_limit=tool_time_limit+10, ignore_result=True)
         custom_response = ScannerResponseSerializer(records, many=True)
         return response(status=True, data=custom_response.data, status_code=status.HTTP_200_OK, message="host successfully added in queue")
 
-    # API for create object
-    # @swagger_auto_schema(manual_parameters=[
-    #     openapi.Parameter('ip', openapi.IN_BODY,type=openapi.TYPE_ARRAY, required=True, items=openapi.Items(type=openapi.TYPE_STRING)),
-    # ], request_body= ScannerSerializer)
     @swagger_auto_schema(
         request_body=ScannerSerializer,
         operation_description= "Insert record in machine table.",
@@ -119,16 +116,22 @@ class ScanViewSet(viewsets.ModelViewSet):
         #validate serializer with given payload 
         if serializer.is_valid(raise_exception=True):
             ip_addresses = serializer.data.get('ip')
-            tools = serializer.data.get('tools_id')
+            # tools = serializer.data.get('tools_id')
             scan_by = serializer.data.get('scan_by')
             if isinstance(ip_addresses, str):
                 ip_addresses = [ip_addresses]
-            if isinstance(tools, int):
-                tools = [tools]
+            # if isinstance(tools, int):
+            #     tools = [tools]
             record_ids = []
+            
+            # in future we will update below filter condition
+            tools = Tool.objects.filter(subscription_id=1)
+            
             for ip in ip_addresses:
+                # in future we will update below filter condition
+                order = Order.objects.create(client_id=request.user.id, subscrib_id=1, target_ip=ip)
                 for tool in tools:
-                    obj = Target.objects.create(ip=ip, scan_by=request.user,tool=Tool(id=tool))
+                    obj = Target.objects.create(ip=ip, scan_by=request.user,tool=tool, order=order)
                     record_ids.append(obj.id)
         custom_response = ScannerResponseSerializer(Target.objects.filter(id__in=record_ids), many=True)
         return response(status=True, data=custom_response.data, status_code=status.HTTP_200_OK, message="host successfully added in database")
@@ -189,8 +192,7 @@ class ScanViewSet(viewsets.ModelViewSet):
         self.serializer_class = ScannerResponseSerializer
         serializer = super().retrieve(request, *args, **kwargs)
         pdf= PDF()
-
-        pdf_path, pdf_name, file_url = pdf.generate(request.user.id, serializer.data.get('id'))
+        pdf_path, pdf_name, file_url = pdf.generate(request.user.id, serializer.data.get('order'), [serializer.data.get('id')])
         
         data = {
             'file_path':file_url
@@ -218,7 +220,7 @@ class ScanViewSet(viewsets.ModelViewSet):
         self.serializer_class = ScannerResponseSerializer
         serializer = super().retrieve(request, *args, **kwargs)
         pdf= PDF()
-        pdf_path, pdf_name, file_url = pdf.generate(request.user.id, serializer.data.get('id'))
+        pdf_path, pdf_name, file_url = pdf.generate(request.user.id, serializer.data.get('order'), [serializer.data.get('id')])
         FilePointer = open(pdf_path,"rb")
         response = HttpResponse(FilePointer,content_type='application/pdf')
         response['Content-Disposition'] = f'attachment; filename={pdf_name}'
@@ -243,7 +245,8 @@ class ScanViewSet(viewsets.ModelViewSet):
         self.serializer_class = ScannerResponseSerializer
         serializer = super().retrieve(request, *args, **kwargs)
         pdf= PDF()
-        html_data = pdf.generate(request.user.id, serializer.data.get('id'), generate_pdf=False)
+        
+        html_data = pdf.generate(request.user.id, serializer.data.get('order'), [serializer.data.get('id')], generate_pdf=False)
 
         data = {
             'html_content':html_data
@@ -347,17 +350,188 @@ class SendMessageView(generics.GenericAPIView):
         :param request: The request object
         :return: The above code is returning the status of the scan.
         """
-        start_time = datetime.utcnow()
         params = request.query_params
-        while True:
-            target = Target.objects.filter(id=params.get('id'))
-            serializer = self.serializer_class(target[0])
-            diff= (datetime.utcnow() - start_time).total_seconds()
-            # api_progress = round(diff*100/((target[0].tool.time_limit+10)), 2)
-            api_progress = int(diff*100/((target[0].tool.time_limit+10)))
-            record_obj = {**serializer.data, **{'api_progress':api_progress}}
-            send(str(record_obj['scan_by']['id']),record_obj)
-            if record_obj.get('status') >= 3:
-                break
-            time.sleep(round(float(settings.WEB_SOCKET_INTERVAL),2))
+        if params.get('order'):
+            targets_start_time = {}
+            order_id = params.get('order')
+            order = Order.objects.filter(id=order_id)
+            order.update(status=1)
+            while True:
+                targets = Target.objects.filter(order_id=order_id)
+                total_targets = targets.count()
+                tool_perecent = 100/total_targets
+                response = []
+                order_percent = 0
+                for target in targets:
+                    serializer = self.serializer_class(target)
+                    if (target.status < 3 and target.status > 0) and targets_start_time.get(target.id):
+                        diff= (datetime.utcnow() - targets_start_time[target.id]).total_seconds()
+                        target_percent = int(diff*100/((target.tool.time_limit+10)))
+                        record_obj = {**serializer.data, **{'target_percent':target_percent}}
+                        order_percent += int((target_percent*tool_perecent)/100)
+                        response.append(record_obj)
+                    elif (target.status < 3 and target.status > 0) and not targets_start_time.get(target.id):
+                        targets_start_time[target.id] = datetime.utcnow()
+                        diff= (datetime.utcnow() - targets_start_time[target.id]).total_seconds()
+                        target_percent = int(diff*100/((target.tool.time_limit+10)))
+                        record_obj = {**serializer.data, **{'target_percent':target_percent}}
+                        order_percent += int((target_percent*tool_perecent)/100)
+                        response.append(record_obj)
+                    elif target.status > 2:
+                        record_obj = {**serializer.data, **{'target_percent':100, 'scan_complete': True}}
+                        order_percent += int((100*tool_perecent)/100)
+                        response.append(record_obj)
+                    elif target.status == 0:
+                        record_obj = {**serializer.data, **{'target_percent':0}}
+                        order_percent += int((0*tool_perecent)/100)
+                        response.append(record_obj)
+
+                    if targets.filter(status__gt=2).count() == total_targets:
+                        if targets.filter(status=4).count() == total_targets:
+                            order.update(status=3)
+                        else:
+                            order.update(status=2)
+                serializer = OrderWithoutTargetsResponseSerailizer(order, many=True)
+                order_obj = {**serializer.data[0], **{'order_percent': order_percent}}
+                send(str(order[0].client_id),{'order': order_obj, 'targets': response})   
+                if order[0].status >= 2:
+                    break
+                time.sleep(round(float(settings.WEB_SOCKET_INTERVAL),2))
+        else:
+            start_time = datetime.utcnow()
+            while True:
+                target = Target.objects.filter(id=params.get('id'))
+                order_id=target[0].order_id
+                targets = Target.objects.filter(order_id=order_id)
+                if targets.filter(status__gt=2).count() == targets.count():
+                    if targets.filter(status=4).count() == targets.count():
+                        Order.objects.filter(id=order_id).update(status=3)
+                    else:
+                        Order.objects.filter(id=order_id).update(status=2)
+                serializer = self.serializer_class(target[0])
+                diff= (datetime.utcnow() - start_time).total_seconds()
+                # target_percent = round(diff*100/((target[0].tool.time_limit+10)), 2)
+                target_percent = int(diff*100/((target[0].tool.time_limit+10)))
+                record_obj = {**serializer.data, **{'target_percent':target_percent}}
+                send(str(record_obj['scan_by']['id']),record_obj)
+                if record_obj.get('status') >= 3:
+                    break
+                time.sleep(round(float(settings.WEB_SOCKET_INTERVAL),2))
         return HttpResponse("Done")
+
+
+@method_decorator(name='list', decorator=swagger_auto_schema(tags=['Orders'], operation_description= "List API.", operation_summary="API to get list of records."))
+@method_decorator(name='create', decorator=swagger_auto_schema(tags=['Orders'], operation_description= "Create API.", operation_summary="API to create new record."))
+@method_decorator(name='retrieve', decorator=swagger_auto_schema(tags=['Orders'], operation_description= "Retrieve API.", operation_summary="API for retrieve single record by id."))
+@method_decorator(name='update', decorator=swagger_auto_schema(tags=['Orders'], auto_schema=None))
+@method_decorator(name='partial_update', decorator=swagger_auto_schema(tags=['Orders'], operation_description= "Partial update API.", operation_summary="API for partial update record."))
+@method_decorator(name='destroy', decorator=swagger_auto_schema(tags=['Orders'], operation_description= "Delete API.", operation_summary="API to delete single record by id."))
+class OrderViewSet(viewsets.ModelViewSet):
+    queryset = Order.objects.all()
+    serializer_class = OrderSerailizer
+    permission_classes = [IsAuthenticated]
+    filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
+    filterset_fields = ['client_id', 'target_ip']
+    search_fields = ['target_ip', 'client__first_name', 'client__last_name', 'updated_at']
+
+    def create(self, request, *args, **kwargs):
+        """
+        I'm creating an order and then I'm creating a target for each tool that is associated with the
+        subscription that the order is associated with
+        
+        :param request: The request object
+        """
+        self.serializer_class = OrderSerailizer
+        serializer = self.serializer_class(data=request.data)
+        if serializer.is_valid(raise_exception=True):
+            target_ip= serializer.data.get('target_ip')
+            order = Order.objects.create(client_id=request.user.id, subscrib_id=1, target_ip=target_ip)
+            tools = Tool.objects.filter(subscription_id=1)
+            targets= []
+            for tool in tools:
+                targets.append(Target(ip=target_ip, raw_result="", tool=tool, order=order, scan_by = request.user))
+            Target.objects.bulk_create(targets)
+            custom_response = OrderResponseSerailizer(order)
+            return response(status=True, data=custom_response.data, status_code=status.HTTP_200_OK, message="order successfully added in database")
+        
+    def list(self, request, *args, **kwargs):
+        """
+        A function that returns list of orders.
+        
+        :param request: The request object
+        :return: The response is being returned.
+        """
+        self.serializer_class = OrderResponseSerailizer
+        data = super().list(request, *args, **kwargs)
+        return response(status=True, data=data.data, status_code=status.HTTP_200_OK, message="record found successfully")
+    
+    def retrieve(self, request, *args, **kwargs):
+        """
+        It overrides the default retrieve function of the viewset and returns a custom response
+        
+        :param request: The request object
+        :return: The response is being returned.
+        """
+        self.serializer_class = OrderResponseSerailizer
+        data = super().list(request, *args, **kwargs)
+        return response(status=True, data=data.data, status_code=status.HTTP_200_OK, message="record found successfully")
+    
+    def destroy(self, request, *args, **kwargs):
+        """
+        It deletes the record from the database.
+        
+        :param request: The request object
+        :return: The response is being returned.
+        """
+        order = self.get_object()
+        Target.objects.filter(order=order).update(is_deleted=True)
+        self.get_object().soft_delete()
+        return response(status=True, data={}, status_code=status.HTTP_200_OK, message="record deleted successfully")
+    
+    @swagger_auto_schema(
+        method = 'post',
+        request_body=AddInQueueByOrderIdsSerializer,
+        operation_description= "Set targets in queue by order id.",
+        operation_summary="API to add targets in queue for scanning by ids using order id.",
+        tags=['Orders']
+
+    )
+    @action(methods=['POST'], detail=False, url_path="addByIds")
+    def scan_by_ids(self, request, *args, **kwargs):
+        self.serializer_class = AddInQueueByOrderIdsSerializer
+        serializer = self.serializer_class(data=request.data)
+        if serializer.is_valid(raise_exception=True):
+            orders_id = serializer.data.get('orders_id')
+            for order_id in orders_id:
+                targets = Target.objects.filter(order_id=order_id)
+                for target in targets:
+                    scan.apply_async(args=[], kwargs={'id':target.id, 'time_limit':target.tool.id, 'token':request.headers.get('Authorization'), 'order_id': order_id, 'batch_scan': True}, time_limit=target.tool.time_limit +10, ignore_result=True)
+        custom_response = OrderResponseSerailizer(Order.objects.filter(id__in=orders_id), many=True)
+        return response(status=True, data=custom_response.data, status_code=status.HTTP_200_OK, message="targets of order is successfully added in queue")
+
+    @swagger_auto_schema(
+        method = 'get',
+        operation_description= "Generate pdf from a scan result. And provide url of pdf as aresponse.",
+        operation_summary="API to generate pdf url.",
+        tags=['Orders'],
+        request_body=None
+
+    )
+    @action(methods=['GET'], detail=True, url_path="generateReport")
+    def generate_batch_report(self, request, *args, **kwargs):
+        """
+        It takes the id of the user and the batch id to generates a pdf file url
+        
+        :param request: The request object
+        :return: A PDF file url
+        """
+        self.serializer_class = OrderResponseSerailizer
+        serializer = super().retrieve(request, *args, **kwargs)
+        pdf= PDF()
+        targets = [target.get('id') for target in (list(Target.objects.filter(order_id= serializer.data.get('id')).values('id')))]
+        pdf_path, pdf_name, file_url = pdf.generate(request.user.id, serializer.data.get('id'), targets_ids=targets, generate_order_pdf=True)
+        data = {
+            'file_path':file_url
+        }
+        return response(status=True, data=data, status_code=status.HTTP_200_OK, message="PDF generated successfully")
+    

@@ -12,10 +12,11 @@ import requests
 from celery import shared_task
 import logging
 logger = logging.getLogger('django')
+from django.db.models import Q
 
 c = Celery('proj')
 @c.task
-def scan(id, time_limit, token):
+def scan(id, time_limit, token, order_id, batch_scan):
     """
     It takes the id of the target, the time limit and the token as parameters and then sends a message
     to the user with the id and token. Then it gets the target with the given id and gets the ip of the
@@ -32,7 +33,7 @@ def scan(id, time_limit, token):
     :param token: The token of the user who added the target
     :return: the result of the scan.
     """
-    send_message.delay(id, token)
+    send_message.delay(id, token, order_id, batch_scan)
     target = Target.objects.filter(id=id)
     ip = target[0].ip
     logger.info(f"====>>>>>>>>       \nIP:{ip} with id:{id} added to queue\n       <<<<<<<<====")
@@ -48,12 +49,14 @@ def scan(id, time_limit, token):
             logger.info(f"====>>>>>>>>       \nScanning began for IP:{ip} with id:{id}\n       <<<<<<<<====")
             target.update(status = 2)
             if platform.uname().system == 'Windows':
-                output = subprocess.check_output(f"{tool_cmd} {ip}", shell=False, timeout=time_limit).decode('utf-8')
+                # output = subprocess.check_output(f"{tool_cmd} {ip}", shell=False, timeout=time_limit).decode('utf-8')
+                output = subprocess.run(f"{tool_cmd} {ip}", shell=False, capture_output=True, timeout=time_limit).stdout.decode('utf-8')
             else:
-                output = subprocess.check_output(f"{tool_cmd} {ip}", shell=True, timeout=time_limit).decode('utf-8')
+                # output = subprocess.check_output(f"{tool_cmd} {ip}", shell=True, timeout=time_limit).decode('utf-8')
+                output = subprocess.run(f"{tool_cmd} {ip}", shell=True, capture_output=True, timeout=time_limit).stdout.decode('utf-8')
         except Exception as e:
             logger.info(f"====>>>>>>>>       \nBackground thread for ip:{ip} with id:{id} has been terminated\n       <<<<<<<<====")
-            target.update(result=str(e), status=3)
+            target.update(raw_result=str(e), status=3)
             TargetLog.objects.create(target=Target(id), action=3)
             return False
 
@@ -65,17 +68,17 @@ def scan(id, time_limit, token):
         # If not found any open ports
         if (re.search(ignore_state_regex, output) or re.search(filtered_state_regex, output)):
             logger.info(f"====>>>>>>>>       \nIP:{ip} with id:{id} has no open ports.\n       <<<<<<<<====")
-            target.update(result=output, status=4)
+            target.update(raw_result=output, status=4)
             TargetLog.objects.create(target=Target(id), action=4)
         
         # If ports found in given time
         elif ports:
             logger.info(f"====>>>>>>>>       \nFound open ports with IP:{ip} with id:{id}.\n       <<<<<<<<====")
-            target.update(result=output, status=4)
+            target.update(raw_result=output, status=4)
             TargetLog.objects.create(target=Target(id), action=4)
         else:
             logger.info(f"====>>>>>>>>       \nIP:{ip} with id:{id} is not match any condition.\n       <<<<<<<<====")
-            target.update(result=output, status=4)
+            target.update(raw_result=output, status=4)
             TargetLog.objects.create(target=Target(id), action=4)
 
         end_time = time.time()
@@ -84,12 +87,18 @@ def scan(id, time_limit, token):
         return False
 
 @shared_task
-def send_message(id, token):
+def send_message(id, token, order_id, batch_scan):
     """
     This function sends a request to the API to send a message to the target user
     
     :param id: The id of the target user
     :param token: The token you get from the login API
     """
-    logger.info(f"====>>>>>>>>       \nWebsocket API trigger for target id:{id}\n       <<<<<<<<====")
-    response = requests.get(f'http://localhost:8000/api/sendMessage/?id={id}', headers={'Authorization': token})
+    if batch_scan:
+        if not Target.objects.filter(order_id=order_id).exclude(id=id).filter(status__gte=1).count():
+            # Target.objects.filter(id=id).update(status=1)
+            logger.info(f"====>>>>>>>>       \nWebsocket API trigger for order_id:{order_id}\n       <<<<<<<<====")
+            response = requests.get(f'http://localhost:8000/api/sendMessage/?order={order_id}', headers={'Authorization': token})
+    else:
+        logger.info(f"====>>>>>>>>       \nWebsocket API trigger for target id:{id}\n       <<<<<<<<====")
+        response = requests.get(f'http://localhost:8000/api/sendMessage/?id={id}', headers={'Authorization': token})

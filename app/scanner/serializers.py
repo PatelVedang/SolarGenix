@@ -1,10 +1,48 @@
 from rest_framework import serializers
-from .models import Target, Tool
+from .models import Target, Tool, Order, Subscription
 from user.models import User
-from django.core.validators import validate_ipv4_address
+# from django.core.validators import validate_ipv4_address
 import logging
 logger = logging.getLogger('django')
 import json
+from django.utils.translation import gettext_lazy as _
+from django.core.exceptions import ValidationError
+import socket
+import ipaddress
+
+   
+def validate_ipv4_address(value):
+    """
+    It takes a string, tries to resolve it as a domain name, and if it can't, it tries to validate it as
+    an IPv4 address
+    
+    :param value: The value that is being validated
+    """
+    try:
+        value = socket.gethostbyname(value)
+    except Exception as e:
+        message = str(e).split("] ")[1] if len(str(e).split("] "))>1 else "Invalid domain name"
+        raise ValidationError(
+            
+            _(), code="invalid", params={"value": value}
+        )
+    
+    try:
+        ipaddress.IPv4Address(value)
+    except ValueError:
+        raise ValidationError(
+            _("Enter a valid IPv4 address."), code="invalid", params={"value": value}
+        )
+    else:
+        # Leading zeros are forbidden to avoid ambiguity with the octal
+        # notation. This restriction is included in Python 3.9.5+.
+        # TODO: Remove when dropping support for PY39.
+        if any(octet != "0" and octet[0] == "0" for octet in value.split(".")):
+            raise ValidationError(
+                _("Enter a valid IPv4 address."),
+                code="invalid",
+                params={"value": value},
+        )
 
 # This class is a serializer for the Target model. It has a custom validation method that checks if
 # the tools_id field is a list of integers that correspond to existing Tool objects
@@ -24,13 +62,14 @@ class ScannerSerializer(serializers.ModelSerializer):
                 raise serializers.DjangoValidationError(f"Tool does not exist with id {tool_id}")
         return super().validate(attrs)
 
+
 # The ScannerResponseSerializer class is a subclass of the ModelSerializer class. It has a Meta class
 # that specifies the model to be used and the fields to be serialized. The to_representation method is
 # overridden to add the tool name to the serialized data
 class ScannerResponseSerializer(serializers.ModelSerializer):
     class Meta:
         model = Target
-        fields = '__all__'
+        exclude = ['compose_result'] 
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
@@ -42,8 +81,56 @@ class ScannerResponseSerializer(serializers.ModelSerializer):
         logger.info(f'serialize_data: {json.dumps(attrs)}')
         return super().validate(attrs)
 
-# The ScannerQueueSerializer class is a serializer for the Target model. It has a field called ids
-# which is a list of integers
+
+# The `OrderSerializer` class is a subclass of `serializers.ModelSerializer` and it has a `target_ip`
+# field that is a `serializers.CharField` with a `validate_ipv4_address` validator
+class OrderSerailizer(serializers.ModelSerializer):
+    target_ip = serializers.CharField(validators=[validate_ipv4_address])
+    class Meta:
+        model = Order
+        fields = ['target_ip']
+
+    
+    def save(self, **kwargs):
+        print(kwargs.get('target_ip'))
+        return super().save(**kwargs)
+
+
+# The OrderResponseSerializer class is a subclass of the ModelSerializer class. It has a Meta class
+# that specifies the model to be serialized and the fields to be serialized. It also has a
+# to_representation method that overrides the to_representation method of the ModelSerializer class.
+# The to_representation method is used to add the client field to the serialized data
+class OrderResponseSerailizer(serializers.ModelSerializer):
+    targets = ScannerResponseSerializer(many=True, read_only= True)
+
+
+    class Meta:
+        model = Order
+        fields = "__all__"
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        data['client']= User.objects.filter(id=instance.client.id).values('id', 'email', 'first_name', 'last_name')[0]
+        return data
+
+
+# This class is similar to OrderResponseSerailizer, but only the difference is here we are not providing
+# the targets in serialize data 
+class OrderWithoutTargetsResponseSerailizer(serializers.ModelSerializer):
+    
+    class Meta:
+        model = Order
+        fields = "__all__"
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        data['client']= User.objects.filter(id=instance.client.id).values('id', 'email', 'first_name', 'last_name')[0]
+        return data
+
+
+
+# This class is a serializer that takes a list of target ids and validates that each target id exists
+# in the database
 class AddInQueueByIdsSerializer(serializers.ModelSerializer):
     targets_id = serializers.ListField(child = serializers.IntegerField(), allow_empty=False)
     class Meta:
@@ -58,6 +145,9 @@ class AddInQueueByIdsSerializer(serializers.ModelSerializer):
                 raise serializers.DjangoValidationError(f"Target does not exist with id {target_id}")
         return super().validate(attrs)
 
+
+# It's a serializer that takes a count of how many numbers to add to the queue, and then adds that
+# many numbers to the queue
 class AddInQueueByNumbersSerializer(serializers.ModelSerializer):
     count = serializers.IntegerField()
     class Meta:
@@ -69,6 +159,9 @@ class AddInQueueByNumbersSerializer(serializers.ModelSerializer):
         return super().validate(attrs)
 
 
+# The ToolPayloadSerializer class is a subclass of the ModelSerializer class. It has a Meta class that
+# specifies the model to be serialized and the fields to be serialized. It also has a validate method
+# that logs the serialized data
 class ToolPayloadSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField(read_only=True)
     class Meta:
@@ -80,6 +173,8 @@ class ToolPayloadSerializer(serializers.ModelSerializer):
         logger.info(f'serialize_data: {json.dumps(attrs)}')
         return super().validate(attrs)
 
+
+# This serializer consider as a response serializer for Tool model. 
 class ToolSerializer(serializers.ModelSerializer):
     class Meta:
         model = Tool
@@ -87,4 +182,21 @@ class ToolSerializer(serializers.ModelSerializer):
 
     def validate(self, attrs):
         logger.info(f'serialize_data: {json.dumps(attrs)}')
+        return super().validate(attrs)
+    
+
+# This class is a serializer for the `Order` model. It has a field called `orders_id` which is a list
+# of integers. The `validate` method checks if the order exists in the database
+class AddInQueueByOrderIdsSerializer(serializers.ModelSerializer):
+    orders_id = serializers.ListField(child = serializers.IntegerField(), allow_empty=False)
+    class Meta:
+        model = Order
+        fields = ['orders_id']
+
+    def validate(self, attrs):
+        logger.info(f'serialize_data: {json.dumps(attrs)}')
+        orders_id = attrs['orders_id']
+        for order_id in orders_id:
+            if not Order.objects.filter(id=order_id).exists():
+                raise serializers.DjangoValidationError(f"Order does not exist with id {order_id}")
         return super().validate(attrs)
