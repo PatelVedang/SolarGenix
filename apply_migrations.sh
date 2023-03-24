@@ -18,8 +18,8 @@ printf "░░░░░░  Running the migrations ░░░░░░ \n\n\n"
 python app/manage.py migrate --no-input
 printf "░░░░░░  Running the fixtures ░░░░░░ \n\n\n"
 python app/manage.py loaddata app/user/fixtures/superuser.json --app user.user
-python app/manage.py loaddata app/scanner/fixtures/tool.json --app scanner.tool
 python app/manage.py loaddata app/scanner/fixtures/subscription.json --app scanner.subscription
+python app/manage.py loaddata app/scanner/fixtures/tool.json --app scanner.tool
 deactivate
 
 if [ $? = 0 ] 

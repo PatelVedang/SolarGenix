@@ -23,6 +23,7 @@ echo.
 echo.
 echo.
 python app\manage.py loaddata app\user\fixtures\superuser.json --app user.user
+python app\manage.py loaddata app\scanner\fixtures\subscription.json --app scanner.subscription
 python app\manage.py loaddata app\scanner\fixtures\tool.json --app scanner.tool
 rem De-activate the virtual environment
 call "env\Scripts\deactivate.bat"
