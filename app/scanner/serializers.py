@@ -24,7 +24,7 @@ def validate_ipv4_address(value):
         message = str(e).split("] ")[1] if len(str(e).split("] "))>1 else "Invalid domain name"
         raise ValidationError(
             
-            _(), code="invalid", params={"value": value}
+            _(message), code="invalid", params={"value": value}
         )
     
     try:
