@@ -73,7 +73,7 @@ class ScannerResponseSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
-        data['tool']= Tool.objects.filter(id=instance.tool.id).values('id', 'tool_name', 'tool_cmd')[0]
+        data['tool']= Tool.default.filter(id=instance.tool.id).values('id', 'tool_name', 'tool_cmd')[0]
         data['scan_by'] = User.objects.filter(id=instance.scan_by.id).values('id', 'email', 'first_name', 'last_name')[0]
         return data
     
@@ -178,7 +178,7 @@ class ToolPayloadSerializer(serializers.ModelSerializer):
 class ToolSerializer(serializers.ModelSerializer):
     class Meta:
         model = Tool
-        fields = ['id', 'is_deleted', 'is_active', 'tool_name', 'tool_cmd', 'time_limit']
+        fields = ['id', 'is_deleted', 'tool_name', 'tool_cmd', 'time_limit']
 
     def validate(self, attrs):
         logger.info(f'serialize_data: {json.dumps(attrs)}')
