@@ -14,7 +14,7 @@ TARGET_STATUS_CHOICES = [
 
 ORDER_STATUS_CHOICES = [
     (0, "Created"),
-    (1, "Queued"),
+    (1, "In Progress"),
     (2, "Failed"),
     (3, "Finished")
 ]
@@ -67,7 +67,7 @@ class Target(SoftDelete):
     tool = models.ForeignKey("Tool", on_delete=models.SET_NULL, default=1, null=True)
     order = models.ForeignKey("Order", on_delete=models.SET_NULL, null=True, related_name="targets") 
     scan_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
-    is_active = models.BooleanField(default=True)
+    # is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True, null=True)
     updated_at = models.DateTimeField(auto_now=True, null=True)
     pdf_path = models.FileField(null=True, blank=True)
@@ -81,7 +81,7 @@ class Tool(SoftDelete):
     tool_cmd = models.CharField(max_length=500)
     subscription = models.ForeignKey("Subscription", on_delete=models.SET_NULL, null=True, blank=True)
     time_limit = models.BigIntegerField(default=30) 
-    is_active = models.BooleanField(default=True)
+    # is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True, null=True)
     updated_at = models.DateTimeField(auto_now=True, null=True)
 
@@ -92,7 +92,7 @@ class Subscription(SoftDelete):
     day_limit = models.IntegerField()
     price = models.DecimalField(max_digits=11, decimal_places=2)
     plan_type = models.CharField(max_length=255)
-    is_active = models.BooleanField(default=True)
+    # is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True, null=True)
     updated_at = models.DateTimeField(auto_now=True, null=True)
 

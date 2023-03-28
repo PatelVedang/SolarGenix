@@ -34,6 +34,7 @@ class OrderAdmin(admin.ModelAdmin):
 
 class ToolAdmin(admin.ModelAdmin):
     readonly_fields = ('id',)
+    list_display = ['id','tool_name', 'tool_cmd', 'is_deleted']
 
 class SubscriptionHistoryAdmin(admin.ModelAdmin):
      list_display = [

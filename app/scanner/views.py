@@ -26,11 +26,22 @@ from datetime import datetime
 from django.conf import settings
 import logging
 logger = logging.getLogger('django')
-
 import json
+
+class Common:
+
+    def update_order_targets(self, order, targets):
+        total_targets = targets.count()
+        if targets.filter(status__gt=2).count() == total_targets:
+            if targets.filter(status=4).count() == total_targets:
+                order.update(status=3)
+            else:
+                order.update(status=2)
+
+
 @method_decorator(name='partial_update', decorator=swagger_auto_schema(tags=['Targets'], auto_schema=None))
 @method_decorator(name='update', decorator=swagger_auto_schema(tags=['Targets'], auto_schema=None))
-class ScanViewSet(viewsets.ModelViewSet):
+class ScanViewSet(viewsets.ModelViewSet, Common):
     queryset = Target.objects.all()
     serializer_class = ScannerSerializer
     permission_classes = [IsAuthenticated, MachineRetrievePremission]
@@ -279,7 +290,7 @@ class ScanViewSet(viewsets.ModelViewSet):
 @method_decorator(name='update', decorator=swagger_auto_schema(tags=['Tool'], auto_schema=None))
 @method_decorator(name='partial_update', decorator=swagger_auto_schema(tags=['Tool'], operation_description= "Partial update API.", operation_summary="API for partial update record."))
 @method_decorator(name='destroy', decorator=swagger_auto_schema(tags=['Tool'], operation_description= "Delete API.", operation_summary="API to delete single record by id."))
-class ToolViewSet(viewsets.ModelViewSet):
+class ToolViewSet(viewsets.ModelViewSet, Common):
     queryset = Tool.objects.all()
     serializer_class = ToolSerializer
     permission_classes = [IsAuthenticated, IsAdminUserOrList]
@@ -340,7 +351,7 @@ class ToolViewSet(viewsets.ModelViewSet):
         return response(status=True, data={}, status_code=status.HTTP_200_OK, message="record deleted successfully")
 
 @method_decorator(name='get', decorator=swagger_auto_schema(auto_schema=None))
-class SendMessageView(generics.GenericAPIView):
+class SendMessageView(generics.GenericAPIView, Common):
     serializer_class = ScannerResponseSerializer
     permission_classes = [IsAuthenticated]
 
@@ -389,11 +400,8 @@ class SendMessageView(generics.GenericAPIView):
                         order_percent += int((0*tool_perecent)/100)
                         response.append(record_obj)
 
-                    if targets.filter(status__gt=2).count() == total_targets:
-                        if targets.filter(status=4).count() == total_targets:
-                            order.update(status=3)
-                        else:
-                            order.update(status=2)
+                    super().update_order_targets(order, targets)
+                    
                 serializer = OrderWithoutTargetsResponseSerailizer(order, many=True)
                 order_obj = {**serializer.data[0], **{'order_percent': order_percent}}
                 send(str(order[0].client_id),{'order': order_obj, 'targets': response})   
@@ -418,6 +426,8 @@ class SendMessageView(generics.GenericAPIView):
                 record_obj = {**serializer.data, **{'target_percent':target_percent}}
                 send(str(record_obj['scan_by']['id']),record_obj)
                 if record_obj.get('status') >= 3:
+                    record_obj['target_percent'] = 100
+                    send(str(record_obj['scan_by']['id']),record_obj)
                     break
                 time.sleep(round(float(settings.WEB_SOCKET_INTERVAL),2))
         return HttpResponse("Done")
@@ -429,7 +439,7 @@ class SendMessageView(generics.GenericAPIView):
 @method_decorator(name='update', decorator=swagger_auto_schema(tags=['Orders'], auto_schema=None))
 @method_decorator(name='partial_update', decorator=swagger_auto_schema(tags=['Orders'], operation_description= "Partial update API.", operation_summary="API for partial update record."))
 @method_decorator(name='destroy', decorator=swagger_auto_schema(tags=['Orders'], operation_description= "Delete API.", operation_summary="API to delete single record by id."))
-class OrderViewSet(viewsets.ModelViewSet):
+class OrderViewSet(viewsets.ModelViewSet, Common):
     queryset = Order.objects.all()
     serializer_class = OrderSerailizer
     permission_classes = [IsAuthenticated]
@@ -514,9 +524,12 @@ class OrderViewSet(viewsets.ModelViewSet):
         if serializer.is_valid(raise_exception=True):
             orders_id = serializer.data.get('orders_id')
             for order_id in orders_id:
+                order = Order.objects.filter(id=order_id)
                 targets = Target.objects.filter(order_id=order_id)
-                for target in targets:
-                    scan.apply_async(args=[], kwargs={'id':target.id, 'time_limit':target.tool.id, 'token':request.headers.get('Authorization'), 'order_id': order_id, 'batch_scan': True}, time_limit=target.tool.time_limit +10, ignore_result=True)
+                super().update_order_targets(order, targets)
+                if order[0].status == 0:
+                    for target in targets:
+                        scan.apply_async(args=[], kwargs={'id':target.id, 'time_limit':target.tool.id, 'token':request.headers.get('Authorization'), 'order_id': order_id, 'batch_scan': True}, time_limit=target.tool.time_limit +10, ignore_result=True)
         custom_response = OrderResponseSerailizer(Order.objects.filter(id__in=orders_id), many=True)
         return response(status=True, data=custom_response.data, status_code=status.HTTP_200_OK, message="targets of order is successfully added in queue")
 

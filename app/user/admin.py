@@ -7,7 +7,7 @@ class UserAdmin(admin.ModelAdmin):
             'fields': ('otp', 'otp_expires'),
         }),
     )
-    fields = ('last_login', 'email', 'first_name', 'last_name', 'is_active', 'is_deleted', 'is_staff', 'is_superuser', 'otp')
+    fields = ('last_login', 'email', 'first_name', 'last_name', 'is_deleted', 'is_staff', 'is_superuser', 'otp')
     readonly_fields = ('id','otp','role')
     search_fields = ('first_name', 'last_name', 'email',)
 admin.site.register(User, UserAdmin)

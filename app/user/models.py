@@ -13,7 +13,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     )
     username = None
     email = models.EmailField(_('email address'), unique=True, blank=False, null=False)
-    is_active = models.BooleanField(default=True)
+    # is_active = models.BooleanField(default=True)
     is_deleted = models.BooleanField(default=False)
     first_name = models.CharField(max_length=50) 
     last_name = models.CharField(max_length=50)
