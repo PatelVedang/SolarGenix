@@ -55,8 +55,9 @@ def scan(id, time_limit, token, order_id, batch_scan):
                 # output = subprocess.check_output(f"{tool_cmd} {ip}", shell=True, timeout=time_limit).decode('utf-8')
                 output = subprocess.run(f"{tool_cmd} {ip}", shell=True, capture_output=True, timeout=time_limit).stdout.decode('utf-8')
         except Exception as e:
+            error = f'\n{e.output.decode("utf-8")}{str(e)}'
             logger.info(f"====>>>>>>>>       \nBackground thread for ip:{ip} with id:{id} has been terminated\n       <<<<<<<<====")
-            target.update(raw_result=str(e), status=3)
+            target.update(raw_result=str(error), status=3)
             TargetLog.objects.create(target=Target(id), action=3)
             return False
 
