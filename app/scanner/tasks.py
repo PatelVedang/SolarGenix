@@ -53,7 +53,7 @@ def scan(id, time_limit, token, order_id, batch_scan):
     pwd = settings.SUDO_PWD
     # if tool is uniscan then we have to add sudo access
     if tool_cmd.lower().find("uniscan") >=0:
-        tool_cmd = f'echo ${pwd} | sudo -S {tool_cmd}'
+        tool_cmd = f'echo {pwd} | sudo -S {tool_cmd}'
     # if record is just created
     if target[0].status == 0:
         # target.update(status=1)
