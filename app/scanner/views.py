@@ -525,7 +525,7 @@ class OrderViewSet(viewsets.ModelViewSet, Common):
             orders_id = serializer.data.get('orders_id')
             for order_id in orders_id:
                 order = Order.objects.filter(id=order_id)
-                targets = Target.objects.filter(order_id=order_id)
+                targets = Target.objects.filter(order_id=order_id, status__lte=2)
                 super().update_order_targets(order, targets)
                 if order[0].status == 0:
                     for target in targets:

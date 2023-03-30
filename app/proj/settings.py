@@ -287,3 +287,5 @@ LOGGING = {
         }
     }
 }
+
+SUDO_PWD=os.environ.get('SUDO_PWD', env('SUDO_PWD'))
