@@ -75,7 +75,7 @@ def scan(id, time_limit, token, order_id, batch_scan):
             if tool_cmd.lower().find("uniscan"):
                 subprocess.run(f"echo {pwd}| sudo -S rm -f /usr/share/uniscan/report/{ip}.html",shell=True, capture_output=True)
             
-            if output.stderr.decode('utf-8'):
+            if output.stderr.decode('utf-8') and not output.stdout.decode('utf-8'):
                 logger.info(f"====>>>>>>>>       \nBackground thread for ip:{ip} with id:{id} has been terminated due to tool issue.\n       <<<<<<<<====")
                 update_target_and_add_log(target=target, output=output.stderr.decode('utf-8'), id=id, status=3, action=3)
                 return False
