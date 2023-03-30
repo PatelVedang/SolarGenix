@@ -198,3 +198,19 @@ class ProfileView(generics.RetrieveUpdateAPIView):
         if serializer.is_valid(raise_exception=True):
             serializer.save()
             return response(status=True, data=serializer.data, status_code=status.HTTP_200_OK, message="profile updated successfully.")
+
+class ChangePasswordView(generics.CreateAPIView):    
+    serializer_class = ChangePasswordSerializer
+    permission_classes = [IsAuthenticated]
+
+    @swagger_auto_schema(
+        tags=['Users'],
+        operation_description= "This API takes the old and new passwords to change existing password.",
+        operation_summary="Change Password API."
+    )
+    def post(self, request, *args, **kwargs):
+        serializer = self.serializer_class(data=request.data, context={"request": request})
+        if serializer.is_valid(raise_exception=True):
+            serializer.save()
+        return response(status=True, data={}, status_code=status.HTTP_200_OK, message="successful changing of the password.")
+    

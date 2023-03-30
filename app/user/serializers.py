@@ -14,6 +14,7 @@ from django.conf import settings
 import logging
 logger = logging.getLogger('django')
 import json
+from django.contrib.auth.hashers import check_password
 
 class UserSerializer(serializers.ModelSerializer):
 
@@ -175,3 +176,22 @@ class UpdateProfileSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         logger.info(f'serialize_data: {json.dumps(attrs)}')
         return super().validate(attrs)
+
+class ChangePasswordSerializer(serializers.Serializer):
+    old_password = serializers.CharField(max_length=255, style={'input-type':'password'},write_only=True)
+    new_password = serializers.CharField(max_length=255, style={'input-type':'password'},write_only=True)
+    confirm_new_password = serializers.CharField(max_length=255, style={'input-type':'password'},write_only=True)
+    
+    def validate(self, attrs):
+        user = self.context['request'].user
+        if not user.check_password(attrs['old_password']):
+            raise serializers.ValidationError({"old_password": "Old password is not correct"})
+        if attrs['new_password'] != attrs['confirm_new_password']:
+            raise serializers.ValidationError({"new_password": "Password fields didn't match."})
+        return attrs
+
+    def create(self, validated_data):
+        user = self.context['request'].user
+        user.set_password(validated_data['new_password'])
+        user.save()
+        return user
