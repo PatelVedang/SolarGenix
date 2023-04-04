@@ -10,7 +10,6 @@ class BulkSelectedDelete(admin.ModelAdmin):
         return actions
     
     def delete_selected(self, request, queryset):
-        print("Enterd", self)
         queryset.update(is_deleted=True)
     
     def soft_delete_selected(self, request, queryset):

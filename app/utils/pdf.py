@@ -9,6 +9,10 @@ from .handlers.nmap_hanlder import NMAP
 nmap = NMAP()
 from .handlers.sslyze_handler import SSLYSE
 sslyze = SSLYSE()
+from .handlers.nikto_handler import NIKTO
+nikto = NIKTO()
+from .handlers.default_handler import DEFAULT
+default = DEFAULT()
 
 
 class PDF:
@@ -16,10 +20,12 @@ class PDF:
     result = ""
     handlers = {
         'nmap': nmap.nmap_handler,
-        'nmap-poodle': nmap.nmap_poodle_handler,
-        'nmap-vuln': nmap.nmap_vuln_handler,
-        'nmap-vulners': nmap.nmap_vulners_handler,
-        'sslyze': sslyze.sslyze_handler
+        # 'nmap-poodle': nmap.nmap_poodle_handler,
+        # 'nmap-vuln': nmap.nmap_vuln_handler,
+        # 'nmap-vulners': nmap.nmap_vulners_handler,
+        'sslyze': sslyze.sslyze_handler,
+        'nikto': nikto.nikto_handler,
+        'default': default.default_handler
     }
 
     def make_path(self, target_path):
@@ -66,7 +72,10 @@ class PDF:
         
         for target_id in targets_ids:
             target_obj = Target.objects.get(id=target_id)
-            self.result += self.handlers[target_obj.tool.tool_name](target_obj, re_generate)
+            if self.handlers.get(target_obj.tool.tool_cmd.split(" ")[0]):
+                self.result += self.handlers[target_obj.tool.tool_cmd.split(" ")[0]](target_obj, re_generate)
+            else:
+                self.result += self.handlers['default'](target_obj, re_generate)
         
         # Base html
         html_data = f"""<!DOCTYPE html>

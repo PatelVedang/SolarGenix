@@ -82,74 +82,7 @@ class NMAP:
                         if value.find('vulners') >= 0:
                             vulen = re.findall('CVE-\d{1,4}-\d{1,5}',value)
                             if vulen:
-                                cve_details = cve.get_cve_details(vulen[0])
-                                if cve_details:
-                                    result += f'''
-                                        <div class="row">
-                                            <div class="col-3 border border-1 border-dark">
-                                                <h5>CVE ID</h5>
-                                            </div>
-                                            <div class="col-9 border border-1 border-dark d-flex">
-                                                {cve_details['cve_id']}
-                                            </div>
-                                        </div>
-                                        <div class="row">
-                                            <div class="col-3 border border-1 border-dark">
-                                                <h5>Name</h5>
-                                            </div>
-                                            <div class="col-9 border border-1 border-dark">
-                                                {cve_details['cwe_name']}
-                                            </div>
-                                        </div>
-                                        <div class="row">
-                                            <div class="col-3 border border-1 border-dark">
-                                                <h5>Description</h5>
-                                            </div>
-                                            <div class="col-9 border border-1 border-dark d-flex justify-content-center">
-                                                {cve_details['description']}
-                                            </div>
-                                        </div>
-                                        <div class="row">
-                                            <div class="col-3 border border-1 border-dark">
-                                                <h5>CVVS 3 base score</h5>
-                                            </div>
-                                            <div class="col-9 border border-1 border-dark">
-                                                {cve_details['cvvs3']['base_score']}
-                                            </div>
-                                        </div>
-                                        <div class="row">
-                                            <div class="col-3 border border-1 border-dark">
-                                                <h5>CVVS 3 Complexity</h5>
-                                            </div>
-                                            <div class="col-9 border border-1 border-dark">
-                                                {cve_details['cvvs3']['error_type']}
-                                            </div>
-                                        </div>
-                                        <div class="row">
-                                            <div class="col-3 border border-1 border-dark">
-                                                <h5>CVVS 2 base score</h5>
-                                            </div>
-                                            <div class="col-9 border border-1 border-dark">
-                                                {cve_details['cvvs2']['base_score']}
-                                            </div>
-                                        </div>
-                                        <div class="row">
-                                            <div class="col-3 border border-1 border-dark">
-                                                <h5>CVVS 2 Complexity</h5>
-                                            </div>
-                                            <div class="col-9 border border-1 border-dark">
-                                                {cve_details['cvvs2']['error_type']}
-                                            </div>
-                                        </div>
-                                        <div class="row">
-                                            <div class="col-3 border border-1 border-dark">
-                                                <h5>CWE ID</h5>
-                                            </div>
-                                            <div class="col-9 border border-1 border-dark">
-                                                {cve_details['cwe_id']}
-                                            </div>
-                                        </div>
-                                    '''
+                                result += cve.set_cve_details(vulen[0])
                             formated_value = value.split("Service detection performed.")[0].replace("|_","").replace("|","").strip()
                             if formated_value:
                                 result += f'''

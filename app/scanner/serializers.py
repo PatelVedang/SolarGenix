@@ -92,7 +92,6 @@ class OrderSerailizer(serializers.ModelSerializer):
 
     
     def save(self, **kwargs):
-        print(kwargs.get('target_ip'))
         return super().save(**kwargs)
 
 

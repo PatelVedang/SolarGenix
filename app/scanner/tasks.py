@@ -54,6 +54,11 @@ def scan(id, time_limit, token, order_id, batch_scan):
     # if tool is uniscan then we have to add sudo access
     if tool_cmd.lower().find("uniscan") >=0:
         tool_cmd = f'echo {pwd} | sudo -S {tool_cmd}'
+    if (tool_cmd.find("<ip>")>=0) or (tool_cmd.find("<IP>")>=0):
+        tool_cmd = tool_cmd.replace("<ip>",ip).replace("<IP>",ip)
+    else:
+        tool_cmd += f' {ip}'
+    
     # if record is just created
     if target[0].status == 0:
         # target.update(status=1)
@@ -67,10 +72,10 @@ def scan(id, time_limit, token, order_id, batch_scan):
             target.update(status = 2)
             if platform.uname().system == 'Windows':
                 # output = subprocess.check_output(f"{tool_cmd} {ip}", shell=False, timeout=time_limit).decode('utf-8')
-                output = subprocess.run(f"{tool_cmd} {ip}", shell=False, capture_output=True, timeout=time_limit)
+                output = subprocess.run(f"{tool_cmd}", shell=False, capture_output=True, timeout=time_limit)
             else:
                 # output = subprocess.check_output(f"{tool_cmd} {ip}", shell=True, timeout=time_limit).decode('utf-8')
-                output = subprocess.run(f"{tool_cmd} {ip}", shell=True, capture_output=True, timeout=time_limit)
+                output = subprocess.run(f"{tool_cmd}", shell=True, capture_output=True, timeout=time_limit)
 
             if tool_cmd.lower().find("uniscan"):
                 subprocess.run(f"echo {pwd}| sudo -S rm -f /usr/share/uniscan/report/{ip}.html",shell=True, capture_output=True)
