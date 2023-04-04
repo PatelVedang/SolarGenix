@@ -1,9 +1,24 @@
 from django.contrib import admin
 from .models import Target, Tool, Subscription, SubscriptionHistory, TargetLog, Order
 
+class BulkSelectedDelete(admin.ModelAdmin):
+    actions = ['soft_delete_selected']
+    
+    def get_actions(self, request):
+        actions = super().get_actions(request)
+        del actions['delete_selected']
+        return actions
+    
+    def delete_selected(self, request, queryset):
+        print("Enterd", self)
+        queryset.update(is_deleted=True)
+    
+    def soft_delete_selected(self, request, queryset):
+        queryset.update(is_deleted=True)
+
 
 # Register your models here.
-class TargetAdmin(admin.ModelAdmin):
+class TargetAdmin(BulkSelectedDelete):
     readonly_fields = ('id','retry')
     list_display = [
         'id', 'ip','get_full_name','status', 'tool', 'is_deleted','order_id'
@@ -32,7 +47,7 @@ class OrderAdmin(admin.ModelAdmin):
 
 
 
-class ToolAdmin(admin.ModelAdmin):
+class ToolAdmin(BulkSelectedDelete):
     readonly_fields = ('id',)
     list_display = ['id','tool_name', 'tool_cmd', 'is_deleted']
 

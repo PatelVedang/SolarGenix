@@ -46,6 +46,10 @@ class SoftDelete(models.Model):
     default = models.Manager()
     objects = NonDeleted()
 
+    def delete(self, *args, **kwargs):
+        self.is_deleted = True
+        self.save()
+
     def soft_delete(self):
         self.is_deleted = True
         self.save()
