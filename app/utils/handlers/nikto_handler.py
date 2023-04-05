@@ -3,7 +3,7 @@ from html import escape
 import logging
 logger = logging.getLogger('django')
 import re
-from .cve import CVE    
+from .cve import CVE
 cve = CVE()
 
 class NIKTO:
@@ -14,7 +14,7 @@ class NIKTO:
         if regenerate or target.compose_result=="":
             self.result = f'''
                 <div class="col-12 border border-1 border-dark">
-                        <h2>{target.tool.tool_name.replace("-"," ").capitalize()}</h2>
+                        <h2>The anti-clickjacking X-Frame-Options header is not present.</h2>
                 </div>'''
             
             if re.search(self.regex, target.raw_result, re.IGNORECASE):
