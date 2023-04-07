@@ -76,6 +76,8 @@ class Target(SoftDelete):
     updated_at = models.DateTimeField(auto_now=True, null=True)
     pdf_path = models.FileField(null=True, blank=True)
     retry= models.BigIntegerField(default=0)
+    # scan_time store in seconds
+    scan_time = models.DecimalField(max_digits=10, decimal_places=2, default=0)
 
     def __str__(self):
         return self.ip

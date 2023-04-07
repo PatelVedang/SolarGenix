@@ -20,7 +20,7 @@ class BulkSelectedDelete(admin.ModelAdmin):
 class TargetAdmin(BulkSelectedDelete):
     readonly_fields = ('id','retry')
     list_display = [
-        'id', 'ip','get_full_name','status', 'tool', 'is_deleted','order_id'
+        'id', 'ip','get_full_name','status', 'tool', 'is_deleted','order_id', 'scan_time'
     ]
     search_fields = ('ip','id')
 
@@ -28,7 +28,7 @@ class TargetAdmin(BulkSelectedDelete):
         return f'{obj.scan_by.first_name} {obj.scan_by.last_name}'
     get_full_name.short_description = 'Scan By'
 
-class OrderAdmin(admin.ModelAdmin):
+class OrderAdmin(BulkSelectedDelete):
     readonly_fields = ('id','retry')
     search_fields = ('target_ip','id')
     list_display = [
