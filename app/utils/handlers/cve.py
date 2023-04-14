@@ -57,100 +57,135 @@ class CVE:
         return cve_details
 
     def set_cve_details(self,cve):
-        result = ""
         cve_details = self.get_cve_details(cve)
+        return self.set_cve_html(**cve_details)
+
+    def get_complexity(self, cve):
+        cve_details = self.get_cve_details(cve)
+        if cve_details['cvvs3'].get('error_type') and cve_details['cvvs3'].get('error_type') != 'N/A':
+            complexity = cve_details['cvvs3'].get('error_type')
+        elif cve_details['cvvs2'].get('error_type') and cve_details['cvvs2'].get('error_type') != 'N/A':
+            complexity = cve_details['cvvs2'].get('error_type')
+        else:
+            complexity = "info"
+
+        return complexity
+    
+    def set_cve_html(self, **cve_details):
+        result = ""
         if cve_details:
-            result = f'''
-            <div class="row">
-                <div class="col-3 border border-1 border-dark">
-                    <h5>CVE ID</h5>
-                </div>
-                <div class="col-9 border border-1 border-dark d-flex">
-                    {cve_details['cve_id']}
-                </div>
-            </div>'''
-            if cve_details.get('cwe_name'):
+            if cve_details.get('cve_id'):
                 result += f'''
                 <div class="row">
-                    <div class="col-3 border border-1 border-dark">
-                        <h5>Name</h5>
+                    <div class="col-3 border border-5 border-light body">
+                        CVE ID
                     </div>
-                    <div class="col-9 border border-1 border-dark">
-                        {cve_details['cwe_name']}
+                    <div class="col-9 border border-5 border-light body">
+                        {cve_details['cve_id']}
                     </div>
                 </div>'''
+            
+            if cve_details.get('description'):
+                result += f'''
+                <div class="row">
+                    <div class="col-3 border border-5 border-light body">
+                        Description
+                    </div>
+                    <div class="col-9 border border-5 border-light body">
+                        {cve_details['description']}
+                    </div>
+                </div>
+                '''
+            
+            if cve_details.get('cvvs3'):
+                if cve_details['cvvs3'].get('base_score'):
+                    result += f'''
+                    <div class="row">
+                        <div class="col-3 border border-5 border-light body">
+                            CVVS 3 base score
+                        </div>
+                        <div class="col-9 border border-5 border-light body">
+                            {cve_details['cvvs3']['base_score']}
+                        </div>
+                    </div>
+                    '''
+                if cve_details['cvvs3'].get('error_type'):
+                    result += f'''
+                    <div class="row">
+                        <div class="col-3 border border-5 border-light body">
+                            CVVS 3 Complexity
+                        </div>
+                        <div class="col-9 border border-5 border-light body">
+                            {cve_details['cvvs3']['error_type']}
+                        </div>
+                    </div>'''
 
-            result += f'''
-            <div class="row">
-                <div class="col-3 border border-1 border-dark">
-                    <h5>Description</h5>
-                </div>
-                <div class="col-9 border border-1 border-dark d-flex justify-content-center">
-                    {cve_details['description']}
-                </div>
-            </div>
-            <div class="row">
-                <div class="col-3 border border-1 border-dark">
-                    <h5>CVVS 3 base score</h5>
-                </div>
-                <div class="col-9 border border-1 border-dark">
-                    {cve_details['cvvs3']['base_score']}
-                </div>
-            </div>
-            <div class="row">
-                <div class="col-3 border border-1 border-dark">
-                    <h5>CVVS 3 Complexity</h5>
-                </div>
-                <div class="col-9 border border-1 border-dark">
-                    {cve_details['cvvs3']['error_type']}
-                </div>
-            </div>
-            <div class="row">
-                <div class="col-3 border border-1 border-dark">
-                    <h5>CVVS 2 base score</h5>
-                </div>
-                <div class="col-9 border border-1 border-dark">
-                    {cve_details['cvvs2']['base_score']}
-                </div>
-            </div>
-            <div class="row">
-                <div class="col-3 border border-1 border-dark">
-                    <h5>CVVS 2 Complexity</h5>
-                </div>
-                <div class="col-9 border border-1 border-dark">
-                    {cve_details['cvvs2']['error_type']}
-                </div>
-            </div>'''
-
+            if cve_details.get('cvvs2'):
+                if cve_details['cvvs2'].get('base_score'):
+                    result += f'''
+                    <div class="row">
+                        <div class="col-3 border border-5 border-light body">
+                            CVVS 2 base score
+                        </div>
+                        <div class="col-9 border border-5 border-light body">
+                            {cve_details['cvvs2']['base_score']}
+                        </div>
+                    </div>
+                    '''
+                if cve_details['cvvs2'].get('error_type'):
+                    result += f'''
+                    <div class="row">
+                        <div class="col-3 border border-5 border-light body">
+                            CVVS 2 Complexity
+                        </div>
+                        <div class="col-9 border border-5 border-light body">
+                            {cve_details['cvvs2']['error_type']}
+                        </div>
+                    </div>'''
+            
             if cve_details.get('cwe_id'):
                 result += f'''
                 <div class="row">
-                    <div class="col-3 border border-1 border-dark">
-                        <h5>CWE ID</h5>
+                    <div class="col-3 border border-5 border-light body">
+                        CWE ID
                     </div>
-                    <div class="col-9 border border-1 border-dark">
+                    <div class="col-9 border border-5 border-light body">
                         {cve_details['cwe_id']}
                     </div>
                 </div>'''
 
-            result += f'''
-            <div class="row">
-                <div class="col-3 border border-1 border-dark">
-                    <h5>Solution</h5>
+            if cve_details.get('solution'):
+                result += f'''
+                <div class="row">
+                    <div class="col-3 border border-5 border-light body">
+                        Solution
+                    </div>
+                    <div class="col-9 border border-5 border-light body">
+                        {cve_details['solution']}
+                    </div>
                 </div>
-                <div class="col-9 border border-1 border-dark">
-                    {cve_details['solution']}
+                '''
+            if cve_details.get('sources'):
+                result += f'''
+                <div class="row">
+                    <div class="col-3 border border-5 border-light body">
+                        Reference
+                    </div>
+                    <div class="col-9 border border-5 border-light body">
+                        {"<br>".join(cve_details['sources'])}
+                    </div>
                 </div>
-            </div>
-            <div class="row">
-                <div class="col-3 border border-1 border-dark">
-                    <h5>Reference</h5>
-                </div>
-                <div class="col-9 border border-1 border-dark">
-                    {"<br>".join(cve_details['sources'])}
-                </div>
-            </div>
-            '''
-        return result
+                '''
+        if cve_details['cvvs3'].get('error_type') and cve_details['cvvs3'].get('error_type') != 'N/A':
+            complexity = cve_details['cvvs3'].get('error_type')
+        elif cve_details['cvvs2'].get('error_type') and cve_details['cvvs2'].get('error_type') != 'N/A':
+            complexity = cve_details['cvvs2'].get('error_type')
+        else:
+            complexity = "info"
+        
+        return result, complexity
+            
+        
+
 
  

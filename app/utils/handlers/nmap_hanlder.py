@@ -7,125 +7,83 @@ logger = logging.getLogger('django')
 import re
 from .cve import CVE
 cve = CVE()
+from .default_handler import DEFAULT
+default = DEFAULT()
+from .common_handler import *
 
 class NMAP:
-    port_search_regex = '(?P<port>\d{1,4}/tcp)\s+(?P<state>(filtered|open|closed))\s+(?P<service>[\w0-9\-\_]+).*(\n)'
-    
-    def nmap_handler(self, target, regenerate):
-        """
-        It takes a target and a boolean value as arguments, and returns a set_compose_result as the value
-        
-        :param target: The target to scan
-        :param regenerate: If True, the scan will be re-run. If False, the scan will be loaded from the
-        database
-        :return: The result of the set_compose_result function.
-        """
-        return self.set_compose_result(target, regenerate)
-    def nmap_poodle_handler(self, target, regenerate):
-        return self.set_compose_result(target, regenerate)
-    def nmap_vuln_handler(self, target, regenerate):
-        return self.set_compose_result(target, regenerate)
-    def nmap_vulners_handler(self, target, regenerate):
-        return self.set_compose_result(target, regenerate)
+    port_search_regex = '(?P<port>\d{1,4}/tcp)\s+(?P<status>(filtered|open|closed))\s+(?P<service>[\w0-9\-\_]+).*(\n)'
+    ports = []
+    open_ports_obj = {}
 
-    def set_compose_result(self, target, regenerate):
+    def main(self, target, regenerate):
         """
-        It takes the raw result of the tool and parses it to find the open ports and then it searches
-        for the CVEs related to the open ports and then it formats the result and returns it
+        This is a Python function that handles different tool commands and their corresponding handlers
+        to generate results for a given target.
         
-        :param target: The target object
-        :param regenerate: If the result is already generated, then it will not be generated again
-        :return: The result of the scan.
+        :param target: The target parameter is an object that represents the target to be scanned. It
+        contains information such as the target's IP address, the tool to be used for scanning, and the
+        raw result of the scan
+        :param regenerate: A boolean flag that indicates whether the results for the target should be
+        regenerated or not. If set to True, the code will regenerate the results for the target. If set
+        to False, the code will return the previously generated results for the target
+        :return: either the result of the executed tool command or the result of the default handler
+        function, depending on whether the tool command is in the handlers dictionary or not.
         """
-        scan_result = target.raw_result
-        ports = list(re.finditer(self.port_search_regex, scan_result))
-        susceptible_ports = []
-        result = ""
-        if regenerate or target.compose_result=="":
-            if ports:
-                result = f'''
-                    <div class="col-12 border border-1 border-dark">
-                        <h2>{target.tool.tool_name.replace("-"," ").capitalize()}</h2>
-                    </div>
-                '''
-                for index in range(len(ports)-1, -1, -1):
-                    port_obj = ports[index].groupdict()
-                    port = port_obj['port'].split("/")[0]
-                    port_with_protocol = port_obj['port']
-                    state = port_obj['state']
-                    service = port_obj['service']
-                    if state == "open":
-                        result += f'''
-                            <div class="col-12 border border-1 border-dark">
-                                <h5>{port_with_protocol}({service})</h5>
-                            </div>
-                            <div class="col-12">
-                                <div class="row">
-                                    <div class="col-3 border border-1 border-dark">
-                                        <h5>Port</h5>
-                                    </div>
-                                    <div class="col-9 border border-1 border-dark">
-                                        {port}
-                                    </div>
-                                </div>
-                                <div class="row">
-                                    <div class="col-3 border border-1 border-dark">
-                                        <h5>Status</h5>
-                                    </div>
-                                    <div class="col-9 border border-1 border-dark">
-                                        {state}
-                                    </div>
-                                </div>
-                        '''
-                        susceptible_ports.append(port)
-                        value = scan_result.split(ports[index].group())[1]
-                        if value.find('vulners') >= 0:
-                            vulen = re.findall('CVE-\d{1,4}-\d{1,5}',value)
-                            if vulen:
-                                result += cve.set_cve_details(vulen[0])
-                            formated_value = value.split("Service detection performed.")[0].replace("|_","").replace("|","").strip()
-                            if formated_value:
-                                result += f'''
-                                                <div class="row">
-                                                    <div class="col-3 border border-1 border-dark">
-                                                        <h5>Other Information</h5>
-                                                    </div>
-                                                    <div class="col-9 border border-1 border-dark">
-                                                        <blockquote>
-                                                        <pre style="text-decoration:none;">
-{escape(formated_value)}
-                                                        </pre>
-                                                        </blockquote>
-                                                    </div>
-                                                </div>
-                                            '''
-                            
-                        result += '''
-                            </div>
-                        '''
-                        scan_result = scan_result.split(ports[index].group())[0]
-                        
-            elif not susceptible_ports:
-                result += f'''
-                <div class="col-12 border border-1 border-dark">
-                    <h2>{target.tool.tool_name.replace("-"," ").capitalize()}</h2>
-                </div>
-                <div class="col-12 border border-1 border-dark">
-                    <h3>Not Found Any Vulnerability Threat Level</h3>
-                </div>
-                '''
+        handlers = {
+            'nmap -Pn -sV': [
+                self.open_port_hanlder,
+            ],
+            # 'nmap -Pn -sV --script vuln,vulners --script-args mincvvs=5.0': self.nmap_handler,
+            # 'nmap -sV --script vuln --script-args vuln.showall': self.nmap_handler,
+            # 'nmap -p443 --script ssl-poodle -Pn': self.nmap_handler,
+            'default': default.default_handler
+        }
+        tool_cmd = target.tool.tool_cmd.strip()
+        if handlers.get(tool_cmd):
+            if regenerate or target.compose_result=="":
+                self.result = ""
+                self.ports = []
+                self.ports = list(re.finditer(self.port_search_regex, target.raw_result))
+                for port_obj in self.ports:
+                    if port_obj.groupdict().get('port'):
+                        status = port_obj['status'].strip()
+                        if status == 'open':
+                            port_number = port_obj['port'].split("/")[0]
+                            service = port_obj['service']
+                            self.open_ports_obj = {**self.open_ports_obj, **{port_number: {'port': port_number, 'status':status, 'service': service}}}
+                for vul_handler in handlers[tool_cmd]:
+                    vul_handler(target, regenerate)
+                Target.objects.filter(id=target.id).update(compose_result=self.result)
+                return self.result
             else:
-                result += f'''
-                <div class="col-12 border border-1 border-dark">
-                    <h2>{target.tool.tool_name.replace("-"," ").capitalize()}</h2>
-                </div>
-                <div class="col-12 border border-1 border-dark">
-                    <h3>Not Found Any Vulnerability Threat Level</h3>
-                </div>
-                '''
-            Target.objects.filter(id=target.id).update(compose_result=result)
+                self.result = target.compose_result
+                return self.result
         else:
-            result = target.compose_result
-        return result
+            return handlers['default'](target, regenerate)
 
+    def open_port_hanlder(self, target, regenerate):
+        """
+        This function generates a set of information about a Cyber port scanner and its potential impact
+        on a target network.
+        
+        :param target: The target parameter is the IP address or hostname of the system that is being
+        scanned for open ports
+        :param regenerate: The "regenerate" parameter is not used in the given code snippet. It is not
+        defined as a parameter in the function signature and is not referenced within the function body
+        :return: the result of the vulnerability scan as a string.
+        """
+        for port in self.open_ports_obj.keys():
+            complexity = "INFO"
+            error = "Cyber PORT Scanner"
+            desc = "A Cyber port scanner is this plugin's function to find out open ports.Cyber port scanner are less intrusive than TCP (full connect) scans against broken services, but if the network is busy, they may cause issues for less capable firewalls and leave open connections on the remote target."
+            solution = "Use an IP filter to shield your target."
+            self.result+= set_info_vuln(
+                complexity=complexity,
+                error=error,
+                desc=desc,
+                solution=solution
+            )
+
+        return self.result
 

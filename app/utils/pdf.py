@@ -3,7 +3,9 @@ import pdfkit
 import uuid
 from scanner.models import Target, Order
 import os
+from bs4 import BeautifulSoup
 import logging
+from datetime import datetime
 logger = logging.getLogger('django')
 from .handlers.nmap_hanlder import NMAP
 nmap = NMAP()
@@ -11,6 +13,8 @@ from .handlers.sslyze_handler import SSLYSE
 sslyze = SSLYSE()
 from .handlers.nikto_handler import NIKTO
 nikto = NIKTO()
+from .handlers.curl_handler import CURL
+curl = CURL()
 from .handlers.default_handler import DEFAULT
 default = DEFAULT()
 
@@ -19,12 +23,10 @@ class PDF:
     PDF_PATH = f'{settings.MEDIA_ROOT}pdf'
     result = ""
     handlers = {
-        'nmap': nmap.nmap_handler,
-        # 'nmap-poodle': nmap.nmap_poodle_handler,
-        # 'nmap-vuln': nmap.nmap_vuln_handler,
-        # 'nmap-vulners': nmap.nmap_vulners_handler,
-        'sslyze': sslyze.sslyze_handler,
-        'nikto': nikto.nikto_handler,
+        'nmap': nmap.main,
+        'sslyze': sslyze.main,
+        'nikto': nikto.main,
+        'curl': curl.main,
         'default': default.default_handler
     }
 
@@ -54,46 +56,216 @@ class PDF:
 
     def generate(self, user_id, order_id, targets_ids=[], generate_pdf=True, generate_order_pdf=False, re_generate = False):
         """
-        It takes a list of target ids, and generates a pdf for each target id. 
+        This function generates a report in HTML or PDF format for a given order and target, including a
+        summary of alerts and their risk levels.
         
-        :param user_id: The user id of the user who is generating the report
-        :param order_id: The id of the order you want to generate the PDF for
-        :param targets_ids: The list of target ids for which the pdf is to be generated
-        :param generate_pdf: If True, it will generate a PDF file. If False, it will return the HTML
-        string, defaults to True (optional)
-        :param generate_order_pdf: If True, the PDF will be generated for the entire order. If False,
-        the PDF will be generated for the target, defaults to False (optional)
-        :param re_generate: If you want to re-generate the pdf, set this to True, defaults to False
-        (optional)
+        :param user_id: The ID of the user who is generating the report
+        :param order_id: The ID of the order object that contains the targets to be scanned
+        :param targets_ids: targets_ids is a list of target ids for which the report needs to be
+        generated. The function generates a report for each target in the list. If the list is empty,
+        the function does not generate any report
+        :param generate_pdf: A boolean parameter that determines whether to generate a PDF file or not.
+        If True, a PDF file will be generated, otherwise only an HTML string will be returned, defaults
+        to True (optional)
+        :param generate_order_pdf: The parameter `generate_order_pdf` is a boolean flag that indicates
+        whether to generate a PDF report for the entire order or not. If set to `True`, the function
+        will generate a single PDF report for the entire order, otherwise, it will generate separate PDF
+        reports for each target in the order, defaults to False (optional)
+        :param re_generate: The `re_generate` parameter is a boolean flag that indicates whether to
+        regenerate the report for a target that has already been scanned before. If set to `True`, the
+        report will be regenerated even if a previous report exists for the target. If set to `False`,
+        the report will only be generated, defaults to False (optional)
+        :return: a tuple containing the file path, new pdf name, and file url. If generate_pdf is False,
+        it returns the generated HTML data as a string.
         """
         self.result = ""
         order_obj = Order.objects.get(id=order_id)
         target_obj = None
-        
+        alert_objs = {}
+        risk_level_objs = {
+            'critical': 0,
+            'high': 0,
+            'medium':0,
+            'low':0,
+            'info':0,
+            'false-positive':0
+        }
+        ip = ""
         for target_id in targets_ids:
             target_obj = Target.objects.get(id=target_id)
+            ip = target_obj.ip
             if self.handlers.get(target_obj.tool.tool_cmd.split(" ")[0]):
-                self.result += self.handlers[target_obj.tool.tool_cmd.split(" ")[0]](target_obj, re_generate)
+                html_str = self.handlers[target_obj.tool.tool_cmd.split(" ")[0]](target_obj, re_generate)
             else:
-                self.result += self.handlers['default'](target_obj, re_generate)
-        
+                html_str = self.handlers['default'](target_obj, re_generate)
+            self.result += html_str
+            if html_str:
+                soup = BeautifulSoup(html_str, 'html.parser')
+                vulners = soup.find_all('div',{'class':'vul-header'})
+                if vulners:
+                    for vulner in vulners: 
+                        complexity = vulner.find('div',{'data-id':'complexity'}).text.strip()
+                        error = vulner.find('div',{'data-id':'error'}).text.strip()
+                        alert_objs = {**alert_objs, **{error: {'complexity': complexity}}}
+                        if risk_level_objs.get(complexity.lower()) == 0 or risk_level_objs.get(complexity.lower()) :
+                            risk_level_objs[complexity.lower()] += 1 
+                
         # Base html
-        html_data = f"""<!DOCTYPE html>
+        html_data = """
+        <!DOCTYPE html>
         <html lang="en">
         <head>
             <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css"
-                integrity="sha384-xOolHFLEh07PJGoPkLv1IbcEPTNtaed2xpHsD9ESMhqIYd0nLMwNLD69Npy4HI+N" crossorigin="anonymous">
-        </head>
-
+            integrity="sha384-xOolHFLEh07PJGoPkLv1IbcEPTNtaed2xpHsD9ESMhqIYd0nLMwNLD69Npy4HI+N" crossorigin="anonymous">
+            <style>
+                .medium, .Medium, .MEDIUM{
+                    background-color: orange;color:white;
+                }
+                .high, .High, .HIGH{
+                    background-color: #FF0000;color:white;
+                }
+                .critical, .Critical, .CRITICAL{
+                    background-color: #000000;color:#D8D8D8;
+                }
+                .low, .Low, .LOW{
+                    background-color: yellow;
+                }
+                .info, .Info, .INFO {
+                    background-color: blue;color:white;
+                }
+                .false-positive{
+                    background-color: #00811f;color:white;
+                }
+                .header{
+                    background:#666666; color: white;
+                }
+                .body{
+                    background:#e8e8e8;
+                }
+            </style>
+        </head>"""
+        html_data+= f"""
         <body>
             <div class="container-fluid">   
-                <div class="row border border-1 border-dark">
-                    {self.result}
+                <div style="text-decoration: none;">
+                    <h1>Cyber Appliance</h1><br>
+                    <h2>Site: http://{ip}</h2><br>
+                    <h4>Generated on {datetime.utcnow().strftime("%a, %d %b %Y %H:%M:%S")} UTC</h4><br>
                 </div>
+                <div style="text-decoration: none; margin-top: 5%;">
+                    <h4>Summary of Alerts</h4>
+                </div>
+                <div class="row">
+                    <div class="col-6 border border-5 border-light">
+                        <div class="row">
+                            <div class="col-6 border border-5 border-light header">
+                                Risk Level 
+                            </div>
+                            <div class="col-6 border border-5 border-light header">
+                                Number of Alerts
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-6 border border-5 border-light critical">
+                                Critical
+                            </div>
+                            <div class="col-6 border border-5 border-light body">
+                                {risk_level_objs['critical']}
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-6 border border-5 border-light high">
+                                High 
+                            </div>
+                            <div class="col-6 border border-5 border-light body">
+                                {risk_level_objs['high']}
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-6 border border-5 border-light medium">
+                                Medium
+                            </div>
+                            <div class="col-6 border border-5 border-light body">
+                                {risk_level_objs['medium']}
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-6 border border-5 border-light low">
+                                Low
+                            </div>
+                            <div class="col-6 border border-5 border-light body">
+                                {risk_level_objs['low']}
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-6 border border-5 border-light info">
+                                Informational
+                            </div>
+                            <div class="col-6 border border-5 border-light body">
+                                {risk_level_objs['info']}
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-6 border border-5 border-light false-positive">
+                                False Positives:
+                            </div>
+                            <div class="col-6 border border-5 border-light body">
+                                {risk_level_objs['false-positive']}
+                            </div>
+                        </div>
+                    </div>
+                </div>"""
+        if len(alert_objs.keys()):
+                html_data += """
+                <div style="text-decoration: none; margin-top: 5%;">
+                    <h4>Alerts</h4>
+                </div>
+                <div class="row">
+                    <div class="col-12 border border-5 border-light">
+                        <div class="row">
+                            <div class="col-6 border border-5 border-light header">
+                                Name 
+                            </div>
+                            <div class="col-2 border border-5 border-light header">
+                                Risk Level
+                            </div>
+                            <div class="col-2 border border-5 border-light header">
+                                Number of instances
+                            </div>
+                        </div>
+                """
+                for key,value in alert_objs.items():
+                    html_data += f"""
+                        <div class="row">
+                            <div class="col-6 border border-5 border-light body">
+                                {key}
+                            </div>
+                            <div class="col-2 border border-5 border-light {value['complexity']}">
+                                {value['complexity']}
+                            </div>
+                            <div class="col-2 border border-5 border-light body">
+                                1
+                            </div>
+                    
+                        </div>"""
+                html_data += """
+                    </div>
+                </div>"""
+        
+        if self.result:        
+            html_data += f"""
+            <div style="text-decoration: none; margin-top: 5%;">
+                <h4>Alert Detail</h4>
+            </div>
+            {self.result}
+            """
+        
+        html_data += """
             </div>
         </body>
 
-        </html>"""
+        </html>
+        """
 
         if generate_pdf:
 

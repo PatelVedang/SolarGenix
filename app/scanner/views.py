@@ -428,7 +428,6 @@ class SendMessageView(generics.GenericAPIView, Common):
                     order_id=target[0].order_id
                     targets = Target.objects.filter(order_id=order_id)
                     order = Order.objects.filter(id=order_id)
-                    print(targets.filter(status__gt=2).count() == targets.count(),"=>>>")
                     if targets.filter(status__gt=2).count() == targets.count():
                         if targets.filter(status=4).count() == targets.count():
                             order.update(status=3)
