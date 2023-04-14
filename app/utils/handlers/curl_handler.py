@@ -66,7 +66,7 @@ class CURL:
         :param regenerate: A boolean value indicating whether the target should be regenerated or not
         """
         if regenerate or target.compose_result=="":
-            if not re.search(self.x_content_type_options_regex, target.raw_result, re.IGNORECASE):
+            if re.search(self.windows7_regex, target.raw_result, re.IGNORECASE):
                 error = "Unsupported Web Server Detection"
                 data = {
                     'cve_id': 'N/A',
