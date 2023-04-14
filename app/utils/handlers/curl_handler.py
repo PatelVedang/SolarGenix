@@ -28,7 +28,6 @@ class CURL:
         }
         tool_cmd = target.tool.tool_cmd.strip()
         if handlers.get(tool_cmd):
-            regenerate =True
             if regenerate or target.compose_result=="":
                 self.result = ""
                 for vul_handler in handlers[tool_cmd]:

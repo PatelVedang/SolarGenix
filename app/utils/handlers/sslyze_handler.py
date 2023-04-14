@@ -94,9 +94,10 @@ class SSLYSE:
         """
         if self.services_objects.get('TLS 1.0 Cipher Suites:'):
             search_result = re.search(self.suites_regex, self.services_objects['TLS 1.0 Cipher Suites:'])
-            if search_result.groupdict().get('suites') and int(search_result.groupdict().get('suites')) >= 1:
-                error = "TLS 1.0 Weak Protocol"
-                self.result += set_vul("CVE-2022-34757", error)
+            if search_result:
+                if search_result.groupdict().get('suites') and int(search_result.groupdict().get('suites')) >= 1:
+                    error = "TLS 1.0 Weak Protocol"
+                    self.result += set_vul("CVE-2022-34757", error)
     
     def tls11_detect_handler(self, target, regenerate):
         """
@@ -111,23 +112,24 @@ class SSLYSE:
         """
         if self.services_objects.get('TLS 1.1 Cipher Suites:'):
             search_result = re.search(self.suites_regex, self.services_objects['TLS 1.1 Cipher Suites:'])
-            if search_result.groupdict().get('suites') and int(search_result.groupdict().get('suites')) >= 1:
-                complexity = "INFO"
-                error = "TLS 1.1 Weak Protocol"
-                desc = '''
-                The remote service accepts connections encrypted using TLS 1.1.
-                TLS 1.1 lacks support for current and recommended cipher suites.
-                Ciphers that support encryption before MAC computation, and authenticated encryption modes such as GCM cannot be used with TLS 1.1
-                
-                As of March 31, 2020, Endpoints that are not enabled for TLS 1.2 and higher will no longer function properly with major web browsers and major vendors.
-                '''
-                solution = "Enable support for TLS 1.2 and/or 1.3, and disable support for TLS 1.1."
-                self.result+= set_info_vuln(
-                    complexity=complexity,
-                    error=error,
-                    desc=desc,
-                    solution=solution
-                )
+            if search_result:
+                if search_result.groupdict().get('suites') and int(search_result.groupdict().get('suites')) >= 1:
+                    complexity = "INFO"
+                    error = "TLS 1.1 Weak Protocol"
+                    desc = '''
+                    The remote service accepts connections encrypted using TLS 1.1.
+                    TLS 1.1 lacks support for current and recommended cipher suites.
+                    Ciphers that support encryption before MAC computation, and authenticated encryption modes such as GCM cannot be used with TLS 1.1
+                    
+                    As of March 31, 2020, Endpoints that are not enabled for TLS 1.2 and higher will no longer function properly with major web browsers and major vendors.
+                    '''
+                    solution = "Enable support for TLS 1.2 and/or 1.3, and disable support for TLS 1.1."
+                    self.result+= set_info_vuln(
+                        complexity=complexity,
+                        error=error,
+                        desc=desc,
+                        solution=solution
+                    )
     
     def tls12_detect_handler(self, target, regenerate):
         """
@@ -141,14 +143,15 @@ class SSLYSE:
         """
         if self.services_objects.get('TLS 1.2 Cipher Suites:'):
             search_result = re.search(self.suites_regex, self.services_objects['TLS 1.2 Cipher Suites:'])
-            if search_result.groupdict().get('suites') and int(search_result.groupdict().get('suites')) >= 1:
-                complexity = "INFO"
-                error = "TLS 1.2 Weak Protocol"
-                desc = 'The remote service accepts connections encrypted using TLS 1.2.'
-                solution = "N/A"
-                self.result+= set_info_vuln(
-                    complexity=complexity,
-                    error=error,
-                    desc=desc,
-                    solution=solution
-                )
+            if search_result:
+                if search_result.groupdict().get('suites') and int(search_result.groupdict().get('suites')) >= 1:
+                    complexity = "INFO"
+                    error = "TLS 1.2 Weak Protocol"
+                    desc = 'The remote service accepts connections encrypted using TLS 1.2.'
+                    solution = "N/A"
+                    self.result+= set_info_vuln(
+                        complexity=complexity,
+                        error=error,
+                        desc=desc,
+                        solution=solution
+                    )

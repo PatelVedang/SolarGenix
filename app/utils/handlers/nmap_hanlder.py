@@ -51,7 +51,7 @@ class NMAP:
                         if status == 'open':
                             port_number = port_obj['port'].split("/")[0]
                             service = port_obj['service']
-                            self.open_ports_obj = {**self.open_ports_obj, **{port_number: {'port': port_number, 'status':status, 'service': service}}}
+                            self.open_ports_obj = {**self.open_ports_obj, **{port_number: {'tcp_port': port_obj.groupdict().get('port'), 'status':status, 'service': service}}}
                 for vul_handler in handlers[tool_cmd]:
                     vul_handler(target, regenerate)
                 Target.objects.filter(id=target.id).update(compose_result=self.result)
@@ -78,11 +78,13 @@ class NMAP:
             error = "Cyber PORT Scanner"
             desc = "A Cyber port scanner is this plugin's function to find out open ports.Cyber port scanner are less intrusive than TCP (full connect) scans against broken services, but if the network is busy, they may cause issues for less capable firewalls and leave open connections on the remote target."
             solution = "Use an IP filter to shield your target."
+            port = self.open_ports_obj.get(port).get('tcp_port')
             self.result+= set_info_vuln(
                 complexity=complexity,
                 error=error,
                 desc=desc,
-                solution=solution
+                solution=solution,
+                port=port
             )
 
         return self.result
