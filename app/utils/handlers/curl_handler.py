@@ -65,6 +65,7 @@ class CURL:
         It contains information such as the IP address, port number, and protocol being used
         :param regenerate: A boolean value indicating whether the target should be regenerated or not
         """
+        # https://learn.microsoft.com/en-us/lifecycle/products/internet-information-services-iis reference of IIS7.5
         if regenerate or target.compose_result=="":
             if re.search(self.windows7_regex, target.raw_result, re.IGNORECASE):
                 error = "Unsupported Web Server Detection"

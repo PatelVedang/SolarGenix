@@ -12,7 +12,7 @@ from .common_handler import *
 
 class SSLYSE:
     result = ""
-    service_regex = "\\r\\n\\r\\n\s+\*(?P<service>[\w\s.]+):\\r\\n"
+    service_regex ="(\n\s+\*\s+|\\n\s+\*\s+|\\r\\n\s+\*\s+)(?P<service>[\w\s.]+):(\n|\\n|\\r\\n)"
     cert_regex = "Not After:\s+(?P<cert_expire_on>\d{4}-\d{2}-\d{2})"
     suites_regex = "The\s+server\s+accepted\s+the\s+following\s+(?P<suites>\d{1,})\s+cipher\s+suites:"
     services_objects = {}

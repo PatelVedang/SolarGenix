@@ -57,10 +57,29 @@ class CVE:
         return cve_details
 
     def set_cve_details(self,cve):
+        """
+        This function sets the details of a CVE (Common Vulnerabilities and Exposures) and returns the
+        corresponding HTML.
+        
+        :param cve: "cve" is a variable that represents a Common Vulnerabilities and Exposures (CVE)
+        identifier, which is a unique identifier assigned to a specific security vulnerability. The
+        function "set_cve_details" takes this identifier as input and retrieves the details of the
+        vulnerability using the "get_cve_details
+        :return: the result of calling the method `set_cve_html` with the keyword arguments unpacked
+        from the dictionary `cve_details`.
+        """
         cve_details = self.get_cve_details(cve)
         return self.set_cve_html(**cve_details)
 
     def get_complexity(self, cve):
+        """
+        This function retrieves the complexity of a CVE based on its details.
+        
+        :param cve: The parameter "cve" is a string representing the Common Vulnerabilities and
+        Exposures (CVE) identifier for a specific security vulnerability
+        :return: the complexity of a CVE (Common Vulnerabilities and Exposures) based on its details.
+        The complexity can be "N/A" (not applicable), "Low", "Medium", "High", or "info".
+        """
         cve_details = self.get_cve_details(cve)
         if cve_details['cvvs3'].get('error_type') and cve_details['cvvs3'].get('error_type') != 'N/A':
             complexity = cve_details['cvvs3'].get('error_type')
@@ -72,6 +91,12 @@ class CVE:
         return complexity
     
     def set_cve_html(self, **cve_details):
+        """
+        This function sets the HTML format for displaying details of a CVE (Common Vulnerabilities and
+        Exposures) and returns the HTML code along with the complexity level of the CVE.
+        :return: a tuple containing two values: a string variable named "result" and a string variable
+        named "complexity".
+        """
         result = ""
         if cve_details:
             if cve_details.get('cve_id'):
