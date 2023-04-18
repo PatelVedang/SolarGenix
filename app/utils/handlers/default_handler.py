@@ -50,6 +50,5 @@ class DEFAULT:
                 </div>
                 '''
             
-        return self.result
-        
+        return self.result        
         
