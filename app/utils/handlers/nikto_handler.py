@@ -16,6 +16,7 @@ from .common_handler import *
 # header in a target's raw result.
 class NIKTO:
     anti_clickjacking_regex = "The anti-clickjacking X-Frame-Options header is not present."
+    asp_version_regex = "Retrieved x-aspnet-version header: (?P<version>\d+\.\d+(\.\d+)?)"
 
     def main(self, target, regenerate):
         """
@@ -37,12 +38,14 @@ class NIKTO:
             'nikto -host': [
                 self.anti_clickjacking_handler,
                 self.jquery_handler,
-                self.jquery_detection_handler
+                self.jquery_detection_handler,
+                self.asp_version_handler
             ],
             'default': default.default_handler
         }
         tool_cmd = target.tool.tool_cmd.strip()
         if handlers.get(tool_cmd):
+            regenerate =True
             if regenerate or target.compose_result=="":
                 self.result = ""
                 for vul_handler in handlers[tool_cmd]:
@@ -99,7 +102,6 @@ class NIKTO:
                 if match:
                     jquery_version = match.groupdict().get('version')
                     if StrictVersion('1.2')< StrictVersion(jquery_version) < StrictVersion('3.5.0'):
-                        
                         error = "JQuery 1.2 < 3.5.0 Multiple XSS"
                         self.result += set_vul("CVE-2020-11022", error)
         except Exception as e:
@@ -124,7 +126,7 @@ class NIKTO:
             if jquery_script:
                 complexity = "INFO"
                 error = "JQuery Detection"
-                desc = 'Nessus was able to detect JQuery on the remote host.'
+                desc = 'System was able to detect JQuery on the remote host.'
                 solution = "N/A"
                 self.result+= set_info_vuln(
                     complexity=complexity,
@@ -135,5 +137,14 @@ class NIKTO:
 
         except Exception as e:
             pass
+
+    def asp_version_handler(self, target, regenerate):
+        search_result = re.search(self.asp_version_regex, target.raw_result, re.IGNORECASE)
+        if search_result:
+            if search_result.groupdict().get('version'):
+                asp_version = search_result.groupdict().get('version')
+                if StrictVersion(asp_version) < StrictVersion('4.0'):
+                    error = "X-AspNet-Version Response Header"
+                    self.result += set_vul("CVE-2010-3332", error)
 
         
