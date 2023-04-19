@@ -3,13 +3,114 @@ from bs4 import BeautifulSoup
 import logging
 logger = logging.getLogger('django')
 import re
-
+import json
+from django.conf import settings
 
 class CVE:
-    def get_cve_details(self, cve):
+    api_key = settings.NVD_API_KEY
+    cve_details={}
+
+    def update_cve(self, data):
+        self.cve_details= {**self.cve_details, **data}
+    
+    def get_cve_details_v2(self, cve_id):
+        """
+        This function retrieves details of a CVE (Common Vulnerabilities and Exposures) using its ID
+        from the NIST NVD (National Vulnerability Database) API and updates the details in a dictionary.
+
+        This function is use to get CVE details by NVD API.
+        
+        :param cve_id: The CVE ID (Common Vulnerabilities and Exposures) for which the details are being
+        fetched
+        :return: a dictionary containing details of a CVE (Common Vulnerabilities and Exposures)
+        identified by the given CVE ID. The details include the CVE ID, description, CVSS (Common
+        Vulnerability Scoring System) scores and error types for both version 2 and version 3, sources
+        (references), and CWE (Common Weakness Enumeration) IDs.
+        """
+        self.cve_details={}
+        url = "https://services.nvd.nist.gov/rest/json/cves/2.0"
+        headers = {
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+            "apiKey": self.api_key
+        }
+        params = {"cveId": cve_id}
+        response = requests.get(url, headers=headers, params=params)
+        if response.status_code == 200:
+            data = json.loads(response.text)
+            if data.get('vulnerabilities'):
+                if data['vulnerabilities'][0].get('cve'):
+                    if data['vulnerabilities'][0]['cve'].get('descriptions'):
+                        desc_index = next((index for (index, i) in enumerate(data['vulnerabilities'][0]['cve']['descriptions']) if i["lang"] == "en"), 0)
+                        self.update_cve(
+                            {
+                                'cve_id':data['vulnerabilities'][0]['cve']['id'],
+                                'description':data['vulnerabilities'][0]['cve']['descriptions'][desc_index]['value']
+                            }
+                        )
+                    if data['vulnerabilities'][0]['cve'].get('metrics'):
+                        if data['vulnerabilities'][0]['cve']['metrics'].get('cvssMetricV31'):
+                            cvss3_index = next((index for (index, i) in enumerate(data['vulnerabilities'][0]['cve']['metrics']['cvssMetricV31']) if i["source"] == "nvd@nist.gov"), 0)
+                            self.update_cve(
+                                {
+                                    'cvvs3':{
+                                        'base_score': data['vulnerabilities'][0]['cve']['metrics']['cvssMetricV31'][cvss3_index]['cvssData']['baseScore'],
+                                        'error_type': data['vulnerabilities'][0]['cve']['metrics']['cvssMetricV31'][cvss3_index]['cvssData']['baseSeverity'],
+                                    }
+                                }
+                            )
+                        else:
+                            self.update_cve(
+                                {
+                                    'cvvs3':{
+                                        'base_score': 'N/A',
+                                        'error_type': 'N/A',
+                                    }
+                                }
+                            )
+                        if data['vulnerabilities'][0]['cve']['metrics'].get('cvssMetricV2'):
+                            cvss2_index = next((index for (index, i) in enumerate(data['vulnerabilities'][0]['cve']['metrics']['cvssMetricV2']) if i["source"] == "nvd@nist.gov"), 0)
+                            self.update_cve(
+                                {
+                                    'cvvs2':{
+                                        'base_score': data['vulnerabilities'][0]['cve']['metrics']['cvssMetricV2'][cvss2_index]['cvssData']['baseScore'],
+                                        'error_type': data['vulnerabilities'][0]['cve']['metrics']['cvssMetricV2'][cvss2_index]['cvssData']['accessComplexity'],
+                                    }
+                                }
+                            )
+                        else:
+                            self.update_cve(
+                                {
+                                    'cvvs2':{
+                                        'base_score': 'N/A',
+                                        'error_type': 'N/A',
+                                    }
+                                }
+                            )
+                    if data['vulnerabilities'][0]['cve'].get('references'):
+                        refences = [reference['url'] for reference in data['vulnerabilities'][0]['cve']['references']]
+                        self.update_cve(
+                            {
+                            'sources': refences
+                            }
+                        )
+
+                    if data['vulnerabilities'][0]['cve'].get('weaknesses'):
+                        weaknesses = [cwe['value'] for weakness in data['vulnerabilities'][0]['cve']['weaknesses'] for cwe in weakness['description']]
+                        self.update_cve(
+                            {
+                                'cwe_ids': weaknesses
+                            }
+                        )
+        return self.cve_details
+
+
+    def get_cve_details_v1(self, cve):
         """
         It takes a CVE ID as an argument, and returns a dictionary containing the CVE ID, description,
         CVSS3 base score, CVSS3 error type, CVSS2 base score, and CVSS2 error type
+
+        This function is use to get CVE details by scrapping NVD site.
         
         :param cve: The CVE ID
         :return: A dictionary with the following keys:
@@ -68,7 +169,7 @@ class CVE:
         :return: the result of calling the method `set_cve_html` with the keyword arguments unpacked
         from the dictionary `cve_details`.
         """
-        cve_details = self.get_cve_details(cve)
+        cve_details = self.get_cve_details_v2(cve)
         return self.set_cve_html(**cve_details)
 
     def get_complexity(self, cve):
@@ -80,7 +181,7 @@ class CVE:
         :return: the complexity of a CVE (Common Vulnerabilities and Exposures) based on its details.
         The complexity can be "N/A" (not applicable), "Low", "Medium", "High", or "info".
         """
-        cve_details = self.get_cve_details(cve)
+        cve_details = self.get_cve_details_v2(cve)
         if cve_details['cvvs3'].get('error_type') and cve_details['cvvs3'].get('error_type') != 'N/A':
             complexity = cve_details['cvvs3'].get('error_type')
         elif cve_details['cvvs2'].get('error_type') and cve_details['cvvs2'].get('error_type') != 'N/A':
@@ -168,14 +269,14 @@ class CVE:
                         </div>
                     </div>'''
             
-            if cve_details.get('cwe_id'):
+            if cve_details.get('cwe_ids'):
                 result += f'''
                 <div class="row">
                     <div class="col-3 border border-5 border-light body">
                         CWE ID
                     </div>
                     <div class="col-9 border border-5 border-light body">
-                        {cve_details['cwe_id']}
+                        {"<br>".join(cve_details['cwe_ids'])}
                     </div>
                 </div>'''
 

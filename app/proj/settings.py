@@ -289,3 +289,4 @@ LOGGING = {
 }
 
 SUDO_PWD=os.environ.get('SUDO_PWD', env('SUDO_PWD'))
+NVD_API_KEY=os.environ.get('NVD_API_KEY', env('NVD_API_KEY'))
