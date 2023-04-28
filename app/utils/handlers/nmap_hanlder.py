@@ -32,7 +32,7 @@ class NMAP:
         """
         handlers = {
             'nmap -Pn -sV': [
-                self.open_port_hanlder,
+                self.port_hanlder,
             ],
             # 'nmap -Pn -sV --script vuln,vulners --script-args mincvvs=5.0': self.nmap_handler,
             # 'nmap -sV --script vuln --script-args vuln.showall': self.nmap_handler,
@@ -73,11 +73,9 @@ class NMAP:
         defined as a parameter in the function signature and is not referenced within the function body
         :return: the result of the vulnerability scan as a string.
         """
-        print(target.raw_result)
         for port in self.open_ports_obj.keys():
             error = "Cyber PORT Scanner"
             port_number = self.open_ports_obj.get(port).get('tcp_port')
-            print(self.open_ports_obj.keys())
             status = self.open_ports_obj[port]['status']
             if status == "open": 
                 complexity = "INFO"
