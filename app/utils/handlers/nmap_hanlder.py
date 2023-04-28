@@ -48,7 +48,7 @@ class NMAP:
                 for port_obj in self.ports:
                     if port_obj.groupdict().get('port'):
                         status = port_obj['status'].strip()
-                        if status == 'open':
+                        if status in ['open','filtered']:
                             port_number = port_obj['port'].split("/")[0]
                             service = port_obj['service']
                             self.open_ports_obj = {**self.open_ports_obj, **{port_number: {'tcp_port': port_obj.groupdict().get('port'), 'status':status, 'service': service}}}
@@ -62,7 +62,7 @@ class NMAP:
         else:
             return handlers['default'](target, regenerate)
 
-    def open_port_hanlder(self, target, regenerate):
+    def port_hanlder(self, target, regenerate):
         """
         This function generates a set of information about a Cyber port scanner and its potential impact
         on a target network.
@@ -73,19 +73,26 @@ class NMAP:
         defined as a parameter in the function signature and is not referenced within the function body
         :return: the result of the vulnerability scan as a string.
         """
+        print(target.raw_result)
         for port in self.open_ports_obj.keys():
-            complexity = "INFO"
             error = "Cyber PORT Scanner"
-            desc = "A Cyber port scanner is this plugin's function to find out open ports.Cyber port scanner are less intrusive than TCP (full connect) scans against broken services, but if the network is busy, they may cause issues for less capable firewalls and leave open connections on the remote target."
-            solution = "Use an IP filter to shield your target."
-            port = self.open_ports_obj.get(port).get('tcp_port')
+            port_number = self.open_ports_obj.get(port).get('tcp_port')
+            print(self.open_ports_obj.keys())
+            status = self.open_ports_obj[port]['status']
+            if status == "open": 
+                complexity = "INFO"
+                desc = "A Cyber port scanner is this plugin's function to find out open ports.Cyber port scanner are less intrusive than TCP (full connect) scans against broken services, but if the network is busy, they may cause issues for less capable firewalls and leave open connections on the remote target."
+                solution = "Use an IP filter to shield your target."
+            else:
+                complexity = "FALSE-POSITIVE"
+                desc = "A firewall, filter, or other network obstacle is blocking the port so that Cyber port scanner cannot tell whether it is open or closed."
+                solution = "N/A"
             self.result+= set_info_vuln(
                 complexity=complexity,
                 error=error,
                 desc=desc,
                 solution=solution,
-                port=port
+                port=port_number
             )
-
         return self.result
 

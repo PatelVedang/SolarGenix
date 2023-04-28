@@ -106,7 +106,7 @@ class PDF:
                     for vulner in vulners: 
                         complexity = vulner.find('div',{'data-id':'complexity'}).text.strip()
                         error = vulner.find('div',{'data-id':'error'}).text.strip()
-                        alert_objs = {**alert_objs, **{error: {'complexity': complexity}}}
+                        alert_objs = {**alert_objs, **{f'{error}_{complexity}': {'complexity': complexity}}}
                         if risk_level_objs.get(complexity.lower()) == 0 or risk_level_objs.get(complexity.lower()) :
                             risk_level_objs[complexity.lower()] += 1 
                 
@@ -133,7 +133,7 @@ class PDF:
                 .info, .Info, .INFO {
                     background-color: blue;color:white;
                 }
-                .false-positive{
+                .false-positive, .Flase-Positive, .FALSE-POSITIVE{
                     background-color: #00811f;color:white;
                 }
                 .header{
@@ -149,7 +149,7 @@ class PDF:
             <div class="container-fluid">   
                 <div style="text-decoration: none;">
                     <h1>Cyber Appliance</h1><br>
-                    <h2>Site: http://{ip}</h2><br>
+                    <h2>Site: {ip}</h2><br>
                     <h4>Generated on {datetime.utcnow().strftime("%a, %d %b %Y %H:%M:%S")} UTC</h4><br>
                 </div>
                 <div style="text-decoration: none; margin-top: 5%;">
@@ -207,7 +207,7 @@ class PDF:
                         </div>
                         <div class="row">
                             <div class="col-6 border border-5 border-light false-positive">
-                                False Positives:
+                                False Positives
                             </div>
                             <div class="col-6 border border-5 border-light body">
                                 {risk_level_objs['false-positive']}
@@ -238,7 +238,7 @@ class PDF:
                     html_data += f"""
                         <div class="row">
                             <div class="col-6 border border-5 border-light body">
-                                {key}
+                                {key.split("_")[0]}
                             </div>
                             <div class="col-2 border border-5 border-light {value['complexity']}">
                                 {value['complexity']}
