@@ -16,6 +16,7 @@ from django.db.models import Q
 from django.conf import settings
 from datetime import datetime
 import threading
+from tldextract import extract
 
 def update_target_and_add_log(**kwargs):
     """
@@ -56,7 +57,7 @@ def scan(id, time_limit, token, order_id, batch_scan):
     thread.start()
 
     target = Target.objects.filter(id=id)
-    ip = target[0].ip
+    ip = ".".join(list(extract(target[0].ip))).strip(".")
     logger.info(f"====>>>>>>>>       \nIP:{ip} with id:{id} added to queue\n       <<<<<<<<====")
     output = ""
     tool_cmd = target[0].tool.tool_cmd

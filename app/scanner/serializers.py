@@ -9,6 +9,7 @@ from django.utils.translation import gettext_lazy as _
 from django.core.exceptions import ValidationError
 import socket
 import ipaddress
+from tldextract import extract
 
    
 def validate_ipv4_address(value):
@@ -18,7 +19,9 @@ def validate_ipv4_address(value):
     
     :param value: The value that is being validated
     """
+
     try:
+        value = ".".join(list(extract(value))).strip(".")
         value = socket.gethostbyname(value)
     except Exception as e:
         message = str(e).split("] ")[1] if len(str(e).split("] "))>1 else "Invalid domain name"
