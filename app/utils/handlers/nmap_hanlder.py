@@ -12,7 +12,7 @@ default = DEFAULT()
 from .common_handler import *
 
 class NMAP:
-    port_search_regex = '(?P<port>\d{1,4}/tcp)\s+(?P<status>(filtered|open|closed))\s+(?P<service>[\w0-9\-\_]+).*(\n)'
+    port_search_regex = '(?P<port>\d{1,4}/(tcp|udp))\s+(?P<status>(filtered|open|closed|open\|filtered))\s+(?P<service>[\w0-9\-\_]+).*(\n)'
     ports = []
     open_ports_obj = {}
 
@@ -31,16 +31,14 @@ class NMAP:
         function, depending on whether the tool command is in the handlers dictionary or not.
         """
         handlers = {
-            'nmap -Pn -sV': [
+            'nmap -Pn -sV -sU -sT': [
                 self.port_hanlder,
             ],
-            # 'nmap -Pn -sV --script vuln,vulners --script-args mincvvs=5.0': self.nmap_handler,
-            # 'nmap -sV --script vuln --script-args vuln.showall': self.nmap_handler,
-            # 'nmap -p443 --script ssl-poodle -Pn': self.nmap_handler,
             'default': default.default_handler
         }
         tool_cmd = target.tool.tool_cmd.strip()
         if handlers.get(tool_cmd):
+            regenerate=True
             if regenerate or target.compose_result=="":
                 self.result = ""
                 self.ports = []
@@ -48,10 +46,10 @@ class NMAP:
                 for port_obj in self.ports:
                     if port_obj.groupdict().get('port'):
                         status = port_obj['status'].strip()
-                        if status in ['open','filtered']:
+                        if status in ['open','filtered', 'open|filtered']:
                             port_number = port_obj['port'].split("/")[0]
                             service = port_obj['service']
-                            self.open_ports_obj = {**self.open_ports_obj, **{port_number: {'tcp_port': port_obj.groupdict().get('port'), 'status':status, 'service': service}}}
+                            self.open_ports_obj = {**self.open_ports_obj, **{port_number: {'port_with_protocol': port_obj.groupdict().get('port'), 'status':status, 'service': service}}}
                 for vul_handler in handlers[tool_cmd]:
                     vul_handler(target, regenerate)
                 Target.objects.filter(id=target.id).update(compose_result=self.result)
@@ -75,13 +73,13 @@ class NMAP:
         """
         for port in self.open_ports_obj.keys():
             error = "Cyber PORT Scanner"
-            port_number = self.open_ports_obj.get(port).get('tcp_port')
+            port_number = self.open_ports_obj.get(port).get('port_with_protocol')
             status = self.open_ports_obj[port]['status']
-            if status == "open": 
+            if status in ["open", "open|filtered"]: 
                 complexity = "INFO"
                 desc = "A Cyber port scanner is this plugin's function to find out open ports.Cyber port scanner are less intrusive than TCP (full connect) scans against broken services, but if the network is busy, they may cause issues for less capable firewalls and leave open connections on the remote target."
                 solution = "Use an IP filter to shield your target."
-            else:
+            elif status in ["filtered"]:
                 complexity = "FALSE-POSITIVE"
                 desc = "A firewall, filter, or other network obstacle is blocking the port so that Cyber port scanner cannot tell whether it is open or closed."
                 solution = "N/A"

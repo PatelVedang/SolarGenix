@@ -24,9 +24,10 @@
     "pk": 3,
     "fields": {
       "tool_name": "nmap-vuln",
-      "tool_cmd": "nmap -sV --script vuln --script-args vuln.showall",
+      "tool_cmd": "nmap -Pn -sV -sU -sT",
       "time_limit": 200,
-      "subscription_id": 1
+      "subscription_id": 1,
+      "sudo_access": true
     }
   },
   {

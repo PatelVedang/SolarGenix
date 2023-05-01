@@ -31,28 +31,12 @@ def update_target_and_add_log(**kwargs):
         kwargs.get('target').update(status=kwargs.get('status'))
     TargetLog.objects.create(target=Target(kwargs.get('id')), action=kwargs.get('action'))
 
-def get_scan_time(**kwargs):
-    return round(((kwargs.get('end_time') - kwargs.get('start_time')).total_seconds()), 2)
+def get_scan_time(end_date=datetime.utcnow(), **kwargs):
+    return round(((end_date - kwargs.get('start_time')).total_seconds()), 2)
 
 c = Celery('proj')
 @c.task
 def scan(id, time_limit, token, order_id, batch_scan):
-    """
-    It takes the id of the target, the time limit and the token as parameters and then sends a message
-    to the user with the id and token. Then it gets the target with the given id and gets the ip of the
-    target. Then it logs the ip and id of the target. Then it starts the timer. Then it creates an empty
-    string for the output. Then it gets the command of the tool and the time limit of the tool. Then it
-    checks if the status of the target is 0. If it is, it updates the status of the target to 1 and
-    creates a log for the target with the action 2. Then it checks if the status of the target is
-    greater than or equal to 1. If it is, it tries to scan the target. If it can't scan the target, it
-    logs the error and updates the status of the target to 3 and creates a log for the target with the
-    action 3. If it can scan the target, it gets
-    
-    :param id: The id of the target to be scanned
-    :param time_limit: The time limit for the scan
-    :param token: The token of the user who added the target
-    :return: the result of the scan.
-    """
     thread = threading.Thread(target=send_message, args=(id, token, order_id, batch_scan))
     thread.start()
 
@@ -63,21 +47,13 @@ def scan(id, time_limit, token, order_id, batch_scan):
     tool_cmd = target[0].tool.tool_cmd
     time_limit = target[0].tool.time_limit
     pwd = settings.SUDO_PWD
-    # if tool is uniscan then we have to add sudo access
-    if tool_cmd.lower().find("uniscan") >=0:
+    # add sudo access for those tools which need to run tool
+    if target[0].tool.sudo_access:
         tool_cmd = f'echo {pwd} | sudo -S {tool_cmd}'
     if (tool_cmd.find("<ip>")>=0) or (tool_cmd.find("<IP>")>=0):
         tool_cmd = tool_cmd.replace("<ip>",ip).replace("<IP>",ip)
     else:
         tool_cmd += f' {ip}'
-    
-    # if record is just created
-    # if target[0].status == 0:
-    #     # target.update(status=1)
-    #     # TargetLog.objects.create(target=Target(id), action=2)
-    #     update_target_and_add_log(target=target, id=id, status=1, action=2)
-
-    # if record is credated and scan was already did
     
     if target[0].status >= 1:
         try:
@@ -90,48 +66,26 @@ def scan(id, time_limit, token, order_id, batch_scan):
             else:
                 # output = subprocess.check_output(f"{tool_cmd} {ip}", shell=True, timeout=time_limit).decode('utf-8')
                 output = subprocess.run(f"{tool_cmd}", shell=True, capture_output=True, timeout=time_limit)
-            end_time = datetime.utcnow()
-            scan_time = get_scan_time(start_time=start_time, end_time=end_time)
             if tool_cmd.lower().find("uniscan"):
                 subprocess.run(f"echo {pwd}| sudo -S rm -f /usr/share/uniscan/report/{ip}.html",shell=True, capture_output=True)
             
             if output.stderr.decode('utf-8') and not output.stdout.decode('utf-8'):
                 logger.info(f"====>>>>>>>>       \nBackground thread for ip:{ip} with id:{id} has been terminated due to tool issue.\n       <<<<<<<<====")
-                update_target_and_add_log(target=target, output=output.stderr.decode('utf-8'), id=id, status=3, action=3, scan_time = scan_time)
+                update_target_and_add_log(target=target, output=output.stderr.decode('utf-8'), id=id, status=3, action=3, scan_time = get_scan_time(start_time=start_time))
                 return False
             
             output=output.stdout.decode('utf-8')
         except Exception as e:
-            end_time = datetime.utcnow()
-            scan_time = get_scan_time(start_time=start_time, end_time=end_time)
             if e.output:
                 error = f'\n{e.output.decode("utf-8")}{str(e)}'
             else:
                 error = f'{str(e)}'
 
             logger.info(f"====>>>>>>>>       \nBackground thread for ip:{ip} with id:{id} has been terminated\n       <<<<<<<<====")
-            update_target_and_add_log(target=target, output=str(error), id=id, status=3, action=3, scan_time = scan_time)
+            update_target_and_add_log(target=target, output=str(error), id=id, status=3, action=3, scan_time = get_scan_time(start_time=start_time))
             return False
 
-        port_search_regex = '(?P<port>\d{1,4}/tcp)\s+(?P<state>(filtered|open|closed))'
-        ignore_state_regex = "All 1000 scanned ports on \d{1,3}.\d{1,3}.\d{1,3}.\d{1,3} are in ignored states."
-        filtered_state_regex = "All 1000 scanned ports on \d{1,3}.\d{1,3}.\d{1,3}.\d{1,3} are filtered"
-        ports = list(re.finditer(port_search_regex, output))
-        
-        # If not found any open ports
-        if (re.search(ignore_state_regex, output) or re.search(filtered_state_regex, output)):
-            logger.info(f"====>>>>>>>>       \nIP:{ip} with id:{id} has no open ports.\n       <<<<<<<<====")
-            update_target_and_add_log(target=target, output=output, id=id, status=4, action=4, scan_time = scan_time)
-        
-        # If ports found in given time
-        elif ports:
-            logger.info(f"====>>>>>>>>       \nFound open ports with IP:{ip} with id:{id}.\n       <<<<<<<<====")
-            update_target_and_add_log(target=target, output=output, id=id, status=4, action=4, scan_time = scan_time)
-        else:
-            logger.info(f"====>>>>>>>>       \nIP:{ip} with id:{id} is not match any condition.\n       <<<<<<<<====")
-            update_target_and_add_log(target=target, output=output, id=id, status=4, action=4, scan_time = scan_time)
-
-        end_time = time.time()
+        update_target_and_add_log(target=target, output=output, id=id, status=4, action=4, scan_time = get_scan_time(start_time=start_time))
         return True
     else:
         return False
