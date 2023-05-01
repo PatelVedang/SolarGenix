@@ -37,8 +37,8 @@ def get_scan_time(end_date=datetime.utcnow(), **kwargs):
 c = Celery('proj')
 @c.task
 def scan(id, time_limit, token, order_id, batch_scan):
-    thread = threading.Thread(target=send_message, args=(id, token, order_id, batch_scan))
-    thread.start()
+    # thread = threading.Thread(target=send_message, args=(id, token, order_id, batch_scan))
+    # thread.start()
 
     target = Target.objects.filter(id=id)
     ip = ".".join(list(extract(target[0].ip))).strip(".")
@@ -99,10 +99,10 @@ def send_message(id, token, order_id, batch_scan):
     """
     if batch_scan:
         # if not Target.objects.filter(order_id=order_id).exclude(id=id).filter(status__gte=1).count():
-        if not Target.objects.filter(order_id=order_id).exclude(id=id).filter(status__in=[2]).count():
+        # if not Target.objects.filter(order_id=order_id).exclude(id=id).filter(status__in=[2]).count():
             # Target.objects.filter(id=id).update(status=1)
-            logger.info(f"====>>>>>>>>       \nWebsocket API trigger for order_id:{order_id}\n       <<<<<<<<====")
-            response = requests.get(f'http://localhost:8000/api/sendMessage/?order={order_id}', headers={'Authorization': token})
+        logger.info(f"====>>>>>>>>       \nWebsocket API trigger for order_id:{order_id}\n       <<<<<<<<====")
+        response = requests.get(f'http://localhost:8000/api/sendMessage/?order={order_id}', headers={'Authorization': token})
     else:
         logger.info(f"====>>>>>>>>       \nWebsocket API trigger for target id:{id}\n       <<<<<<<<====")
         response = requests.get(f'http://localhost:8000/api/sendMessage/?id={id}', headers={'Authorization': token})

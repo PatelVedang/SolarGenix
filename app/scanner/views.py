@@ -184,7 +184,7 @@ class ScanViewSet(viewsets.ModelViewSet, Common):
         :return: The data is being returned in the form of a list.
         """
         if (not request.user.is_staff) and (not request.user.is_superuser):
-            self.queryset = Target.objects.filter(scan_by = request.user.id)
+            self.queryset = Target.objects.filter(scan_by = request.user.id).order_by('-created_at')
         if request.query_params.get('order'):
             order_id = request.query_params.get('order')
             self.queryset.filter(order_id=order_id)
@@ -493,7 +493,7 @@ class OrderViewSet(viewsets.ModelViewSet, Common):
         :return: The response is being returned.
         """
         if (not request.user.is_staff) and (not request.user.is_superuser):
-            self.queryset = Order.objects.filter(client_id = request.user.id)
+            self.queryset = Order.objects.filter(client_id = request.user.id).order_by('-created_at')
         self.serializer_class = OrderResponseSerailizer
         data = super().list(request, *args, **kwargs)
         return response(status=True, data=data.data, status_code=status.HTTP_200_OK, message="record found successfully")
