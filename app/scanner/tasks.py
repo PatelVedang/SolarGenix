@@ -37,8 +37,8 @@ def get_scan_time(end_date=datetime.utcnow(), **kwargs):
 c = Celery('proj')
 @c.task
 def scan(id, time_limit, token, order_id, batch_scan):
-    # thread = threading.Thread(target=send_message, args=(id, token, order_id, batch_scan))
-    # thread.start()
+    thread = threading.Thread(target=send_message, args=(id, token, order_id, batch_scan))
+    thread.start()
 
     target = Target.objects.filter(id=id)
     ip = ".".join(list(extract(target[0].ip))).strip(".")
