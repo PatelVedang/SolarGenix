@@ -98,11 +98,9 @@ def send_message(id, token, order_id, batch_scan):
     :param token: The token you get from the login API
     """
     if batch_scan:
-        # if not Target.objects.filter(order_id=order_id).exclude(id=id).filter(status__gte=1).count():
-        # if not Target.objects.filter(order_id=order_id).exclude(id=id).filter(status__in=[2]).count():
-            # Target.objects.filter(id=id).update(status=1)
-        logger.info(f"====>>>>>>>>       \nWebsocket API trigger for order_id:{order_id}\n       <<<<<<<<====")
-        response = requests.get(f'http://localhost:8000/api/sendMessage/?order={order_id}', headers={'Authorization': token})
+        if not Target.objects.filter(order_id=order_id).exclude(id=id).filter(status__in=[2]).count():
+            logger.info(f"====>>>>>>>>       \nWebsocket API trigger for order_id:{order_id}\n       <<<<<<<<====")
+            response = requests.get(f'http://localhost:8000/api/sendMessage/?order={order_id}', headers={'Authorization': token})
     else:
         logger.info(f"====>>>>>>>>       \nWebsocket API trigger for target id:{id}\n       <<<<<<<<====")
         response = requests.get(f'http://localhost:8000/api/sendMessage/?id={id}', headers={'Authorization': token})
