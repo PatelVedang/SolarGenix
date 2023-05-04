@@ -3,7 +3,7 @@ from .models import Target, Tool, TargetLog, Order
 from user.models import User
 from django.http import HttpResponse, JsonResponse
 from rest_framework.decorators import api_view
-from .tasks import scan
+from .tasks import scan, send_message
 from .serializers import *
 from rest_framework.response import Response
 from rest_framework import viewsets, status, generics
@@ -27,7 +27,7 @@ from django.conf import settings
 import logging
 logger = logging.getLogger('django')
 import json
-
+import threading
 class Common:
 
     def update_order_targets(self, order, targets):
@@ -383,13 +383,18 @@ class SendMessageView(generics.GenericAPIView, Common):
                 order_percent = 0
                 for target in targets:
                     serializer = self.serializer_class(target)
-                    if (target.status < 3 and target.status > 0) and targets_start_time.get(target.id):
+                    if target.status == 1:
+                        targets_start_time[target.id] = datetime.utcnow()
+                        record_obj = {**serializer.data, **{'target_percent':0}}
+                        order_percent += int((0*tool_perecent)/100)
+                        response.append(record_obj)
+                    elif (target.status == 2) and targets_start_time.get(target.id):
                         diff= (datetime.utcnow() - targets_start_time[target.id]).total_seconds()
                         target_percent = int(diff*100/((target.tool.time_limit+10)))
                         record_obj = {**serializer.data, **{'target_percent':target_percent}}
                         order_percent += int((target_percent*tool_perecent)/100)
                         response.append(record_obj)
-                    elif (target.status < 3 and target.status > 0) and not targets_start_time.get(target.id):
+                    elif (target.status == 2) and not targets_start_time.get(target.id):
                         targets_start_time[target.id] = datetime.utcnow()
                         diff= (datetime.utcnow() - targets_start_time[target.id]).total_seconds()
                         target_percent = int(diff*100/((target.tool.time_limit+10)))
@@ -399,10 +404,6 @@ class SendMessageView(generics.GenericAPIView, Common):
                     elif target.status > 2:
                         record_obj = {**serializer.data, **{'target_percent':100, 'scan_complete': True}}
                         order_percent += int((100*tool_perecent)/100)
-                        response.append(record_obj)
-                    elif target.status == 0:
-                        record_obj = {**serializer.data, **{'target_percent':0}}
-                        order_percent += int((0*tool_perecent)/100)
                         response.append(record_obj)
 
                     super().update_order_targets(order, targets)
@@ -418,12 +419,19 @@ class SendMessageView(generics.GenericAPIView, Common):
             while True:
                 target = Target.objects.filter(id=params.get('id'))
                 serializer = self.serializer_class(target[0])
+                
+                # Check to see if the target's status is below 3, and if it is, extend the start time to attain a 100% completion rate for the target. 
+                if target[0].status<2:
+                    start_time = datetime.utcnow()
+
                 diff= (datetime.utcnow() - start_time).total_seconds()
                 # target_percent = round(diff*100/((target[0].tool.time_limit+10)), 2)
                 target_percent = int(diff*100/((target[0].tool.time_limit+10)))
                 record_obj = {**serializer.data, **{'target_percent':target_percent}}
                 send(str(record_obj['scan_by']['id']),record_obj)
                 response = []
+                
+                # Update order status 1 to higher, when last target is update 
                 if record_obj.get('status') >= 3:
                     order_id=target[0].order_id
                     targets = Target.objects.filter(order_id=order_id)
@@ -444,6 +452,7 @@ class SendMessageView(generics.GenericAPIView, Common):
                         order_obj = {**serializer.data[0], **{'order_percent': 100}}
                         send(str(order[0].client_id),{'order': order_obj, 'targets': response})
                     else:
+                        # When more than one targets present with status<=2
                         record_obj['target_percent'] = 100
                         send(str(record_obj['scan_by']['id']),record_obj)
                     break
@@ -546,7 +555,6 @@ class OrderViewSet(viewsets.ModelViewSet, Common):
                 targets = Target.objects.filter(order_id=order_id, status__lte=2)
                 targets.update(status=1)
                 super().update_order_targets(order, targets)
-                # if order[0].status == 0:
                 for target in targets:
                     scan.apply_async(args=[], kwargs={'id':target.id, 'time_limit':target.tool.id, 'token':request.headers.get('Authorization'), 'order_id': order_id, 'batch_scan': True}, time_limit=target.tool.time_limit +10, ignore_result=True)
         custom_response = OrderResponseSerailizer(Order.objects.filter(id__in=orders_id), many=True)
@@ -577,4 +585,3 @@ class OrderViewSet(viewsets.ModelViewSet, Common):
             'file_path':file_url
         }
         return response(status=True, data=data, status_code=status.HTTP_200_OK, message="PDF generated successfully")
-    

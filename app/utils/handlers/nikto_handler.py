@@ -11,6 +11,7 @@ cve = CVE()
 from .default_handler import DEFAULT
 default = DEFAULT()
 from .common_handler import *
+from tldextract import extract
 
 # The NIKTO class contains a method for handling the absence of an anti-clickjacking X-Frame-Options
 # header in a target's raw result.
@@ -233,7 +234,8 @@ class NIKTO:
         defined or referenced anywhere in the function
         """
         if re.search(self.subdomain_regex, target.raw_result, re.IGNORECASE):
-            subdomains = [subdomain.groupdict().get('subdomain') for subdomain in re.finditer(self.subdomain_regex, target.raw_result)]
+            root_domain = ".".join(list(extract(target.ip)[1:])).strip()
+            subdomains = [f"{subdomain.groupdict().get('subdomain')}.{root_domain}" for subdomain in re.finditer(self.subdomain_regex, target.raw_result)]
             error = "Possible subdomain leak"
             data = cve.get_cve_details_v2("CVE-2018-7844")
             self.result += set_custom_vul(**{**data, **{'location':subdomains, 'error': error}})

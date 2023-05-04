@@ -31,7 +31,7 @@ class NMAP:
         function, depending on whether the tool command is in the handlers dictionary or not.
         """
         handlers = {
-            'nmap -Pn -sV -sU -sT': [
+            'nmap -Pn -sV -sT': [
                 self.port_hanlder,
             ],
             'default': default.default_handler

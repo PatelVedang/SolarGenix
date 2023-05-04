@@ -6,7 +6,8 @@
       "tool_name": "nmap",
       "tool_cmd": "nmap -Pn -sV",
       "time_limit": 30,
-      "subscription_id": 1
+      "subscription_id": 1,
+      "is_deleted":true
     }
   },
   {
@@ -16,7 +17,8 @@
       "tool_name": "nmap-vulners",
       "tool_cmd": "nmap -Pn -sV --script vuln,vulners --script-args mincvvs=5.0",
       "time_limit": 200,
-      "subscription_id": 1
+      "subscription_id": 1,
+      "is_deleted":true
     }
   },
   {
@@ -24,10 +26,9 @@
     "pk": 3,
     "fields": {
       "tool_name": "nmap-vuln",
-      "tool_cmd": "nmap -Pn -sV -sU -sT",
+      "tool_cmd": "nmap -Pn -sV -sT",
       "time_limit": 200,
-      "subscription_id": 1,
-      "sudo_access": true
+      "subscription_id": 1
     }
   },
   {
@@ -37,7 +38,8 @@
       "tool_name": "nmap-poodle",
       "tool_cmd": "nmap -p443 --script ssl-poodle -Pn",
       "time_limit": 30,
-      "subscription_id": 1
+      "subscription_id": 1,
+      "is_deleted":true
     }
   },
   {
