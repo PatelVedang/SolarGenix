@@ -12,6 +12,9 @@ from .common_handler import *
 class CURL:
     x_content_type_options_regex = "X-Content-Type-Options: nosniff"
     windows7_regex = "Server: Microsoft-IIS/7.5"
+    x_powered_by_in_header_regex = "X-Powered-By"
+    server_in_header_regex = "Server:"
+
     result = ""
     
     def main(self, target, regenerate):
@@ -22,7 +25,9 @@ class CURL:
         handlers = {
             'curl -I': [
                 self.x_content_type_options_handler,
-                self.unsupported_web_server_handler
+                self.unsupported_web_server_handler,
+                self.server_in_response_header_handler,
+                self.x_powered_by_in_response_header_handler
             ],
             'default': default.default_handler
         }
@@ -51,10 +56,9 @@ class CURL:
         :param regenerate: A boolean variable that indicates whether the target's result should be
         regenerated or not. If it is True, the target's result will be regenerated
         """
-        if regenerate or target.compose_result=="":
-            if not re.search(self.x_content_type_options_regex, target.raw_result, re.IGNORECASE):
-                error = "X-Content-Type-Options Header Missing"
-                self.result += set_vul("CVE-2019-19089", error)
+        if not re.search(self.x_content_type_options_regex, target.raw_result, re.IGNORECASE):
+            error = "X-Content-Type-Options Header Missing"
+            self.result += set_vul("CVE-2019-19089", error)
     
     def unsupported_web_server_handler(self, target, regenerate):
         """
@@ -66,27 +70,55 @@ class CURL:
         :param regenerate: A boolean value indicating whether the target should be regenerated or not
         """
         # https://learn.microsoft.com/en-us/lifecycle/products/internet-information-services-iis reference of IIS7.5
-        if regenerate or target.compose_result=="":
-            if re.search(self.windows7_regex, target.raw_result, re.IGNORECASE):
-                error = "Unsupported Web Server Detection"
-                data = {
-                    'cve_id': 'N/A',
-                    'description': 'According to its version, the remote web server is obsolete and no longer maintained by its vendor or provider.Lack of support implies that no new security patches for the product will be released by the vendor. As a result, it may contain security vulnerabilities.',
-                    'cvvs3': {
-                    'base_score': '10',
-                    'error_type': 'CRITICAL'
-                    },
-                    'cvvs2': {
-                    'base_score': '7.5',
-                    'error_type': 'MEDIUM'
-                    },
-                    'cwe_id': 'N/A',
-                    'cwe_name': 'N/A',
-                    'solution': 'Remove the web server if it is no longer needed. Otherwise, upgrade to a supported version if possible or switch to another server.',
-                    'sources': [
-                    'N/A'
-                    ],
-                    'error': error
-                }
-                self.result += set_custom_vul(**data)
+        if re.search(self.windows7_regex, target.raw_result, re.IGNORECASE):
+            error = "Unsupported Web Server Detection"
+            data = {
+                'cve_id': 'N/A',
+                'description': 'According to its version, the remote web server is obsolete and no longer maintained by its vendor or provider.Lack of support implies that no new security patches for the product will be released by the vendor. As a result, it may contain security vulnerabilities.',
+                'cvvs3': {
+                'base_score': '10',
+                'error_type': 'CRITICAL'
+                },
+                'cvvs2': {
+                'base_score': '7.5',
+                'error_type': 'MEDIUM'
+                },
+                'cwe_id': 'N/A',
+                'cwe_name': 'N/A',
+                'solution': 'Remove the web server if it is no longer needed. Otherwise, upgrade to a supported version if possible or switch to another server.',
+                'sources': [
+                'N/A'
+                ],
+                'error': error
+            }
+            self.result += set_custom_vul(**data)
+
+    def server_in_response_header_handler(self, target, regenerate):
+        """
+        This function checks if the HTTP response header contains the server information and reports a
+        vulnerability if it does.
+        
+        :param target: The target parameter is an object that represents the HTTP response received from
+        the server. It contains information such as the response headers, status code, and response body
+        :param regenerate: The "regenerate" parameter is not used in the code snippet provided. It is
+        possible that it is defined elsewhere in the code or it is a placeholder for future
+        implementation
+        """
+        if re.search(self.server_in_header_regex, target.raw_result, re.IGNORECASE):
+            error = '''Server Leaks Version Information via "Server" HTTP Response Header Field'''
+            self.result += set_vul("CVE-2018-7844", error)
+
+    def x_powered_by_in_response_header_handler(self, target, regenerate):
+        """
+        This function checks if a server leaks information via the "X-Powered-By" HTTP response header
+        and sets a vulnerability if it does.
+        
+        :param target: The target parameter is an object that represents the target of the vulnerability
+        scan. It contains information such as the target URL, HTTP headers, and response body
+        :param regenerate: The "regenerate" parameter is not used in the code snippet provided. It is
+        possible that it is used in other parts of the code that are not shown
+        """
+        if re.search(self.x_powered_by_in_header_regex, target.raw_result, re.IGNORECASE):
+            error = '''Server Leaks Information via "X-Powered-By" HTTP Response Header Field'''
+            self.result += set_vul("CVE-2018-7844", error)
 
