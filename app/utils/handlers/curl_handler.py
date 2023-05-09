@@ -11,7 +11,7 @@ from .common_handler import *
 
 class CURL:
     x_content_type_options_regex = "X-Content-Type-Options: nosniff"
-    windows7_regex = "Server: Microsoft-IIS/7.5"
+    windows_regex = "Server: (?P<server>([\w\s-]*))(/(?P<version>\d+\.\d+(\.\d+)?))?"
     x_powered_by_in_header_regex = "X-Powered-By"
     server_in_header_regex = "Server:"
 
@@ -70,28 +70,51 @@ class CURL:
         :param regenerate: A boolean value indicating whether the target should be regenerated or not
         """
         # https://learn.microsoft.com/en-us/lifecycle/products/internet-information-services-iis reference of IIS7.5
-        if re.search(self.windows7_regex, target.raw_result, re.IGNORECASE):
-            error = "Unsupported Web Server Detection"
-            data = {
-                'cve_id': 'N/A',
-                'description': 'According to its version, the remote web server is obsolete and no longer maintained by its vendor or provider.Lack of support implies that no new security patches for the product will be released by the vendor. As a result, it may contain security vulnerabilities.',
-                'cvvs3': {
-                'base_score': '10',
-                'error_type': 'CRITICAL'
+        if re.search(self.windows_regex, target.raw_result, re.IGNORECASE):
+            match = re.search(self.windows_regex, target.raw_result, re.IGNORECASE)
+            server = match.groupdict().get('server').strip(" ").strip("\n")
+            version = match.groupdict().get('version').strip(" ").strip("\n")
+
+            server_objs = {
+                'Microsoft-IIS':{
+                    '6.0': datetime.strptime('14/07/2015',"%d/%m/%Y"),
+                    '7.0': datetime.strptime('14/01/2020',"%d/%m/%Y"),
+                    '7.5': datetime.strptime('14/01/2020',"%d/%m/%Y"),
+                    '8.0': datetime.strptime('10/10/2023',"%d/%m/%Y"),
+                    '8.1': datetime.strptime('10/01/2023',"%d/%m/%Y"),
+                    '8.5': datetime.strptime('10/10/2023',"%d/%m/%Y"),
+                    '10.0': datetime.strptime('12/01/2027',"%d/%m/%Y")
                 },
-                'cvvs2': {
-                'base_score': '7.5',
-                'error_type': 'MEDIUM'
-                },
-                'cwe_id': 'N/A',
-                'cwe_name': 'N/A',
-                'solution': 'Remove the web server if it is no longer needed. Otherwise, upgrade to a supported version if possible or switch to another server.',
-                'sources': [
-                'N/A'
-                ],
-                'error': error
+                'Apache':{
+                    '1.3': datetime.strptime('03/02/2010',"%d/%m/%Y"),
+                    '2.0': datetime.strptime('10/07/2013',"%d/%m/%Y"),
+                    '2.2': datetime.strptime('11/07/2017',"%d/%m/%Y"),
+                    '2.4': datetime.strptime('10/10/2003',"%d/%m/%Y")
+                }
             }
-            self.result += set_custom_vul(**data)
+
+            if server_objs.get(server) and server_objs.get(server).get(version) and datetime.utcnow()>server_objs.get(server).get(version):
+                error = "Unsupported Web Server Detection"
+                data = {
+                    'cve_id': 'N/A',
+                    'description': 'According to its version, the remote web server is obsolete and no longer maintained by its vendor or provider.Lack of support implies that no new security patches for the product will be released by the vendor. As a result, it may contain security vulnerabilities.',
+                    'cvvs3': {
+                    'base_score': '10',
+                    'error_type': 'CRITICAL'
+                    },
+                    'cvvs2': {
+                    'base_score': '7.5',
+                    'error_type': 'MEDIUM'
+                    },
+                    'cwe_id': 'N/A',
+                    'cwe_name': 'N/A',
+                    'solution': 'Remove the web server if it is no longer needed. Otherwise, upgrade to a supported version if possible or switch to another server.',
+                    'sources': [
+                    'N/A'
+                    ],
+                    'error': error
+                }
+                self.result += set_custom_vul(**data)
 
     def server_in_response_header_handler(self, target, regenerate):
         """

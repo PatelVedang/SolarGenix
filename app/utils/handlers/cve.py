@@ -292,14 +292,13 @@ class CVE:
                     </div>
                 </div>'''
 
-            # if cve_details.get('solution'):
             result += f'''
             <div class="row">
                 <div class="col-3 border border-5 border-light body">
                     Solution
                 </div>
                 <div class="col-9 border border-5 border-light body">
-                    Please visit the reference website for more information on how to patch this vulnerability. 
+                    {cve_details.get('solution') if (cve_details.get('solution') and cve_details.get('solution')!="N/A") else "Please visit the reference website for more information on how to patch this vulnerability."} 
                 </div>
             </div>
             '''
