@@ -298,8 +298,8 @@ class NIKTO:
         not defined or referenced anywhere in the function
         """
         if re.search(self.httpoptions_regex, target.raw_result, re.IGNORECASE):
-                error = "Insecure HTTP methods in Apache"
-                self.result += set_vul("CVE-2017-7685", error)
+            error = "Insecure HTTP methods in Apache"
+            self.result += set_vul("CVE-2017-7685", error)
 
     def sitefiles_handler(self, target, regenerate):
         """
