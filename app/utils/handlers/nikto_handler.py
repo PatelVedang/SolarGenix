@@ -62,6 +62,7 @@ class NIKTO:
                 self.httpoptions_handler,
                 self.sitefiles_handler
             ],
+            'nikto -Format htm -output - -h': [self.nikto_built_in_report_handler],
             'default': default.default_handler
         }
         tool_cmd = target.tool.tool_cmd.strip()
@@ -237,7 +238,7 @@ class NIKTO:
             root_domain = ".".join(list(extract(target.ip)[1:])).strip()
             subdomains = [f"{subdomain.groupdict().get('subdomain')}.{root_domain}" for subdomain in re.finditer(self.subdomain_regex, target.raw_result)]
             error = "Possible subdomain leak"
-            data = cve.get_cve_details_v2("CVE-2018-7844")
+            data = cve.get_cve_details_by_id_v2("CVE-2018-7844")
             self.result += set_custom_vul(**{**data, **{'location':subdomains, 'error': error}})
 
     def cgi_dir_handler(self, target, regenerate):
@@ -330,3 +331,61 @@ class NIKTO:
                 'error': error
             }
             self.result += set_custom_vul(**data)
+
+    
+    def nikto_built_in_report_handler(self, target, regenerate):
+        soup = BeautifulSoup(target.raw_result, "html.parser")
+        tables = soup.find_all('table',{'class':'dataTable'})
+        result = {}
+        for index in range(len(tables)):
+            table_obj = {}
+            rows = tables[index].find_all('tr')
+            for row in rows:
+                columns = row.find_all('td')
+                if len(columns) == 2:
+                    table_obj= {**table_obj, **{columns[0].find(string=True):columns[1].find(string=True, href=True) if columns[1].find(string=True, href=True) else columns[1].find(string=True)}}
+
+            result= {**result, **{index:table_obj}}
+        if result:
+            # cve.set_cve_html
+            for key, val in result.items():
+                # ####################
+                #   content start which update in future
+                # ####################
+                if list(result.keys()).index(key) in [0,1,2] or True:
+                    if val.get('Description'):
+                        error = val.get('Description')
+                        # data = {
+                        #     'cve_id': 'N/A',
+                        #     'description': val.get('Description'),
+                        #     'cvvs3': {
+                        #     'base_score': '7',
+                        #     'error_type': 'MEDIUM'
+                        #     },
+                        #     'cwe_ids': [''],
+                        #     'cwe_name': 'N/A',
+                        #     'solution': val.get('Description'),
+                        #     'sources': [
+                        #     'N/A'
+                        #     ],
+                        #     'error': error
+                        # }
+                        # self.result += set_custom_vul(**data)
+                        
+                        response = requests.get(f'https://cve.mitre.org/cgi-bin/cvekey.cgi?keyword={error.replace(" ","+")}')
+                        soup = BeautifulSoup(response.text, "html.parser")
+                        vuln_table = soup.find("div",{'id':'TableWithRules'})
+                        if vuln_table:
+                            rows = vuln_table.find_all('tr')
+                            if rows and len(rows):
+                                cols = rows[1].find_all('td')
+                                if cols and len(cols):
+                                    cve = cols[0].find(string=True)
+                                    self.result += set_vul(cve, error)
+                        
+                        
+                        # self.result += set_vul_by_keyword(error, error)
+
+                # ####################
+                #  content end which update in future
+                # ####################

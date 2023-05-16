@@ -16,7 +16,7 @@ def set_vul(cve_str, error):
     # complexity = cve.get_complexity(cve_str)
 
     html_str = ""
-    html_str, complexity= cve.set_cve_details(cve_str)
+    html_str, complexity= cve.set_cve_details_by_id_v2(cve_str)
     
     html_str = f'''
     <div class="row">
@@ -33,6 +33,41 @@ def set_vul(cve_str, error):
         </div>
     </div>
     '''
+    return html_str
+
+
+def set_vul_by_keyword(keyword, error):
+    """
+    The function sets CVE details by a given keyword and returns an HTML string with the details and
+    error message.
+    
+    :param keyword: The keyword is a string that is used to search for relevant CVE (Common
+    Vulnerabilities and Exposures) details
+    :param error: The error parameter is a string that represents the error message associated with a
+    vulnerability
+    :return: a string variable named `html_str`. If the `html_str` variable is not empty, it will
+    contain an HTML code that displays the details of a CVE (Common Vulnerabilities and Exposures) based
+    on a given keyword, along with the complexity and error information. If the `html_str` variable is
+    empty, it means that no CVE details were found for the given
+    """
+    html_str = ""
+    html_str, complexity= cve.set_cve_details_by_keyword_v1(keyword)
+    if html_str:
+        html_str = f'''
+        <div class="row">
+            <div class="col-12 border border-5 border-light">
+                <div class="row vul-header">
+                    <div class="col-3 border border-5 border-light {complexity}" data-id="complexity">
+                        {complexity}
+                    </div>
+                    <div class="col-9 border border-5 border-light {complexity}" data-id="error">
+                        {error}
+                    </div>
+                </div>
+                {html_str}
+            </div>
+        </div>
+        '''
     return html_str
 
 def set_info_vuln(**kwargs):
