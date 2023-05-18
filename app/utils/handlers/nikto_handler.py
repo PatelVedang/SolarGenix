@@ -355,7 +355,7 @@ class NIKTO:
                 # ####################
                 if list(result.keys()).index(key) in [0,1,2] or True:
                     if val.get('Description'):
-                        error = val.get('Description')
+                        error = val.get('Description').replace("/:","")
                         # data = {
                         #     'cve_id': 'N/A',
                         #     'description': val.get('Description'),
