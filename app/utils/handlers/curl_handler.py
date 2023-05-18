@@ -72,8 +72,9 @@ class CURL:
         # https://learn.microsoft.com/en-us/lifecycle/products/internet-information-services-iis reference of IIS7.5
         if re.search(self.windows_regex, target.raw_result, re.IGNORECASE):
             match = re.search(self.windows_regex, target.raw_result, re.IGNORECASE)
-            server = match.groupdict().get('server').strip(" ").strip("\n")
-            version = match.groupdict().get('version').strip(" ").strip("\n")
+            server = match.groupdict().get('server').strip(" ").strip("\n") if match.groupdict().get('server') else ""
+            version = match.groupdict().get('version').strip(" ").strip("\n") if match.groupdict().get('version') else ""
+
 
             server_objs = {
                 'Microsoft-IIS':{

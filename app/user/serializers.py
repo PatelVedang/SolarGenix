@@ -5,7 +5,8 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer, Toke
 from rest_framework_simplejwt.state import token_backend
 from django.contrib.auth import authenticate
 from django.utils import timezone
-from .tasks import send_email
+from .tasks import send_email as background_send_mail
+from utils.email import send_email
 import random
 from django.conf import settings
 from datetime import datetime, timedelta
@@ -15,6 +16,7 @@ import logging
 logger = logging.getLogger('django')
 import json
 from django.contrib.auth.hashers import check_password
+import threading
 
 class UserSerializer(serializers.ModelSerializer):
 
@@ -94,14 +96,17 @@ class ForgotPasswordSerializer(serializers.Serializer):
         email_body =  f'OTP for password reset is {otp} do not share with anyone else. This OTP has a 15-minute expiration time.'
         user =  User.objects.filter(email=validated_data.get("email")).update(otp=otp, otp_expires=datetime.utcnow()+timedelta(minutes=15))
         
-        send_email.delay(
-                subject='Password Reset',
-                body=email_body,
-                sender=settings.EMAIL_HOST_USER,
-                recipients=[validated_data.get("email")],
-                fail_silently=False,
-                otp = otp
-            )
+
+        thread= threading.Thread(target=send_email,
+                                 kwargs={
+                                    'subject':'Password Reset',
+                                    'body':email_body,
+                                    'sender':settings.EMAIL_HOST_USER,
+                                    'recipients':[validated_data.get("email")],
+                                    'fail_silently':False,
+                                    'otp':otp
+                                })
+        thread.start()
         return user
 
 

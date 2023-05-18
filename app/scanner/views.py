@@ -387,24 +387,22 @@ class SendMessageView(generics.GenericAPIView, Common):
                         targets_start_time[target.id] = datetime.utcnow()
                         record_obj = {**serializer.data, **{'target_percent':0}}
                         order_percent += int((0*tool_perecent)/100)
-                        response.append(record_obj)
                     elif (target.status == 2) and targets_start_time.get(target.id):
                         diff= (datetime.utcnow() - targets_start_time[target.id]).total_seconds()
                         target_percent = int(diff*100/((target.tool.time_limit+10)))
                         record_obj = {**serializer.data, **{'target_percent':target_percent}}
                         order_percent += int((target_percent*tool_perecent)/100)
-                        response.append(record_obj)
                     elif (target.status == 2) and not targets_start_time.get(target.id):
                         targets_start_time[target.id] = datetime.utcnow()
                         diff= (datetime.utcnow() - targets_start_time[target.id]).total_seconds()
                         target_percent = int(diff*100/((target.tool.time_limit+10)))
                         record_obj = {**serializer.data, **{'target_percent':target_percent}}
                         order_percent += int((target_percent*tool_perecent)/100)
-                        response.append(record_obj)
                     elif target.status > 2:
                         record_obj = {**serializer.data, **{'target_percent':100, 'scan_complete': True}}
                         order_percent += int((100*tool_perecent)/100)
-                        response.append(record_obj)
+                    
+                    response.append(record_obj)
 
                     super().update_order_targets(order, targets)
                     

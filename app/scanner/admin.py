@@ -3,7 +3,7 @@ from .models import Target, Tool, Subscription, SubscriptionHistory, TargetLog, 
 
 # This is a Django admin class that adds bulk actions to soft delete and recover selected items.
 class BulkSelectedDelete(admin.ModelAdmin):
-    actions = ['soft_delete_selected', 'soft_delete_recover_selected']
+    actions = ['soft_delete', 'soft_delete_recover', 'hard_delete']
     
     def get_actions(self, request):
         actions = super().get_actions(request)
@@ -13,10 +13,13 @@ class BulkSelectedDelete(admin.ModelAdmin):
     def delete_selected(self, request, queryset):
         queryset.update(is_deleted=True)
     
-    def soft_delete_selected(self, request, queryset):
+    def soft_delete(self, request, queryset):
         queryset.update(is_deleted=True)
     
-    def soft_delete_recover_selected(self, request, queryset):
+    def hard_delete(self, request, queryset):
+        queryset.delete()
+    
+    def soft_delete_recover(self, request, queryset):
         queryset.update(is_deleted=False)
 
 
