@@ -6,7 +6,7 @@
         "first_name": "Admin",
         "last_name": "Admin",
         "email": "admin@yopmail.com",
-        "password": "pbkdf2_sha256$390000$54mR9t61VwjLEbrUbOfCpA$KslBGXaroMS5g0B/4xHOhbjP33JPh0JvgiC6FPcCnwQ=",
+        "password": "pbkdf2_sha256$390000$YCv2dg8yGtIfigtKcEXRCf$wsXj1c3vzVZ3O0xA3nSyscq2Bl9PFra3MjEJpCuR4h8=",
         "is_superuser": true,
         "is_staff": true,
         "role":1

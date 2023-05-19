@@ -19,7 +19,7 @@ def set_vul(cve_str, error):
     html_str, complexity= cve.set_cve_details_by_id_v2(cve_str)
     
     html_str = f'''
-    <div class="row">
+    <div class="row mt-2">
         <div class="col-12 border border-5 border-light">
             <div class="row vul-header">
                 <div class="col-3 border border-5 border-light {complexity}" data-id="complexity">
@@ -54,7 +54,7 @@ def set_vul_by_keyword(keyword, error):
     html_str, complexity= cve.set_cve_details_by_keyword_v1(keyword)
     if html_str:
         html_str = f'''
-        <div class="row">
+        <div class="row mt-2">
             <div class="col-12 border border-5 border-light">
                 <div class="row vul-header">
                     <div class="col-3 border border-5 border-light {complexity}" data-id="complexity">
@@ -86,7 +86,7 @@ def set_info_vuln(**kwargs):
     port = kwargs.get('port')
     html_str = f'''
 
-    <div class="row">
+    <div class="row mt-2">
         <div class="col-12 border border-5 border-light">
             <div class="row vul-header">
                 <div class="col-3 border border-5 border-light {complexity}" data-id="complexity">
@@ -149,7 +149,7 @@ def set_custom_vul(**kwargs):
     html_str, complexity = cve.set_cve_html(**kwargs)
     
     html_str = f'''
-    <div class="row">
+    <div class="row mt-2">
         <div class="col-12 border border-5 border-light">
             <div class="row vul-header">
                 <div class="col-3 border border-5 border-light {complexity}" data-id="complexity">
