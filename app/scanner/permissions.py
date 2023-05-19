@@ -3,7 +3,7 @@ from .models import Target
 import logging
 logger = logging.getLogger('django')
 
-class MachineRetrievePremission(permissions.BasePermission):
+class ScannerRetrievePremission(permissions.BasePermission):
     def has_permission(self, request, view):
         result = True
         if request.method == 'POST':
@@ -25,12 +25,28 @@ class MachineRetrievePremission(permissions.BasePermission):
             return obj.scan_by == request.user
         return obj.scan_by == request.user
 
+
 class IsAdminUserOrList(permissions.IsAdminUser):
     def has_permission(self, request, view):
         if request.method == 'GET':
             return True
         return super().has_permission(request, view)
     
+
+class IsSuperUserOrAdminUser(permissions.IsAdminUser):
+    def has_permission(self, request, view):
+        if request.user.is_staff or request.user.is_superuser:
+            return True
+        else:
+            return False
+        
+    def has_object_permission(self, request, view, obj):
+        if request.user.is_staff or request.user.is_superuser:
+            return True
+        else:
+            return False
+
+
 class IsAuthenticated(permissions.BasePermission):
     """
     Allows access only to authenticated users.

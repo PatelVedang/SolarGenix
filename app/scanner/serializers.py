@@ -76,8 +76,13 @@ class ScannerResponseSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
-        data['tool']= Tool.default.filter(id=instance.tool.id).values('id', 'tool_name', 'tool_cmd')[0]
-        data['scan_by'] = User.objects.filter(id=instance.scan_by.id).values('id', 'email', 'first_name', 'last_name')[0]
+        user = self.context['request'].user
+        if user.is_staff or user.is_superuser:
+            data['tool']= Tool.default.filter(id=instance.tool.id).values('id', 'tool_name', 'tool_cmd')[0]
+            data['scan_by'] = User.objects.filter(id=instance.scan_by.id).values('id', 'email', 'first_name', 'last_name', 'is_staff', 'is_superuser')[0]
+        else:
+            data['raw_result'] = ""
+        data['request_by'] = User.objects.filter(id=user.id).values('id', 'email', 'first_name', 'last_name', 'is_staff', 'is_superuser')[0]
         return data
     
     def validate(self, attrs):
@@ -112,7 +117,7 @@ class OrderResponseSerailizer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
-        data['client']= User.objects.filter(id=instance.client.id).values('id', 'email', 'first_name', 'last_name')[0]
+        data['client']= User.objects.filter(id=instance.client.id).values('id', 'email', 'first_name', 'last_name', 'is_staff', 'is_superuser')[0]
         return data
 
 

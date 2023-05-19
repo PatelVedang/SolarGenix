@@ -60,6 +60,7 @@ class SoftDelete(models.Model):
 
     class Meta:
         abstract = True
+        ordering = ('-created_at',)
         
 
 # Create your models here.
@@ -94,6 +95,8 @@ class Tool(SoftDelete):
 
     def __str__(self):
         return self.tool_name
+    
+
 
 class Subscription(SoftDelete):
     day_limit = models.IntegerField()

@@ -15,7 +15,7 @@ from rest_framework.filters import SearchFilter, OrderingFilter
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 from rest_framework.permissions import IsAdminUser
-from .permissions import MachineRetrievePremission, IsAdminUserOrList, IsAuthenticated
+from .permissions import ScannerRetrievePremission, IsAdminUserOrList, IsAuthenticated, IsSuperUserOrAdminUser
 from django.utils.decorators import method_decorator
 from utils.pdf import PDF
 from django.shortcuts import get_object_or_404
@@ -46,7 +46,7 @@ class Common:
 class ScanViewSet(viewsets.ModelViewSet, Common):
     queryset = Target.objects.all()
     serializer_class = ScannerSerializer
-    permission_classes = [IsAuthenticated, MachineRetrievePremission]
+    permission_classes = [IsAuthenticated, ScannerRetrievePremission, IsSuperUserOrAdminUser]
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     search_fields = ['ip', 'scan_by__first_name', 'scan_by__last_name', 'tool__tool_name', 'updated_at']
     filterset_fields = ['id', 'ip', 'status', 'tool', 'order']
@@ -79,7 +79,7 @@ class ScanViewSet(viewsets.ModelViewSet, Common):
                 target_obj.save()
                 tool_time_limit = target_obj.tool.time_limit
                 scan.apply_async(args=[], kwargs={'id':target_id, 'time_limit':tool_time_limit, 'token':request.headers.get('Authorization'), 'order_id': target_obj.order_id, 'batch_scan': False}, time_limit=tool_time_limit+10, ignore_result=True)
-        custom_response = ScannerResponseSerializer(Target.objects.filter(id__in=targets_id), many=True)
+        custom_response = ScannerResponseSerializer(Target.objects.filter(id__in=targets_id), many=True, context={"request": request})
         return response(status=True, data=custom_response.data, status_code=status.HTTP_200_OK, message="host successfully added in queue")
         
     @swagger_auto_schema(
@@ -111,7 +111,7 @@ class ScanViewSet(viewsets.ModelViewSet, Common):
             for record in records:
                 tool_time_limit = record.tool.time_limit
                 scan.apply_async(args=[], kwargs={'id':record.id, 'time_limit':tool_time_limit, 'token':request.headers.get('Authorization'), 'order_id': record.order_id, 'batch_scan': False}, time_limit=tool_time_limit+10, ignore_result=True)
-        custom_response = ScannerResponseSerializer(records, many=True)
+        custom_response = ScannerResponseSerializer(records, many=True, context={"request": request})
         return response(status=True, data=custom_response.data, status_code=status.HTTP_200_OK, message="host successfully added in queue")
 
     @swagger_auto_schema(
@@ -149,7 +149,7 @@ class ScanViewSet(viewsets.ModelViewSet, Common):
                 for tool in tools:
                     obj = Target.objects.create(ip=ip, scan_by=request.user,tool=tool, order=order)
                     record_ids.append(obj.id)
-        custom_response = ScannerResponseSerializer(Target.objects.filter(id__in=record_ids), many=True)
+        custom_response = ScannerResponseSerializer(Target.objects.filter(id__in=record_ids), many=True, context={"request": request})
         return response(status=True, data=custom_response.data, status_code=status.HTTP_200_OK, message="host successfully added in database")
 
 
@@ -360,6 +360,11 @@ class SendMessageView(generics.GenericAPIView, Common):
     serializer_class = ScannerResponseSerializer
     permission_classes = [IsAuthenticated]
 
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context['request'] = self.request
+        return context
+
     def get(self, request, *args, **kwargs):
         """
         It takes the id of the target from the query params, gets the target object, serializes it,
@@ -382,7 +387,7 @@ class SendMessageView(generics.GenericAPIView, Common):
                 response = []
                 order_percent = 0
                 for target in targets:
-                    serializer = self.serializer_class(target)
+                    serializer = self.serializer_class(target, context={"request": request})
                     if target.status == 1:
                         targets_start_time[target.id] = datetime.utcnow()
                         record_obj = {**serializer.data, **{'target_percent':0}}
@@ -408,7 +413,7 @@ class SendMessageView(generics.GenericAPIView, Common):
                     
                 serializer = OrderWithoutTargetsResponseSerailizer(order, many=True)
                 order_obj = {**serializer.data[0], **{'order_percent': order_percent}}
-                send(str(order[0].client_id),{'order': order_obj, 'targets': response})
+                send([str(order[0].client_id), str(request.user.id)],{'order': order_obj, 'targets': response})
                 if order[0].status >= 2:
                     break
                 time.sleep(round(float(settings.WEB_SOCKET_INTERVAL),2))
@@ -416,7 +421,7 @@ class SendMessageView(generics.GenericAPIView, Common):
             start_time = datetime.utcnow()
             while True:
                 target = Target.objects.filter(id=params.get('id'))
-                serializer = self.serializer_class(target[0])
+                serializer = self.serializer_class(target[0], context={"request": request})
                 
                 # Check to see if the target's status is below 3, and if it is, extend the start time to attain a 100% completion rate for the target. 
                 if target[0].status<2:
@@ -426,7 +431,7 @@ class SendMessageView(generics.GenericAPIView, Common):
                 # target_percent = round(diff*100/((target[0].tool.time_limit+10)), 2)
                 target_percent = int(diff*100/((target[0].tool.time_limit+10)))
                 record_obj = {**serializer.data, **{'target_percent':target_percent}}
-                send(str(record_obj['scan_by']['id']),record_obj)
+                send([str(record_obj['scan_by']['id']), str(request.user.id)],record_obj)
                 response = []
                 
                 # Update order status 1 to higher, when last target is update 
@@ -448,11 +453,11 @@ class SendMessageView(generics.GenericAPIView, Common):
                             response.append(obj)
                         serializer = OrderWithoutTargetsResponseSerailizer(order, many=True)
                         order_obj = {**serializer.data[0], **{'order_percent': 100}}
-                        send(str(order[0].client_id),{'order': order_obj, 'targets': response})
+                        send([str(order[0].client_id), str(request.user.id)],{'order': order_obj, 'targets': response})
                     else:
                         # When more than one targets present with status<=2
                         record_obj['target_percent'] = 100
-                        send(str(record_obj['scan_by']['id']),record_obj)
+                        send([str(record_obj['scan_by']['id']), str(request.user.id)],record_obj)
                     break
                 time.sleep(round(float(settings.WEB_SOCKET_INTERVAL),2))
         return HttpResponse("Done")
@@ -472,6 +477,11 @@ class OrderViewSet(viewsets.ModelViewSet, Common):
     filterset_fields = ['client_id', 'target_ip']
     search_fields = ['target_ip', 'client__first_name', 'client__last_name', 'updated_at']
 
+    # def get_serializer_context(self):
+    #     context = super().get_serializer_context()
+    #     context['request'] = self.request
+    #     return context
+
     def create(self, request, *args, **kwargs):
         """
         I'm creating an order and then I'm creating a target for each tool that is associated with the
@@ -489,7 +499,7 @@ class OrderViewSet(viewsets.ModelViewSet, Common):
             for tool in tools:
                 targets.append(Target(ip=target_ip, raw_result="", tool=tool, order=order, scan_by = request.user))
             Target.objects.bulk_create(targets)
-            custom_response = OrderResponseSerailizer(order)
+            custom_response = OrderResponseSerailizer(order, context={"request": request})
             return response(status=True, data=custom_response.data, status_code=status.HTTP_200_OK, message="order successfully added in database")
         
     def list(self, request, *args, **kwargs):
@@ -499,8 +509,8 @@ class OrderViewSet(viewsets.ModelViewSet, Common):
         :param request: The request object
         :return: The response is being returned.
         """
-        if (not request.user.is_staff) and (not request.user.is_superuser):
-            self.queryset = Order.objects.filter(client_id = request.user.id).order_by('-created_at')
+        if not request.user.is_superuser:
+            self.queryset = Order.objects.filter(client_id = request.user.id)
         self.serializer_class = OrderResponseSerailizer
         data = super().list(request, *args, **kwargs)
         return response(status=True, data=data.data, status_code=status.HTTP_200_OK, message="record found successfully")
@@ -555,7 +565,7 @@ class OrderViewSet(viewsets.ModelViewSet, Common):
                 super().update_order_targets(order, targets)
                 for target in targets:
                     scan.apply_async(args=[], kwargs={'id':target.id, 'time_limit':target.tool.id, 'token':request.headers.get('Authorization'), 'order_id': order_id, 'batch_scan': True}, time_limit=target.tool.time_limit +10, ignore_result=True)
-        custom_response = OrderResponseSerailizer(Order.objects.filter(id__in=orders_id), many=True)
+        custom_response = OrderResponseSerailizer(Order.objects.filter(id__in=orders_id), many=True, context={"request": request})
         return response(status=True, data=custom_response.data, status_code=status.HTTP_200_OK, message="targets of order is successfully added in queue")
 
     @swagger_auto_schema(
