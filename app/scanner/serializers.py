@@ -76,13 +76,27 @@ class ScannerResponseSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
-        user = self.context['request'].user
-        if user.is_staff or user.is_superuser:
+        requested_user = self.context['request'].user
+        if requested_user.is_staff or requested_user.is_superuser:
             data['tool']= Tool.default.filter(id=instance.tool.id).values('id', 'tool_name', 'tool_cmd')[0]
-            data['scan_by'] = User.objects.filter(id=instance.scan_by.id).values('id', 'email', 'first_name', 'last_name', 'is_staff', 'is_superuser')[0]
+            data['scan_by']= {
+                "id": instance.scan_by.id,
+                "email": instance.scan_by.email,
+                "first_name": instance.scan_by.first_name,
+                "last_name": instance.scan_by.last_name,
+                "is_staff": instance.scan_by.is_staff,
+                "is_superuser": instance.scan_by.is_superuser
+            }
         else:
             data['raw_result'] = ""
-        data['request_by'] = User.objects.filter(id=user.id).values('id', 'email', 'first_name', 'last_name', 'is_staff', 'is_superuser')[0]
+        data['request_by']= {
+            "id": requested_user.id,
+            "email": requested_user.email,
+            "first_name": requested_user.first_name,
+            "last_name": requested_user.last_name,
+            "is_staff": requested_user.is_staff,
+            "is_superuser": requested_user.is_superuser
+        }
         return data
     
     def validate(self, attrs):
@@ -116,8 +130,24 @@ class OrderResponseSerailizer(serializers.ModelSerializer):
         fields = "__all__"
 
     def to_representation(self, instance):
+        requested_user = self.context['request'].user
         data = super().to_representation(instance)
-        data['client']= User.objects.filter(id=instance.client.id).values('id', 'email', 'first_name', 'last_name', 'is_staff', 'is_superuser')[0]
+        data['client']= {
+            "id": instance.client.id,
+            "email": instance.client.email,
+            "first_name": instance.client.first_name,
+            "last_name": instance.client.last_name,
+            "is_staff": instance.client.is_staff,
+            "is_superuser": instance.client.is_superuser
+        }
+        data['request_by']= {
+            "id": requested_user.id,
+            "email": requested_user.email,
+            "first_name": requested_user.first_name,
+            "last_name": requested_user.last_name,
+            "is_staff": requested_user.is_staff,
+            "is_superuser": requested_user.is_superuser
+        }
         return data
 
 
@@ -131,7 +161,23 @@ class OrderWithoutTargetsResponseSerailizer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
-        data['client']= User.objects.filter(id=instance.client.id).values('id', 'email', 'first_name', 'last_name')[0]
+        requested_user = self.context['request'].user
+        data['client']= {
+            "id": instance.client.id,
+            "email": instance.client.email,
+            "first_name": instance.client.first_name,
+            "last_name": instance.client.last_name,
+            "is_staff": instance.client.is_staff,
+            "is_superuser": instance.client.is_superuser
+        }
+        data['request_by']= {
+            "id": requested_user.id,
+            "email": requested_user.email,
+            "first_name": requested_user.first_name,
+            "last_name": requested_user.last_name,
+            "is_staff": requested_user.is_staff,
+            "is_superuser": requested_user.is_superuser
+        }
         return data
 
 

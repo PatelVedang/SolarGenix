@@ -411,7 +411,7 @@ class SendMessageView(generics.GenericAPIView, Common):
 
                     super().update_order_targets(order, targets)
                     
-                serializer = OrderWithoutTargetsResponseSerailizer(order, many=True)
+                serializer = OrderWithoutTargetsResponseSerailizer(order, many=True, context={"request": request})
                 order_obj = {**serializer.data[0], **{'order_percent': order_percent}}
                 send([str(order[0].client_id), str(request.user.id)],{'order': order_obj, 'targets': response})
                 if order[0].status >= 2:
@@ -451,7 +451,7 @@ class SendMessageView(generics.GenericAPIView, Common):
                             else:
                                 obj = {**record, **{'target_percent':100, 'scan_complete': True}}
                             response.append(obj)
-                        serializer = OrderWithoutTargetsResponseSerailizer(order, many=True)
+                        serializer = OrderWithoutTargetsResponseSerailizer(order, many=True, context={"request": request})
                         order_obj = {**serializer.data[0], **{'order_percent': 100}}
                         send([str(order[0].client_id), str(request.user.id)],{'order': order_obj, 'targets': response})
                     else:
@@ -477,10 +477,10 @@ class OrderViewSet(viewsets.ModelViewSet, Common):
     filterset_fields = ['client_id', 'target_ip']
     search_fields = ['target_ip', 'client__first_name', 'client__last_name', 'updated_at']
 
-    # def get_serializer_context(self):
-    #     context = super().get_serializer_context()
-    #     context['request'] = self.request
-    #     return context
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context['request'] = self.request
+        return context
 
     def create(self, request, *args, **kwargs):
         """
@@ -523,7 +523,7 @@ class OrderViewSet(viewsets.ModelViewSet, Common):
         :return: The response is being returned.
         """
         self.serializer_class = OrderResponseSerailizer
-        data = super().list(request, *args, **kwargs)
+        data = super().retrieve(request, *args, **kwargs)
         return response(status=True, data=data.data, status_code=status.HTTP_200_OK, message="record found successfully")
     
     def destroy(self, request, *args, **kwargs):
