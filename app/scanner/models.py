@@ -92,6 +92,7 @@ class Tool(SoftDelete):
     created_at = models.DateTimeField(auto_now_add=True, null=True)
     updated_at = models.DateTimeField(auto_now=True, null=True)
     sudo_access = models.BooleanField(default=False)
+    py_tool = models.BooleanField(default=False) 
 
     def __str__(self):
         return self.tool_name

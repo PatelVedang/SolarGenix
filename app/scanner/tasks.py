@@ -1,13 +1,7 @@
 from celery import Celery
 import subprocess
-import re
-import time
 from .models import Target, TargetLog
 import platform
-# from utils.message import send
-from asgiref.sync import async_to_sync
-from channels.layers import get_channel_layer
-import json
 import requests
 from celery import shared_task
 import logging
@@ -17,6 +11,9 @@ from django.conf import settings
 from datetime import datetime
 import threading
 from tldextract import extract
+from zapv2 import ZAPv2
+import uuid
+import time
 
 def update_target_and_add_log(**kwargs):
     """
@@ -40,6 +37,10 @@ def scan(id, time_limit, token, order_id, batch_scan):
     thread = threading.Thread(target=send_message, args=(id, token, order_id, batch_scan))
     thread.start()
 
+    py_tools={
+        'owsap_zap':OWSAP_ZAP_spider_scan
+    }
+
     target = Target.objects.filter(id=id)
     ip = ".".join(list(extract(target[0].ip))).strip(".")
     logger.info(f"====>>>>>>>>       \nIP:{ip} with id:{id} added to queue\n       <<<<<<<<====")
@@ -60,22 +61,31 @@ def scan(id, time_limit, token, order_id, batch_scan):
             logger.info(f"====>>>>>>>>       \nScanning began for IP:{ip} with id:{id}\n       <<<<<<<<====")
             target.update(status = 2)
             start_time = datetime.utcnow()
-            if platform.uname().system == 'Windows':
-                # output = subprocess.check_output(f"{tool_cmd} {ip}", shell=False, timeout=time_limit).decode('utf-8')
-                output = subprocess.run(f"{tool_cmd}", shell=False, capture_output=True, timeout=time_limit)
+            if target[0].tool.py_tool:
+                tool_cmd = target[0].tool.tool_cmd
+                if py_tools.get(tool_cmd):
+                    output = py_tools.get(tool_cmd)(ip)
+                else:
+                    update_target_and_add_log(target=target, output="", id=id, status=3, action=3, scan_time = get_scan_time(start_time=start_time))
+                    raise TimeoutError("timeout occur from py tool")
             else:
-                # output = subprocess.check_output(f"{tool_cmd} {ip}", shell=True, timeout=time_limit).decode('utf-8')
-                output = subprocess.run(f"{tool_cmd}", shell=True, capture_output=True, timeout=time_limit)
-            if tool_cmd.lower().find("uniscan"):
-                subprocess.run(f"echo {pwd}| sudo -S rm -f /usr/share/uniscan/report/{ip}.html",shell=True, capture_output=True)
-            
-            if output.stderr.decode('utf-8') and not output.stdout.decode('utf-8'):
-                logger.info(f"====>>>>>>>>       \nBackground thread for ip:{ip} with id:{id} has been terminated due to tool issue.\n       <<<<<<<<====")
-                update_target_and_add_log(target=target, output=output.stderr.decode('utf-8'), id=id, status=3, action=3, scan_time = get_scan_time(start_time=start_time))
-                return False
-            
-            output=output.stdout.decode('utf-8')
-        except Exception as e:
+                if platform.uname().system == 'Windows':
+                    # output = subprocess.check_output(f"{tool_cmd} {ip}", shell=False, timeout=time_limit).decode('utf-8')
+                    output = subprocess.run(f"{tool_cmd}", shell=False, capture_output=True, timeout=time_limit)
+                    output=output.stdout.decode('utf-8')
+                else:
+                    # output = subprocess.check_output(f"{tool_cmd} {ip}", shell=True, timeout=time_limit).decode('utf-8')
+                    output = subprocess.run(f"{tool_cmd}", shell=True, capture_output=True, timeout=time_limit)
+                    output=output.stdout.decode('utf-8')
+                # if tool_cmd.lower().find("uniscan"):
+                #     subprocess.run(f"echo {pwd}| sudo -S rm -f /usr/share/uniscan/report/{ip}.html",shell=True, capture_output=True)
+                
+                if output.stderr.decode('utf-8') and not output.stdout.decode('utf-8'):
+                    logger.info(f"====>>>>>>>>       \nBackground thread for ip:{ip} with id:{id} has been terminated due to tool issue.\n       <<<<<<<<====")
+                    update_target_and_add_log(target=target, output=output.stderr.decode('utf-8'), id=id, status=3, action=3, scan_time = get_scan_time(start_time=start_time))
+                    return False
+                
+        except subprocess.TimeoutExpired as e:
             if e.output:
                 error = f'\n{e.output.decode("utf-8")}{str(e)}'
             else:
@@ -83,6 +93,10 @@ def scan(id, time_limit, token, order_id, batch_scan):
 
             logger.info(f"====>>>>>>>>       \nBackground thread for ip:{ip} with id:{id} has been terminated\n       <<<<<<<<====")
             update_target_and_add_log(target=target, output=str(error), id=id, status=3, action=3, scan_time = get_scan_time(start_time=start_time))
+            return False
+        except Exception as e:
+            logger.info(f"====>>>>>>>>       \nBackground thread for ip:{ip} with id:{id} has been terminated\n       <<<<<<<<====")
+            update_target_and_add_log(target=target, output=str(e), id=id, status=3, action=3, scan_time = get_scan_time(start_time=start_time))
             return False
 
         update_target_and_add_log(target=target, output=output, id=id, status=4, action=4, scan_time = get_scan_time(start_time=start_time))
@@ -106,3 +120,25 @@ def send_message(id, token, order_id, batch_scan):
         response = requests.get(f'http://localhost:8000/api/sendMessage/?id={id}', headers={'Authorization': token})
 
     return True
+
+def OWSAP_ZAP_spider_scan(url):
+    """
+    This function performs a spider scan using the OWASP ZAP API on a given URL and returns an HTML
+    report of the scan.
+    
+    :param url: The URL of the website to be scanned by the OWASP ZAP spider
+    :return: the HTML report generated by ZAP after performing a spider scan on the provided URL.
+    """
+    if not ('http://' in url or 'https://' in url):
+        url = f"http://{url}"
+    # create a new instance of the ZAP API client
+    zap = ZAPv2()
+    # start a new ZAP session
+    session_name = str(uuid.uuid4())
+    zap.core.new_session(name=session_name, overwrite=True)
+    zap.urlopen(url)
+    spider_scan_id = zap.spider.scan(url)
+    while int(zap.spider.status(spider_scan_id)) < 100:
+        # print('Spider scan progress %: {}'.format(zap.spider.status(spider_scan_id)))
+        time.sleep(1)    
+    return zap.core.htmlreport(spider_scan_id)

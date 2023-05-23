@@ -40,6 +40,8 @@ then
     pm2 start "python manage.py runserver 0.0.0.0:8000" --name cyber_appliance --max-memory-restart "100M" --no-autorestart
     printf "░░░░░░  Starting the worker ░░░░░░ \n\n\n"
     pm2 start "celery -A proj worker --pool=prefork --concurrency=10 --loglevel=info" --name worker --max-memory-restart "200M"
+    printf "░░░░░░  Starting the ZAP server ░░░░░░ \n\n\n"
+    pm2 start zap.sh --name zap_server -- -daemon -port 8080 -host 127.0.0.1 -config api.disablekey=true
     cd ..
     deactivate
     printf " \n\n Job Done 😎 \n\n"
@@ -50,6 +52,8 @@ then
     pm2 restart cyber_appliance
     printf "░░░░░░  Restarting the worker ░░░░░░ \n\n\n"
     pm2 restart worker
+    printf "░░░░░░  Restarting the ZAP server ░░░░░░ \n\n\n"
+    pm2 restart zap_server
     printf " \n\n Job Done 😎 \n\n"
 elif [ $option == 3  ];
 then
@@ -58,6 +62,8 @@ then
     pm2 stop cyber_appliance
     printf "░░░░░░  Stopping the worker ░░░░░░ \n\n\n"
     pm2 stop worker
+    printf "░░░░░░  Stopping the ZAP server ░░░░░░ \n\n\n"
+    pm2 stop zap_server
     printf " \n\n Job Done 😎 \n\n"
 elif [ $option == 4  ];
 then
@@ -66,6 +72,8 @@ then
     pm2 delete cyber_appliance
     printf "░░░░░░  Deleting the worker ░░░░░░ \n\n\n"
     pm2 delete worker
+    printf "░░░░░░  Deleting the ZAP server ░░░░░░ \n\n\n"
+    pm2 delete zap_server
     printf " \n\n Job Done 😎 \n\n"
 else
     printf "Wrong Choice!!!😂 Try Again!!😜 \n"

@@ -132,6 +132,16 @@ sudo systemctl start rabbitmq-server
 sudo systemctl enable rabbitmq-server
 sudo systemctl status rabbitmq-server
 ```
+##### Install OWSAP_ZAP server
+#
+```
+sudo apt update
+sudo apt install default-jdk
+wget https://github.com/zaproxy/zaproxy/releases/download/v2.12.0/ZAP_2_12_0_unix.sh
+sudo chmod +x ZAP_2_12_0_unix.sh
+sudo bash ZAP_2_12_0_unix.sh
+sudo rm ZAP_2_12_0_unix.sh
+```
 ##### Install PM2 with NVM
 #
 ```
