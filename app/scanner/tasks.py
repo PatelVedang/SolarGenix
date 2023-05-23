@@ -72,11 +72,9 @@ def scan(id, time_limit, token, order_id, batch_scan):
                 if platform.uname().system == 'Windows':
                     # output = subprocess.check_output(f"{tool_cmd} {ip}", shell=False, timeout=time_limit).decode('utf-8')
                     output = subprocess.run(f"{tool_cmd}", shell=False, capture_output=True, timeout=time_limit)
-                    output=output.stdout.decode('utf-8')
                 else:
                     # output = subprocess.check_output(f"{tool_cmd} {ip}", shell=True, timeout=time_limit).decode('utf-8')
                     output = subprocess.run(f"{tool_cmd}", shell=True, capture_output=True, timeout=time_limit)
-                    output=output.stdout.decode('utf-8')
                 # if tool_cmd.lower().find("uniscan"):
                 #     subprocess.run(f"echo {pwd}| sudo -S rm -f /usr/share/uniscan/report/{ip}.html",shell=True, capture_output=True)
                 
@@ -84,6 +82,7 @@ def scan(id, time_limit, token, order_id, batch_scan):
                     logger.info(f"====>>>>>>>>       \nBackground thread for ip:{ip} with id:{id} has been terminated due to tool issue.\n       <<<<<<<<====")
                     update_target_and_add_log(target=target, output=output.stderr.decode('utf-8'), id=id, status=3, action=3, scan_time = get_scan_time(start_time=start_time))
                     return False
+                output=output.stdout.decode('utf-8')
                 
         except subprocess.TimeoutExpired as e:
             if e.output:
