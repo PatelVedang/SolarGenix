@@ -176,7 +176,7 @@ class ToolAdmin(BulkSelect):
         Django admin interface. In this case, the `update()` method is being called on the queryset to
         set the `subscription` field of all selected objects to 1
         """
-        queryset.update(subscription=1)
+        queryset.update(subscription=2)
 
     def get_subscription(self, obj):
         """
