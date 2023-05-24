@@ -493,8 +493,14 @@ class OrderViewSet(viewsets.ModelViewSet, Common):
         serializer = self.serializer_class(data=request.data)
         if serializer.is_valid(raise_exception=True):
             target_ip= serializer.data.get('target_ip')
-            order = Order.objects.create(client_id=request.user.id, subscrib_id=1, target_ip=target_ip)
-            tools = Tool.objects.filter(subscription_id=1)
+            # We will update this logic in future
+            if request.user.is_staff or request.user.is_superuser:
+                subscription_id=2
+            else:
+                subscription_id=1
+                
+            order = Order.objects.create(client_id=request.user.id, subscrib_id=subscription_id, target_ip=target_ip)
+            tools = Tool.objects.filter(subscription_id=subscription_id)
             targets= []
             for tool in tools:
                 targets.append(Target(ip=target_ip, raw_result="", tool=tool, order=order, scan_by = request.user))
