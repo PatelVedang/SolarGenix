@@ -495,10 +495,10 @@ class OrderViewSet(viewsets.ModelViewSet, Common):
             target_ip= serializer.data.get('target_ip')
             # We will update this logic in future
             if request.user.is_staff or request.user.is_superuser:
-                subscription_id=2
+                subscription_id=2#STAFF
             else:
-                subscription_id=1
-                
+                subscription_id=1#FREE
+
             order = Order.objects.create(client_id=request.user.id, subscrib_id=subscription_id, target_ip=target_ip)
             tools = Tool.objects.filter(subscription_id=subscription_id)
             targets= []
