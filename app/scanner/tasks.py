@@ -6,14 +6,15 @@ import requests
 from celery import shared_task
 import logging
 logger = logging.getLogger('django')
-from django.db.models import Q
 from django.conf import settings
 from datetime import datetime
 import threading
 from tldextract import extract
-from zapv2 import ZAPv2
-import uuid
 import time
+import signal
+
+from zapv2 import ZAPv2
+zap = ZAPv2()
 
 def update_target_and_add_log(**kwargs):
     """
@@ -38,7 +39,7 @@ def scan(id, time_limit, token, order_id, batch_scan):
     thread.start()
 
     py_tools={
-        'owsap_zap':OWSAP_ZAP_spider_scan
+        'owsap_zap':OWSAP_ZAP_spider_scan_v2
     }
 
     target = Target.objects.filter(id=id)
@@ -64,6 +65,11 @@ def scan(id, time_limit, token, order_id, batch_scan):
             if target[0].tool.py_tool:
                 tool_cmd = target[0].tool.tool_cmd
                 if py_tools.get(tool_cmd):
+
+                    # Set the timeout signal and handler
+                    signal.signal(signal.SIGALRM, timeout_handler)
+                    signal.alarm(time_limit)
+                    
                     output = py_tools.get(tool_cmd)(ip)
                 else:
                     raise ModuleNotFoundError(f"{tool_cmd} tool does not exist.")
@@ -77,7 +83,7 @@ def scan(id, time_limit, token, order_id, batch_scan):
                 
                 if output.stderr.decode('utf-8') and not output.stdout.decode('utf-8'):
                     logger.info(f"====>>>>>>>>       \nBackground thread for ip:{ip} with id:{id} has been terminated due to tool issue.\n       <<<<<<<<====")
-                    update_target_and_add_log(target=target, output=output.stderr.decode('utf-8'), id=id, status=3, action=3, scan_time = get_scan_time(start_time=start_time))
+                    update_target_and_add_log(target=target, output=output.stderr.decode('utf-8'), id=id, status=3, action=3, scan_time = get_scan_time(start_time=start_time, end_date=datetime.utcnow()))
                     return False
                 output=output.stdout.decode('utf-8')
                 
@@ -88,16 +94,15 @@ def scan(id, time_limit, token, order_id, batch_scan):
                 error = f'{str(e)}'
 
             logger.info(f"====>>>>>>>>       \nBackground thread for ip:{ip} with id:{id} has been terminated\n       <<<<<<<<====")
-            update_target_and_add_log(target=target, output=str(error), id=id, status=3, action=3, scan_time = get_scan_time(start_time=start_time))
+            update_target_and_add_log(target=target, output=str(error), id=id, status=3, action=3, scan_time = get_scan_time(start_time=start_time, end_date=datetime.utcnow()))
             return False
         except Exception as e:
             import traceback
             traceback.print_exc()
             logger.info(f"====>>>>>>>>       \nBackground thread for ip:{ip} with id:{id} has been terminated\n       <<<<<<<<====")
-            update_target_and_add_log(target=target, output=str(e), id=id, status=3, action=3, scan_time = get_scan_time(start_time=start_time))
+            update_target_and_add_log(target=target, output=str(e), id=id, status=3, action=3, scan_time = get_scan_time(start_time=start_time, end_date=datetime.utcnow()))
             return False
-
-        update_target_and_add_log(target=target, output=output, id=id, status=4, action=4, scan_time = get_scan_time(start_time=start_time))
+        update_target_and_add_log(target=target, output=output, id=id, status=4, action=4, scan_time = get_scan_time(start_time=start_time, end_date=datetime.utcnow()))
         return True
     else:
         return False
@@ -119,13 +124,13 @@ def send_message(id, token, order_id, batch_scan):
 
     return True
 
-def OWSAP_ZAP_spider_scan(url):
+def OWSAP_ZAP_spider_scan_v1(url):
 
     if not ('http://' in url or 'https://' in url):
         url = f"http://{url}"
 
     # create a new instance of the ZAP API client
-    zap = ZAPv2()
+    
     risk_levels = {
         'High': {'class':'risk-3', 'count':0},
         'Medium': {'class':'risk-2', 'count':0},
@@ -187,12 +192,78 @@ def OWSAP_ZAP_spider_scan(url):
     # Generate report
     return set_html_report(url, risk_levels, alerts)
 
-def set_html_report(url, risk_levels, alerts):
+def OWSAP_ZAP_spider_scan_v2(url):
+    if not ('http://' in url or 'https://' in url):
+        url = f"http://{url}"
+    # risk_levels object to get alerts count riks wise
+    risk_levels = {
+        'High': {'class':'risk-3', 'count':0},
+        'Medium': {'class':'risk-2', 'count':0},
+        'Low': {'class':'risk-1', 'count':0},
+        'Informational': {'class':'risk-0', 'count':0},
+        'False Positives:': {'class':'risk--1', 'count':0},
+    }
+    # scan url with spider tool of OWSAP ZAP fro quick scan
+    spider_scan_id = zap.spider.scan(url=url)
+    
+    # Here we are checking if spider scan still in progress then current process is sleep for 1s until 100% is compelete
+    while int(zap.spider.status(spider_scan_id)) < 100:
+        print('Spider scan progress %: {} for scan id {} with url {}'.format(zap.spider.status(spider_scan_id), spider_scan_id, url))
+        time.sleep(1)
+
+    # custom alert object
+    alerts = {}
+    
+    alerts_list = zap.core.alerts(baseurl=url)
+    for alert_obj in alerts_list:
+        if isinstance(alert_obj,dict):
+            alert_title = alert_obj.get('name')
+            # Making json object to generate html report 
+            custom_alert_obj = {
+                'name': alert_obj.get('name'),
+                'description' : alert_obj.get('description'),
+                'urls':[
+                    {
+                    'url' : alert_obj.get('url'),
+                    'method': alert_obj.get('method'),
+                    'parameter': alert_obj.get('param'),
+                    'attack': alert_obj.get('attack'),
+                    'evidence': alert_obj.get('evidence'),
+                    }
+                ],
+                'instances': 1,
+                'wascid': alert_obj.get('wascid') if alert_obj.get('wascid')=="-1" else "",
+                'cweid': alert_obj.get('cweid') if alert_obj.get('cweid')=="-1" else "",
+                'plugin_id': alert_obj.get('pluginId'),
+                'reference': "<br>".join(alert_obj.get('reference').split("\n")),
+                'solution': alert_obj.get('solution'),
+                'risk': alert_obj.get('risk')
+            }
+
+            if alert_title and alerts.get(alert_title):
+                custom_alert_obj['urls'] = [*alerts[alert_title]['urls'], *custom_alert_obj['urls']]
+                custom_alert_obj['instances'] = alerts[alert_title]['instances']+1
+            else:
+                risk_levels[custom_alert_obj['risk']]['count'] += 1
+            
+            alerts[alert_title] = custom_alert_obj
+
+    # Clean spider scan result
+    zap.spider.remove_scan(scanid=spider_scan_id)
+
+    # Generate report
+    return set_zap_html_report(url, risk_levels, alerts)
+
+def timeout_handler(signum, frame):
+    raise TimeoutError("Timeout occurred")
+
+def set_zap_html_report(url, risk_levels, alerts):
     alerts_html = ""
     alert_details_html = ""
 
     # set alerts with alerts details
     for key,value in alerts.items():
+        # Individual alert title table html
         alerts_html += f'''
             <tr>
 				<td><a href="">{key}</a></td>
@@ -201,6 +272,7 @@ def set_html_report(url, risk_levels, alerts):
 			</tr>
         '''
 
+        # Individual alert detail html
         alert_details_html += f'''
             <table class="results">
 				<tr height="24">
@@ -218,7 +290,8 @@ def set_html_report(url, risk_levels, alerts):
             alert_details_html += '''<TR vAlign="top">
                 <TD colspan="2"></TD>
             </TR>'''
-				
+			
+            # Setting each url in single alert
             for url_obj in value.get('urls'):
                 alert_details_html += f'''<tr>
 						<td width="20%"
@@ -280,7 +353,7 @@ def set_html_report(url, risk_levels, alerts):
 			<div class="spacer"></div>
         '''
 
-    
+    # main body
     html_str = '''
         <!DOCTYPE html>
         <html>

@@ -444,7 +444,7 @@ class SendMessageView(generics.GenericAPIView, Common):
                             order.update(status=3)
                         else:
                             order.update(status=2)
-                        targets = self.serializer_class(targets, many=True)
+                        targets = self.serializer_class(targets, many=True, context={"request": request})
                         for record in targets.data:
                             if record['id'] == target[0].id:
                                 obj = {**record, **{'target_percent':100}}
