@@ -12,6 +12,7 @@ import threading
 from tldextract import extract
 import time
 import signal
+import json
 
 from zapv2 import ZAPv2
 zap = ZAPv2()
@@ -39,7 +40,7 @@ def scan(id, time_limit, token, order_id, batch_scan):
     thread.start()
 
     py_tools={
-        'owsap_zap':OWSAP_ZAP_spider_scan_v2
+        'owsap_zap':OWSAP_ZAP_spider_scan_v3
     }
 
     target = Target.objects.filter(id=id)
@@ -133,7 +134,8 @@ def send_message(id, token, order_id, batch_scan):
     return True
 
 def OWSAP_ZAP_spider_scan_v1(url):
-
+    # Generating a report based on alerts received with message and alert ids
+    # Here we are storing html as a scan result(raw result)
     if not ('http://' in url or 'https://' in url):
         url = f"http://{url}"
 
@@ -201,6 +203,7 @@ def OWSAP_ZAP_spider_scan_v1(url):
     return set_zap_html_report(url, risk_levels, alerts)
 
 def OWSAP_ZAP_spider_scan_v2(url):
+    # To store html as a scan result(raw_result)
     if not ('http://' in url or 'https://' in url):
         url = f"http://{url}"
     # risk_levels object to get alerts count riks wise
@@ -262,9 +265,70 @@ def OWSAP_ZAP_spider_scan_v2(url):
     # Generate report
     return set_zap_html_report(url, risk_levels, alerts)
 
+def OWSAP_ZAP_spider_scan_v3(url):
+    # To store json as a scan result
+    if not ('http://' in url or 'https://' in url):
+        url = f"http://{url}"
+    # risk_levels object to get alerts count riks wise
+    risk_levels = {
+        'High': {'class':'risk-3', 'count':0},
+        'Medium': {'class':'risk-2', 'count':0},
+        'Low': {'class':'risk-1', 'count':0},
+        'Informational': {'class':'risk-0', 'count':0},
+        'False Positives:': {'class':'risk--1', 'count':0},
+    }
+    # scan url with spider tool of OWSAP ZAP fro quick scan
+    spider_scan_id = zap.spider.scan(url=url)
+    
+    # Here we are checking if spider scan still in progress then current process is sleep for 1s until 100% is compelete
+    while int(zap.spider.status(spider_scan_id)) < 100:
+        print('Spider scan progress %: {} for scan id {} with url {}'.format(zap.spider.status(spider_scan_id), spider_scan_id, url))
+        time.sleep(1)
+
+    # custom alert object
+    alerts = {}
+    
+    alerts_list = zap.core.alerts(baseurl=url)
+    for alert_obj in alerts_list:
+        if isinstance(alert_obj,dict):
+            alert_title = alert_obj.get('name')
+            # Making json object to generate html report 
+            custom_alert_obj = {
+                'name': alert_obj.get('name'),
+                'description' : alert_obj.get('description'),
+                'urls':[
+                    {
+                    'url' : alert_obj.get('url'),
+                    'method': alert_obj.get('method'),
+                    'parameter': alert_obj.get('param'),
+                    'attack': alert_obj.get('attack'),
+                    'evidence': alert_obj.get('evidence'),
+                    }
+                ],
+                'instances': 1,
+                'wascid': alert_obj.get('wascid') if alert_obj.get('wascid')=="-1" else "",
+                'cweid': alert_obj.get('cweid') if alert_obj.get('cweid')=="-1" else "",
+                'plugin_id': alert_obj.get('pluginId'),
+                'reference': "<br>".join(alert_obj.get('reference').split("\n")),
+                'solution': alert_obj.get('solution'),
+                'risk': alert_obj.get('risk')
+            }
+
+            if alert_title and alerts.get(alert_title):
+                custom_alert_obj['urls'] = [*alerts[alert_title]['urls'], *custom_alert_obj['urls']]
+                custom_alert_obj['instances'] = alerts[alert_title]['instances']+1
+            else:
+                risk_levels[custom_alert_obj['risk']]['count'] += 1
+            
+            alerts[alert_title] = custom_alert_obj
+
+    return json.dumps({'alerts': alerts, 'risk_levels': risk_levels})
+
+
 def timeout_handler(signum, frame):
     raise TimeoutError("Timeout occurred")
 
+# Currently we are not using this one
 def set_zap_html_report(url, risk_levels, alerts):
     alerts_html = ""
     alert_details_html = ""
@@ -488,8 +552,6 @@ def set_zap_html_report(url, risk_levels, alerts):
             
 
             <h2>
-                
-                
                 Sites: {url}
             </h2>
 
