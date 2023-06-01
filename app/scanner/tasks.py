@@ -52,9 +52,17 @@ def scan(id, time_limit, token, order_id, batch_scan):
     # add sudo access for those tools which need to run tool
     if target[0].tool.sudo_access:
         tool_cmd = f'echo {pwd} | sudo -S {tool_cmd}'
+    
+    # Only one of the three conditions is true at once.
     if (tool_cmd.find("<ip>")>=0) or (tool_cmd.find("<IP>")>=0):
+        # Here we are scan remote domain with custom ip option
         tool_cmd = tool_cmd.replace("<ip>",ip).replace("<IP>",ip)
+    elif (tool_cmd.find("<domain>")>=0) or (tool_cmd.find("<DOMAIN>")>=0):
+        # Here we are scan remote domain with custom root domain option
+        root_domain = ".".join(list(extract(ip))[-2:]).strip(".")
+        tool_cmd = tool_cmd.replace("<domain>",root_domain).replace("<DOMAIN>",root_domain)
     else:
+        # Default we are going with plain url
         tool_cmd += f' {ip}'
     
     if target[0].status >= 1:
@@ -190,7 +198,7 @@ def OWSAP_ZAP_spider_scan_v1(url):
     zap.spider.remove_scan(scanid=spider_scan_id)
 
     # Generate report
-    return set_html_report(url, risk_levels, alerts)
+    return set_zap_html_report(url, risk_levels, alerts)
 
 def OWSAP_ZAP_spider_scan_v2(url):
     if not ('http://' in url or 'https://' in url):
