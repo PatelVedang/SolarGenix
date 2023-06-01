@@ -22,7 +22,7 @@ def set_vul(cve_str, error):
     <div class="row mt-2">
         <div class="col-12 border border-5 border-light">
             <div class="row vul-header">
-                <div class="col-3 border border-5 border-light {complexity}" data-id="complexity">
+                <div class="col-3 border border-5 border-light {complexity}" data-id="complexity" data-instances="1">
                     {complexity}
                 </div>
                 <div class="col-9 border border-5 border-light {complexity}" data-id="error">
@@ -57,7 +57,7 @@ def set_vul_by_keyword(keyword, error):
         <div class="row mt-2">
             <div class="col-12 border border-5 border-light">
                 <div class="row vul-header">
-                    <div class="col-3 border border-5 border-light {complexity}" data-id="complexity">
+                    <div class="col-3 border border-5 border-light {complexity}" data-id="complexity" data-instances="1">
                         {complexity}
                     </div>
                     <div class="col-9 border border-5 border-light {complexity}" data-id="error">
@@ -89,7 +89,7 @@ def set_info_vuln(**kwargs):
     <div class="row mt-2">
         <div class="col-12 border border-5 border-light">
             <div class="row vul-header">
-                <div class="col-3 border border-5 border-light {complexity}" data-id="complexity">
+                <div class="col-3 border border-5 border-light {complexity}" data-id="complexity" data-instances="1">
                     {complexity}
                 </div>
                 <div class="col-9 border border-5 border-light {complexity}" data-id="error">
@@ -152,7 +152,7 @@ def set_custom_vul(**kwargs):
     <div class="row mt-2">
         <div class="col-12 border border-5 border-light">
             <div class="row vul-header">
-                <div class="col-3 border border-5 border-light {complexity}" data-id="complexity">
+                <div class="col-3 border border-5 border-light {complexity}" data-id="complexity" data-instances="1">
                     {complexity}
                 </div>
                 <div class="col-9 border border-5 border-light {complexity}" data-id="error">
@@ -165,3 +165,137 @@ def set_custom_vul(**kwargs):
     '''
 
     return html_str
+
+def set_zap_template(**kwargs):
+    """
+    The function generates an HTML string for a ZAP security report template based on input alerts.
+    :return: a string of HTML code that creates a template for displaying information about alerts. The
+    template includes information such as the risk level, name, description, URLs, instances, solution,
+    reference, CWE ID, WASC ID, and plugin ID for each alert. The information is passed to the function
+    as keyword arguments in a dictionary format.
+    """
+    html_str = ""
+    alerts = kwargs.get('alerts',[])
+    for key,value in alerts.items():
+        html_str += f'''
+        <div class="row mt-2">
+            <div class="col-12 border border-5 border-light">
+                <div class="row vul-header">
+                    <div class="col-3 border border-5 border-light {value.get('risk')}" data-id="complexity" data-instances="{value.get('instances')}">
+                        {value.get('risk')}
+                    </div>
+                    <div class="col-9 border border-5 border-light {value.get('risk')}" data-id="error">
+                        {value.get('name')}
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-3 border border-5 border-light body">
+                        Description
+                    </div>
+                    <div class="col-9 border border-5 border-light body">
+                        {value.get('description')}
+                    </div>
+                </div>'''
+        if value.get('urls'):
+            html_str += f'''
+                <div class="row border border-5 border-light body py-1">
+                </div>
+            '''
+            for url_obj in value.get('urls'):
+                html_str += f'''
+                <div class="row">
+                    <div class="col-3 border border-5 border-light body pl-4">
+                        URL
+                    </div>
+                    <div class="col-9 border border-5 border-light body">
+                        {url_obj['url']}
+                    </div>
+                </div><div class="row">
+                    <div class="col-3 border border-5 border-light body pl-5">
+                        Method
+                    </div>
+                    <div class="col-9 border border-5 border-light body">
+                        {url_obj['method']}
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-3 border border-5 border-light body pl-5">
+                        Parameter
+                    </div>
+                    <div class="col-9 border border-5 border-light body">
+                        {url_obj['parameter']}
+                    </div>
+                </div><div class="row">
+                    <div class="col-3 border border-5 border-light body pl-5">
+                        Attack
+                    </div>
+                    <div class="col-9 border border-5 border-light body">
+                        {url_obj['attack']}
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-3 border border-5 border-light body pl-5">
+                        Evidence
+                    </div>
+                    <div class="col-9 border border-5 border-light body">
+                        {url_obj['evidence']}
+                    </div>
+                </div>
+                '''
+        html_str +=f'''
+                <div class="row">
+                    <div class="col-3 border border-5 border-light body">
+                        Instances
+                    </div>
+                    <div class="col-9 border border-5 border-light body">
+                        {value['instances']}
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-3 border border-5 border-light body">
+                        Solution
+                    </div>
+                    <div class="col-9 border border-5 border-light body">
+                        {value['solution']}
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-3 border border-5 border-light body">
+                        Reference
+                    </div>
+                    <div class="col-9 border border-5 border-light body">
+                        {value['reference']}
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-3 border border-5 border-light body">
+                        CWE Id
+                    </div>
+                    <div class="col-9 border border-5 border-light body">
+                        <a href="https://cwe.mitre.org/data/definitions/{value['cweid']}.html">{value['cweid']}</a>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-3 border border-5 border-light body">
+                        WASC Id
+                    </div>
+                    <div class="col-9 border border-5 border-light body">
+                        {value['wascid']}
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-3 border border-5 border-light body">
+                        Plugin Id
+                    </div>
+                    <div class="col-9 border border-5 border-light body">
+                        <a href="https://www.zaproxy.org/docs/alerts/{value['plugin_id']}/">{value['plugin_id']}</a></td>
+                    </div>
+                </div>
+            </div>
+        </div>
+        '''
+
+    return html_str
+
+
+

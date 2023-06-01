@@ -29,7 +29,7 @@ class DEFAULT:
 #                 <div class="row">
 #                     <div class="col-12 border border-5 border-light">
 #                         <div class="row vul-header">
-#                             <div class="col-3 border border-5 border-light {complexity}" data-id="complexity">
+#                             <div class="col-3 border border-5 border-light {complexity}" data-id="complexity" data-instances="1">
 #                                 {complexity}
 #                             </div>
 #                             <div class="col-9 border border-5 border-light {complexity}" data-id="error">

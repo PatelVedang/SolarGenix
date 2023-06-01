@@ -6,6 +6,7 @@ import os
 from bs4 import BeautifulSoup
 import logging
 from datetime import datetime
+from tldextract import extract
 logger = logging.getLogger('django')
 from .handlers.nmap_hanlder import NMAP
 nmap = NMAP()
@@ -17,6 +18,8 @@ from .handlers.curl_handler import CURL
 curl = CURL()
 from .handlers.default_handler import DEFAULT
 default = DEFAULT()
+from .handlers.owsap_zap import OWSAP
+owsap = OWSAP()
 
 
 class PDF:
@@ -27,6 +30,7 @@ class PDF:
         'sslyze': sslyze.main,
         'nikto': nikto.main,
         'curl': curl.main,
+        'owsap_zap': owsap.main,
         'default': default.default_handler
     }
 
@@ -106,7 +110,8 @@ class PDF:
                     for vulner in vulners: 
                         complexity = vulner.find('div',{'data-id':'complexity'}).text.strip()
                         error = vulner.find('div',{'data-id':'error'}).text.strip()
-                        alert_objs = {**alert_objs, **{f'{error}_{complexity}': {'complexity': complexity}}}
+                        instances = vulner.find('div',{'data-id':'complexity'})['data-instances']
+                        alert_objs = {**alert_objs, **{f'{error}_{complexity}_': {'complexity': complexity, 'instances': instances}}}
                         if risk_level_objs.get(complexity.lower()) == 0 or risk_level_objs.get(complexity.lower()) :
                             risk_level_objs[complexity.lower()] += 1 
                 
@@ -130,7 +135,7 @@ class PDF:
                 .low, .Low, .LOW{
                     background-color: yellow;
                 }
-                .info, .Info, .INFO {
+                .info, .Info, .INFO, .Informational, .INFORMATIONAL, .informational {
                     background-color: blue;color:white;
                 }
                 .false-positive, .Flase-Positive, .FALSE-POSITIVE{
@@ -149,7 +154,7 @@ class PDF:
             <div class="container-fluid">   
                 <div style="text-decoration: none;">
                     <h1>Cyber Appliance</h1><br>
-                    <h2>Site: {ip}</h2><br>
+                    <h2>Site: http://{".".join(list(extract(ip))).strip(".")}</h2><br>
                     <h4>Generated on {datetime.utcnow().strftime("%a, %d %b %Y %H:%M:%S")} UTC</h4><br>
                 </div>
                 <div style="text-decoration: none; margin-top: 5%;">
@@ -244,7 +249,7 @@ class PDF:
                                 {value['complexity']}
                             </div>
                             <div class="col-2 border border-5 border-light body">
-                                1
+                                {value['instances']}
                             </div>
                     
                         </div>"""
