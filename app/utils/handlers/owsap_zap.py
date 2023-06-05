@@ -40,7 +40,7 @@ class OWSAP:
 
     def zap_handler(self, target, regenerate):
         try:
-            self.result += set_zap_template(**(json.loads(target.raw_result)))
+            self.result += set_zap_template(**(json.loads({**set_zap_template, **{'tool':'OWSAP_ZAP'}})))
         except:
             pass
     

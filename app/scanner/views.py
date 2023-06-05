@@ -500,11 +500,11 @@ class OrderViewSet(viewsets.ModelViewSet, Common):
                 subscription_id=1#FREE
 
             order = Order.objects.create(client_id=request.user.id, subscrib_id=subscription_id, target_ip=target_ip)
-            tools = Tool.objects.filter(subscription_id=subscription_id)
-            targets= []
-            for tool in tools:
-                targets.append(Target(ip=target_ip, raw_result="", tool=tool, order=order, scan_by = request.user))
-            Target.objects.bulk_create(targets)
+            # tools = Tool.objects.filter(subscription_id=subscription_id)
+            # targets= []
+            # for tool in tools:
+            #     targets.append(Target(ip=target_ip, raw_result="", tool=tool, order=order, scan_by = request.user))
+            # Target.objects.bulk_create(targets)
             custom_response = OrderResponseSerailizer(order, context={"request": request})
             return response(status=True, data=custom_response.data, status_code=status.HTTP_200_OK, message="order successfully added in database")
         

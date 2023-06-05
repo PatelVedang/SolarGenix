@@ -98,7 +98,6 @@ class Tool(SoftDelete):
         return self.tool_name
     
 
-
 class Subscription(SoftDelete):
     day_limit = models.IntegerField()
     price = models.DecimalField(max_digits=11, decimal_places=2)

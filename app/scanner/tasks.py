@@ -41,6 +41,7 @@ def scan(id, time_limit, token, order_id, batch_scan):
 
     py_tools={
         'owsap_zap':OWSAP_ZAP_spider_scan_v3
+        # 'owsap_zap':OWSAP_ZAP_active_scan_v1
     }
 
     target = Target.objects.filter(id=id)
@@ -220,7 +221,7 @@ def OWSAP_ZAP_spider_scan_v2(url):
     # Here we are checking if spider scan still in progress then current process is sleep for 1s until 100% is compelete
     while int(zap.spider.status(spider_scan_id)) < 100:
         print('Spider scan progress %: {} for scan id {} with url {}'.format(zap.spider.status(spider_scan_id), spider_scan_id, url))
-        time.sleep(1)
+        time.sleep(10)
 
     # custom alert object
     alerts = {}
@@ -277,6 +278,7 @@ def OWSAP_ZAP_spider_scan_v3(url):
         'Informational': {'class':'risk-0', 'count':0},
         'False Positives:': {'class':'risk--1', 'count':0},
     }
+    
     # scan url with spider tool of OWSAP ZAP fro quick scan
     spider_scan_id = zap.spider.scan(url=url)
     
@@ -285,14 +287,94 @@ def OWSAP_ZAP_spider_scan_v3(url):
         print('Spider scan progress %: {} for scan id {} with url {}'.format(zap.spider.status(spider_scan_id), spider_scan_id, url))
         time.sleep(1)
 
+    # Alerts with message Id(We are accessing alerts based on message id to delete specific alerts of single scan) 
+    alert_with_msg_ids = {}
+    # All alerts of specific base url
+    alerts = zap.alert.alerts(baseurl=url)
+    for alert in alerts:
+        alert_with_msg_ids[alert.get('messageId')] = {**alert_with_msg_ids.get(alert.get('messageId'),{}), **{alert.get('id'):alert}}
+
     # custom alert object
     alerts = {}
     
-    alerts_list = zap.core.alerts(baseurl=url)
-    for alert_obj in alerts_list:
+    # All message id objects for current scan
+    full_results = zap.spider.full_results(scanid=spider_scan_id)
+    
+    if len(full_results):
+        total_urls = [*full_results[0].get('urlsInScope',[]),*full_results[0].get('urlsIoError',[])]
+        for obj in total_urls:
+            message_id = obj.get('messageId')
+            if alert_with_msg_ids.get(message_id):
+                for alert_key, alert_obj in alert_with_msg_ids.get(message_id).items():
+                    if isinstance(alert_obj,dict):
+                        alert_title = alert_obj.get('name')
+                        custom_alert_obj = {
+                            'name': alert_obj.get('name'),
+                            'description' : alert_obj.get('description'),
+                            'urls':[
+                                {
+                                'url' : alert_obj.get('url'),
+                                'method': alert_obj.get('method'),
+                                'parameter': alert_obj.get('param'),
+                                'attack': alert_obj.get('attack'),
+                                'evidence': alert_obj.get('evidence'),
+                                }
+                            ],
+                            'instances': 1,
+                            'wascid': alert_obj.get('wascid') if alert_obj.get('wascid')!="-1" else "",
+                            'cweid': alert_obj.get('cweid') if alert_obj.get('cweid')!="-1" else "",
+                            'plugin_id': alert_obj.get('pluginId'),
+                            'reference': "<br>".join(alert_obj.get('reference').split("\n")),
+                            'solution': alert_obj.get('solution'),
+                            'risk': alert_obj.get('risk')
+                        }
+
+                        if alert_title and alerts.get(alert_title):
+                            custom_alert_obj['urls'] = [*alerts[alert_title]['urls'], *custom_alert_obj['urls']]
+                            custom_alert_obj['instances'] = alerts[alert_title]['instances']+1
+                        else:
+                            risk_levels[custom_alert_obj['risk']]['count'] += 1
+                        
+                        alerts[alert_title] = custom_alert_obj
+                    zap.alert.delete_alert(id=alert_key)
+    
+    # Remove spider scan
+    zap.spider.remove_scan(scanid=spider_scan_id)
+
+    return json.dumps({'alerts': alerts, 'risk_levels': risk_levels})
+
+def timeout_handler(signum, frame):
+    raise TimeoutError("Timeout occurred")
+
+def OWSAP_ZAP_active_scan_v1(url):
+    # To store json as a scan result in active scan
+    if not ('http://' in url or 'https://' in url):
+        url = f"http://{url}"
+    # risk_levels object to get alerts count riks wise
+    risk_levels = {
+        'High': {'class':'risk-3', 'count':0},
+        'Medium': {'class':'risk-2', 'count':0},
+        'Low': {'class':'risk-1', 'count':0},
+        'Informational': {'class':'risk-0', 'count':0},
+        'False Positives:': {'class':'risk--1', 'count':0},
+    }
+    # scan url with active tool of OWSAP ZAP fro quick scan
+    scan_id = zap.ascan.scan(url=url)
+    
+    # Here we are checking if spider scan still in progress then current process is sleep for 1s until 100% is compelete
+    while int(zap.ascan.status(scan_id)) < 100:
+        print('Active scan progress %: {} for scan id {} with url {}'.format(zap.ascan.status(scan_id), scan_id, url))
+        time.sleep(10)
+
+    # All alerts of single current active scan
+    alerts_ids = zap.ascan.alerts_ids(scanid=scan_id)
+
+    # custom alert object
+    alerts = {}
+    for alert_id in alerts_ids:
+        alert_obj = zap.core.alert(id=alert_id)
         if isinstance(alert_obj,dict):
             alert_title = alert_obj.get('name')
-            # Making json object to generate html report 
             custom_alert_obj = {
                 'name': alert_obj.get('name'),
                 'description' : alert_obj.get('description'),
@@ -306,8 +388,8 @@ def OWSAP_ZAP_spider_scan_v3(url):
                     }
                 ],
                 'instances': 1,
-                'wascid': alert_obj.get('wascid') if alert_obj.get('wascid')=="-1" else "",
-                'cweid': alert_obj.get('cweid') if alert_obj.get('cweid')=="-1" else "",
+                'wascid': alert_obj.get('wascid') if alert_obj.get('wascid')!="-1" else "",
+                'cweid': alert_obj.get('cweid') if alert_obj.get('cweid')!="-1" else "",
                 'plugin_id': alert_obj.get('pluginId'),
                 'reference': "<br>".join(alert_obj.get('reference').split("\n")),
                 'solution': alert_obj.get('solution'),
@@ -321,12 +403,11 @@ def OWSAP_ZAP_spider_scan_v3(url):
                 risk_levels[custom_alert_obj['risk']]['count'] += 1
             
             alerts[alert_title] = custom_alert_obj
+        zap.core.delete_alert(alert_id)
+
+    zap.ascan.remove_scan(scanid=scan_id)
 
     return json.dumps({'alerts': alerts, 'risk_levels': risk_levels})
-
-
-def timeout_handler(signum, frame):
-    raise TimeoutError("Timeout occurred")
 
 # Currently we are not using this one
 def set_zap_html_report(url, risk_levels, alerts):

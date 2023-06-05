@@ -80,7 +80,7 @@ class SSLYSE:
                 cert_expire_on = datetime.strptime(cert.groupdict().get('cert_expire_on'), '%Y-%m-%d')
                 if cert_expire_on < datetime.utcnow():
                     error = "Expired SSL certificate"
-                    self.result += set_vul("CVE-2015-3886", error)
+                    self.result += set_vul("CVE-2015-3886", error, "sslyze")
     
     def tls1_detect_handler(self, target, regenerate):
         """
@@ -97,7 +97,7 @@ class SSLYSE:
             if search_result:
                 if search_result.groupdict().get('suites') and int(search_result.groupdict().get('suites')) >= 1:
                     error = "TLS 1.0 Weak Protocol"
-                    self.result += set_vul("CVE-2022-34757", error)
+                    self.result += set_vul("CVE-2022-34757", error, "sslyze")
     
     def tls11_detect_handler(self, target, regenerate):
         """
@@ -128,7 +128,8 @@ class SSLYSE:
                         complexity=complexity,
                         error=error,
                         desc=desc,
-                        solution=solution
+                        solution=solution,
+                        tool="sslyze"
                     )
     
     def tls12_detect_handler(self, target, regenerate):
@@ -153,5 +154,6 @@ class SSLYSE:
                         complexity=complexity,
                         error=error,
                         desc=desc,
-                        solution=solution
+                        solution=solution,
+                        tool="sslyze"
                     )

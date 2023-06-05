@@ -1,7 +1,7 @@
 from .cve import CVE
 cve = CVE()
 
-def set_vul(cve_str, error):
+def set_vul(cve_str, error, tool):
     """
     The function generates an HTML string containing information about a vulnerability, including its
     complexity and error message.
@@ -30,13 +30,21 @@ def set_vul(cve_str, error):
                 </div>
             </div>
             {html_str}
+            <div class="row">
+                <div class="col-3 border border-5 border-light body">
+                    Tool
+                </div>
+                <div class="col-9 border border-5 border-light body">
+                    {tool}
+                </div>
+            </div>
         </div>
     </div>
     '''
     return html_str
 
 
-def set_vul_by_keyword(keyword, error):
+def set_vul_by_keyword(keyword, error, tool):
     """
     The function sets CVE details by a given keyword and returns an HTML string with the details and
     error message.
@@ -65,6 +73,14 @@ def set_vul_by_keyword(keyword, error):
                     </div>
                 </div>
                 {html_str}
+                <div class="row">
+                    <div class="col-3 border border-5 border-light body">
+                        Tool
+                    </div>
+                    <div class="col-9 border border-5 border-light body">
+                        {tool}
+                    </div>
+                </div>
             </div>
         </div>
         '''
@@ -84,6 +100,7 @@ def set_info_vuln(**kwargs):
     desc = kwargs.get('desc')
     solution = kwargs.get('solution', 'N/A')
     port = kwargs.get('port')
+    tool = kwargs.get('tool')
     html_str = f'''
 
     <div class="row mt-2">
@@ -131,7 +148,15 @@ def set_info_vuln(**kwargs):
             </div>
         </div>
         '''
-    html_str +='''
+    html_str +=f'''
+            <div class="row">
+                <div class="col-3 border border-5 border-light body">
+                    Tool
+                </div>
+                <div class="col-9 border border-5 border-light body">
+                    {tool}
+                </div>
+            </div>
         </div>
     </div>
     '''
@@ -147,6 +172,7 @@ def set_custom_vul(**kwargs):
     """
     html_str = ""
     html_str, complexity = cve.set_cve_html(**kwargs)
+    tool = kwargs.get('tool')
     
     html_str = f'''
     <div class="row mt-2">
@@ -160,6 +186,14 @@ def set_custom_vul(**kwargs):
                 </div>
             </div>
             {html_str}
+            <div class="row">
+                <div class="col-3 border border-5 border-light body">
+                    Tool
+                </div>
+                <div class="col-9 border border-5 border-light body">
+                    {tool}
+                </div>
+            </div>
         </div>
     </div>
     '''
@@ -176,6 +210,7 @@ def set_zap_template(**kwargs):
     """
     html_str = ""
     alerts = kwargs.get('alerts',[])
+    tool = kwargs.get('tool')
     for key,value in alerts.items():
         html_str += f'''
         <div class="row mt-2">
@@ -289,6 +324,14 @@ def set_zap_template(**kwargs):
                     </div>
                     <div class="col-9 border border-5 border-light body">
                         <a href="https://www.zaproxy.org/docs/alerts/{value['plugin_id']}/">{value['plugin_id']}</a></td>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-3 border border-5 border-light body">
+                        Tool
+                    </div>
+                    <div class="col-9 border border-5 border-light body">
+                        {tool}
                     </div>
                 </div>
             </div>

@@ -87,7 +87,8 @@ class NMAP:
                 error=error,
                 desc=desc,
                 solution=solution,
-                port=port_number
+                port=port_number,
+                tool="nmap"
             )
         return self.result
 

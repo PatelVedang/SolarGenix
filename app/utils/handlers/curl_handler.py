@@ -58,7 +58,7 @@ class CURL:
         """
         if not re.search(self.x_content_type_options_regex, target.raw_result, re.IGNORECASE):
             error = "X-Content-Type-Options Header Missing"
-            self.result += set_vul("CVE-2019-19089", error)
+            self.result += set_vul("CVE-2019-19089", error, "curl")
     
     def unsupported_web_server_handler(self, target, regenerate):
         """
@@ -113,7 +113,8 @@ class CURL:
                     'sources': [
                     'N/A'
                     ],
-                    'error': error
+                    'error': error,
+                    'tool': 'curl'
                 }
                 self.result += set_custom_vul(**data)
 
@@ -130,7 +131,7 @@ class CURL:
         """
         if re.search(self.server_in_header_regex, target.raw_result, re.IGNORECASE):
             error = '''Server Leaks Version Information via "Server" HTTP Response Header Field'''
-            self.result += set_vul("CVE-2018-7844", error)
+            self.result += set_vul("CVE-2018-7844", error, "curl")
 
     def x_powered_by_in_response_header_handler(self, target, regenerate):
         """
@@ -144,5 +145,5 @@ class CURL:
         """
         if re.search(self.x_powered_by_in_header_regex, target.raw_result, re.IGNORECASE):
             error = '''Server Leaks Information via "X-Powered-By" HTTP Response Header Field'''
-            self.result += set_vul("CVE-2018-7844", error)
+            self.result += set_vul("CVE-2018-7844", error, "curl")
 
