@@ -40,7 +40,9 @@ class OWSAP:
 
     def zap_handler(self, target, regenerate):
         try:
-            self.result += set_zap_template(**(json.loads({**set_zap_template, **{'tool':'OWSAP_ZAP'}})))
+            self.result += set_zap_template(**{**json.loads(target.raw_result),**{'tool': 'OWSAP ZAP'}})
         except:
+            import traceback
+            traceback.print_exc()
             pass
     
