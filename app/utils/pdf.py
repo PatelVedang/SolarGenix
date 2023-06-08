@@ -7,6 +7,7 @@ from bs4 import BeautifulSoup
 import logging
 from datetime import datetime
 from tldextract import extract
+import json
 logger = logging.getLogger('django')
 from .handlers.nmap_hanlder import NMAP
 nmap = NMAP()
@@ -18,8 +19,8 @@ from .handlers.curl_handler import CURL
 curl = CURL()
 from .handlers.default_handler import DEFAULT
 default = DEFAULT()
-from .handlers.owsap_zap import OWSAP
-owsap = OWSAP()
+from .handlers.owasp_zap_hanlder import OWASP
+owasp = OWASP()
 
 
 class PDF:
@@ -30,7 +31,7 @@ class PDF:
         'sslyze': sslyze.main,
         'nikto': nikto.main,
         'curl': curl.main,
-        'owsap_zap': owsap.main,
+        'owasp_zap': owasp.main,
         'default': default.default_handler
     }
 
@@ -91,7 +92,7 @@ class PDF:
             'high': 0,
             'medium':0,
             'low':0,
-            'info':0,
+            'informational':0,
             'false-positive':0
         }
         ip = ""
@@ -99,22 +100,46 @@ class PDF:
             target_obj = Target.objects.get(id=target_id)
             ip = target_obj.ip
             if self.handlers.get(target_obj.tool.tool_cmd.split(" ")[0]):
-                html_str = self.handlers[target_obj.tool.tool_cmd.split(" ")[0]](target_obj, re_generate)
+                handler_result = self.handlers[target_obj.tool.tool_cmd.split(" ")[0]](target_obj, re_generate)
             else:
-                html_str = self.handlers['default'](target_obj, re_generate)
-            self.result += html_str
-            if html_str:
-                soup = BeautifulSoup(html_str, 'html.parser')
-                vulners = soup.find_all('div',{'class':'vul-header'})
-                if vulners:
-                    for vulner in vulners: 
-                        complexity = vulner.find('div',{'data-id':'complexity'}).text.strip()
-                        error = vulner.find('div',{'data-id':'error'}).text.strip()
-                        instances = vulner.find('div',{'data-id':'complexity'})['data-instances']
-                        alert_objs = {**alert_objs, **{f'{error}_{complexity}_': {'complexity': complexity, 'instances': instances}}}
-                        if risk_level_objs.get(complexity.lower()) == 0 or risk_level_objs.get(complexity.lower()) :
-                            risk_level_objs[complexity.lower()] += 1 
-                
+                handler_result = self.handlers['default'](target_obj, re_generate)
+            
+            try:
+                # New flow(If handler_result is json)
+                if handler_result:
+                    for error,value in handler_result.items():
+                        complexity = value.get('complexity')
+                        alert_objs = {**alert_objs, **
+                            {
+                                f'{error}_{complexity}': value
+                            }
+                            }
+                        if risk_level_objs.get(complexity.lower()) == 0 or risk_level_objs.get(complexity.lower()):
+                            risk_level_objs[complexity.lower()] += 1
+            except:
+                pass
+            # try:
+
+            # except:
+                # #Existing flow(If handler_result is html string)
+                # self.result += handler_result
+                # if handler_result:
+                #     soup = BeautifulSoup(handler_result, 'html.parser')
+                #     vulners = soup.find_all('div',{'class':'vul-header'})
+                #     if vulners:
+                #         for vulner in vulners:
+                #             complexity = vulner.find('div',{'data-id':'complexity'}).text.strip()
+                #             error = vulner.find('div',{'data-id':'error'}).text.strip()
+                #             instances = vulner.find('div',{'data-id':'complexity'}).get('data-instances', 1)
+                #             alert_ref = vulner.find('div',{'data-id':'complexity'}).get('id')
+                #             index = vulner.find('div',{'data-id':'complexity'}).get('data-index',0)
+                #             tool = vulner.find('div',{'data-id':'complexity'}).get('data-tool')
+                #             alert_objs = {**alert_objs, **{f'{error}_{complexity}': {'complexity': complexity, 'instances': instances, 'alert_ref' : alert_ref, 'index' : index, 'tool':tool}}}
+                #             if risk_level_objs.get(complexity.lower()) == 0 or risk_level_objs.get(complexity.lower()) :
+                #                 risk_level_objs[complexity.lower()] += 1
+
+        alert_objs = dict(sorted(alert_objs.items(), key=lambda x: x[1].get('index')))
+        self.result = "\n".join(list(map(lambda x:x.get('html_data',''),alert_objs.values())))
         # Base html
         html_data = """
         <!DOCTYPE html>
@@ -138,7 +163,7 @@ class PDF:
                 .info, .Info, .INFO, .Informational, .INFORMATIONAL, .informational {
                     background-color: blue;color:white;
                 }
-                .false-positive, .Flase-Positive, .FALSE-POSITIVE{
+                .False-Positive, .Flase-Positive, .FALSE-POSITIVE{
                     background-color: #00811f;color:white;
                 }
                 .header{
@@ -207,12 +232,12 @@ class PDF:
                                 Informational
                             </div>
                             <div class="col-6 border border-5 border-light body">
-                                {risk_level_objs['info']}
+                                {risk_level_objs['informational']}
                             </div>
                         </div>
                         <div class="row">
-                            <div class="col-6 border border-5 border-light false-positive">
-                                False Positives
+                            <div class="col-6 border border-5 border-light False-Positive">
+                                False-Positive
                             </div>
                             <div class="col-6 border border-5 border-light body">
                                 {risk_level_objs['false-positive']}
@@ -237,19 +262,25 @@ class PDF:
                             <div class="col-2 border border-5 border-light header">
                                 Number of instances
                             </div>
+                            <div class="col-2 border border-5 border-light header">
+                                Alert detection tool
+                            </div>
                         </div>
                 """
                 for key,value in alert_objs.items():
                     html_data += f"""
                         <div class="row">
                             <div class="col-6 border border-5 border-light body">
-                                {key.split("_")[0]}
+                                <a href="#{value['alert_ref']}">{key.split("_")[0]}</a>
                             </div>
                             <div class="col-2 border border-5 border-light {value['complexity']}">
                                 {value['complexity']}
                             </div>
                             <div class="col-2 border border-5 border-light body">
                                 {value['instances']}
+                            </div>
+                            <div class="col-2 border border-5 border-light body">
+                                {value['tool']}
                             </div>
                     
                         </div>"""
@@ -271,7 +302,6 @@ class PDF:
 
         </html>
         """
-
         if generate_pdf:
 
             new_pdf_name = f'{str(uuid.uuid4())}.pdf'

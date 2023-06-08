@@ -38,8 +38,8 @@ class NMAP:
         }
         tool_cmd = target.tool.tool_cmd.strip()
         if handlers.get(tool_cmd):
-            if regenerate or target.compose_result=="":
-                self.result = ""
+            if regenerate or not target.compose_result:
+                self.result = {}
                 self.ports = []
                 self.ports = list(re.finditer(self.port_search_regex, target.raw_result))
                 for port_obj in self.ports:
@@ -71,8 +71,8 @@ class NMAP:
         :return: the result of the vulnerability scan as a string.
         """
         for port in self.open_ports_obj.keys():
-            error = "Cyber PORT Scanner"
             port_number = self.open_ports_obj.get(port).get('port_with_protocol')
+            error = f"Cyber PORT Scanner {port_number}"
             status = self.open_ports_obj[port]['status']
             if status in ["open", "open|filtered"]: 
                 complexity = "INFO"
@@ -82,13 +82,13 @@ class NMAP:
                 complexity = "FALSE-POSITIVE"
                 desc = "A firewall, filter, or other network obstacle is blocking the port so that Cyber port scanner cannot tell whether it is open or closed."
                 solution = "N/A"
-            self.result+= set_info_vuln(
+            self.result = {**self.result, **set_info_vuln(
                 complexity=complexity,
                 error=error,
                 desc=desc,
                 solution=solution,
                 port=port_number,
                 tool="nmap"
-            )
+            )}
         return self.result
 

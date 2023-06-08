@@ -132,11 +132,12 @@ sudo systemctl start rabbitmq-server
 sudo systemctl enable rabbitmq-server
 sudo systemctl status rabbitmq-server
 ```
-##### Install OWSAP_ZAP server
+##### Install OWASP_ZAP server
 #
 ```
 sudo apt update
 sudo apt install default-jdk
+sudo apt install default-jre
 wget https://github.com/zaproxy/zaproxy/releases/download/v2.12.0/ZAP_2_12_0_unix.sh
 sudo chmod +x ZAP_2_12_0_unix.sh
 sudo bash ZAP_2_12_0_unix.sh

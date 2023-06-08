@@ -40,8 +40,8 @@ def scan(id, time_limit, token, order_id, batch_scan):
     thread.start()
 
     py_tools={
-        'owsap_zap':OWSAP_ZAP_spider_scan_v3
-        # 'owsap_zap':OWSAP_ZAP_active_scan_v1
+        'owasp_zap':OWASP_ZAP_spider_scan_v3
+        # 'owasp_zap':OWASP_ZAP_active_scan_v1
     }
 
     target = Target.objects.filter(id=id)
@@ -134,7 +134,7 @@ def send_message(id, token, order_id, batch_scan):
 
     return True
 
-def OWSAP_ZAP_spider_scan_v1(url):
+def OWASP_ZAP_spider_scan_v1(url):
     # Generating a report based on alerts received with message and alert ids
     # Here we are storing html as a scan result(raw result)
     if not ('http://' in url or 'https://' in url):
@@ -203,7 +203,7 @@ def OWSAP_ZAP_spider_scan_v1(url):
     # Generate report
     return set_zap_html_report(url, risk_levels, alerts)
 
-def OWSAP_ZAP_spider_scan_v2(url):
+def OWASP_ZAP_spider_scan_v2(url):
     # To store html as a scan result(raw_result)
     if not ('http://' in url or 'https://' in url):
         url = f"http://{url}"
@@ -215,7 +215,7 @@ def OWSAP_ZAP_spider_scan_v2(url):
         'Informational': {'class':'risk-0', 'count':0},
         'False Positives:': {'class':'risk--1', 'count':0},
     }
-    # scan url with spider tool of OWSAP ZAP fro quick scan
+    # scan url with spider tool of OWASP ZAP fro quick scan
     spider_scan_id = zap.spider.scan(url=url)
     
     # Here we are checking if spider scan still in progress then current process is sleep for 1s until 100% is compelete
@@ -266,7 +266,7 @@ def OWSAP_ZAP_spider_scan_v2(url):
     # Generate report
     return set_zap_html_report(url, risk_levels, alerts)
 
-def OWSAP_ZAP_spider_scan_v3(url):
+def OWASP_ZAP_spider_scan_v3(url):
     # To store json as a scan result
     if not ('http://' in url or 'https://' in url):
         url = f"http://{url}"
@@ -279,7 +279,7 @@ def OWSAP_ZAP_spider_scan_v3(url):
         'False Positives:': {'class':'risk--1', 'count':0},
     }
     
-    # scan url with spider tool of OWSAP ZAP fro quick scan
+    # scan url with spider tool of OWASP ZAP fro quick scan
     spider_scan_id = zap.spider.scan(url=url)
     
     # Here we are checking if spider scan still in progress then current process is sleep for 1s until 100% is compelete
@@ -346,7 +346,7 @@ def OWSAP_ZAP_spider_scan_v3(url):
 def timeout_handler(signum, frame):
     raise TimeoutError("Timeout occurred")
 
-def OWSAP_ZAP_active_scan_v1(url):
+def OWASP_ZAP_active_scan_v1(url):
     # To store json as a scan result in active scan
     if not ('http://' in url or 'https://' in url):
         url = f"http://{url}"
@@ -358,7 +358,7 @@ def OWSAP_ZAP_active_scan_v1(url):
         'Informational': {'class':'risk-0', 'count':0},
         'False Positives:': {'class':'risk--1', 'count':0},
     }
-    # scan url with active tool of OWSAP ZAP fro quick scan
+    # scan url with active tool of OWASP ZAP fro quick scan
     scan_id = zap.ascan.scan(url=url)
     
     # Here we are checking if spider scan still in progress then current process is sleep for 1s until 100% is compelete

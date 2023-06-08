@@ -9,9 +9,10 @@ default = DEFAULT()
 from .cve import CVE
 cve = CVE()
 from .common_handler import *
+import json
 
 class SSLYSE:
-    result = ""
+    result = {}
     service_regex ="(\n\s+\*\s+|\\n\s+\*\s+|\\r\\n\s+\*\s+)(?P<service>[\w\s.]+):(\n|\\n|\\r\\n)"
     cert_regex = "Not After:\s+(?P<cert_expire_on>\d{4}-\d{2}-\d{2})"
     suites_regex = "The\s+server\s+accepted\s+the\s+following\s+(?P<suites>\d{1,})\s+cipher\s+suites:"
@@ -43,8 +44,8 @@ class SSLYSE:
         }
         tool_cmd = target.tool.tool_cmd.strip()
         if handlers.get(tool_cmd):
-            if regenerate or target.compose_result=="":
-                self.result = ""
+            if regenerate or not target.compose_result:
+                self.result = {}
                 self.services_objects = {}
                 services = list(re.finditer(self.service_regex, target.raw_result))
                 for service_obj in services:
@@ -55,6 +56,7 @@ class SSLYSE:
                         key = services[index].group().replace("\r\n","").replace("*","").strip()
                         value = re.search(regex, target.raw_result).groupdict().get('content')
                         self.services_objects = {**self.services_objects, **{key:value}}
+                self.result = {}
                 for vul_handler in handlers[tool_cmd]:
                     vul_handler(target, regenerate)
                 Target.objects.filter(id=target.id).update(compose_result=self.result)
@@ -80,7 +82,7 @@ class SSLYSE:
                 cert_expire_on = datetime.strptime(cert.groupdict().get('cert_expire_on'), '%Y-%m-%d')
                 if cert_expire_on < datetime.utcnow():
                     error = "Expired SSL certificate"
-                    self.result += set_vul("CVE-2015-3886", error, "sslyze")
+                    self.result = {**self.result, **set_vul(cve="CVE-2015-3886", error=error, tool="sslyze")}
     
     def tls1_detect_handler(self, target, regenerate):
         """
@@ -97,7 +99,7 @@ class SSLYSE:
             if search_result:
                 if search_result.groupdict().get('suites') and int(search_result.groupdict().get('suites')) >= 1:
                     error = "TLS 1.0 Weak Protocol"
-                    self.result += set_vul("CVE-2022-34757", error, "sslyze")
+                    self.result = {**self.result, **set_vul(cve="CVE-2022-34757", error=error, tool="sslyze")}
     
     def tls11_detect_handler(self, target, regenerate):
         """
@@ -124,13 +126,13 @@ class SSLYSE:
                     As of March 31, 2020, Endpoints that are not enabled for TLS 1.2 and higher will no longer function properly with major web browsers and major vendors.
                     '''
                     solution = "Enable support for TLS 1.2 and/or 1.3, and disable support for TLS 1.1."
-                    self.result+= set_info_vuln(
+                    self.result = {**self.result, **set_info_vuln(
                         complexity=complexity,
                         error=error,
                         desc=desc,
                         solution=solution,
                         tool="sslyze"
-                    )
+                    )}
     
     def tls12_detect_handler(self, target, regenerate):
         """
@@ -150,10 +152,10 @@ class SSLYSE:
                     error = "TLS 1.2 Weak Protocol"
                     desc = 'The remote service accepts connections encrypted using TLS 1.2.'
                     solution = "N/A"
-                    self.result+= set_info_vuln(
+                    self.result = {**self.result, **set_info_vuln(
                         complexity=complexity,
                         error=error,
                         desc=desc,
                         solution=solution,
                         tool="sslyze"
-                    )
+                    )}

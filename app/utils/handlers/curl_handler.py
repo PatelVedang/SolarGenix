@@ -8,6 +8,7 @@ cve = CVE()
 from .default_handler import DEFAULT
 default = DEFAULT()
 from .common_handler import *
+import json
 
 class CURL:
     x_content_type_options_regex = "X-Content-Type-Options: nosniff"
@@ -15,7 +16,7 @@ class CURL:
     x_powered_by_in_header_regex = "X-Powered-By"
     server_in_header_regex = "Server:"
 
-    result = ""
+    result = {}
     
     def main(self, target, regenerate):
         """
@@ -33,8 +34,8 @@ class CURL:
         }
         tool_cmd = target.tool.tool_cmd.strip()
         if handlers.get(tool_cmd):
-            if regenerate or target.compose_result=="":
-                self.result = ""
+            if regenerate or not target.compose_result:
+                self.result = {}
                 for vul_handler in handlers[tool_cmd]:
                     vul_handler(target, regenerate)
                 Target.objects.filter(id=target.id).update(compose_result=self.result)
@@ -58,7 +59,7 @@ class CURL:
         """
         if not re.search(self.x_content_type_options_regex, target.raw_result, re.IGNORECASE):
             error = "X-Content-Type-Options Header Missing"
-            self.result += set_vul("CVE-2019-19089", error, "curl")
+            self.result = {**self.result, **set_vul(cve="CVE-2019-19089", error=error, tool="curl")}
     
     def unsupported_web_server_handler(self, target, regenerate):
         """
@@ -69,7 +70,7 @@ class CURL:
         It contains information such as the IP address, port number, and protocol being used
         :param regenerate: A boolean value indicating whether the target should be regenerated or not
         """
-        # https://learn.microsoft.com/en-us/lifecycle/products/internet-information-services-iis reference of IIS7.5
+        # https://learn.microsoft.com/en-us/lifecycle/products/internet-information-services-iis reference of IIS 7.5
         if re.search(self.windows_regex, target.raw_result, re.IGNORECASE):
             match = re.search(self.windows_regex, target.raw_result, re.IGNORECASE)
             server = match.groupdict().get('server').strip(" ").strip("\n") if match.groupdict().get('server') else ""
@@ -114,9 +115,10 @@ class CURL:
                     'N/A'
                     ],
                     'error': error,
-                    'tool': 'curl'
+                    'tool': 'curl',
+                    'custom': True
                 }
-                self.result += set_custom_vul(**data)
+                self.result = {**self.result, **set_vul(**data)}
 
     def server_in_response_header_handler(self, target, regenerate):
         """
@@ -131,7 +133,7 @@ class CURL:
         """
         if re.search(self.server_in_header_regex, target.raw_result, re.IGNORECASE):
             error = '''Server Leaks Version Information via "Server" HTTP Response Header Field'''
-            self.result += set_vul("CVE-2018-7844", error, "curl")
+            self.result = {**self.result, **set_vul(cve="CVE-2018-7844", error=error, tool="curl")}
 
     def x_powered_by_in_response_header_handler(self, target, regenerate):
         """
@@ -145,5 +147,5 @@ class CURL:
         """
         if re.search(self.x_powered_by_in_header_regex, target.raw_result, re.IGNORECASE):
             error = '''Server Leaks Information via "X-Powered-By" HTTP Response Header Field'''
-            self.result += set_vul("CVE-2018-7844", error, "curl")
+            self.result = {**self.result, **set_vul(cve="CVE-2018-7844", error=error, tool="curl")}
 

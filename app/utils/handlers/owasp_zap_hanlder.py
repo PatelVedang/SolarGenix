@@ -10,8 +10,8 @@ default = DEFAULT()
 from .common_handler import *
 import json
 
-class OWSAP:
-    result = ""
+class OWASP:
+    result = {}
     
     def main(self, target, regenerate):
         """
@@ -19,15 +19,15 @@ class OWSAP:
         appropriate handler based on the input.
         """
         handlers = {
-            'owsap_zap': [
+            'owasp_zap': [
                 self.zap_handler,
             ],
             'default': default.default_handler
         }
         tool_cmd = target.tool.tool_cmd.strip()
         if handlers.get(tool_cmd):
-            if regenerate or target.compose_result=="":
-                self.result = ""
+            if regenerate or not target.compose_result:
+                self.result = {}
                 for vul_handler in handlers[tool_cmd]:
                     vul_handler(target, regenerate)
                 Target.objects.filter(id=target.id).update(compose_result=self.result)
@@ -40,7 +40,7 @@ class OWSAP:
 
     def zap_handler(self, target, regenerate):
         try:
-            self.result += set_zap_template(**{**json.loads(target.raw_result),**{'tool': 'OWSAP ZAP'}})
+            self.result = {**self.result, **set_zap_template(**{**json.loads(target.raw_result),**{'tool': 'OWASP ZAP'}})}
         except:
             import traceback
             traceback.print_exc()

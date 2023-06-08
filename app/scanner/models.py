@@ -67,7 +67,7 @@ class SoftDelete(models.Model):
 class Target(SoftDelete):
     ip = models.CharField(max_length=100,null=False)
     raw_result = models.TextField()
-    compose_result = models.TextField(default="")
+    compose_result = models.JSONField(default=dict)
     status = models.IntegerField(choices=TARGET_STATUS_CHOICES, default=0)
     tool = models.ForeignKey("Tool", on_delete=models.SET_NULL, default=1, null=True)
     order = models.ForeignKey("Order", on_delete=models.SET_NULL, null=True, related_name="targets") 

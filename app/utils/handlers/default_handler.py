@@ -10,7 +10,7 @@ cve = CVE()
 
 class DEFAULT:
     port_search_regex = '(?P<port>\d{1,4}/tcp)\s+(?P<state>(filtered|open|closed))\s+(?P<service>[\w0-9\-\_]+).*(\n)'
-    result = ""
+    result = {}
     
     def default_handler(self, target, regenerate):
 #         """
@@ -23,7 +23,7 @@ class DEFAULT:
 #         result will be returned
 #         :return: the value of the variable `self.result`.
 #         """
-#         if regenerate or target.compose_result=="":
+#         if regenerate or not target.compose_result:
 #             complexity = "INFO"
 #             self.result =f'''
 #                 <div class="row">
