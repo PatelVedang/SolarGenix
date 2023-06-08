@@ -15,7 +15,7 @@ from rest_framework.filters import SearchFilter, OrderingFilter
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 from rest_framework.permissions import IsAdminUser
-from .permissions import ScannerRetrievePremission, IsAdminUserOrList, IsAuthenticated, IsSuperUserOrAdminUser
+from .permissions import ScannerRetrievePremission, IsAdminUserOrList, IsAuthenticated, UserHasSubscription
 from django.utils.decorators import method_decorator
 from utils.pdf import PDF
 from django.shortcuts import get_object_or_404
@@ -46,7 +46,7 @@ class Common:
 class ScanViewSet(viewsets.ModelViewSet, Common):
     queryset = Target.objects.all()
     serializer_class = ScannerSerializer
-    permission_classes = [IsAuthenticated, ScannerRetrievePremission, IsSuperUserOrAdminUser]
+    permission_classes = [IsAuthenticated, ScannerRetrievePremission, UserHasSubscription]
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     search_fields = ['ip', 'scan_by__first_name', 'scan_by__last_name', 'tool__tool_name', 'updated_at']
     filterset_fields = ['id', 'ip', 'status', 'tool', 'order']
@@ -493,18 +493,7 @@ class OrderViewSet(viewsets.ModelViewSet, Common):
         serializer = self.serializer_class(data=request.data)
         if serializer.is_valid(raise_exception=True):
             target_ip= serializer.data.get('target_ip')
-            # We will update this logic in future
-            if request.user.is_staff or request.user.is_superuser:
-                subscription_id=2#STAFF
-            else:
-                subscription_id=1#FREE
-
-            order = Order.objects.create(client_id=request.user.id, subscrib_id=subscription_id, target_ip=target_ip)
-            # tools = Tool.objects.filter(subscription_id=subscription_id)
-            # targets= []
-            # for tool in tools:
-            #     targets.append(Target(ip=target_ip, raw_result="", tool=tool, order=order, scan_by = request.user))
-            # Target.objects.bulk_create(targets)
+            order = Order.objects.create(client_id=request.user.id, subscrib_id=request.user.subscription_id, target_ip=target_ip)
             custom_response = OrderResponseSerailizer(order, context={"request": request})
             return response(status=True, data=custom_response.data, status_code=status.HTTP_200_OK, message="order successfully added in database")
         

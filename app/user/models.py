@@ -22,6 +22,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     is_superuser = models.BooleanField(default=False)
     otp = models.CharField(max_length=6, null=True)
     otp_expires = models.DateTimeField(auto_now_add=True, null=True)
+    subscription = models.ForeignKey('scanner.Subscription', on_delete=models.SET_NULL, null=True, blank=True, default=1)
     created_at = models.DateTimeField(auto_now_add=True, null=True)
     updated_at = models.DateTimeField(auto_now=True, null=True)
 

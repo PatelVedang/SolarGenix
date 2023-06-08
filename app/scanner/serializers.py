@@ -77,7 +77,7 @@ class ScannerResponseSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         data = super().to_representation(instance)
         requested_user = self.context['request'].user
-        if requested_user.is_staff or requested_user.is_superuser:
+        if requested_user.subscription_id == 2:
             data['tool']= Tool.default.filter(id=instance.tool.id).values('id', 'tool_name', 'tool_cmd')[0]
             data['scan_by']= {
                 "id": instance.scan_by.id,
@@ -85,7 +85,8 @@ class ScannerResponseSerializer(serializers.ModelSerializer):
                 "first_name": instance.scan_by.first_name,
                 "last_name": instance.scan_by.last_name,
                 "is_staff": instance.scan_by.is_staff,
-                "is_superuser": instance.scan_by.is_superuser
+                "is_superuser": instance.scan_by.is_superuser,
+                "subscription_id": instance.scan_by.subscription_id
             }
         else:
             data['raw_result'] = ""
@@ -95,7 +96,8 @@ class ScannerResponseSerializer(serializers.ModelSerializer):
             "first_name": requested_user.first_name,
             "last_name": requested_user.last_name,
             "is_staff": requested_user.is_staff,
-            "is_superuser": requested_user.is_superuser
+            "is_superuser": requested_user.is_superuser,
+            "subscription_id": requested_user.subscription_id
         }
         return data
     
@@ -138,7 +140,8 @@ class OrderResponseSerailizer(serializers.ModelSerializer):
             "first_name": instance.client.first_name,
             "last_name": instance.client.last_name,
             "is_staff": instance.client.is_staff,
-            "is_superuser": instance.client.is_superuser
+            "is_superuser": instance.client.is_superuser,
+            "subscription_id": instance.client.subscription_id
         }
         data['request_by']= {
             "id": requested_user.id,
@@ -146,7 +149,8 @@ class OrderResponseSerailizer(serializers.ModelSerializer):
             "first_name": requested_user.first_name,
             "last_name": requested_user.last_name,
             "is_staff": requested_user.is_staff,
-            "is_superuser": requested_user.is_superuser
+            "is_superuser": requested_user.is_superuser,
+            "subscription_id": requested_user.subscription_id
         }
         return data
 
@@ -168,7 +172,8 @@ class OrderWithoutTargetsResponseSerailizer(serializers.ModelSerializer):
             "first_name": instance.client.first_name,
             "last_name": instance.client.last_name,
             "is_staff": instance.client.is_staff,
-            "is_superuser": instance.client.is_superuser
+            "is_superuser": instance.client.is_superuser,
+            "subscription_id": instance.client.subscription_id
         }
         data['request_by']= {
             "id": requested_user.id,
@@ -176,7 +181,8 @@ class OrderWithoutTargetsResponseSerailizer(serializers.ModelSerializer):
             "first_name": requested_user.first_name,
             "last_name": requested_user.last_name,
             "is_staff": requested_user.is_staff,
-            "is_superuser": requested_user.is_superuser
+            "is_superuser": requested_user.is_superuser,
+            "subscription_id": requested_user.subscription_id
         }
         return data
 

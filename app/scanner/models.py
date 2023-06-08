@@ -7,7 +7,7 @@ import socket
 TARGET_STATUS_CHOICES = [
     (0, "Created"),
     (1, "Queued"),
-    (2, "Scan started"),
+    (2, "Scan in-progress"),
     (3, "Scan terminated"),
     (4, "Scan finished")
 ]

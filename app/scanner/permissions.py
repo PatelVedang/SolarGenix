@@ -33,15 +33,15 @@ class IsAdminUserOrList(permissions.IsAdminUser):
         return super().has_permission(request, view)
     
 
-class IsSuperUserOrAdminUser(permissions.IsAdminUser):
+class UserHasSubscription(permissions.IsAdminUser):
     def has_permission(self, request, view):
-        if request.user.is_staff or request.user.is_superuser:
+        if request.user.subscription_id==2:
             return True
         else:
             return False
         
     def has_object_permission(self, request, view, obj):
-        if request.user.is_staff or request.user.is_superuser:
+        if request.user.subscription_id==2:
             return True
         else:
             return False

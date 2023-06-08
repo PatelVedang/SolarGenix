@@ -106,7 +106,7 @@ class TargetAdmin(BulkSelect):
     list_display = [
         'id', 'ip','get_full_name','status', 'tool', 'is_deleted','order_id', 'scan_time'
     ]
-    search_fields = ('ip','id')
+    search_fields = ('ip','id', 'scan_by__first_name', 'scan_by__first_name')
 
     def get_full_name(self, obj):
         """
@@ -160,9 +160,9 @@ class OrderAdmin(BulkSelect):
 
 class ToolAdmin(BulkSelect):
     readonly_fields = ('id',)
-    list_display = ['id','tool_name', 'tool_cmd', 'is_deleted', 'get_subscription']
+    list_display = ['id','tool_name', 'tool_cmd', 'is_deleted', 'subscription']
     actions = ['make_it_as_staff_tool'] + BulkSelect.actions
-
+    search_fields = ('id', 'subscription__plan_type', 'tool_name', 'tool_cmd')
 
     def make_it_as_staff_tool(self, request, queryset):
         """

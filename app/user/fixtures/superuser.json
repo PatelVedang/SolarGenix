@@ -9,9 +9,10 @@
         "password": "pbkdf2_sha256$390000$YCv2dg8yGtIfigtKcEXRCf$wsXj1c3vzVZ3O0xA3nSyscq2Bl9PFra3MjEJpCuR4h8=",
         "is_superuser": true,
         "is_staff": true,
-        "role":1
+        "role":1,
+        "subscription_id":2
       }
     }
     
-  ]
+]
   
