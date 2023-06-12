@@ -293,6 +293,7 @@ LOGGING = {
 
 SUDO_PWD=os.environ.get('SUDO_PWD', env('SUDO_PWD'))
 NVD_API_KEY=os.environ.get('NVD_API_KEY', env('NVD_API_KEY'))
+SPIDER_API_CALL_DELAY=os.environ.get('SPIDER_API_CALL_DELAY', env('SPIDER_API_CALL_DELAY'))
 
 
 CELERY_BROKER_URL = os.environ.get('CELERY_BROKER_URL', env('CELERY_BROKER_URL'))
