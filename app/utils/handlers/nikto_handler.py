@@ -344,11 +344,12 @@ class NIKTO:
         for index in range(len(tables)):
             table_obj = {}
             rows = tables[index].find_all('tr')
-            for row in rows:
-                columns = row.find_all('td')
-                if len(columns) == 2:
-                    table_obj= {**table_obj, **{columns[0].find(string=True):columns[1].find(string=True, href=True) if columns[1].find(string=True, href=True) else columns[1].find(string=True)}}
-
+            if len(rows) and rows[0].find_all('td')[0].find(string=True) == "URI":
+                for row in rows:
+                    columns = row.find_all('td')
+                    if len(columns) == 2:
+                        if columns[0].text.strip() == "Description":
+                            table_obj= {**table_obj, **{columns[0].find(string=True):columns[1].text.strip()}}
             result= {**result, **{index:table_obj}}
         if result:
             # cve.set_cve_html
@@ -356,9 +357,9 @@ class NIKTO:
                 # ####################
                 #   content start which update in future
                 # ####################
-                if list(result.keys()).index(key) in [0,1,2] or True:
-                    if val.get('Description'):
-                        error = val.get('Description').replace("/:","")
+                if val.get('Description'):
+                # if list(result.keys()).index(key) in [0,1,2] or True:
+                    error = val.get('Description').replace("/:","")
                         # data = {
                         #     'cve_id': 'N/A',
                         #     'description': val.get('Description'),
@@ -378,16 +379,16 @@ class NIKTO:
                         # }
                         # self.result = {**self.result, **set_vul(**data)}
                         
-                        response = requests.get(f'https://cve.mitre.org/cgi-bin/cvekey.cgi?keyword={error.replace(" ","+")}')
-                        soup = BeautifulSoup(response.text, "html.parser")
-                        vuln_table = soup.find("div",{'id':'TableWithRules'})
-                        if vuln_table:
-                            rows = vuln_table.find_all('tr')
-                            if rows and len(rows):
-                                cols = rows[1].find_all('td')
-                                if cols and len(cols):
-                                    cve = cols[0].find(string=True)
-                                    self.result = {**self.result, **set_vul(cve=cve, error=error, tool="nikto")}
+                    response = requests.get(f'https://cve.mitre.org/cgi-bin/cvekey.cgi?keyword={error.replace(" ","+")}')
+                    soup = BeautifulSoup(response.text, "html.parser")
+                    vuln_table = soup.find("div",{'id':'TableWithRules'})
+                    if vuln_table:
+                        rows = vuln_table.find_all('tr')
+                        if rows and len(rows):
+                            cols = rows[1].find_all('td')
+                            if cols and len(cols):
+                                cve = cols[0].find(string=True)
+                                self.result = {**self.result, **set_vul(cve=cve, error=error, tool="nikto")}
                         # self.result = {**self.result, **set_vul(keyword=error, erorr=error)}
 
                 # ####################

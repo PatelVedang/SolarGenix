@@ -307,8 +307,11 @@ def OWASP_ZAP_spider_scan_v3(url):
     while True:
         # All alerts of specific base url
         alerts = pd.DataFrame(data=[*zap.alert.alerts(baseurl=http_url), *zap.alert.alerts(baseurl=https_url)])
-        alert_message_ids = alerts['messageId'].tolist()
-        alert_message_ids.sort()
+        if len(alerts.columns) and 'messageId' in alerts.columns:
+            alert_message_ids = alerts['messageId'].tolist()
+            alert_message_ids.sort()
+        else:
+            alert_message_ids = []
         matched_msg_ids  = sorted(list(set(alert_message_ids).intersection(spider_msg_ids)))
         if matched_msg_ids==spider_msg_ids:
             print("Match found")
@@ -325,47 +328,49 @@ def OWASP_ZAP_spider_scan_v3(url):
     alert_with_msg_ids = {}
     
     # Update in future
-    for alert in alerts.to_dict('records'):
-        alert_with_msg_ids[alert.get('messageId')] = {**alert_with_msg_ids.get(alert.get('messageId'),{}), **{alert.get('id'):alert}}
+    if len(alerts):
+        for alert in alerts.to_dict('records'):
+            alert_with_msg_ids[alert.get('messageId')] = {**alert_with_msg_ids.get(alert.get('messageId'),{}), **{alert.get('id'):alert}}
 
     # custom alert object
     alerts = {}
     
-    for obj in spider_requests.to_dict('records'):
-        message_id = obj.get('messageId')
-        if alert_with_msg_ids.get(message_id):
-            for alert_key, alert_obj in alert_with_msg_ids.get(message_id).items():
-                if isinstance(alert_obj,dict):
-                    alert_title = alert_obj.get('name')
-                    custom_alert_obj = {
-                        'name': alert_obj.get('name'),
-                        'description' : alert_obj.get('description'),
-                        'urls':[
-                            {
-                            'url' : alert_obj.get('url'),
-                            'method': alert_obj.get('method'),
-                            'parameter': alert_obj.get('param'),
-                            'attack': alert_obj.get('attack'),
-                            'evidence': alert_obj.get('evidence'),
-                            }
-                        ],
-                        'instances': 1,
-                        'wascid': alert_obj.get('wascid') if alert_obj.get('wascid')!="-1" else "",
-                        'cweid': alert_obj.get('cweid') if alert_obj.get('cweid')!="-1" else "",
-                        'plugin_id': alert_obj.get('pluginId'),
-                        'reference': "<br>".join(alert_obj.get('reference').split("\n")),
-                        'solution': alert_obj.get('solution'),
-                        'risk': alert_obj.get('risk')
-                    }
+    if len(spider_requests) and len(alert_with_msg_ids.keys()):
+        for obj in spider_requests.to_dict('records'):
+            message_id = obj.get('messageId')
+            if alert_with_msg_ids.get(message_id):
+                for alert_key, alert_obj in alert_with_msg_ids.get(message_id).items():
+                    if isinstance(alert_obj,dict):
+                        alert_title = alert_obj.get('name')
+                        custom_alert_obj = {
+                            'name': alert_obj.get('name'),
+                            'description' : alert_obj.get('description'),
+                            'urls':[
+                                {
+                                'url' : alert_obj.get('url'),
+                                'method': alert_obj.get('method'),
+                                'parameter': alert_obj.get('param'),
+                                'attack': alert_obj.get('attack'),
+                                'evidence': alert_obj.get('evidence'),
+                                }
+                            ],
+                            'instances': 1,
+                            'wascid': alert_obj.get('wascid') if alert_obj.get('wascid')!="-1" else "",
+                            'cweid': alert_obj.get('cweid') if alert_obj.get('cweid')!="-1" else "",
+                            'plugin_id': alert_obj.get('pluginId'),
+                            'reference': "<br>".join(alert_obj.get('reference').split("\n")),
+                            'solution': alert_obj.get('solution'),
+                            'risk': alert_obj.get('risk')
+                        }
 
-                    if alert_title and alerts.get(alert_title):
-                        custom_alert_obj['urls'] = [*alerts[alert_title]['urls'], *custom_alert_obj['urls']]
-                        custom_alert_obj['instances'] = alerts[alert_title]['instances']+1
-                    else:
-                        risk_levels[custom_alert_obj['risk']]['count'] += 1
-                    
-                    alerts[alert_title] = custom_alert_obj
-                zap.alert.delete_alert(id=alert_key)
+                        if alert_title and alerts.get(alert_title):
+                            custom_alert_obj['urls'] = [*alerts[alert_title]['urls'], *custom_alert_obj['urls']]
+                            custom_alert_obj['instances'] = alerts[alert_title]['instances']+1
+                        else:
+                            risk_levels[custom_alert_obj['risk']]['count'] += 1
+                        
+                        alerts[alert_title] = custom_alert_obj
+                    zap.alert.delete_alert(id=alert_key)
     
     # Remove spider scan
     zap.spider.remove_scan(scanid=spider_scan_id)
