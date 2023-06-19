@@ -85,7 +85,7 @@ class CURL:
                     '8.0': datetime.strptime('10/10/2023',"%d/%m/%Y"),
                     '8.1': datetime.strptime('10/01/2023',"%d/%m/%Y"),
                     '8.5': datetime.strptime('10/10/2023',"%d/%m/%Y"),
-                    '10.0': datetime.strptime('12/01/2020',"%d/%m/%Y")
+                    '10.0': datetime.strptime('12/01/2027',"%d/%m/%Y")
                 },
                 'Apache':{
                     '1.3': datetime.strptime('03/02/2010',"%d/%m/%Y"),
