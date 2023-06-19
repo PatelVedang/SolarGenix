@@ -38,6 +38,7 @@ class NMAP:
         }
         tool_cmd = target.tool.tool_cmd.strip()
         if handlers.get(tool_cmd):
+            regenerate =True
             if regenerate or not target.compose_result:
                 self.result = {}
                 self.ports = []
@@ -82,13 +83,14 @@ class NMAP:
                 complexity = "FALSE-POSITIVE"
                 desc = "A firewall, filter, or other network obstacle is blocking the port so that Cyber port scanner cannot tell whether it is open or closed."
                 solution = "N/A"
-            self.result = {**self.result, **set_info_vuln(
+            self.result = {**self.result, **alert_response(
                 complexity=complexity,
                 error=error,
-                desc=desc,
+                description=desc,
                 solution=solution,
                 port=port_number,
-                tool="nmap"
+                tool="nmap",
+                alert_type=4
             )}
         return self.result
 

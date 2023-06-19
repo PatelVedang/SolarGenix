@@ -40,7 +40,7 @@ class OWASP:
 
     def zap_handler(self, target, regenerate):
         try:
-            self.result = {**self.result, **set_zap_template(**{**json.loads(target.raw_result),**{'tool': 'OWASP ZAP'}})}
+            self.result = {**self.result, **alert_response(**{**json.loads(target.raw_result),**{'tool': 'OWASP ZAP', 'alert_type':5}})}
         except:
             import traceback
             traceback.print_exc()

@@ -17,7 +17,8 @@ from drf_yasg import openapi
 from rest_framework.permissions import IsAdminUser
 from .permissions import ScannerRetrievePremission, IsAdminUserOrList, IsAuthenticated, UserHasSubscription
 from django.utils.decorators import method_decorator
-from utils.pdf import PDF
+# from utils.pdf import PDF
+from utils.pdf_final_report import PDF
 from django.shortcuts import get_object_or_404
 from utils.message import send
 from web_socket.serializers import SendMessageSerializer

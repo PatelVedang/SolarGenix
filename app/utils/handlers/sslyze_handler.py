@@ -82,7 +82,7 @@ class SSLYSE:
                 cert_expire_on = datetime.strptime(cert.groupdict().get('cert_expire_on'), '%Y-%m-%d')
                 if cert_expire_on < datetime.utcnow():
                     error = "Expired SSL certificate"
-                    self.result = {**self.result, **set_vul(cve="CVE-2015-3886", error=error, tool="sslyze")}
+                    self.result = {**self.result, **alert_response(cve="CVE-2015-3886", error=error, tool="sslyze", alert_type=1)}
     
     def tls1_detect_handler(self, target, regenerate):
         """
@@ -99,7 +99,7 @@ class SSLYSE:
             if search_result:
                 if search_result.groupdict().get('suites') and int(search_result.groupdict().get('suites')) >= 1:
                     error = "TLS 1.0 Weak Protocol"
-                    self.result = {**self.result, **set_vul(cve="CVE-2022-34757", error=error, tool="sslyze")}
+                    self.result = {**self.result, **alert_response(cve="CVE-2022-34757", error=error, tool="sslyze", alert_type=1)}
     
     def tls11_detect_handler(self, target, regenerate):
         """
@@ -126,12 +126,13 @@ class SSLYSE:
                     As of March 31, 2020, Endpoints that are not enabled for TLS 1.2 and higher will no longer function properly with major web browsers and major vendors.
                     '''
                     solution = "Enable support for TLS 1.2 and/or 1.3, and disable support for TLS 1.1."
-                    self.result = {**self.result, **set_info_vuln(
+                    self.result = {**self.result, **alert_response(
                         complexity=complexity,
                         error=error,
-                        desc=desc,
+                        description=desc,
                         solution=solution,
-                        tool="sslyze"
+                        tool="sslyze",
+                        alert_type=4
                     )}
     
     def tls12_detect_handler(self, target, regenerate):
@@ -152,10 +153,11 @@ class SSLYSE:
                     error = "TLS 1.2 Weak Protocol"
                     desc = 'The remote service accepts connections encrypted using TLS 1.2.'
                     solution = "N/A"
-                    self.result = {**self.result, **set_info_vuln(
+                    self.result = {**self.result, **alert_response(
                         complexity=complexity,
                         error=error,
-                        desc=desc,
+                        description=desc,
                         solution=solution,
-                        tool="sslyze"
+                        tool="sslyze",
+                        alert_type=4
                     )}

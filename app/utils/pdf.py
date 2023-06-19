@@ -21,6 +21,8 @@ from .handlers.default_handler import DEFAULT
 default = DEFAULT()
 from .handlers.owasp_zap_hanlder import OWASP
 owasp = OWASP()
+from .handlers.common_handler import Templates
+t = Templates()
 
 
 class PDF:
@@ -109,36 +111,20 @@ class PDF:
                 if handler_result:
                     for error,value in handler_result.items():
                         complexity = value.get('complexity')
+                        html_data = t.templates(**value)
                         alert_objs = {**alert_objs, **
                             {
-                                f'{error}_{complexity}': value
+                                f'{error}_{complexity}': {**value,**{'html_data': html_data}}
                             }
-                            }
+                        }
                         if risk_level_objs.get(complexity.lower()) == 0 or risk_level_objs.get(complexity.lower()):
                             risk_level_objs[complexity.lower()] += 1
             except:
+                import traceback
+                traceback.print_exc()
                 pass
-            # try:
 
-            # except:
-                # #Existing flow(If handler_result is html string)
-                # self.result += handler_result
-                # if handler_result:
-                #     soup = BeautifulSoup(handler_result, 'html.parser')
-                #     vulners = soup.find_all('div',{'class':'vul-header'})
-                #     if vulners:
-                #         for vulner in vulners:
-                #             complexity = vulner.find('div',{'data-id':'complexity'}).text.strip()
-                #             error = vulner.find('div',{'data-id':'error'}).text.strip()
-                #             instances = vulner.find('div',{'data-id':'complexity'}).get('data-instances', 1)
-                #             alert_ref = vulner.find('div',{'data-id':'complexity'}).get('id')
-                #             index = vulner.find('div',{'data-id':'complexity'}).get('data-index',0)
-                #             tool = vulner.find('div',{'data-id':'complexity'}).get('data-tool')
-                #             alert_objs = {**alert_objs, **{f'{error}_{complexity}': {'complexity': complexity, 'instances': instances, 'alert_ref' : alert_ref, 'index' : index, 'tool':tool}}}
-                #             if risk_level_objs.get(complexity.lower()) == 0 or risk_level_objs.get(complexity.lower()) :
-                #                 risk_level_objs[complexity.lower()] += 1
-
-        alert_objs = dict(sorted(alert_objs.items(), key=lambda x: x[1].get('index')))
+        alert_objs = dict(sorted(alert_objs.items(), key=lambda x: x[1].get('alert_order')))
         self.result = "\n".join(list(map(lambda x:x.get('html_data',''),alert_objs.values())))
         # Base html
         html_data = """

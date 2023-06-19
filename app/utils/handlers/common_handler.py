@@ -40,6 +40,62 @@ def set_vul(**kwargs):
     vulnerability, including its complexity, error message, and details.
     """
     # complexity = cve_obj.get_complexity(cve_str)
+    error = kwargs.get('error')
+    tool = kwargs.get('tool')
+    alert_ref = kwargs.get('alert_ref')
+    complexity = kwargs.get('complexity')
+    alert_order = kwargs.get('alert_order')
+    
+    html_str = cve_obj.set_cve_html(**kwargs)
+
+    html_str = f'''
+    <div class="row mt-2">
+        <div class="col-12 border border-5 border-light">
+            <div class="row vul-header"">
+                <div class="col-3 border border-5 border-light {complexity}" data-id="complexity" data-instances="1" id="{alert_ref}" data-index="{alert_order}" data-tool="{tool}">
+                    {complexity}
+                </div>
+                <div class="col-9 border border-5 border-light {complexity}" data-id="error">
+                    {error}
+                </div>
+            </div>
+            {html_str}
+            <div class="row">
+                <div class="col-3 border border-5 border-light body">
+                    Tool
+                </div>
+                <div class="col-9 border border-5 border-light body">
+                    {tool}
+                </div>
+            </div>
+        </div>
+    </div>
+    '''
+    return html_str
+
+def set_vul_copy(**kwargs):
+    """
+    The function generates an HTML string containing information about a vulnerability, including its
+    complexity and error message, based on input parameters.
+    :return: a dictionary with a single key-value pair. The key is the string 'error' and the value is a
+    dictionary containing information about the vulnerability/error, including an HTML string, an index,
+    a complexity label, the number of instances, an alert reference, the tool used, and the error
+    message.
+    """
+    """
+    The function generates an HTML string containing information about a vulnerability, including its
+    complexity and error message.
+
+    This function will generate the html content of any vulnerability based on cve.
+    
+    :param cve_str: The CVE (Common Vulnerabilities and Exposures) string that identifies a specific
+    vulnerability in a software or system
+    :param error: The error parameter is a string that describes the vulnerability or error being
+    reported
+    :return: an HTML string that includes information about a CVE (Common Vulnerabilities and Exposures)
+    vulnerability, including its complexity, error message, and details.
+    """
+    # complexity = cve_obj.get_complexity(cve_str)
 
     keyword = kwargs.get('keyword')
     custom = kwargs.get('custom')
@@ -114,7 +170,6 @@ def set_info_vuln(**kwargs):
     alert_order = AlertSortOrder.sort_order.get(complexity.lower()).get('order', 0)
     complexity = AlertSortOrder.sort_order.get(complexity.lower()).get('label', 'Informational')
     html_str = f'''
-
     <div class="row mt-2">
         <div class="col-12 border border-5 border-light">
             <div class="row vul-header" id="{alert_ref}">
@@ -193,7 +248,7 @@ def set_zap_template(**kwargs):
     as HTML data, index, complexity, instances, alert reference, tool, and error.
     """
     html_str = ""
-    alerts = kwargs.get('alerts',[])
+    alerts = kwargs.get('alerts',{})
     tool = kwargs.get('tool')
 
     result = {}
@@ -207,7 +262,7 @@ def set_zap_template(**kwargs):
         <div class="row mt-2">
             <div class="col-12 border border-5 border-light">
                 <div class="row vul-header" id="{alert_ref}">
-                    <div class="col-3 border border-5 border-light {complexity}" data-id="complexity" data-instances="{value.get('instances')}" id="{alert_ref}" data-index="{alert_order}" data-tool="{tool}">
+                    <div class="col-3 border border-5 border-light {complexity}" data-id="complexity" data-instances="{value.get('instances')}" id="{alert_ref}" data-index="{self.alert_order}" data-tool="{tool}">
                         {complexity}
                     </div>
                     <div class="col-9 border border-5 border-light {complexity}" data-id="error">
@@ -306,7 +361,7 @@ def set_zap_template(**kwargs):
                         WASC Id
                     </div>
                     <div class="col-9 border border-5 border-light body">
-                        {value['wascid']}
+                        {value['wasc_id']}
                     </div>
                 </div>
                 <div class="row">
@@ -346,4 +401,309 @@ def set_zap_template(**kwargs):
     return result
 
 
+def make_alert_obj(**kwargs):
+    obj = {
+    'complexity' : AlertSortOrder.sort_order.get(kwargs.get('complexity').lower()).get('label', 'Informational'),
+    'alert_order' : AlertSortOrder.sort_order.get(kwargs.get('complexity').lower()).get('order', 0),
+    'alert_ref' : str(uuid.uuid4()),
+    'instances' : kwargs.get('instances',1),
+    'error': kwargs.get('error'),
+    'tool': kwargs.get('tool')
+    }
+    return obj
 
+
+def alert_response(**kwargs):
+    # alert type
+    # 1 = seach by cve
+    # 2 = seach by keyword
+    # 3 = manual set cve
+    # 4 = info_vulners
+    # 5 = owasp
+
+    alert_type = kwargs.get('alert_type')
+
+    result = {}
+    if alert_type == 1:
+        alert_json = cve_obj.get_cve_details_by_id_v2(kwargs.get('cve'))
+        kwargs['complexity'] = alert_json.get('complexity')
+        common_alert_data = make_alert_obj(**kwargs)
+        result = {
+            **result,
+            **{
+                kwargs.get('error') : {
+                    **common_alert_data,
+                    **{
+                        'alert_json': alert_json,
+                        'alert_template_generator': 'cve_template'
+                    }
+                }
+            }
+        }
+    elif alert_type == 2:
+        alert_json = cve_obj.get_cve_details_by_keyword_v2(kwargs.get('keyword'))
+        kwargs['complexity'] = alert_json.get('complexity')
+        common_alert_data = make_alert_obj(**kwargs)
+        result = {
+            **result,
+            **{
+                kwargs.get('error') : {
+                    **common_alert_data,
+                    **{
+                        'alert_json': alert_json,
+                        'alert_template_generator': 'cve_template'
+                    }
+                }
+            }
+        }
+    elif alert_type == 3:
+        common_alert_data = make_alert_obj(**kwargs)
+        result = {
+            **result,
+            **{
+                kwargs.get('error') : {
+                    **common_alert_data,
+                    **{
+                        'alert_json': kwargs,
+                        'alert_template_generator': 'cve_template'
+                    }
+                }
+            }
+        }
+    elif alert_type == 4:
+        common_alert_data = make_alert_obj(**kwargs)
+        result = {
+            **result,
+            **{
+                kwargs.get('error') : {
+                    **common_alert_data,
+                    **{
+                        'alert_json': kwargs,
+                        'alert_template_generator': 'info_template'
+                    }
+                }
+            }
+        }
+    elif alert_type == 5:
+        alerts = kwargs.get('alerts',[])
+        for key,value in alerts.items():
+            common_alert_data = make_alert_obj(**{**value,
+                                                  **{
+                                                      'complexity': value.get('risk'),
+                                                      'error': value.get('name'),
+                                                      'tool': kwargs.get('tool'),
+                                                      'instances': value.get('instances',1)
+                                                     }
+                                                })
+            result = {
+                **result,
+                **{
+                    value.get('name') : {
+                        **common_alert_data,
+                        **{
+                            'alert_json': value,
+                            'alert_template_generator': 'zap_template'
+                        }
+                    }
+                }
+            }
+
+    return result
+
+
+
+class Templates:
+    def templates(self, **kwargs):
+        self.alert_ref = kwargs.get('alert_ref')
+        self.alert_order = kwargs.get('alert_order')
+        self.error = kwargs.get('error')
+        self.tool = kwargs.get('tool')
+        self.complexity = kwargs.get('complexity')
+
+        template = kwargs.get('alert_template_generator')
+        if template == "cve_template":
+            return self.cve_template(**kwargs)
+        elif template == "info_template":
+            return self.info_template(**kwargs)
+        elif template == "zap_template":
+            return self.zap_template(**kwargs)
+        
+    def base_alert_html(self, html):
+        html_str = f'''
+        <div class="row mt-2">
+            <div class="col-12 border border-5 border-light">
+                <div class="row vul-header"">
+                    <div class="col-3 border border-5 border-light {self.complexity}" data-id="complexity" data-instances="1" id="{self.alert_ref}" data-index="{self.alert_order}" data-tool="{self.tool}">
+                        {self.complexity}
+                    </div>
+                    <div class="col-9 border border-5 border-light {self.complexity}" data-id="error">
+                        {self.error}
+                    </div>
+                </div>
+                {html}
+                <div class="row">
+                    <div class="col-3 border border-5 border-light body">
+                        Tool
+                    </div>
+                    <div class="col-9 border border-5 border-light body">
+                        {self.tool}
+                    </div>
+                </div>
+            </div>
+        </div>
+        '''
+        return html_str
+    
+    def cve_template(self, **kwargs):
+        html_str = cve_obj.set_cve_html(**kwargs.get('alert_json'))
+        return self.base_alert_html(html_str)
+        
+    def info_template(self, **kwargs):
+        alert_json = kwargs.get('alert_json',{})
+        html_str = f'''
+            <div class="row">
+                <div class="col-3 border border-5 border-light body">
+                    Risk Factor
+                </div>
+                <div class="col-9 border border-5 border-light body">
+                    {alert_json.get('risk_factor', 'N/A')}
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-3 border border-5 border-light body">
+                    Description
+                </div>
+                <div class="col-9 border border-5 border-light body">
+                    {alert_json.get('description')}
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-3 border border-5 border-light body">
+                    Solution
+                </div>
+                <div class="col-9 border border-5 border-light body">
+                    {alert_json.get('solution', 'N/A')}
+                </div>
+            </div>'''
+        if alert_json.get('port'):
+            html_str += f'''
+            <div class="row">
+                <div class="col-3 border border-5 border-light body">
+                    Port
+                </div>
+                <div class="col-9 border border-5 border-light body">
+                    {alert_json.get('port')}
+                </div>
+            </div>
+            '''
+        return self.base_alert_html(html_str)
+
+    def zap_template(self, **kwargs):
+        alert_json = kwargs.get('alert_json',{})
+        html_str = f'''
+            <div class="row">
+                <div class="col-3 border border-5 border-light body">
+                    Description
+                </div>
+                <div class="col-9 border border-5 border-light body">
+                    {alert_json.get('description')}
+                </div>
+            </div>'''
+        if alert_json.get('urls'):
+            html_str += f'''
+                <div class="row border border-5 border-light body py-1">
+                </div>
+            '''
+            for url_obj in alert_json.get('urls'):
+                html_str += f'''
+                    <div class="row">
+                        <div class="col-3 border border-5 border-light body pl-4">
+                            URL
+                        </div>
+                        <div class="col-9 border border-5 border-light body">
+                            {url_obj.get('url')}
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-3 border border-5 border-light body pl-5">
+                            Method
+                        </div>
+                        <div class="col-9 border border-5 border-light body">
+                            {url_obj.get('method')}
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-3 border border-5 border-light body pl-5">
+                            Parameter
+                        </div>
+                        <div class="col-9 border border-5 border-light body">
+                            {url_obj.get('parameter')}
+                        </div>
+                    </div><div class="row">
+                        <div class="col-3 border border-5 border-light body pl-5">
+                            Attack
+                        </div>
+                        <div class="col-9 border border-5 border-light body">
+                            {url_obj.get('attack')}
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-3 border border-5 border-light body pl-5">
+                            Evidence
+                        </div>
+                        <div class="col-9 border border-5 border-light body">
+                            {url_obj.get('evidence')}
+                        </div>
+                    </div>
+                '''
+        html_str +=f'''
+            <div class="row">
+                <div class="col-3 border border-5 border-light body">
+                    Instances
+                </div>
+                <div class="col-9 border border-5 border-light body">
+                    {alert_json.get('instances')}
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-3 border border-5 border-light body">
+                    Solution
+                </div>
+                <div class="col-9 border border-5 border-light body">
+                    {alert_json.get('solution')}
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-3 border border-5 border-light body">
+                    Reference
+                </div>
+                <div class="col-9 border border-5 border-light body">
+                    {alert_json.get('reference')}
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-3 border border-5 border-light body">
+                    CWE Id
+                </div>
+                <div class="col-9 border border-5 border-light body">
+                    <a href="https://cwe.mitre.org/data/definitions/{alert_json.get('cweid')}.html">{alert_json.get('cweid')}</a>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-3 border border-5 border-light body">
+                    WASC Id
+                </div>
+                <div class="col-9 border border-5 border-light body">
+                    {alert_json.get('wasc_id')}
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-3 border border-5 border-light body">
+                    Plugin Id
+                </div>
+                <div class="col-9 border border-5 border-light body">
+                    <a href="https://www.zaproxy.org/docs/alerts/{alert_json.get('plugin_id')}/">{alert_json.get('plugin_id')}</a></td>
+                </div>
+            </div>
+        '''
+        return self.base_alert_html(html_str)

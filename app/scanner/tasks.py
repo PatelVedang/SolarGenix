@@ -181,7 +181,7 @@ def OWASP_ZAP_spider_scan_v1(url):
                         }
                     ],
                     'instances': 1,
-                    'wascid': alert_obj.get('wascid'),
+                    'wsac_id': alert_obj.get('wascid'),
                     'cweid': alert_obj.get('cweid'),
                     'plugin_id': alert_obj.get('pluginId'),
                     'reference': "<br>".join(alert_obj.get('reference').split("\n")),
@@ -245,7 +245,7 @@ def OWASP_ZAP_spider_scan_v2(url):
                     }
                 ],
                 'instances': 1,
-                'wascid': alert_obj.get('wascid') if alert_obj.get('wascid')=="-1" else "",
+                'wsac_id': alert_obj.get('wascid') if alert_obj.get('wascid')=="-1" else "",
                 'cweid': alert_obj.get('cweid') if alert_obj.get('cweid')=="-1" else "",
                 'plugin_id': alert_obj.get('pluginId'),
                 'reference': "<br>".join(alert_obj.get('reference').split("\n")),
@@ -355,7 +355,7 @@ def OWASP_ZAP_spider_scan_v3(url):
                                 }
                             ],
                             'instances': 1,
-                            'wascid': alert_obj.get('wascid') if alert_obj.get('wascid')!="-1" else "",
+                            'wasc_id': alert_obj.get('wascid') if alert_obj.get('wascid')!="-1" else "",
                             'cweid': alert_obj.get('cweid') if alert_obj.get('cweid')!="-1" else "",
                             'plugin_id': alert_obj.get('pluginId'),
                             'reference': "<br>".join(alert_obj.get('reference').split("\n")),
@@ -422,7 +422,7 @@ def OWASP_ZAP_active_scan_v1(url):
                     }
                 ],
                 'instances': 1,
-                'wascid': alert_obj.get('wascid') if alert_obj.get('wascid')!="-1" else "",
+                'wsac_id': alert_obj.get('wascid') if alert_obj.get('wascid')!="-1" else "",
                 'cweid': alert_obj.get('cweid') if alert_obj.get('cweid')!="-1" else "",
                 'plugin_id': alert_obj.get('pluginId'),
                 'reference': "<br>".join(alert_obj.get('reference').split("\n")),
@@ -529,7 +529,7 @@ def set_zap_html_report(url, risk_levels, alerts):
 				</tr>
 				<tr>
 					<td width="20%">WASC Id</td>
-					<td width="80%">{value['wascid']}</td>
+					<td width="80%">{value['wsac_id']}</td>
 				</tr>
 				<tr>
 					<td width="20%">Plugin Id</td>

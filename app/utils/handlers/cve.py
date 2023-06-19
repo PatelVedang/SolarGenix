@@ -135,6 +135,19 @@ class CVE:
                                 'cwe_ids': weaknesses
                             }
                         )
+
+                    if self.cve_details.get('cvvs3') and self.cve_details.get('cvvs3').get('error_type') and self.cve_details.get('cvvs3').get('error_type') != 'N/A':
+                        complexity = self.cve_details['cvvs3'].get('error_type')
+                    elif self.cve_details.get('cvvs2') and self.cve_details.get('cvvs2').get('error_type') and self.cve_details.get('cvvs2').get('error_type') != 'N/A':
+                        complexity = self.cve_details['cvvs2'].get('error_type')
+                    else:
+                        complexity = "info"
+
+                    self.update_cve(
+                        {
+                            'complexity': complexity
+                        }
+                    )
         
     def set_cve_detail_v1(self, response):
         """
@@ -500,14 +513,9 @@ class CVE:
                     </div>
                 </div>
                 '''
-        if cve_details.get('cvvs3') and cve_details.get('cvvs3').get('error_type') and cve_details.get('cvvs3').get('error_type') != 'N/A':
-            complexity = cve_details['cvvs3'].get('error_type')
-        elif cve_details.get('cvvs2') and cve_details.get('cvvs2').get('error_type') and cve_details.get('cvvs2').get('error_type') != 'N/A':
-            complexity = cve_details['cvvs2'].get('error_type')
-        else:
-            complexity = "info"
-        
-        return result, complexity
+
+        # return result, cve_details.get('complexity')
+        return result
             
         
 

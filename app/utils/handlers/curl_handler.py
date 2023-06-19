@@ -59,7 +59,7 @@ class CURL:
         """
         if not re.search(self.x_content_type_options_regex, target.raw_result, re.IGNORECASE):
             error = "X-Content-Type-Options Header Missing"
-            self.result = {**self.result, **set_vul(cve="CVE-2019-19089", error=error, tool="curl")}
+            self.result = {**self.result, **alert_response(cve="CVE-2019-19089", error=error, tool="curl", alert_type=1)}
     
     def unsupported_web_server_handler(self, target, regenerate):
         """
@@ -85,7 +85,7 @@ class CURL:
                     '8.0': datetime.strptime('10/10/2023',"%d/%m/%Y"),
                     '8.1': datetime.strptime('10/01/2023',"%d/%m/%Y"),
                     '8.5': datetime.strptime('10/10/2023',"%d/%m/%Y"),
-                    '10.0': datetime.strptime('12/01/2027',"%d/%m/%Y")
+                    '10.0': datetime.strptime('12/01/2020',"%d/%m/%Y")
                 },
                 'Apache':{
                     '1.3': datetime.strptime('03/02/2010',"%d/%m/%Y"),
@@ -116,9 +116,10 @@ class CURL:
                     ],
                     'error': error,
                     'tool': 'curl',
-                    'custom': True
+                    'complexity': 'CRITICAL',
+                    'alert_type':3
                 }
-                self.result = {**self.result, **set_vul(**data)}
+                self.result = {**self.result, **alert_response(**data)}
 
     def server_in_response_header_handler(self, target, regenerate):
         """
@@ -133,7 +134,7 @@ class CURL:
         """
         if re.search(self.server_in_header_regex, target.raw_result, re.IGNORECASE):
             error = '''Server Leaks Version Information via "Server" HTTP Response Header Field'''
-            self.result = {**self.result, **set_vul(cve="CVE-2018-7844", error=error, tool="curl")}
+            self.result = {**self.result, **alert_response(cve="CVE-2018-7844", error=error, tool="curl", alert_type=1)}
 
     def x_powered_by_in_response_header_handler(self, target, regenerate):
         """
@@ -147,5 +148,5 @@ class CURL:
         """
         if re.search(self.x_powered_by_in_header_regex, target.raw_result, re.IGNORECASE):
             error = '''Server Leaks Information via "X-Powered-By" HTTP Response Header Field'''
-            self.result = {**self.result, **set_vul(cve="CVE-2018-7844", error=error, tool="curl")}
+            self.result = {**self.result, **alert_response(cve="CVE-2018-7844", error=error, tool="curl", alert_type=1)}
 
