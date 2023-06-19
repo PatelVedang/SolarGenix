@@ -15,6 +15,7 @@ from reportlab.graphics.charts.barcharts import VerticalBarChart3D
 from reportlab.pdfbase import pdfmetrics
 import json
 from datetime import datetime
+from django.conf import settings
 
 class MyDocTemplate(BaseDocTemplate):
     def __init__(self, filename, **kw):
@@ -47,7 +48,8 @@ class MyDocTemplate(BaseDocTemplate):
             canvas.setFillColor(colors.blue)  # Set the color to blue
             canvas.drawString(1 * cm, 11 * inch, "ISAIX")  # Adjust the y-coordinate to position the header
             canvas.setFont('Helvetica', 9)
-            canvas.drawString(1 * cm, 0.5 * inch, f"Page {doc.page}")  # Adjust the y-coordinate to position the footer
+            canvas.drawImage(f'{settings.BASE_DIR}/static/isaix-logo.png', 1*cm, 0.8*cm, width=3.2*cm, height=1*cm)
+            canvas.drawString(18.5 * cm, 0.5 * inch, f"Page {doc.page}")  # Adjust the y-coordinate to position the footer
             canvas.linkURL("https://www.isaix.com", (1*inch, 2*cm, 2*inch, 2*cm), color=colors.black, thickness=0.5, relative=1)
             canvas.setStrokeColor(colors.grey)
             canvas.line(1*cm, 2.5*cm, 1*cm+self.width+3*cm, 2.5*cm)  # Draw a line at the top of the footer
