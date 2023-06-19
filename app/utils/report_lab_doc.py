@@ -28,7 +28,7 @@ class MyDocTemplate(BaseDocTemplate):
         right_margin = 1*cm
         top_margin = 2.5*cm
         bottom_margin = 2.5*cm
-
+        
         x1 = left_margin
         y1 = bottom_margin
         width = page_width - (left_margin + right_margin)
