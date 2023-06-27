@@ -14,7 +14,7 @@ class CURL:
     x_content_type_options_regex = "X-Content-Type-Options: nosniff"
     windows_regex = "Server: (?P<server>([\w\s-]*))(/(?P<version>\d+\.\d+(\.\d+)?))?"
     x_powered_by_in_header_regex = "X-Powered-By"
-    server_in_header_regex = "Server:"
+    server_in_header_regex = ".*Server:.*"
 
     result = {}
     
@@ -59,7 +59,7 @@ class CURL:
         """
         if not re.search(self.x_content_type_options_regex, target.raw_result, re.IGNORECASE):
             error = "X-Content-Type-Options Header Missing"
-            self.result = {**self.result, **alert_response(cve="CVE-2019-19089", error=error, tool="curl", alert_type=1)}
+            self.result = {**self.result, **alert_response(cve="CVE-2019-19089", error=error, tool="curl", alert_type=1, evidence=self.x_content_type_options_regex)}
     
     def unsupported_web_server_handler(self, target, regenerate):
         """
@@ -71,10 +71,10 @@ class CURL:
         :param regenerate: A boolean value indicating whether the target should be regenerated or not
         """
         # https://learn.microsoft.com/en-us/lifecycle/products/internet-information-services-iis reference of IIS 7.5
-        if re.search(self.windows_regex, target.raw_result, re.IGNORECASE):
-            match = re.search(self.windows_regex, target.raw_result, re.IGNORECASE)
-            server = match.groupdict().get('server').strip(" ").strip("\n") if match.groupdict().get('server') else ""
-            version = match.groupdict().get('version').strip(" ").strip("\n") if match.groupdict().get('version') else ""
+        search_result = re.search(self.windows_regex, target.raw_result, re.IGNORECASE)
+        if search_result:
+            server = search_result.groupdict().get('server').strip(" ").strip("\n") if search_result.groupdict().get('server') else ""
+            version = search_result.groupdict().get('version').strip(" ").strip("\n") if search_result.groupdict().get('version') else ""
 
 
             server_objs = {
@@ -108,7 +108,7 @@ class CURL:
                     'base_score': '7.5',
                     'error_type': 'MEDIUM'
                     },
-                    'cwe_id': 'N/A',
+                    'cwe_ids': 'N/A',
                     'cwe_name': 'N/A',
                     'solution': 'Remove the web server if it is no longer needed. Otherwise, upgrade to a supported version if possible or switch to another server.',
                     'sources': [
@@ -117,7 +117,8 @@ class CURL:
                     'error': error,
                     'tool': 'curl',
                     'complexity': 'CRITICAL',
-                    'alert_type':3
+                    'alert_type':3,
+                    'evidence': search_result.group()
                 }
                 self.result = {**self.result, **alert_response(**data)}
 
@@ -132,9 +133,10 @@ class CURL:
         possible that it is defined elsewhere in the code or it is a placeholder for future
         implementation
         """
-        if re.search(self.server_in_header_regex, target.raw_result, re.IGNORECASE):
+        search_result = re.search(self.server_in_header_regex, target.raw_result, re.IGNORECASE)
+        if search_result:
             error = '''Server Leaks Version Information via "Server" HTTP Response Header Field'''
-            self.result = {**self.result, **alert_response(cve="CVE-2018-7844", error=error, tool="curl", alert_type=1)}
+            self.result = {**self.result, **alert_response(cve="CVE-2018-7844", error=error, tool="curl", alert_type=1, evidence=search_result.group())}
 
     def x_powered_by_in_response_header_handler(self, target, regenerate):
         """
@@ -146,7 +148,8 @@ class CURL:
         :param regenerate: The "regenerate" parameter is not used in the code snippet provided. It is
         possible that it is used in other parts of the code that are not shown
         """
-        if re.search(self.x_powered_by_in_header_regex, target.raw_result, re.IGNORECASE):
+        search_result = re.search(self.x_powered_by_in_header_regex, target.raw_result, re.IGNORECASE)
+        if search_result:
             error = '''Server Leaks Information via "X-Powered-By" HTTP Response Header Field'''
-            self.result = {**self.result, **alert_response(cve="CVE-2018-7844", error=error, tool="curl", alert_type=1)}
+            self.result = {**self.result, **alert_response(cve="CVE-2018-7844", error=error, tool="curl", alert_type=1, evidence=search_result.group())}
 

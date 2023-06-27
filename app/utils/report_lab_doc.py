@@ -16,6 +16,7 @@ from reportlab.pdfbase import pdfmetrics
 import json
 from datetime import datetime
 from django.conf import settings
+from xml.sax.saxutils import escape
 
 class MyDocTemplate(BaseDocTemplate):
     def __init__(self, filename, **kw):
@@ -104,6 +105,25 @@ content = PS(name = 'Content',
     spaceAfter=15,
     leading = 14,
     alignment=TA_JUSTIFY)
+
+content_layout = PS(
+    name = 'ContentLayout',
+    font='Arial',
+    fontSize=12,
+    alignment=TA_JUSTIFY,
+    topMargin=78,
+    bottomMargin=90,
+    borderColor = colors.Color(red=(238.0/255),green=(238.0/255),blue=(238.0/255)),
+    backColor = colors.Color(red=(238.0/255),green=(238.0/255),blue=(238.0/255)),
+    borderRadius=1,
+    borderWidth =1,
+    textColor = colors.black,
+    borderPadding = 10,
+    leftIndent=0.15 * inch,
+    spaceBefore=6,
+    # spaceAfter=25,
+    leading = 14
+)
 
 h1_header = PS(name = "HeaderTitle",
     font='Arial',
@@ -531,7 +551,10 @@ def generate_doc(cname, date, vulnerabilities, risk_levels, output_path, hosts=[
                 Paragraph('<b>Solution: </b> {}'.format(alert['alert_json']['solution'] if 'solution' in alert['alert_json'] else 'N/A'), content),
                 Paragraph('<b>CVSS 3: </b> {}'.format(cvvs3), content),
                 Paragraph('<b>CVSS 2: </b> {}'.format(cvvs2), content),
-                Paragraph('<b>Tool: </b> {}'.format(alert['tool']), content)
+                Paragraph('<b>Tool: </b> {}'.format(alert['tool']), content),
+                Paragraph('<b>CWE: </b> {}'.format(alert.get('cwe_ids','N/A')), content),
+                Paragraph('<b>Evidence: </b>', content),
+                Paragraph(escape(alert.get('evidence','N/A')).replace("&amp;","&").replace("&lt;br/&gt;","<br/>"), content_layout)
                 ])
 
             story.append(table)

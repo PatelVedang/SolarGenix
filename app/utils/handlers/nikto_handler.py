@@ -13,6 +13,8 @@ default = DEFAULT()
 from .common_handler import *
 from tldextract import extract
 import json
+import asyncio
+import aiohttp
 
 # The NIKTO class contains a method for handling the absence of an anti-clickjacking X-Frame-Options
 # header in a target's raw result.
@@ -22,12 +24,12 @@ class NIKTO:
     cookie_regex = "Cookie\s+(?P<cname>(\w)+)\s+created without the httponly flag"
     update_method_regex = "PUT method allowed"
     delete_method_regex = "DELETE method enabled"
-    XSS_regex = "vulnerable\s+to\s+Cross+\s+Site+\s+Scripting\s+\(XSS\)"
+    XSS_regex = ".*vulnerable\s+to\s+Cross+\s+Site+\s+Scripting\s+\(XSS\).*"
     subdomain_regex = "Subdomain\s+(?P<subdomain>\w+)\s+found"
     cgi_regex = "\+\s+CGI directories"
-    outdated_regex = "outdated"
-    shellshock_regex = "(\s*|\')shellshock(\s*|\')\s+vulnerability.+(?P<cve>(cve|CVE)-[0-9]{4}-[0-9]{4,})[^\\n]+\\n"
-    httpoptions_regex = "Allowed HTTP Methods"
+    outdated_regex = ".*outdated.*"
+    shellshock_regex = ".*(\s*|\')shellshock(\s*|\')\s+vulnerability.+(?P<cve>(cve|CVE)-[0-9]{4}-[0-9]{4,})[^\\n]+\\n"
+    httpoptions_regex = ".*Allowed HTTP Methods.*"
     sitefiles_regex= "\s+/(?P<file>[/\w\.]*):[\s\w]+file found(\\n|\\r\\n)"
 
 
@@ -97,7 +99,7 @@ class NIKTO:
         
         if re.search(self.anti_clickjacking_regex, target.raw_result, re.IGNORECASE):
             error = "Missing Anti-clickjacking Header"
-            self.result = {**self.result, **alert_response(cve="CVE-2018-17192", error=error, tool="nikto", alert_type=1)}
+            self.result = {**self.result, **alert_response(cve="CVE-2018-17192", error=error, tool="nikto", alert_type=1, evidence=self.anti_clickjacking_regex)}
     
     def jquery_handler(self, target, regenerate):
         """
@@ -114,7 +116,6 @@ class NIKTO:
             response = requests.get(url)
             soup = BeautifulSoup(response.text, 'html.parser')
             jquery_script = soup.find('script', src=lambda src: src and 'jquery' in src)
-
             if jquery_script:
                 jquery_url = jquery_script['src']
                 if not('http://' in jquery_url or 'https://' in jquery_url):
@@ -125,7 +126,7 @@ class NIKTO:
                     jquery_version = match.groupdict().get('version')
                     if StrictVersion('1.2')< StrictVersion(jquery_version) < StrictVersion('3.5.0'):
                         error = "JQuery 1.2 < 3.5.0 Multiple XSS"
-                        self.result = {**self.result, **alert_response(cve="CVE-2020-11022", error=error, tool="nikto", alert_type=1)}
+                        self.result = {**self.result, **alert_response(cve="CVE-2020-11022", error=error, tool="nikto", alert_type=1, evidence=jquery_script.get('src', 'N/A'))}
         except Exception as e:
             pass
 
@@ -157,7 +158,8 @@ class NIKTO:
                                     description=desc,
                                     solution=solution,
                                     tool="nikto",
-                                    alert_type=4
+                                    alert_type=4,
+                                    evidence=jquery_script.get('src', 'N/A')
                                 )
                 }
 
@@ -181,7 +183,7 @@ class NIKTO:
                 asp_version = search_result.groupdict().get('version')
                 if StrictVersion(asp_version) < StrictVersion('4.0'):
                     error = "X-AspNet-Version Response Header"
-                    self.result = {**self.result, **alert_response(cve="CVE-2010-3332", error=error, tool="nikto", alert_type=1)}
+                    self.result = {**self.result, **alert_response(cve="CVE-2010-3332", error=error, tool="nikto", alert_type=1, evidence=search_result.group())}
 
     def cookie_hanlder(self, target, regenerate):
         """
@@ -194,9 +196,10 @@ class NIKTO:
         :param regenerate: The "regenerate" parameter is not used in the given code snippet. It is not
         defined or referenced anywhere in the function
         """
-        if re.search(self.cookie_regex, target.raw_result, re.IGNORECASE):
+        search_result = re.search(self.cookie_regex, target.raw_result, re.IGNORECASE)
+        if search_result:
             error = "Sensitive Cookie Without 'HttpOnly' Flag"
-            self.result = {**self.result, **alert_response(cve="CVE-2021-27764", error=error, tool="nikto", alert_type=1)}
+            self.result = {**self.result, **alert_response(cve="CVE-2021-27764", error=error, tool="nikto", alert_type=1, evidence=search_result.group())}
 
     def put_del_handler(self, target, regenerate):
         """
@@ -211,7 +214,7 @@ class NIKTO:
         """
         if re.search(self.update_method_regex, target.raw_result, re.IGNORECASE) and re.search(self.update_method_regex, target.raw_result, re.IGNORECASE):
             error = "Insecurely HTTP PUT and DELETE methods are allowed in web server"
-            self.result = {**self.result, **alert_response(cve="CVE-2021-35243", error=error, tool="nikto", alert_type=1)}
+            self.result = {**self.result, **alert_response(cve="CVE-2021-35243", error=error, tool="nikto", alert_type=1, evidence=f"{self.update_method_regex}\n{self.delete_method_regex}")}
 
     def XSS_handler(self, target, regenerate):
         """
@@ -224,9 +227,10 @@ class NIKTO:
         :param regenerate: The "regenerate" parameter is not used in the given code snippet. It is not
         defined or referenced anywhere in the function
         """
-        if re.search(self.XSS_regex, target.raw_result, re.IGNORECASE):
+        search_result = re.search(self.XSS_regex, target.raw_result, re.IGNORECASE)
+        if search_result:
             error = "A cross-site scripting (XSS) in JavaScript or HTML"
-            self.result = {**self.result, **alert_response(cve="CVE-2022-39195", error=error, tool="nikto", alert_type=1)}
+            self.result = {**self.result, **alert_response(cve="CVE-2022-39195", error=error, tool="nikto", alert_type=1, evidence=search_result.group())}
 
     def subdomain_handler(self, target, regenerate):
         """
@@ -244,7 +248,7 @@ class NIKTO:
             subdomains = [f"{subdomain.groupdict().get('subdomain')}.{root_domain}" for subdomain in re.finditer(self.subdomain_regex, target.raw_result)]
             error = "Possible subdomain leak"
             data = cve.get_cve_details_by_id_v2("CVE-2018-7844")
-            self.result = {**self.result, **alert_response(**{**data, **{'location':subdomains, 'error': error, 'tool': 'nikto', 'alert_type':3}})}
+            self.result = {**self.result, **alert_response(**{**data, **{'location':subdomains, 'error': error, 'tool': 'nikto', 'alert_type':3, 'evidence':"\n".join(subdomains)}})}
 
     def cgi_dir_handler(self, target, regenerate):
         """
@@ -258,7 +262,7 @@ class NIKTO:
         """
         if re.search(self.cgi_regex, target.raw_result, re.IGNORECASE):
             error = "HTTP Methods Allowed (per directory)"
-            self.result = {**self.result, **alert_response(cve="CVE-2022-27615", error=error, tool="nikto", alert_type=1)}
+            self.result = {**self.result, **alert_response(cve="CVE-2022-27615", error=error, tool="nikto", alert_type=1, evidence="N/A")}
     
     def resource_outdated_handler(self, target, regenerate):
         """
@@ -272,8 +276,9 @@ class NIKTO:
         defined or referenced anywhere in the function
         """
         if re.search(self.outdated_regex, target.raw_result, re.IGNORECASE):
+            evidence = ",".join(list(map(lambda i: i.group().strip("\n"), re.finditer(self.outdated_regex,target.raw_result, re.IGNORECASE))))
             error = "Outdated resources found"
-            self.result = {**self.result, **alert_response(cve="CVE-2022-27615", error=error, tool="nikto", alert_type=1)}
+            self.result = {**self.result, **alert_response(cve="CVE-2022-27615", error=error, tool="nikto", alert_type=1, evidence=evidence)}
 
     def shellshock_handler(self, target, regenerate):
         """
@@ -288,9 +293,10 @@ class NIKTO:
         """
         if re.search(self.shellshock_regex, target.raw_result, re.IGNORECASE):
             if re.search(self.shellshock_regex, target.raw_result, re.IGNORECASE).groupdict().get('cve'):
+                evidence = "\n".join(list(map(lambda i: i.group().strip("\n"), re.finditer(self.shellshock_regex,target.raw_result, re.IGNORECASE))))
                 cve = re.search(self.shellshock_regex, target.raw_result, re.IGNORECASE).groupdict().get('cve')
                 error = "shellshock present in server"
-                self.result = {**self.result, **alert_response(cve=cve, error=error, tool="nikto", alert_type=1)}
+                self.result = {**self.result, **alert_response(cve=cve, error=error, tool="nikto", alert_type=1, evidence=evidence)}
 
     def httpoptions_handler(self, target, regenerate):
         """
@@ -302,9 +308,10 @@ class NIKTO:
         :param regenerate: The "regenerate" parameter is not used in the code snippet provided. It is
         not defined or referenced anywhere in the function
         """
-        if re.search(self.httpoptions_regex, target.raw_result, re.IGNORECASE):
+        search_result = re.search(self.httpoptions_regex, target.raw_result, re.IGNORECASE)
+        if search_result:
             error = "Insecure HTTP methods in Apache"
-            self.result = {**self.result, **alert_response(cve="CVE-2017-7685", error=error, tool="nikto", alert_type=1)}
+            self.result = {**self.result, **alert_response(cve="CVE-2017-7685", error=error, tool="nikto", alert_type=1, evidence=search_result.group())}
 
     def sitefiles_handler(self, target, regenerate):
         """
@@ -335,10 +342,25 @@ class NIKTO:
                 ],
                 'error': error,
                 'tool': 'nikto',
-                'alert_type':3
+                'alert_type':3,
+                'evidence': "\n".join(files)
             }
             self.result = {**self.result, **alert_response(**data)}
 
+    async def scrape_page(self, session, obj):
+        error = obj.get('Description').replace("/:","")
+        evidence = obj.get('Test Links')
+        url = f'https://cve.mitre.org/cgi-bin/cvekey.cgi?keyword={error.replace(" ","+")}'
+        async with session.get(url) as response:
+            soup = BeautifulSoup(await response.text(), "html.parser")
+            vuln_table = soup.find("div", {'id': 'TableWithRules'})
+            if vuln_table:
+                rows = vuln_table.find_all('tr')
+                if rows and len(rows):
+                    cols = rows[1].find_all('td')
+                    if cols and len(cols):
+                        cve = cols[0].find(string=True)
+                        self.result = {**self.result, **alert_response(cve=cve, error=error, tool="nikto", alert_type=1, evidence=evidence)}
     
     def nikto_built_in_report_handler(self, target, regenerate):
         soup = BeautifulSoup(target.raw_result, "html.parser")
@@ -353,46 +375,42 @@ class NIKTO:
                     if len(columns) == 2:
                         if columns[0].text.strip() == "Description":
                             table_obj= {**table_obj, **{columns[0].find(string=True):columns[1].text.strip()}}
+                        elif columns[0].text.strip() == "Test Links":
+                            table_obj= {**table_obj, **{columns[0].find(string=True):columns[1].text.strip().replace(" ","\n")}}
             result= {**result, **{index:table_obj}}
-        if result:
-            for key, val in result.items():
-                # ####################
-                #   content start which update in future
-                # ####################
-                if val.get('Description'):
-                # if list(result.keys()).index(key) in [0,1,2] or True:
-                    error = val.get('Description').replace("/:","")
-                        # data = {
-                        #     'cve_id': 'N/A',
-                        #     'description': val.get('Description'),
-                        #     'cvvs3': {
-                        #     'base_score': '7',
-                        #     'error_type': 'MEDIUM'
-                        #     },
-                        #     'cwe_ids': [''],
-                        #     'cwe_name': 'N/A',
-                        #     'solution': val.get('Description'),
-                        #     'sources': [
-                        #     'N/A'
-                        #     ],
-                            # 'error': error,
-                            # 'tool': 'nikto',
-                            # 'alert_type': 3
-                        # }
-                        # self.result = {**self.result, **alert_response(**data)}
-                        
-                    response = requests.get(f'https://cve.mitre.org/cgi-bin/cvekey.cgi?keyword={error.replace(" ","+")}')
-                    soup = BeautifulSoup(response.text, "html.parser")
-                    vuln_table = soup.find("div",{'id':'TableWithRules'})
-                    if vuln_table:
-                        rows = vuln_table.find_all('tr')
-                        if rows and len(rows):
-                            cols = rows[1].find_all('td')
-                            if cols and len(cols):
-                                cve = cols[0].find(string=True)
-                                self.result = {**self.result, **alert_response(cve=cve, error=error, tool="nikto", alert_type=1)}
-                        # self.result = {**self.result, **alert_response(keyword=error, erorr=error)}
+        
+        async def main():
+            async with aiohttp.ClientSession() as session:
+                jobs = []
+                if result:
+                    for key, val in result.items():
+                        if val.get('Description'):
+                            error = val.get('Description').replace("/:","")
+                            jobs.append(
+                                self.scrape_page(
+                                    session, val)
+                            )
 
-                # ####################
-                #  content end which update in future
-                # ####################
+                await asyncio.gather(*jobs)
+        
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        loop.run_until_complete(main())
+
+        # if result:
+        #     for key, val in result.items():
+        #         if val.get('Description'):
+        #             error = val.get('Description').replace("/:","")
+        #             evidence = val.get('Test Links')
+        #             response = requests.get(f'https://cve.mitre.org/cgi-bin/cvekey.cgi?keyword={error.replace(" ","+")}')
+        #             soup = BeautifulSoup(response.text, "html.parser")
+        #             vuln_table = soup.find("div",{'id':'TableWithRules'})
+        #             if vuln_table:
+        #                 rows = vuln_table.find_all('tr')
+        #                 if rows and len(rows):
+        #                     cols = rows[1].find_all('td')
+        #                     if cols and len(cols):
+        #                         cve = cols[0].find(string=True)
+        #                         self.result = {**self.result, **alert_response(cve=cve, error=error, tool="nikto", alert_type=1, evidence=evidence)}
+
+        

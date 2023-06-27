@@ -403,12 +403,14 @@ def set_zap_template(**kwargs):
 
 def make_alert_obj(**kwargs):
     obj = {
-    'complexity' : AlertSortOrder.sort_order.get(kwargs.get('complexity').lower()).get('label', 'Informational'),
-    'alert_order' : AlertSortOrder.sort_order.get(kwargs.get('complexity').lower()).get('order', 0),
+    'complexity' : AlertSortOrder.sort_order.get(kwargs.get('complexity', '').lower()).get('label', 'Informational'),
+    'alert_order' : AlertSortOrder.sort_order.get(kwargs.get('complexity', '').lower()).get('order', 0),
     'alert_ref' : str(uuid.uuid4()),
     'instances' : kwargs.get('instances',1),
     'error': kwargs.get('error'),
-    'tool': kwargs.get('tool')
+    'tool': kwargs.get('tool'),
+    'evidence': kwargs.get('evidence','N/A').strip("\n").strip("-").strip().replace("\n","<br/>").replace(" ","&nbsp;"),
+    'cwe_ids':  ",".join(kwargs.get('cwe_ids')).strip("\n").strip().replace("\n","<br/>").replace(" ","&nbsp;") if isinstance(kwargs.get('cwe_ids'), list) else 'N/A'
     }
     return obj
 
@@ -427,6 +429,7 @@ def alert_response(**kwargs):
     if alert_type == 1:
         alert_json = cve_obj.get_cve_details_by_id_v2(kwargs.get('cve'))
         kwargs['complexity'] = alert_json.get('complexity')
+        kwargs['cwe_ids'] = alert_json.get('cwe_ids',[])
         common_alert_data = make_alert_obj(**kwargs)
         result = {
             **result,
@@ -443,6 +446,7 @@ def alert_response(**kwargs):
     elif alert_type == 2:
         alert_json = cve_obj.get_cve_details_by_keyword_v2(kwargs.get('keyword'))
         kwargs['complexity'] = alert_json.get('complexity')
+        kwargs['cwe_ids'] = alert_json.get('cwe_ids',[])
         common_alert_data = make_alert_obj(**kwargs)
         result = {
             **result,
@@ -487,6 +491,11 @@ def alert_response(**kwargs):
     elif alert_type == 5:
         alerts = kwargs.get('alerts',[])
         for key,value in alerts.items():
+            evidence = list(set(list(map(lambda x: x['evidence'],value.get('urls',[])))))
+            if "\n".join(evidence):
+                value['evidence'] = "\n".join(evidence)
+            if value.get('cweid'):
+                value['cwe_ids'] = [f"CWE-{value['cweid']}"]
             common_alert_data = make_alert_obj(**{**value,
                                                   **{
                                                       'complexity': value.get('risk'),
@@ -609,6 +618,7 @@ class Templates:
                     {alert_json.get('description')}
                 </div>
             </div>'''
+
         if alert_json.get('urls'):
             html_str += f'''
                 <div class="row border border-5 border-light body py-1">

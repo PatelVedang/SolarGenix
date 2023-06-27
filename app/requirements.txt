@@ -53,3 +53,5 @@ tldextract==3.4.1
 python-owasp-zap-v2.4==0.0.21
 pandas==2.0.2
 reportlab==4.0.4
+asyncio===3.4.3
+aiohttp===3.8.4

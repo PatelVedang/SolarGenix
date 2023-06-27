@@ -83,6 +83,7 @@ class NMAP:
                 complexity = "FALSE-POSITIVE"
                 desc = "A firewall, filter, or other network obstacle is blocking the port so that Cyber port scanner cannot tell whether it is open or closed."
                 solution = "N/A"
+            evidence = f"{self.open_ports_obj[port]['port_with_protocol']} {self.open_ports_obj[port]['status']} {self.open_ports_obj[port]['service']}"
             self.result = {**self.result, **alert_response(
                 complexity=complexity,
                 error=error,
@@ -90,7 +91,8 @@ class NMAP:
                 solution=solution,
                 port=port_number,
                 tool="nmap",
-                alert_type=4
+                alert_type=4,
+                evidence=evidence
             )}
         return self.result
 

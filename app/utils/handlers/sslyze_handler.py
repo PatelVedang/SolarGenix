@@ -82,7 +82,8 @@ class SSLYSE:
                 cert_expire_on = datetime.strptime(cert.groupdict().get('cert_expire_on'), '%Y-%m-%d')
                 if cert_expire_on < datetime.utcnow():
                     error = "Expired SSL certificate"
-                    self.result = {**self.result, **alert_response(cve="CVE-2015-3886", error=error, tool="sslyze", alert_type=1)}
+                    evidence = self.services_objects.get('Certificates Information:', '')
+                    self.result = {**self.result, **alert_response(cve="CVE-2015-3886", error=error, tool="sslyze", alert_type=1, evidence=evidence)}
     
     def tls1_detect_handler(self, target, regenerate):
         """
@@ -99,7 +100,8 @@ class SSLYSE:
             if search_result:
                 if search_result.groupdict().get('suites') and int(search_result.groupdict().get('suites')) >= 1:
                     error = "TLS 1.0 Weak Protocol"
-                    self.result = {**self.result, **alert_response(cve="CVE-2022-34757", error=error, tool="sslyze", alert_type=1)}
+                    evidence = self.services_objects.get('TLS 1.0 Cipher Suites:', '')
+                    self.result = {**self.result, **alert_response(cve="CVE-2022-34757", error=error, tool="sslyze", alert_type=1, evidence=evidence)}
     
     def tls11_detect_handler(self, target, regenerate):
         """
@@ -126,13 +128,15 @@ class SSLYSE:
                     As of March 31, 2020, Endpoints that are not enabled for TLS 1.2 and higher will no longer function properly with major web browsers and major vendors.
                     '''
                     solution = "Enable support for TLS 1.2 and/or 1.3, and disable support for TLS 1.1."
+                    evidence = self.services_objects.get('TLS 1.1 Cipher Suites:', '')
                     self.result = {**self.result, **alert_response(
                         complexity=complexity,
                         error=error,
                         description=desc,
                         solution=solution,
                         tool="sslyze",
-                        alert_type=4
+                        alert_type=4,
+                        evidence=evidence
                     )}
     
     def tls12_detect_handler(self, target, regenerate):
@@ -149,6 +153,7 @@ class SSLYSE:
             search_result = re.search(self.suites_regex, self.services_objects['TLS 1.2 Cipher Suites:'])
             if search_result:
                 if search_result.groupdict().get('suites') and int(search_result.groupdict().get('suites')) >= 1:
+                    evidence = self.services_objects.get('TLS 1.2 Cipher Suites:', '')
                     complexity = "INFO"
                     error = "TLS 1.2 Weak Protocol"
                     desc = 'The remote service accepts connections encrypted using TLS 1.2.'
@@ -159,5 +164,6 @@ class SSLYSE:
                         description=desc,
                         solution=solution,
                         tool="sslyze",
-                        alert_type=4
+                        alert_type=4,
+                        evidence=evidence
                     )}
