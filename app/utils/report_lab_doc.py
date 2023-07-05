@@ -547,7 +547,7 @@ def generate_doc(cname, date, vulnerabilities, risk_levels, output_path, hosts=[
                 Paragraph('<b><a name="{}"/>{}.{} {}</b>'.format(alert['alert_ref'],section_number, i+1, alert['error']), h2 if 'error' in alert else 'N/A'),
                 table, 
                 Spacer(1, 5),  
-                Paragraph('<b>Description:</b> {}'.format(alert['alert_json']['description']), content), 
+                Paragraph('<b>Description:</b> {}'.format(escape(alert['alert_json']['description'])), content), 
                 Paragraph('<b>Solution: </b> {}'.format(alert['alert_json']['solution'] if 'solution' in alert['alert_json'] else 'N/A'), content),
                 Paragraph('<b>CVSS 3: </b> {}'.format(cvvs3), content),
                 Paragraph('<b>CVSS 2: </b> {}'.format(cvvs2), content),

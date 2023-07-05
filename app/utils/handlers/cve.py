@@ -5,6 +5,8 @@ logger = logging.getLogger('django')
 import re
 import json
 from django.conf import settings
+import aiohttp
+import asyncio
 
 class CVE:
     api_key = settings.NVD_API_KEY
@@ -513,9 +515,40 @@ class CVE:
                     </div>
                 </div>
                 '''
-
-        # return result, cve_details.get('complexity')
         return result
+
+    
+    async def mitre_keyword_search(self, keyword):
+        """
+        The function `mitre_keyword_search` performs a keyword search on the MITRE CVE database and
+        returns the first CVE (Common Vulnerabilities and Exposures) ID found.
+        
+        :param keyword: The `keyword` parameter is a string that represents the keyword you want to
+        search for in the MITRE CVE database
+        :return: a CVE (Common Vulnerabilities and Exposures) identifier that matches the given keyword.
+        If a matching CVE is found, it is returned as a string. If no matching CVE is found, an empty
+        string is returned.
+        """
+        try:
+            async with aiohttp.ClientSession() as session:
+                url = f'https://cve.mitre.org/cgi-bin/cvekey.cgi?keyword={keyword.replace(" ","+")}'
+                async with session.get(url) as response:
+                    soup = BeautifulSoup(await response.text(), "html.parser")
+                    vuln_table = soup.find("div", {'id': 'TableWithRules'})
+                    if vuln_table:
+                        rows = vuln_table.find_all('tr')
+                        if rows and len(rows):
+                            cols = rows[1].find_all('td')
+                            if cols and len(cols):
+                                cve = cols[0].find(string=True)
+                                return cve
+                        else:
+                            return ""
+                    else:
+                        return ""
+        except Exception as e:
+            print(f"Keyword Search Error:{str(e)}")
+            return ""
             
         
 

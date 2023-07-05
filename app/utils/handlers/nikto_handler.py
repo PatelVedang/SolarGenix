@@ -347,22 +347,28 @@ class NIKTO:
             }
             self.result = {**self.result, **alert_response(**data)}
 
-    async def scrape_page(self, session, obj):
+    async def set_vul_data(self, obj):
+        """
+        The function `set_vul_data` sets vulnerability data by extracting error information, test links,
+        and performing a keyword search for CVE IDs.
+        
+        :param obj: The `obj` parameter is a dictionary that contains the following keys:
+        """
         error = obj.get('Description').replace("/:","")
         evidence = obj.get('Test Links')
-        url = f'https://cve.mitre.org/cgi-bin/cvekey.cgi?keyword={error.replace(" ","+")}'
-        async with session.get(url) as response:
-            soup = BeautifulSoup(await response.text(), "html.parser")
-            vuln_table = soup.find("div", {'id': 'TableWithRules'})
-            if vuln_table:
-                rows = vuln_table.find_all('tr')
-                if rows and len(rows):
-                    cols = rows[1].find_all('td')
-                    if cols and len(cols):
-                        cve = cols[0].find(string=True)
-                        self.result = {**self.result, **alert_response(cve=cve, error=error, tool="nikto", alert_type=1, evidence=evidence)}
+        cve_id = await cve.mitre_keyword_search(error)
+        self.result = {**self.result, **alert_response(cve=cve_id, error=error, tool="nikto", alert_type=1, evidence=evidence)}
     
     def nikto_built_in_report_handler(self, target, regenerate):
+        """
+        The function `nikto_built_in_report_handler` parses HTML tables and extracts data to perform
+        asynchronous tasks based on the extracted information.
+        
+        :param target: The `target` parameter is the result of a Nikto scan, which is a raw HTML report
+        :param regenerate: The `regenerate` parameter is a boolean value that indicates whether the
+        report should be regenerated or not. If `regenerate` is `True`, it means that the report should
+        be regenerated. If `regenerate` is `False`, it means that the existing report should be used
+        """
         soup = BeautifulSoup(target.raw_result, "html.parser")
         tables = soup.find_all('table',{'class':'dataTable'})
         result = {}
@@ -380,37 +386,22 @@ class NIKTO:
             result= {**result, **{index:table_obj}}
         
         async def main():
-            async with aiohttp.ClientSession() as session:
-                jobs = []
-                if result:
-                    for key, val in result.items():
-                        if val.get('Description'):
-                            error = val.get('Description').replace("/:","")
-                            jobs.append(
-                                self.scrape_page(
-                                    session, val)
-                            )
+            """
+            The `main` function appends data to a list called `jobs` based on certain conditions and
+            then uses `asyncio.gather` to execute all the jobs concurrently.
+            """
+            jobs = []
+            if result:
+                for key, val in result.items():
+                    if val.get('Description'):
+                        error = val.get('Description').replace("/:","")
+                        jobs.append(
+                            self.set_vul_data(val)
+                        )
 
                 await asyncio.gather(*jobs)
         
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         loop.run_until_complete(main())
-
-        # if result:
-        #     for key, val in result.items():
-        #         if val.get('Description'):
-        #             error = val.get('Description').replace("/:","")
-        #             evidence = val.get('Test Links')
-        #             response = requests.get(f'https://cve.mitre.org/cgi-bin/cvekey.cgi?keyword={error.replace(" ","+")}')
-        #             soup = BeautifulSoup(response.text, "html.parser")
-        #             vuln_table = soup.find("div",{'id':'TableWithRules'})
-        #             if vuln_table:
-        #                 rows = vuln_table.find_all('tr')
-        #                 if rows and len(rows):
-        #                     cols = rows[1].find_all('td')
-        #                     if cols and len(cols):
-        #                         cve = cols[0].find(string=True)
-        #                         self.result = {**self.result, **alert_response(cve=cve, error=error, tool="nikto", alert_type=1, evidence=evidence)}
-
-        
+        loop.close()
