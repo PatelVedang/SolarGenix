@@ -84,13 +84,13 @@ class CVE:
                             }
                         )
                     if data['vulnerabilities'][0]['cve'].get('metrics'):
-                        if data['vulnerabilities'][0]['cve']['metrics'].get('cvssMetricV31'):
-                            cvss3_index = next((index for (index, i) in enumerate(data['vulnerabilities'][0]['cve']['metrics']['cvssMetricV31']) if i["source"] == "nvd@nist.gov"), 0)
+                        if data['vulnerabilities'][0]['cve']['metrics'].get('cvssMetricV30'):
+                            cvss3_index = next((index for (index, i) in enumerate(data['vulnerabilities'][0]['cve']['metrics']['cvssMetricV30']) if i["source"] == "nvd@nist.gov"), 0)
                             self.update_cve(
                                 {
                                     'cvvs3':{
-                                        'base_score': data['vulnerabilities'][0]['cve']['metrics']['cvssMetricV31'][cvss3_index]['cvssData']['baseScore'],
-                                        'error_type': data['vulnerabilities'][0]['cve']['metrics']['cvssMetricV31'][cvss3_index]['cvssData']['baseSeverity'],
+                                        'base_score': data['vulnerabilities'][0]['cve']['metrics']['cvssMetricV30'][cvss3_index]['cvssData']['baseScore'],
+                                        'error_type': data['vulnerabilities'][0]['cve']['metrics']['cvssMetricV30'][cvss3_index]['cvssData']['baseSeverity'],
                                     }
                                 }
                             )
@@ -103,13 +103,23 @@ class CVE:
                                     }
                                 }
                             )
+                        if data['vulnerabilities'][0]['cve']['metrics'].get('cvssMetricV31'):
+                            cvss3_index = next((index for (index, i) in enumerate(data['vulnerabilities'][0]['cve']['metrics']['cvssMetricV31']) if i["source"] == "nvd@nist.gov"), 0)
+                            self.update_cve(
+                                {
+                                    'cvvs3':{
+                                        'base_score': data['vulnerabilities'][0]['cve']['metrics']['cvssMetricV31'][cvss3_index]['cvssData']['baseScore'],
+                                        'error_type': data['vulnerabilities'][0]['cve']['metrics']['cvssMetricV31'][cvss3_index]['cvssData']['baseSeverity'],
+                                    }
+                                }
+                            )
                         if data['vulnerabilities'][0]['cve']['metrics'].get('cvssMetricV2'):
                             cvss2_index = next((index for (index, i) in enumerate(data['vulnerabilities'][0]['cve']['metrics']['cvssMetricV2']) if i["source"] == "nvd@nist.gov"), 0)
                             self.update_cve(
                                 {
                                     'cvvs2':{
                                         'base_score': data['vulnerabilities'][0]['cve']['metrics']['cvssMetricV2'][cvss2_index]['cvssData']['baseScore'],
-                                        'error_type': data['vulnerabilities'][0]['cve']['metrics']['cvssMetricV2'][cvss2_index]['cvssData']['accessComplexity'],
+                                        'error_type': data['vulnerabilities'][0]['cve']['metrics']['cvssMetricV2'][cvss2_index]['baseSeverity'],
                                     }
                                 }
                             )
