@@ -123,7 +123,8 @@ class NIKTO:
         
         if re.search(self.anti_clickjacking_regex, target.raw_result, re.IGNORECASE):
             error = "Missing Anti-clickjacking Header"
-            self.result = {**self.result, **await alert_response(cve="CVE-2018-17192", error=error, tool="nikto", alert_type=1, evidence=self.anti_clickjacking_regex)}
+            vul_data = await alert_response(cve="CVE-2018-17192", error=error, tool="nikto", alert_type=1, evidence=self.anti_clickjacking_regex)
+            self.result = {**self.result, **vul_data}
     
     async def jquery_handler(self, target, regenerate):
         """
@@ -150,7 +151,8 @@ class NIKTO:
                     jquery_version = match.groupdict().get('version')
                     if StrictVersion('1.2')< StrictVersion(jquery_version) < StrictVersion('3.5.0'):
                         error = "JQuery 1.2 < 3.5.0 Multiple XSS"
-                        self.result = {**self.result, **await alert_response(cve="CVE-2020-11022", error=error, tool="nikto", alert_type=1, evidence=jquery_script.get('src', 'N/A'))}
+                        vul_data = await alert_response(cve="CVE-2020-11022", error=error, tool="nikto", alert_type=1, evidence=jquery_script.get('src', 'N/A'))
+                        self.result = {**self.result, **vul_data}
         except Exception as e:
             pass
 
@@ -175,8 +177,7 @@ class NIKTO:
                 error = "JQuery Detection"
                 desc = 'System was able to detect JQuery on the remote host.'
                 solution = "N/A"
-                self.result = {**self.result,
-                               **await alert_response(
+                vul_data = await alert_response(
                                     complexity=complexity,
                                     error=error,
                                     description=desc,
@@ -185,6 +186,8 @@ class NIKTO:
                                     alert_type=4,
                                     evidence=jquery_script.get('src', 'N/A')
                                 )
+                self.result = {**self.result,
+                               **vul_data
                 }
 
         except Exception as e:
@@ -207,7 +210,8 @@ class NIKTO:
                 asp_version = search_result.groupdict().get('version')
                 if StrictVersion(asp_version) < StrictVersion('4.0'):
                     error = "X-AspNet-Version Response Header"
-                    self.result = {**self.result, **await alert_response(cve="CVE-2010-3332", error=error, tool="nikto", alert_type=1, evidence=search_result.group())}
+                    vul_data = await alert_response(cve="CVE-2010-3332", error=error, tool="nikto", alert_type=1, evidence=search_result.group())
+                    self.result = {**self.result, **vul_data}
 
     async def cookie_hanlder(self, target, regenerate):
         """
@@ -223,7 +227,8 @@ class NIKTO:
         search_result = re.search(self.cookie_regex, target.raw_result, re.IGNORECASE)
         if search_result:
             error = "Sensitive Cookie Without 'HttpOnly' Flag"
-            self.result = {**self.result, **await alert_response(cve="CVE-2021-27764", error=error, tool="nikto", alert_type=1, evidence=search_result.group())}
+            vul_data = await alert_response(cve="CVE-2021-27764", error=error, tool="nikto", alert_type=1, evidence=search_result.group())
+            self.result = {**self.result, **vul_data}
 
     async def put_del_handler(self, target, regenerate):
         """
@@ -238,7 +243,8 @@ class NIKTO:
         """
         if re.search(self.update_method_regex, target.raw_result, re.IGNORECASE) and re.search(self.update_method_regex, target.raw_result, re.IGNORECASE):
             error = "Insecurely HTTP PUT and DELETE methods are allowed in web server"
-            self.result = {**self.result, **await alert_response(cve="CVE-2021-35243", error=error, tool="nikto", alert_type=1, evidence=f"{self.update_method_regex}\n{self.delete_method_regex}")}
+            vul_data = await alert_response(cve="CVE-2021-35243", error=error, tool="nikto", alert_type=1, evidence=f"{self.update_method_regex}\n{self.delete_method_regex}")
+            self.result = {**self.result, **vul_data}
 
     async def XSS_handler(self, target, regenerate):
         """
@@ -254,7 +260,8 @@ class NIKTO:
         search_result = re.search(self.XSS_regex, target.raw_result, re.IGNORECASE)
         if search_result:
             error = "A cross-site scripting (XSS) in JavaScript or HTML"
-            self.result = {**self.result, **await alert_response(cve="CVE-2022-39195", error=error, tool="nikto", alert_type=1, evidence=search_result.group())}
+            vul_data = await alert_response(cve="CVE-2022-39195", error=error, tool="nikto", alert_type=1, evidence=search_result.group())
+            self.result = {**self.result, **vul_data}
 
     async def subdomain_handler(self, target, regenerate):
         """
@@ -272,7 +279,8 @@ class NIKTO:
             subdomains = [f"{subdomain.groupdict().get('subdomain')}.{root_domain}" for subdomain in re.finditer(self.subdomain_regex, target.raw_result)]
             error = "Possible subdomain leak"
             data = cve.get_cve_details_by_id_v2("CVE-2018-7844")
-            self.result = {**self.result, **await alert_response(**{**data, **{'location':subdomains, 'error': error, 'tool': 'nikto', 'alert_type':3, 'evidence':"\n".join(subdomains)}})}
+            vul_data = await alert_response(**{**data, **{'location':subdomains, 'error': error, 'tool': 'nikto', 'alert_type':3, 'evidence':"\n".join(subdomains)}})
+            self.result = {**self.result, **vul_data}
 
     async def cgi_dir_handler(self, target, regenerate):
         """
@@ -286,7 +294,8 @@ class NIKTO:
         """
         if re.search(self.cgi_regex, target.raw_result, re.IGNORECASE):
             error = "HTTP Methods Allowed (per directory)"
-            self.result = {**self.result, **await alert_response(cve="CVE-2022-27615", error=error, tool="nikto", alert_type=1, evidence="N/A")}
+            vul_data = await alert_response(cve="CVE-2022-27615", error=error, tool="nikto", alert_type=1, evidence="N/A")
+            self.result = {**self.result, **vul_data}
     
     async def resource_outdated_handler(self, target, regenerate):
         """
@@ -302,7 +311,8 @@ class NIKTO:
         if re.search(self.outdated_regex, target.raw_result, re.IGNORECASE):
             evidence = ",".join(list(map(lambda i: i.group().strip("\n"), re.finditer(self.outdated_regex,target.raw_result, re.IGNORECASE))))
             error = "Outdated resources found"
-            self.result = {**self.result, **await alert_response(cve="CVE-2022-27615", error=error, tool="nikto", alert_type=1, evidence=evidence)}
+            vul_data = await alert_response(cve="CVE-2022-27615", error=error, tool="nikto", alert_type=1, evidence=evidence)
+            self.result = {**self.result, **vul_data}
 
     async def shellshock_handler(self, target, regenerate):
         """
@@ -320,7 +330,8 @@ class NIKTO:
                 evidence = "\n".join(list(map(lambda i: i.group().strip("\n"), re.finditer(self.shellshock_regex,target.raw_result, re.IGNORECASE))))
                 cve = re.search(self.shellshock_regex, target.raw_result, re.IGNORECASE).groupdict().get('cve')
                 error = "shellshock present in server"
-                self.result = {**self.result, **await alert_response(cve=cve, error=error, tool="nikto", alert_type=1, evidence=evidence)}
+                vul_data = await alert_response(cve=cve, error=error, tool="nikto", alert_type=1, evidence=evidence)
+                self.result = {**self.result, **vul_data}
 
     async def httpoptions_handler(self, target, regenerate):
         """
@@ -335,7 +346,8 @@ class NIKTO:
         search_result = re.search(self.httpoptions_regex, target.raw_result, re.IGNORECASE)
         if search_result:
             error = "Insecure HTTP methods in Apache"
-            self.result = {**self.result, **await alert_response(cve="CVE-2017-7685", error=error, tool="nikto", alert_type=1, evidence=search_result.group())}
+            vul_data = await alert_response(cve="CVE-2017-7685", error=error, tool="nikto", alert_type=1, evidence=search_result.group())
+            self.result = {**self.result, **vul_data}
 
     async def sitefiles_handler(self, target, regenerate):
         """
@@ -369,7 +381,8 @@ class NIKTO:
                 'alert_type':3,
                 'evidence': "\n".join(files)
             }
-            self.result = {**self.result, **await alert_response(**data)}
+            vul_data = await alert_response(**data)
+            self.result = {**self.result, **vul_data}
 
     async def set_vul_data(self, obj):
         """
@@ -381,7 +394,8 @@ class NIKTO:
         error = obj.get('Description').replace("/:","")
         evidence = obj.get('Test Links')
         cve_id = await cve.mitre_keyword_search(error)
-        self.result = {**self.result, **await alert_response(cve=cve_id, error=error, tool="nikto", alert_type=1, evidence=evidence)}
+        vul_data = await alert_response(cve=cve_id, error=error, tool="nikto", alert_type=1, evidence=evidence)
+        self.result = {**self.result, **vul_data}
     
     async def nikto_built_in_report_handler(self, target, regenerate):
         """

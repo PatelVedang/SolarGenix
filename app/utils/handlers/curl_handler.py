@@ -87,7 +87,8 @@ class CURL:
         """
         if not re.search(self.x_content_type_options_regex, target.raw_result, re.IGNORECASE):
             error = "X-Content-Type-Options Header Missing"
-            self.result = {**self.result, **await alert_response(cve="CVE-2019-19089", error=error, tool="curl", alert_type=1, evidence=self.x_content_type_options_regex)}
+            vul_data = await alert_response(cve="CVE-2019-19089", error=error, tool="curl", alert_type=1, evidence=self.x_content_type_options_regex)
+            self.result = {**self.result, **vul_data}
     
     async def unsupported_web_server_handler(self, target, regenerate):
         """
@@ -147,7 +148,8 @@ class CURL:
                     'alert_type':3,
                     'evidence': search_result.group()
                 }
-                self.result = {**self.result, **await alert_response(**data)}
+                vul_data = await alert_response(**data)
+                self.result = {**self.result, **vul_data}
 
     async def server_in_response_header_handler(self, target, regenerate):
         """
@@ -163,7 +165,8 @@ class CURL:
         search_result = re.search(self.server_in_header_regex, target.raw_result, re.IGNORECASE)
         if search_result:
             error = '''Server Leaks Version Information via "Server" HTTP Response Header Field'''
-            self.result = {**self.result, **await alert_response(cve="CVE-2018-7844", error=error, tool="curl", alert_type=1, evidence=search_result.group())}
+            vul_data = await alert_response(cve="CVE-2018-7844", error=error, tool="curl", alert_type=1, evidence=search_result.group())
+            self.result = {**self.result, **vul_data}
 
     async def x_powered_by_in_response_header_handler(self, target, regenerate):
         """
@@ -178,5 +181,6 @@ class CURL:
         search_result = re.search(self.x_powered_by_in_header_regex, target.raw_result, re.IGNORECASE)
         if search_result:
             error = '''Server Leaks Information via "X-Powered-By" HTTP Response Header Field'''
-            self.result = {**self.result, **await alert_response(cve="CVE-2018-7844", error=error, tool="curl", alert_type=1, evidence=search_result.group())}
+            vul_data = await alert_response(cve="CVE-2018-7844", error=error, tool="curl", alert_type=1, evidence=search_result.group())
+            self.result = {**self.result, **vul_data}
 

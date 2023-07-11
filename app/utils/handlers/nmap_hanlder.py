@@ -181,7 +181,8 @@ class NMAP:
         version = self.open_ports_obj.get(port).get('version')
         if version:
             cve_id = await cve.mitre_keyword_search(version)
-            self.result = {**self.result, **await alert_response(cve=cve_id, error=error, tool="nmap", alert_type=1, evidence=evidence)}
+            vul_data = await alert_response(cve=cve_id, error=error, tool="nmap", alert_type=1, evidence=evidence)
+            self.result = {**self.result, **vul_data}
         else:
             status = self.open_ports_obj[port]['status']
             if status in ["open", "open|filtered"]: 

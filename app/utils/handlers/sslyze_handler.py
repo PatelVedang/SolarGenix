@@ -96,7 +96,8 @@ class SSLYSE:
                 if cert_expire_on < datetime.utcnow():
                     error = "Expired SSL certificate"
                     evidence = self.services_objects.get('Certificates Information:', '')
-                    self.result = {**self.result, **await alert_response(cve="CVE-2015-3886", error=error, tool="sslyze", alert_type=1, evidence=evidence)}
+                    vul_data = await alert_response(cve="CVE-2015-3886", error=error, tool="sslyze", alert_type=1, evidence=evidence)
+                    self.result = {**self.result, **vul_data}
     
     async def tls1_detect_handler(self, target, regenerate):
         """
@@ -114,7 +115,8 @@ class SSLYSE:
                 if search_result.groupdict().get('suites') and int(search_result.groupdict().get('suites')) >= 1:
                     error = "TLS 1.0 Weak Protocol"
                     evidence = self.services_objects.get('TLS 1.0 Cipher Suites:', '')
-                    self.result = {**self.result, **await alert_response(cve="CVE-2022-34757", error=error, tool="sslyze", alert_type=1, evidence=evidence)}
+                    vul_data = await alert_response(cve="CVE-2022-34757", error=error, tool="sslyze", alert_type=1, evidence=evidence)
+                    self.result = {**self.result, **vul_data}
     
     async def tls11_detect_handler(self, target, regenerate):
         """
@@ -142,7 +144,7 @@ class SSLYSE:
                     '''
                     solution = "Enable support for TLS 1.2 and/or 1.3, and disable support for TLS 1.1."
                     evidence = self.services_objects.get('TLS 1.1 Cipher Suites:', '')
-                    self.result = {**self.result, **await alert_response(
+                    vul_data = await alert_response(
                         complexity=complexity,
                         error=error,
                         description=desc,
@@ -150,7 +152,8 @@ class SSLYSE:
                         tool="sslyze",
                         alert_type=4,
                         evidence=evidence
-                    )}
+                    )
+                    self.result = {**self.result, **vul_data}
     
     async def tls12_detect_handler(self, target, regenerate):
         """
@@ -171,7 +174,7 @@ class SSLYSE:
                     error = "TLS 1.2 Weak Protocol"
                     desc = 'The remote service accepts connections encrypted using TLS 1.2.'
                     solution = "N/A"
-                    self.result = {**self.result, **await alert_response(
+                    vul_data = await alert_response(
                         complexity=complexity,
                         error=error,
                         description=desc,
@@ -179,4 +182,5 @@ class SSLYSE:
                         tool="sslyze",
                         alert_type=4,
                         evidence=evidence
-                    )}
+                    )
+                    self.result = {**self.result, **vul_data}
