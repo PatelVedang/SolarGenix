@@ -89,6 +89,7 @@ class NMAP:
         }
         tool_cmd = target.tool.tool_cmd.strip()
         if handlers.get(tool_cmd):
+            regenerate=True
             if regenerate or not target.compose_result:
                 self.result = {}
                 self.ports = []
@@ -179,30 +180,30 @@ class NMAP:
         error = f"Cyber PORT Scanner {port_number}"
         evidence = f"{self.open_ports_obj[port]['port_with_protocol']} {self.open_ports_obj[port]['status']} {self.open_ports_obj[port]['service']}"
         version = self.open_ports_obj.get(port).get('version')
-        if version:
-            cve_id = await cve.mitre_keyword_search(version)
-            vul_data = await alert_response(cve=cve_id, error=error, tool="nmap", alert_type=1, evidence=evidence)
-            self.result = {**self.result, **vul_data}
-        else:
-            status = self.open_ports_obj[port]['status']
-            if status in ["open", "open|filtered"]: 
-                complexity = "INFO"
-                desc = "A Cyber port scanner is this plugin's function to find out open ports.Cyber port scanner are less intrusive than TCP (full connect) scans against broken services, but if the network is busy, they may cause issues for less capable firewalls and leave open connections on the remote target."
-                solution = "Use an IP filter to shield your target."
-            elif status in ["filtered"]:
-                complexity = "FALSE-POSITIVE"
-                desc = "A firewall, filter, or other network obstacle is blocking the port so that Cyber port scanner cannot tell whether it is open or closed."
-                solution = "N/A"
-            self.result = {**self.result, **await alert_response(
-                complexity=complexity,
-                error=error,
-                description=desc,
-                solution=solution,
-                port=port_number,
-                tool="nmap",
-                alert_type=4,
-                evidence=evidence
-            )}
+        # if version:
+        #     cve_id = await cve.mitre_keyword_search(version)
+        #     vul_data = await alert_response(cve=cve_id, error=error, tool="nmap", alert_type=1, evidence=evidence)
+        #     self.result = {**self.result, **vul_data}
+        # else:
+        status = self.open_ports_obj[port]['status']
+        if status in ["open", "open|filtered"]: 
+            complexity = "INFO"
+            desc = "A Cyber port scanner is this plugin's function to find out open ports.Cyber port scanner are less intrusive than TCP (full connect) scans against broken services, but if the network is busy, they may cause issues for less capable firewalls and leave open connections on the remote target."
+            solution = "Use an IP filter to shield your target."
+        elif status in ["filtered"]:
+            complexity = "FALSE-POSITIVE"
+            desc = "A firewall, filter, or other network obstacle is blocking the port so that Cyber port scanner cannot tell whether it is open or closed."
+            solution = "N/A"
+        self.result = {**self.result, **await alert_response(
+            complexity=complexity,
+            error=error,
+            description=desc,
+            solution=solution,
+            port=port_number,
+            tool="nmap",
+            alert_type=4,
+            evidence=evidence
+        )}
 
 
     async def port_hanlder_v2(self, target, regenerate):
