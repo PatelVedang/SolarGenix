@@ -73,6 +73,7 @@ class PDF:
             'false-positive':0
         }
         ip = ""
+        # start = datetime.utcnow()
         for target_id in targets_ids:
             target_obj = Target.objects.get(id=target_id)
             ip = target_obj.ip
@@ -98,7 +99,7 @@ class PDF:
                 import traceback
                 traceback.print_exc()
                 pass
-
+        # print(f"entire process take arround {(datetime.utcnow()-start).total_seconds()} Seconds")
         alert_objs = dict(sorted(alert_objs.items(), key=lambda x: x[1].get('alert_order')))
         
         if generate_pdf:

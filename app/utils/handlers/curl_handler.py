@@ -9,6 +9,7 @@ from .default_handler import DEFAULT
 default = DEFAULT()
 from .common_handler import *
 import json
+import asyncio
 
 class CURL:
     x_content_type_options_regex = "X-Content-Type-Options: nosniff"
@@ -18,6 +19,29 @@ class CURL:
 
     result = {}
     
+    async def handlers(self, tool_cmd, handlers, target, regenerate):
+        """
+        The function "handlers" takes in a tool command, a dictionary of handlers, a target, and a
+        boolean flag, and creates a list of jobs to be executed concurrently using asyncio.
+        
+        :param tool_cmd: The `tool_cmd` parameter is a string that represents the command or tool being
+        used. It is used to determine which handlers to execute for that specific command or tool
+        :param handlers: The `handlers` parameter is a dictionary that contains the handlers for
+        different tool commands. Each key in the dictionary represents a tool command, and the
+        corresponding value is a list of handler functions for that command
+        :param target: The "target" parameter is the target object or entity that the handlers will be
+        applied to. It could be a website, a network, a file, or any other entity that the handlers are
+        designed to work on
+        :param regenerate: The `regenerate` parameter is a boolean value that indicates whether the
+        target should be regenerated or not. It is used to control whether the vulnerability handlers
+        should regenerate any necessary files or data related to the target before executing their tasks
+        """
+        jobs = []
+        for vul_handler in handlers[tool_cmd]:
+            jobs.append(vul_handler(target, regenerate))
+        await asyncio.gather(*jobs)
+
+
     def main(self, target, regenerate):
         """
         This function contains a dictionary of handlers for different tool commands and executes the
@@ -36,8 +60,12 @@ class CURL:
         if handlers.get(tool_cmd):
             if regenerate or not target.compose_result:
                 self.result = {}
-                for vul_handler in handlers[tool_cmd]:
-                    vul_handler(target, regenerate)
+                
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+                loop.run_until_complete(self.handlers(tool_cmd, handlers, target, regenerate))
+                loop.close()
+
                 Target.objects.filter(id=target.id).update(compose_result=self.result)
                 return self.result
             else:
@@ -46,7 +74,7 @@ class CURL:
         else:
             return handlers['default'](target, regenerate)
 
-    def x_content_type_options_handler(self, target, regenerate):
+    async def x_content_type_options_handler(self, target, regenerate):
         """
         This function checks if the X-Content-Type-Options header is missing and adds a vulnerability if
         it is.
@@ -59,9 +87,9 @@ class CURL:
         """
         if not re.search(self.x_content_type_options_regex, target.raw_result, re.IGNORECASE):
             error = "X-Content-Type-Options Header Missing"
-            self.result = {**self.result, **alert_response(cve="CVE-2019-19089", error=error, tool="curl", alert_type=1, evidence=self.x_content_type_options_regex)}
+            self.result = {**self.result, **await alert_response(cve="CVE-2019-19089", error=error, tool="curl", alert_type=1, evidence=self.x_content_type_options_regex)}
     
-    def unsupported_web_server_handler(self, target, regenerate):
+    async def unsupported_web_server_handler(self, target, regenerate):
         """
         This function handles unsupported web servers by detecting if the server is obsolete and no
         longer maintained by its vendor or provider.
@@ -94,7 +122,6 @@ class CURL:
                     '2.4': datetime.strptime('10/10/2003',"%d/%m/%Y")
                 }
             }
-
             if server_objs.get(server) and server_objs.get(server).get(version) and datetime.utcnow()>server_objs.get(server).get(version):
                 error = "Unsupported Web Server Detection"
                 data = {
@@ -120,9 +147,9 @@ class CURL:
                     'alert_type':3,
                     'evidence': search_result.group()
                 }
-                self.result = {**self.result, **alert_response(**data)}
+                self.result = {**self.result, **await alert_response(**data)}
 
-    def server_in_response_header_handler(self, target, regenerate):
+    async def server_in_response_header_handler(self, target, regenerate):
         """
         This function checks if the HTTP response header contains the server information and reports a
         vulnerability if it does.
@@ -136,9 +163,9 @@ class CURL:
         search_result = re.search(self.server_in_header_regex, target.raw_result, re.IGNORECASE)
         if search_result:
             error = '''Server Leaks Version Information via "Server" HTTP Response Header Field'''
-            self.result = {**self.result, **alert_response(cve="CVE-2018-7844", error=error, tool="curl", alert_type=1, evidence=search_result.group())}
+            self.result = {**self.result, **await alert_response(cve="CVE-2018-7844", error=error, tool="curl", alert_type=1, evidence=search_result.group())}
 
-    def x_powered_by_in_response_header_handler(self, target, regenerate):
+    async def x_powered_by_in_response_header_handler(self, target, regenerate):
         """
         This function checks if a server leaks information via the "X-Powered-By" HTTP response header
         and sets a vulnerability if it does.
@@ -151,5 +178,5 @@ class CURL:
         search_result = re.search(self.x_powered_by_in_header_regex, target.raw_result, re.IGNORECASE)
         if search_result:
             error = '''Server Leaks Information via "X-Powered-By" HTTP Response Header Field'''
-            self.result = {**self.result, **alert_response(cve="CVE-2018-7844", error=error, tool="curl", alert_type=1, evidence=search_result.group())}
+            self.result = {**self.result, **await alert_response(cve="CVE-2018-7844", error=error, tool="curl", alert_type=1, evidence=search_result.group())}
 

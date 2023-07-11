@@ -10,6 +10,7 @@ cve = CVE()
 from .default_handler import DEFAULT
 default = DEFAULT()
 from .common_handler import *
+import asyncio
 
 class NMAP:
     port_search_regex = '(?P<port>\d{1,5}/(tcp|udp))\s+(?P<status>(filtered|open|closed|open\|filtered))\s+(?P<service>[\w0-9\-\_\/]+)(?P<version>(\s*|.*))(\n)'
@@ -17,6 +18,28 @@ class NMAP:
     ports = []
     open_ports_obj = {}
 
+    async def handlers(self, tool_cmd, handlers, target, regenerate):
+        """
+        The function "handlers" takes in a tool command, a dictionary of handlers, a target, and a
+        boolean flag, and creates a list of jobs to be executed concurrently using asyncio.
+        
+        :param tool_cmd: The `tool_cmd` parameter is a string that represents the command or tool being
+        used. It is used to determine which handlers to execute for that specific command or tool
+        :param handlers: The `handlers` parameter is a dictionary that contains the handlers for
+        different tool commands. Each key in the dictionary represents a tool command, and the
+        corresponding value is a list of handler functions for that command
+        :param target: The "target" parameter is the target object or entity that the handlers will be
+        applied to. It could be a website, a network, a file, or any other entity that the handlers are
+        designed to work on
+        :param regenerate: The `regenerate` parameter is a boolean value that indicates whether the
+        target should be regenerated or not. It is used to control whether the vulnerability handlers
+        should regenerate the target before running their operations
+        """
+        jobs = []
+        for vul_handler in handlers[tool_cmd]:
+            jobs.append(vul_handler(target, regenerate))
+        await asyncio.gather(*jobs)
+    
     def replace_all_special_char(self, text):
         """
         The function replaces all special characters in a given text with their escaped versions.
@@ -93,8 +116,14 @@ class NMAP:
                             version = self.remove_special_chars(self.ports[port_index]['version'])
                             # self.open_ports_obj = {**self.open_ports_obj, **{port_number: {'port_with_protocol': self.ports[port_index].groupdict().get('port'), 'status':status, 'service': service, 'cve': cve_id}}}
                             self.open_ports_obj = {**self.open_ports_obj, **{port_number: {'port_with_protocol': self.ports[port_index].groupdict().get('port'), 'status':status, 'service': service, 'version': version}}}
-                for vul_handler in handlers[tool_cmd]:
-                    vul_handler(target, regenerate)
+                
+                
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+                loop.run_until_complete(self.handlers(tool_cmd, handlers, target, regenerate))
+                loop.close()
+
+                
                 Target.objects.filter(id=target.id).update(compose_result=self.result)
                 return self.result
             else:
@@ -152,7 +181,7 @@ class NMAP:
         version = self.open_ports_obj.get(port).get('version')
         if version:
             cve_id = await cve.mitre_keyword_search(version)
-            self.result = {**self.result, **alert_response(cve=cve_id, error=error, tool="nmap", alert_type=1, evidence=evidence)}
+            self.result = {**self.result, **await alert_response(cve=cve_id, error=error, tool="nmap", alert_type=1, evidence=evidence)}
         else:
             status = self.open_ports_obj[port]['status']
             if status in ["open", "open|filtered"]: 
@@ -163,7 +192,7 @@ class NMAP:
                 complexity = "FALSE-POSITIVE"
                 desc = "A firewall, filter, or other network obstacle is blocking the port so that Cyber port scanner cannot tell whether it is open or closed."
                 solution = "N/A"
-            self.result = {**self.result, **alert_response(
+            self.result = {**self.result, **await alert_response(
                 complexity=complexity,
                 error=error,
                 description=desc,
@@ -175,7 +204,7 @@ class NMAP:
             )}
 
 
-    def port_hanlder_v2(self, target, regenerate):
+    async def port_hanlder_v2(self, target, regenerate):
         """
         The function `port_handler_v2` is an asynchronous function that iterates over a list of open
         ports and sets vulnerability data for each port.
@@ -187,17 +216,17 @@ class NMAP:
         data will be regenerated. If `regenerate` is `False`, the existing vulnerability data will be
         used
         """
-        async def sub():
-            """
-            The function `sub` creates a list of jobs to set vulnerability data for each open port and
-            uses `asyncio.gather` to execute them concurrently.
-            """
-            jobs = []
-            for port in self.open_ports_obj.keys():
-                jobs.append(self.set_vul_data(port))
-            await asyncio.gather(*jobs)
+        # async def sub():
+        #     """
+        #     The function `sub` creates a list of jobs to set vulnerability data for each open port and
+        #     uses `asyncio.gather` to execute them concurrently.
+        #     """
+        jobs = []
+        for port in self.open_ports_obj.keys():
+            jobs.append(self.set_vul_data(port))
+        await asyncio.gather(*jobs)
 
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        loop.run_until_complete(sub())
-        loop.close()
+        # loop = asyncio.new_event_loop()
+        # asyncio.set_event_loop(loop)
+        # loop.run_until_complete(sub())
+        # loop.close()

@@ -14,7 +14,6 @@ from .common_handler import *
 from tldextract import extract
 import json
 import asyncio
-import aiohttp
 
 # The NIKTO class contains a method for handling the absence of an anti-clickjacking X-Frame-Options
 # header in a target's raw result.
@@ -32,6 +31,27 @@ class NIKTO:
     httpoptions_regex = ".*Allowed HTTP Methods.*"
     sitefiles_regex= "\s+/(?P<file>[/\w\.]*):[\s\w]+file found(\\n|\\r\\n)"
 
+    async def handlers(self, tool_cmd, handlers, target, regenerate):
+        """
+        The function "handlers" takes in a tool command, a dictionary of handlers, a target, and a
+        boolean flag, and creates a list of jobs to be executed concurrently using asyncio.
+        
+        :param tool_cmd: The `tool_cmd` parameter is a string that represents the command or tool being
+        used. It is used to determine which handlers to execute for that specific command or tool
+        :param handlers: The `handlers` parameter is a dictionary that contains the handlers for
+        different tool commands. Each key in the dictionary represents a tool command, and the
+        corresponding value is a list of handler functions for that command
+        :param target: The "target" parameter is the target object or entity that the handlers will be
+        applied to. It could be a website, a network, a file, or any other entity that the handlers are
+        designed to work on
+        :param regenerate: The `regenerate` parameter is a boolean value that indicates whether the
+        target should be regenerated or not. It is used to control whether the vulnerability handlers
+        should regenerate the target before running their operations
+        """
+        jobs = []
+        for vul_handler in handlers[tool_cmd]:
+            jobs.append(vul_handler(target, regenerate))
+        await asyncio.gather(*jobs)
 
     def main(self, target, regenerate):
         """
@@ -72,8 +92,12 @@ class NIKTO:
         if handlers.get(tool_cmd):
             if regenerate or not target.compose_result:
                 self.result = {}
-                for vul_handler in handlers[tool_cmd]:
-                    vul_handler(target, regenerate)
+
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+                loop.run_until_complete(self.handlers(tool_cmd, handlers, target, regenerate))
+                loop.close()
+                
                 Target.objects.filter(id=target.id).update(compose_result=self.result)
                 return self.result
             else:
@@ -82,7 +106,7 @@ class NIKTO:
         else:
             return handlers['default'](target, regenerate)
 
-    def anti_clickjacking_handler(self, target, regenerate):
+    async def anti_clickjacking_handler(self, target, regenerate):
         """
         This function checks for the presence of an anti-clickjacking header and sets a vulnerability if
         it is missing.
@@ -99,9 +123,9 @@ class NIKTO:
         
         if re.search(self.anti_clickjacking_regex, target.raw_result, re.IGNORECASE):
             error = "Missing Anti-clickjacking Header"
-            self.result = {**self.result, **alert_response(cve="CVE-2018-17192", error=error, tool="nikto", alert_type=1, evidence=self.anti_clickjacking_regex)}
+            self.result = {**self.result, **await alert_response(cve="CVE-2018-17192", error=error, tool="nikto", alert_type=1, evidence=self.anti_clickjacking_regex)}
     
-    def jquery_handler(self, target, regenerate):
+    async def jquery_handler(self, target, regenerate):
         """
         This function checks if a website is using a vulnerable version of jQuery and reports it as a
         potential XSS vulnerability.
@@ -126,11 +150,11 @@ class NIKTO:
                     jquery_version = match.groupdict().get('version')
                     if StrictVersion('1.2')< StrictVersion(jquery_version) < StrictVersion('3.5.0'):
                         error = "JQuery 1.2 < 3.5.0 Multiple XSS"
-                        self.result = {**self.result, **alert_response(cve="CVE-2020-11022", error=error, tool="nikto", alert_type=1, evidence=jquery_script.get('src', 'N/A'))}
+                        self.result = {**self.result, **await alert_response(cve="CVE-2020-11022", error=error, tool="nikto", alert_type=1, evidence=jquery_script.get('src', 'N/A'))}
         except Exception as e:
             pass
 
-    def jquery_detection_handler(self, target, regenerate):
+    async def jquery_detection_handler(self, target, regenerate):
         """
         This function detects the presence of JQuery on a remote host and generates a vulnerability
         report.
@@ -152,7 +176,7 @@ class NIKTO:
                 desc = 'System was able to detect JQuery on the remote host.'
                 solution = "N/A"
                 self.result = {**self.result,
-                               **alert_response(
+                               **await alert_response(
                                     complexity=complexity,
                                     error=error,
                                     description=desc,
@@ -165,8 +189,8 @@ class NIKTO:
 
         except Exception as e:
             pass
-
-    def asp_version_handler(self, target, regenerate):
+    
+    async def asp_version_handler(self, target, regenerate):
         """
         The function checks the version of ASP.NET in a response header and sets a vulnerability if it
         is less than version 4.0.
@@ -183,9 +207,9 @@ class NIKTO:
                 asp_version = search_result.groupdict().get('version')
                 if StrictVersion(asp_version) < StrictVersion('4.0'):
                     error = "X-AspNet-Version Response Header"
-                    self.result = {**self.result, **alert_response(cve="CVE-2010-3332", error=error, tool="nikto", alert_type=1, evidence=search_result.group())}
+                    self.result = {**self.result, **await alert_response(cve="CVE-2010-3332", error=error, tool="nikto", alert_type=1, evidence=search_result.group())}
 
-    def cookie_hanlder(self, target, regenerate):
+    async def cookie_hanlder(self, target, regenerate):
         """
         This function checks if a target has a sensitive cookie without the 'HttpOnly' flag and adds a
         vulnerability to the result if it does.
@@ -199,9 +223,9 @@ class NIKTO:
         search_result = re.search(self.cookie_regex, target.raw_result, re.IGNORECASE)
         if search_result:
             error = "Sensitive Cookie Without 'HttpOnly' Flag"
-            self.result = {**self.result, **alert_response(cve="CVE-2021-27764", error=error, tool="nikto", alert_type=1, evidence=search_result.group())}
+            self.result = {**self.result, **await alert_response(cve="CVE-2021-27764", error=error, tool="nikto", alert_type=1, evidence=search_result.group())}
 
-    def put_del_handler(self, target, regenerate):
+    async def put_del_handler(self, target, regenerate):
         """
         This function checks if insecure HTTP PUT and DELETE methods are allowed in a web server and
         sets a vulnerability if found.
@@ -214,9 +238,9 @@ class NIKTO:
         """
         if re.search(self.update_method_regex, target.raw_result, re.IGNORECASE) and re.search(self.update_method_regex, target.raw_result, re.IGNORECASE):
             error = "Insecurely HTTP PUT and DELETE methods are allowed in web server"
-            self.result = {**self.result, **alert_response(cve="CVE-2021-35243", error=error, tool="nikto", alert_type=1, evidence=f"{self.update_method_regex}\n{self.delete_method_regex}")}
+            self.result = {**self.result, **await alert_response(cve="CVE-2021-35243", error=error, tool="nikto", alert_type=1, evidence=f"{self.update_method_regex}\n{self.delete_method_regex}")}
 
-    def XSS_handler(self, target, regenerate):
+    async def XSS_handler(self, target, regenerate):
         """
         This function checks if a target contains a cross-site scripting vulnerability and sets a CVE
         identifier and error message if it does.
@@ -230,9 +254,9 @@ class NIKTO:
         search_result = re.search(self.XSS_regex, target.raw_result, re.IGNORECASE)
         if search_result:
             error = "A cross-site scripting (XSS) in JavaScript or HTML"
-            self.result = {**self.result, **alert_response(cve="CVE-2022-39195", error=error, tool="nikto", alert_type=1, evidence=search_result.group())}
+            self.result = {**self.result, **await alert_response(cve="CVE-2022-39195", error=error, tool="nikto", alert_type=1, evidence=search_result.group())}
 
-    def subdomain_handler(self, target, regenerate):
+    async def subdomain_handler(self, target, regenerate):
         """
         This function checks for a possible subdomain leak in the target and sets a vulnerability if
         found.
@@ -248,9 +272,9 @@ class NIKTO:
             subdomains = [f"{subdomain.groupdict().get('subdomain')}.{root_domain}" for subdomain in re.finditer(self.subdomain_regex, target.raw_result)]
             error = "Possible subdomain leak"
             data = cve.get_cve_details_by_id_v2("CVE-2018-7844")
-            self.result = {**self.result, **alert_response(**{**data, **{'location':subdomains, 'error': error, 'tool': 'nikto', 'alert_type':3, 'evidence':"\n".join(subdomains)}})}
+            self.result = {**self.result, **await alert_response(**{**data, **{'location':subdomains, 'error': error, 'tool': 'nikto', 'alert_type':3, 'evidence':"\n".join(subdomains)}})}
 
-    def cgi_dir_handler(self, target, regenerate):
+    async def cgi_dir_handler(self, target, regenerate):
         """
         This function checks if a target matches a regular expression for CGI scripts and adds a
         vulnerability to the result if it does.
@@ -262,9 +286,9 @@ class NIKTO:
         """
         if re.search(self.cgi_regex, target.raw_result, re.IGNORECASE):
             error = "HTTP Methods Allowed (per directory)"
-            self.result = {**self.result, **alert_response(cve="CVE-2022-27615", error=error, tool="nikto", alert_type=1, evidence="N/A")}
+            self.result = {**self.result, **await alert_response(cve="CVE-2022-27615", error=error, tool="nikto", alert_type=1, evidence="N/A")}
     
-    def resource_outdated_handler(self, target, regenerate):
+    async def resource_outdated_handler(self, target, regenerate):
         """
         This function checks if a target's raw result contains outdated resources and sets a
         vulnerability if it does.
@@ -278,9 +302,9 @@ class NIKTO:
         if re.search(self.outdated_regex, target.raw_result, re.IGNORECASE):
             evidence = ",".join(list(map(lambda i: i.group().strip("\n"), re.finditer(self.outdated_regex,target.raw_result, re.IGNORECASE))))
             error = "Outdated resources found"
-            self.result = {**self.result, **alert_response(cve="CVE-2022-27615", error=error, tool="nikto", alert_type=1, evidence=evidence)}
+            self.result = {**self.result, **await alert_response(cve="CVE-2022-27615", error=error, tool="nikto", alert_type=1, evidence=evidence)}
 
-    def shellshock_handler(self, target, regenerate):
+    async def shellshock_handler(self, target, regenerate):
         """
         This function checks if a server is vulnerable to the Shellshock exploit and sets the
         vulnerability accordingly.
@@ -296,9 +320,9 @@ class NIKTO:
                 evidence = "\n".join(list(map(lambda i: i.group().strip("\n"), re.finditer(self.shellshock_regex,target.raw_result, re.IGNORECASE))))
                 cve = re.search(self.shellshock_regex, target.raw_result, re.IGNORECASE).groupdict().get('cve')
                 error = "shellshock present in server"
-                self.result = {**self.result, **alert_response(cve=cve, error=error, tool="nikto", alert_type=1, evidence=evidence)}
+                self.result = {**self.result, **await alert_response(cve=cve, error=error, tool="nikto", alert_type=1, evidence=evidence)}
 
-    def httpoptions_handler(self, target, regenerate):
+    async def httpoptions_handler(self, target, regenerate):
         """
         This function checks for insecure HTTP methods in Apache and sets a vulnerability if found.
         
@@ -311,9 +335,9 @@ class NIKTO:
         search_result = re.search(self.httpoptions_regex, target.raw_result, re.IGNORECASE)
         if search_result:
             error = "Insecure HTTP methods in Apache"
-            self.result = {**self.result, **alert_response(cve="CVE-2017-7685", error=error, tool="nikto", alert_type=1, evidence=search_result.group())}
+            self.result = {**self.result, **await alert_response(cve="CVE-2017-7685", error=error, tool="nikto", alert_type=1, evidence=search_result.group())}
 
-    def sitefiles_handler(self, target, regenerate):
+    async def sitefiles_handler(self, target, regenerate):
         """
         This function checks for site files disclosure and generates a custom vulnerability report if
         found.
@@ -345,7 +369,7 @@ class NIKTO:
                 'alert_type':3,
                 'evidence': "\n".join(files)
             }
-            self.result = {**self.result, **alert_response(**data)}
+            self.result = {**self.result, **await alert_response(**data)}
 
     async def set_vul_data(self, obj):
         """
@@ -357,21 +381,23 @@ class NIKTO:
         error = obj.get('Description').replace("/:","")
         evidence = obj.get('Test Links')
         cve_id = await cve.mitre_keyword_search(error)
-        self.result = {**self.result, **alert_response(cve=cve_id, error=error, tool="nikto", alert_type=1, evidence=evidence)}
+        self.result = {**self.result, **await alert_response(cve=cve_id, error=error, tool="nikto", alert_type=1, evidence=evidence)}
     
-    def nikto_built_in_report_handler(self, target, regenerate):
+    async def nikto_built_in_report_handler(self, target, regenerate):
         """
-        The function `nikto_built_in_report_handler` parses HTML tables and extracts data to perform
-        asynchronous tasks based on the extracted information.
+        The function `nikto_built_in_report_handler` parses HTML data and extracts information from
+        tables, then creates a list of jobs based on the extracted data.
         
-        :param target: The `target` parameter is the result of a Nikto scan, which is a raw HTML report
+        :param target: The `target` parameter is the result of a Nikto scan on a specific target. It
+        contains the raw HTML result of the scan
         :param regenerate: The `regenerate` parameter is a boolean value that indicates whether the
-        report should be regenerated or not. If `regenerate` is `True`, it means that the report should
-        be regenerated. If `regenerate` is `False`, it means that the existing report should be used
+        report should be regenerated or not. If `regenerate` is `True`, it means that the report needs
+        to be regenerated. If `regenerate` is `False`, it means that the existing report can be used
         """
         soup = BeautifulSoup(target.raw_result, "html.parser")
         tables = soup.find_all('table',{'class':'dataTable'})
         result = {}
+        jobs = []
         for index in range(len(tables)):
             table_obj = {}
             rows = tables[index].find_all('tr')
@@ -385,23 +411,12 @@ class NIKTO:
                             table_obj= {**table_obj, **{columns[0].find(string=True):columns[1].text.strip().replace(" ","\n")}}
             result= {**result, **{index:table_obj}}
         
-        async def main():
-            """
-            The `main` function appends data to a list called `jobs` based on certain conditions and
-            then uses `asyncio.gather` to execute all the jobs concurrently.
-            """
-            jobs = []
-            if result:
-                for key, val in result.items():
-                    if val.get('Description'):
-                        error = val.get('Description').replace("/:","")
-                        jobs.append(
-                            self.set_vul_data(val)
-                        )
-
-                await asyncio.gather(*jobs)
+        if result:
+            for key, val in result.items():
+                if val.get('Description'):
+                    error = val.get('Description').replace("/:","")
+                    jobs.append(
+                        self.set_vul_data(val)
+                    )
         
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        loop.run_until_complete(main())
-        loop.close()
+        await asyncio.gather(*jobs)

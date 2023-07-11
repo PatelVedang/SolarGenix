@@ -7,6 +7,7 @@ import json
 from django.conf import settings
 import aiohttp
 import asyncio
+import atexit
 
 class CVE:
     api_key = settings.NVD_API_KEY
@@ -15,7 +16,7 @@ class CVE:
     def update_cve(self, data):
         self.cve_details= {**self.cve_details, **data}
     
-    def get_cve_details_by_id_v2(self, cve_id):
+    async def get_cve_details_by_id_v2(self, cve_id):
         """
         This function retrieves details of a CVE (Common Vulnerabilities and Exposures) using its ID
         from the NIST NVD (National Vulnerability Database) API 2.0 and updates the details in a dictionary.
@@ -37,8 +38,10 @@ class CVE:
             "apiKey": self.api_key
         }
         params = {"cveId": cve_id}
-        response = requests.get(url, headers=headers, params=params)
-        self.set_cve_detail_v2(response)
+        # response = requests.get(url, headers=headers, params=params)
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url=url, headers=headers, params=params) as response:
+                await self.set_cve_detail_v2(response)
         return self.cve_details
     
     def get_cve_details_by_id_v1(self, cve_id):
@@ -64,15 +67,15 @@ class CVE:
         self.set_cve_detail_v1(response)
         return self.cve_details
 
-    def set_cve_detail_v2(self, response):
+    async def set_cve_detail_v2(self, response):
         """
         This function sets the details of a Common Vulnerabilities and Exposures (CVE) entry based on a
         response from an API 2.0.
         
         :param response: The response object received from an API call
         """
-        if response.status_code == 200:
-            data = response.json()
+        if response.status == 200:
+            data = await response.json()
             if data.get('vulnerabilities') and len(data.get('vulnerabilities')):
                 if data['vulnerabilities'][0].get('cve'):
                     if data['vulnerabilities'][0]['cve'].get('descriptions'):
@@ -221,7 +224,7 @@ class CVE:
                     }
                 )
 
-    def get_cve_details_by_keyword_v2(self, keyword):
+    async def get_cve_details_by_keyword_v2(self, keyword):
         """
         This function retrieves CVE details from the NIST NVD API 2.0 based on a keyword search and returns
         the details in a dictionary format.
@@ -245,8 +248,10 @@ class CVE:
             "keywordSearch": keyword,
             "resultsPerPage": 1
         }
-        response = requests.get(url, headers=headers, params=params)
-        self.set_cve_detail_v2(response)
+        # response = requests.get(url, headers=headers, params=params)
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url=url, headers=headers, params=params) as response:
+                await self.set_cve_detail_v2(response)
         return self.cve_details
 
     def get_cve_details_by_keyword_v1(self, keyword):

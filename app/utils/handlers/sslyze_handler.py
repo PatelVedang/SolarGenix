@@ -10,6 +10,7 @@ from .cve import CVE
 cve = CVE()
 from .common_handler import *
 import json
+import asyncio
 
 class SSLYSE:
     result = {}
@@ -18,6 +19,12 @@ class SSLYSE:
     suites_regex = "The\s+server\s+accepted\s+the\s+following\s+(?P<suites>\d{1,})\s+cipher\s+suites:"
     services_objects = {}
     # service_regex = "\*(?P<service>[\w\s.]+):\\r\\n"
+    
+    async def handlers(self, tool_cmd, handlers, target, regenerate):
+        jobs = []
+        for vul_handler in handlers[tool_cmd]:
+            jobs.append(vul_handler(target, regenerate))
+        await asyncio.gather(*jobs)
 
     def main(self, target, regenerate):
         """
@@ -57,8 +64,14 @@ class SSLYSE:
                         value = re.search(regex, target.raw_result).groupdict().get('content')
                         self.services_objects = {**self.services_objects, **{key:value}}
                 self.result = {}
-                for vul_handler in handlers[tool_cmd]:
-                    vul_handler(target, regenerate)
+
+
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+                loop.run_until_complete(self.handlers(tool_cmd, handlers, target, regenerate))
+                loop.close()
+                
+                
                 Target.objects.filter(id=target.id).update(compose_result=self.result)
                 return self.result
             else:
@@ -67,7 +80,7 @@ class SSLYSE:
         else:
             return handlers['default'](target, regenerate)
 
-    def ssl_missing_handler(self, target, regenerate):
+    async def ssl_missing_handler(self, target, regenerate):
         """
         This function checks if an SSL certificate has expired and sets a vulnerability if it has.
         
@@ -83,9 +96,9 @@ class SSLYSE:
                 if cert_expire_on < datetime.utcnow():
                     error = "Expired SSL certificate"
                     evidence = self.services_objects.get('Certificates Information:', '')
-                    self.result = {**self.result, **alert_response(cve="CVE-2015-3886", error=error, tool="sslyze", alert_type=1, evidence=evidence)}
+                    self.result = {**self.result, **await alert_response(cve="CVE-2015-3886", error=error, tool="sslyze", alert_type=1, evidence=evidence)}
     
-    def tls1_detect_handler(self, target, regenerate):
+    async def tls1_detect_handler(self, target, regenerate):
         """
         This function detects if a target is using the TLS 1.0 protocol and flags it as a vulnerability.
         
@@ -101,9 +114,9 @@ class SSLYSE:
                 if search_result.groupdict().get('suites') and int(search_result.groupdict().get('suites')) >= 1:
                     error = "TLS 1.0 Weak Protocol"
                     evidence = self.services_objects.get('TLS 1.0 Cipher Suites:', '')
-                    self.result = {**self.result, **alert_response(cve="CVE-2022-34757", error=error, tool="sslyze", alert_type=1, evidence=evidence)}
+                    self.result = {**self.result, **await alert_response(cve="CVE-2022-34757", error=error, tool="sslyze", alert_type=1, evidence=evidence)}
     
-    def tls11_detect_handler(self, target, regenerate):
+    async def tls11_detect_handler(self, target, regenerate):
         """
         This function detects if a remote service accepts connections encrypted using TLS 1.1 and
         provides information on the weaknesses of this protocol and a solution to enable support for TLS
@@ -129,7 +142,7 @@ class SSLYSE:
                     '''
                     solution = "Enable support for TLS 1.2 and/or 1.3, and disable support for TLS 1.1."
                     evidence = self.services_objects.get('TLS 1.1 Cipher Suites:', '')
-                    self.result = {**self.result, **alert_response(
+                    self.result = {**self.result, **await alert_response(
                         complexity=complexity,
                         error=error,
                         description=desc,
@@ -139,7 +152,7 @@ class SSLYSE:
                         evidence=evidence
                     )}
     
-    def tls12_detect_handler(self, target, regenerate):
+    async def tls12_detect_handler(self, target, regenerate):
         """
         This function detects if a remote service accepts connections encrypted using TLS 1.2 and sets
         an information vulnerability accordingly.
@@ -158,7 +171,7 @@ class SSLYSE:
                     error = "TLS 1.2 Weak Protocol"
                     desc = 'The remote service accepts connections encrypted using TLS 1.2.'
                     solution = "N/A"
-                    self.result = {**self.result, **alert_response(
+                    self.result = {**self.result, **await alert_response(
                         complexity=complexity,
                         error=error,
                         description=desc,
