@@ -125,14 +125,16 @@ def send_message(id, token, order_id, batch_scan):
     :param id: The id of the target user
     :param token: The token you get from the login API
     """
-    if batch_scan:
-        if not Target.objects.filter(order_id=order_id).exclude(id=id).filter(status__in=[2]).count():
-            logger.info(f"====>>>>>>>>       \nWebsocket API trigger for order_id:{order_id}\n       <<<<<<<<====")
-            response = requests.get(f'http://localhost:8000/api/sendMessage/?order={order_id}', headers={'Authorization': token})
-    else:
-        logger.info(f"====>>>>>>>>       \nWebsocket API trigger for target id:{id}\n       <<<<<<<<====")
-        response = requests.get(f'http://localhost:8000/api/sendMessage/?id={id}', headers={'Authorization': token})
-
+    try:
+        if batch_scan:
+            if not Target.objects.filter(order_id=order_id).exclude(id=id).filter(status__in=[2]).count():
+                logger.info(f"====>>>>>>>>       \nWebsocket API trigger for order_id:{order_id}\n       <<<<<<<<====")
+                response = requests.get(f'http://localhost:8000/api/sendMessage/?order={order_id}', headers={'Authorization': token})
+        else:
+            logger.info(f"====>>>>>>>>       \nWebsocket API trigger for target id:{id}\n       <<<<<<<<====")
+            response = requests.get(f'http://localhost:8000/api/sendMessage/?id={id}', headers={'Authorization': token})
+    except Exception as e:
+        pass
     return True
 
 def OWASP_ZAP_spider_scan_v1(url):
