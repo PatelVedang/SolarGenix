@@ -108,8 +108,10 @@ DATABASES = {
         'PASSWORD': os.environ.get('MYSQL_PASSWORD', env('MYSQL_PASSWORD')),
         'HOST': os.environ.get('MYSQL_DATABASE_HOST', env('MYSQL_DATABASE_HOST')),
         'PORT': os.environ.get('MYSQL_DATABASE_PORT', env('MYSQL_DATABASE_PORT')),
+        'CONN_MAX_AGE': 3600,
         # 'OPTIONS': {
-        #     "init_command": f"SET GLOBAL max_connections = 100000",
+        #     # "init_command": f"SET GLOBAL max_connections = 100000",
+        #     'MAX_AGE': 600
         # }
     }
 }
