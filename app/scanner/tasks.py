@@ -43,8 +43,8 @@ def get_scan_time(end_date=datetime.utcnow(), **kwargs):
 c = Celery('proj')
 @c.task
 def scan(id, time_limit, token, order_id, user_id, batch_scan):
-    # thread = threading.Thread(target=send_message, args=(id, token, order_id, batch_scan))
-    # thread.start()
+    thread = threading.Thread(target=send_message, args=(id, token, order_id, batch_scan))
+    thread.start()
 
     py_tools={
         'owasp_zap':OWASP_ZAP_spider_scan_v3,
