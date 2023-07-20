@@ -55,3 +55,4 @@ pandas==2.0.2
 reportlab==4.0.4
 asyncio===3.4.3
 aiohttp===3.8.4
+selenium==4.10.0
