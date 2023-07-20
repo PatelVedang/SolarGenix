@@ -14,6 +14,6 @@ class UserAdmin(admin.ModelAdmin):
     readonly_fields = ('id','otp','role')
     search_fields = ('first_name', 'last_name', 'email','subscription__plan_type')
     list_display = [
-        'id', 'first_name', 'last_name', 'email', 'is_staff', 'is_superuser', 'subscription', 'is_deleted'
+        'id', 'first_name', 'last_name', 'email', 'is_staff', 'is_superuser', 'subscription', 'is_deleted', 'is_active'
     ]
 admin.site.register(User, UserAdmin)

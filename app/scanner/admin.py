@@ -160,7 +160,7 @@ class OrderAdmin(BulkSelect):
 
 class ToolAdmin(BulkSelect):
     readonly_fields = ('id',)
-    list_display = ['id','tool_name', 'tool_cmd', 'is_deleted', 'subscription']
+    list_display = ['id','tool_name', 'tool_cmd', 'is_deleted', 'subscription', 'py_tool']
     actions = ['make_it_as_staff_tool'] + BulkSelect.actions
     search_fields = ('id', 'subscription__plan_type', 'tool_name', 'tool_cmd')
 

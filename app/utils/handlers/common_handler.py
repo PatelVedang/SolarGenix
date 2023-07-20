@@ -116,7 +116,7 @@ async def alert_response(**kwargs):
             }
         }
     elif alert_type == 5:
-        alerts = kwargs.get('alerts',[])
+        alerts = kwargs.get('alerts',{})
         for key,value in alerts.items():
             evidence = list(set(list(map(lambda x: x['evidence'],value.get('urls',[])))))
             if "\n".join(evidence):
@@ -125,7 +125,7 @@ async def alert_response(**kwargs):
                 value['cwe_ids'] = [f"CWE-{value['cweid']}"]
             common_alert_data = make_alert_obj(**{**value,
                                                   **{
-                                                      'complexity': value.get('risk'),
+                                                      'complexity': value.get('risk') if value.get('risk') else 'info',
                                                       'error': value.get('name'),
                                                       'tool': kwargs.get('tool'),
                                                       'instances': value.get('instances',1)

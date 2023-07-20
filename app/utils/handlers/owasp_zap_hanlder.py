@@ -45,6 +45,9 @@ class OWASP:
             'owasp_zap': [
                 self.zap_handler,
             ],
+            'isaix_owasp': [
+                self.zap_handler,
+            ],
             'default': default.default_handler
         }
         tool_cmd = target.tool.tool_cmd.strip()
@@ -56,7 +59,7 @@ class OWASP:
                 asyncio.set_event_loop(loop)
                 loop.run_until_complete(self.handlers(tool_cmd, handlers, target, regenerate))
                 loop.close()
-
+                
                 Target.objects.filter(id=target.id).update(compose_result=self.result)
                 return self.result
             else:

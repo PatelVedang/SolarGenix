@@ -74,12 +74,13 @@ class ScanViewSet(viewsets.ModelViewSet, Common):
         serializer = self.serializer_class(data=request.data)
         if serializer.is_valid(raise_exception=True):
             targets_id = serializer.data.get('targets_id')
+            user_id = request.user.id
             for target_id in targets_id:
                 target_obj = Target.objects.get(id=target_id)
                 target_obj.status = 1
                 target_obj.save()
                 tool_time_limit = target_obj.tool.time_limit
-                scan.apply_async(args=[], kwargs={'id':target_id, 'time_limit':tool_time_limit, 'token':request.headers.get('Authorization'), 'order_id': target_obj.order_id, 'batch_scan': False}, time_limit=tool_time_limit+10, ignore_result=True)
+                scan.apply_async(args=[], kwargs={'id':target_id, 'time_limit':tool_time_limit, 'token':request.headers.get('Authorization'), 'order_id': target_obj.order_id, 'user_id': user_id, 'batch_scan': False}, time_limit=tool_time_limit+10, ignore_result=True)
         custom_response = ScannerResponseSerializer(Target.objects.filter(id__in=targets_id), many=True, context={"request": request})
         return response(status=True, data=custom_response.data, status_code=status.HTTP_200_OK, message="host successfully added in queue")
         
@@ -109,9 +110,10 @@ class ScanViewSet(viewsets.ModelViewSet, Common):
             else:
                 records = Target.objects.filter(status=0)[:n]
             records.update(status=1)
+            user_id = request.user.id
             for record in records:
                 tool_time_limit = record.tool.time_limit
-                scan.apply_async(args=[], kwargs={'id':record.id, 'time_limit':tool_time_limit, 'token':request.headers.get('Authorization'), 'order_id': record.order_id, 'batch_scan': False}, time_limit=tool_time_limit+10, ignore_result=True)
+                scan.apply_async(args=[], kwargs={'id':record.id, 'time_limit':tool_time_limit, 'token':request.headers.get('Authorization'), 'order_id': record.order_id, 'user_id': user_id, 'batch_scan': False}, time_limit=tool_time_limit+10, ignore_result=True)
         custom_response = ScannerResponseSerializer(records, many=True, context={"request": request})
         return response(status=True, data=custom_response.data, status_code=status.HTTP_200_OK, message="host successfully added in queue")
 
@@ -556,11 +558,12 @@ class OrderViewSet(viewsets.ModelViewSet, Common):
             orders_id = serializer.data.get('orders_id')
             for order_id in orders_id:
                 order = Order.objects.filter(id=order_id)
+                user_id = request.user.id
                 targets = Target.objects.filter(order_id=order_id, status__lte=2)
                 targets.update(status=1)
                 super().update_order_targets(order, targets)
                 for target in targets:
-                    scan.apply_async(args=[], kwargs={'id':target.id, 'time_limit':target.tool.id, 'token':request.headers.get('Authorization'), 'order_id': order_id, 'batch_scan': True}, time_limit=target.tool.time_limit +10, ignore_result=True)
+                    scan.apply_async(args=[], kwargs={'id':target.id, 'time_limit':target.tool.id, 'token':request.headers.get('Authorization'), 'order_id': order_id, 'user_id': user_id, 'batch_scan': True}, time_limit=target.tool.time_limit +10, ignore_result=True)
         custom_response = OrderResponseSerailizer(Order.objects.filter(id__in=orders_id), many=True, context={"request": request})
         return response(status=True, data=custom_response.data, status_code=status.HTTP_200_OK, message="targets of order is successfully added in queue")
 

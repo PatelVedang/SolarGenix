@@ -73,6 +73,9 @@ cover/
 *.mo
 
 # Django stuff:
+*.eot
+*.ttf
+*.woff
 
 # Flask stuff:
 instance/
@@ -146,6 +149,7 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+
 
 # Spyder project settings
 .spyderproject

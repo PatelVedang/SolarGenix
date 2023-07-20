@@ -1,4 +1,4 @@
-from celery import Celery
+from celery import Celery, current_task
 import subprocess
 from .models import Target, TargetLog
 import platform
@@ -14,6 +14,12 @@ import time
 import signal
 import json
 import pandas as pd
+import traceback
+import asyncio
+import aiohttp
+from utils.owasp.scan import Scanner
+owasp = Scanner()
+from datetime import datetime
 
 from zapv2 import ZAPv2
 zap = ZAPv2()
@@ -36,13 +42,13 @@ def get_scan_time(end_date=datetime.utcnow(), **kwargs):
 
 c = Celery('proj')
 @c.task
-def scan(id, time_limit, token, order_id, batch_scan):
-    thread = threading.Thread(target=send_message, args=(id, token, order_id, batch_scan))
-    thread.start()
+def scan(id, time_limit, token, order_id, user_id, batch_scan):
+    # thread = threading.Thread(target=send_message, args=(id, token, order_id, batch_scan))
+    # thread.start()
 
     py_tools={
-        'owasp_zap':OWASP_ZAP_spider_scan_v3
-        # 'owasp_zap':OWASP_ZAP_active_scan_v1
+        'owasp_zap':OWASP_ZAP_spider_scan_v3,
+        'isaix_owasp': custom_OWASP_ZAP_scan
     }
 
     target = Target.objects.filter(id=id)
@@ -77,11 +83,13 @@ def scan(id, time_limit, token, order_id, batch_scan):
                 tool_cmd = target[0].tool.tool_cmd
                 if py_tools.get(tool_cmd):
 
-                    # Set the timeout signal and handler
-                    signal.signal(signal.SIGALRM, timeout_handler)
-                    signal.alarm(time_limit)
+                    # # Set the timeout signal and handler
+                    # signal.signal(signal.SIGALRM, timeout_handler)
+                    # # signal.signal(signal.SIGALRM, lambda signum, frame: timeout_handler(signum, frame, target[0].id))
+                    # signal.alarm(time_limit)
                     
-                    output = py_tools.get(tool_cmd)(ip)
+                    # Calling the python tool(ex. owasp)
+                    output = py_tools.get(tool_cmd)(ip, order_id, user_id, time_limit)
                 else:
                     raise ModuleNotFoundError(f"{tool_cmd} tool does not exist.")
             else:
@@ -108,7 +116,6 @@ def scan(id, time_limit, token, order_id, batch_scan):
             update_target_and_add_log(target=target, output=str(error), id=id, status=3, action=3, scan_time = get_scan_time(start_time=start_time, end_date=datetime.utcnow()))
             return False
         except Exception as e:
-            import traceback
             traceback.print_exc()
             logger.info(f"====>>>>>>>>       \nBackground thread for ip:{ip} with id:{id} has been terminated\n       <<<<<<<<====")
             update_target_and_add_log(target=target, output=str(e), id=id, status=3, action=3, scan_time = get_scan_time(start_time=start_time, end_date=datetime.utcnow()))
@@ -129,12 +136,12 @@ def send_message(id, token, order_id, batch_scan):
         if batch_scan:
             if not Target.objects.filter(order_id=order_id).exclude(id=id).filter(status__in=[2]).count():
                 logger.info(f"====>>>>>>>>       \nWebsocket API trigger for order_id:{order_id}\n       <<<<<<<<====")
-                response = requests.get(f'http://localhost:8000/api/sendMessage/?order={order_id}', headers={'Authorization': token})
+                response = requests.get(f'{settings.LOCAL_API_URL}/api/sendMessage/?order={order_id}', headers={'Authorization': token})
         else:
             logger.info(f"====>>>>>>>>       \nWebsocket API trigger for target id:{id}\n       <<<<<<<<====")
-            response = requests.get(f'http://localhost:8000/api/sendMessage/?id={id}', headers={'Authorization': token})
+            response = requests.get(f'{settings.LOCAL_API_URL}/api/sendMessage/?id={id}', headers={'Authorization': token})
     except Exception as e:
-        pass
+        return True
     return True
 
 def OWASP_ZAP_spider_scan_v1(url):
@@ -269,8 +276,13 @@ def OWASP_ZAP_spider_scan_v2(url):
     # Generate report
     return set_zap_html_report(url, risk_levels, alerts)
 
-def OWASP_ZAP_spider_scan_v3(url):
+def OWASP_ZAP_spider_scan_v3(url, order_id, user_id, time_limit):
     # To store json as a scan result
+
+    # Set the timeout signal and handler
+    signal.signal(signal.SIGALRM, timeout_handler, )
+    # signal.signal(signal.SIGALRM, lambda signum, frame: timeout_handler(signum, frame, target[0].id))
+    signal.alarm(time_limit)
 
     # risk_levels object to get alerts count riks wise
     risk_levels = {
@@ -377,7 +389,7 @@ def OWASP_ZAP_spider_scan_v3(url):
     # Remove spider scan
     zap.spider.remove_scan(scanid=spider_scan_id)
 
-    return json.dumps({'alerts': alerts, 'risk_levels': risk_levels})
+    return json.dumps({'alerts': alerts})
 
 def timeout_handler(signum, frame):
     raise TimeoutError("Timeout occurred")
@@ -445,310 +457,13 @@ def OWASP_ZAP_active_scan_v1(url):
 
     return json.dumps({'alerts': alerts, 'risk_levels': risk_levels})
 
-# Currently we are not using this one
-def set_zap_html_report(url, risk_levels, alerts):
-    alerts_html = ""
-    alert_details_html = ""
-
-    # set alerts with alerts details
-    for key,value in alerts.items():
-        # Individual alert title table html
-        alerts_html += f'''
-            <tr>
-				<td><a href="">{key}</a></td>
-				<td align="center" class="{risk_levels[value['risk']]['class']}">{value['risk']}</td>
-				<td align="center">{value['instances']}</td>
-			</tr>
-        '''
-
-        # Individual alert detail html
-        alert_details_html += f'''
-            <table class="results">
-				<tr height="24">
-					<th width="20%" class="{risk_levels[value['risk']]['class']}"><a
-						id="10202"></a>
-						<div>{value['risk']}</div></th>
-					<th class="{risk_levels[value['risk']]['class']}">{key}</th>
-				</tr>
-				<tr>
-					<td width="20%">Description</td>
-					<td width="80%">
-							<div>{value['description']}</div>
-				</tr>'''
-        if value.get('urls'):
-            alert_details_html += '''<TR vAlign="top">
-                <TD colspan="2"></TD>
-            </TR>'''
-			
-            # Setting each url in single alert
-            for url_obj in value.get('urls'):
-                alert_details_html += f'''<tr>
-						<td width="20%"
-							class="indent1">URL</td>
-						<td width="80%">{url_obj['url']}</td>
-					</tr>
-					<tr>
-						<td width="20%"
-							class="indent2">Method</td>
-						<td width="80%">{url_obj['method']}</td>
-					</tr>
-					<tr>
-						<td width="20%"
-							class="indent2">Parameter</td>
-						<td width="80%">{url_obj['parameter']}</td>
-					</tr>
-					<tr>
-						<td width="20%"
-							class="indent2">Attack</td>
-						<td width="80%">{url_obj['attack']}</td>
-					</tr>
-					<tr>
-						<td width="20%"
-							class="indent2">Evidence</td>
-						<td width="80%">{url_obj['evidence']}</td>
-					</tr>'''
-				
-        alert_details_html += f'''<tr>
-					<td width="20%">Instances</td>
-					<td width="80%">{value['instances']}</td>
-				</tr>
-				<tr>
-					<td width="20%">Solution</td>
-					<td width="80%">
-							<div>{value['solution']}</div>
-						</td>
-				</tr>
-				<tr>
-					<td width="20%">Reference</td>
-					<td width="80%">
-                        {value['reference']}
-                    </td>
-				</tr>
-				<tr>
-					<td width="20%">CWE Id</td>
-					<td width="80%"><a
-						href="https://cwe.mitre.org/data/definitions/{value['cweid']}.html">{value['cweid']}</a></td>
-				</tr>
-				<tr>
-					<td width="20%">WASC Id</td>
-					<td width="80%">{value['wsac_id']}</td>
-				</tr>
-				<tr>
-					<td width="20%">Plugin Id</td>
-					<td width="80%"><a
-						href="https://www.zaproxy.org/docs/alerts/{value['plugin_id']}/">{value['plugin_id']}</a></td>
-				</tr>
-			</table>
-			<div class="spacer"></div>
-        '''
-
-    # main body
-    html_str = '''
-        <!DOCTYPE html>
-        <html>
-        <head>
-        <META http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-        <title>ZAP Scanning Report</title>
-        <style type="text/css">
-        body {
-            font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
-            color: #000;
-            font-size: 13px;
-        }
-
-        h1 {
-            text-align: center;
-            font-weight: bold;
-            font-size: 32px
-        }
-
-        h3 {
-            font-size: 16px;
-        }
-
-        table {
-            border: none;
-            font-size: 13px;
-        }
-
-        td, th {
-            padding: 3px 4px;
-            word-break: break-word;
-        }
-
-        th {
-            font-weight: bold;
-            background-color: #666666;
-        }
-
-        td {
-            background-color: #e8e8e8;
-        }
-
-        .spacer {
-            margin: 10px;
-        }
-
-        .spacer-lg {
-            margin: 40px;
-        }
-
-        .indent1 {
-            padding: 4px 20px;
-        }
-
-        .indent2 {
-            padding: 4px 40px;
-        }
-
-        .risk-3 {
-            background-color: red;
-            color: #FFF;
-        }
-
-        .risk-2 {
-            background-color: orange;
-            color: #FFF;
-        }
-
-        .risk-1 {
-            background-color: yellow;
-            color: #000;
-        }
-
-        .risk-0 {
-            background-color: blue;
-            color: #FFF;
-        }
-
-        .risk--1 {
-            background-color: green;
-            color: #FFF;
-        }
-
-        .summary {
-            width: 45%;
-        }
-
-        .summary th {
-            color: #FFF;
-        }
-
-        .alerts {
-            width: 75%;
-        }
-
-        .alerts th {
-            color: #FFF;
-        }
-
-        .results {
-            width: 100%;
-        }
-
-        .results th {
-            text-align: left;
-        }
-
-        .left-header {
-            display: inline-block;
-        }
-        </style>
-        </head>
-    '''
-    html_str +=f'''
-        <body>
-            <h1>
-                <!-- The ZAP Logo -->
-                <img
-                    src="data:image/png;base64,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"
-                    alt="" />
-                ZAP Scanning Report
-            </h1>
-            <p />
-            
-
-            <h2>
-                Sites: {url}
-            </h2>
-
-            <h3>
-                Generated on {datetime.utcnow().strftime("%a, %d %b %Y %H:%M:%S")} UTC
-            </h3>
-
-            
-                <h3 class="left-header">Summary of Alerts</h3>
-                <table class="summary">
-                    <tr>
-                        <th width="45%"
-                            height="24">Risk Level</th>
-                        <th width="55%"
-                            align="center">Number of Alerts</th>
-                    </tr>
-                    <tr>
-                        <td class="risk-3">
-                            <div>High</div>
-                        </td>
-                        <td align="center">
-                            <div>{risk_levels['High']['count']}</div>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td class="risk-2">
-                            <div>Medium</div>
-                        </td>
-                        <td align="center">
-                            <div>{risk_levels['Medium']['count']}</div>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td class="risk-1">
-                            <div>Low</div>
-                        </td>
-                        <td align="center">
-                            <div>{risk_levels['Low']['count']}</div>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td class="risk-0">
-                            <div>Informational</div>
-                        </td>
-                        <td align="center">
-                            <div>{risk_levels['Informational']['count']}</div>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td class="risk--1">
-                            <div>				False Positives:</div>
-                        </td>
-                        <td align="center">
-                            <div>{risk_levels['False Positives:']['count']}</div>
-                        </td>
-                    </tr>
-                </table>
-                <div class="spacer-lg"></div>
-            
-
-            
-                <h3>Alerts</h3>
-                <table class="alerts">
-                    <tr>
-                        <th width="60%" height="24">Name</th>
-                        <th width="20%"
-                            align="center">Risk Level</th>
-                        <th width="20%"
-                            align="center">Number of Instances</th>
-                    </tr>
-                    {alerts_html}
-                    
-                </table>
-                <div class="spacer-lg"></div>
-            
-
-                <h3>Alert Detail</h3>
-                {alert_details_html}
-        </body>
-        </html>
-
-    '''
-    return html_str
+def custom_OWASP_ZAP_scan(url, order_id, user_id, time_limit):
+    domain = ".".join(list(extract(url))).strip(".")
+    http_url = f"http://{domain}"
+    https_url = f"https://{domain}"
+    if not ('http://' in url or 'https://' in url):
+        url = http_url
+    # try:
+    return owasp.process_data(url, order_id, user_id, time_limit)
+    # except Exception as e:
+    #     pass
