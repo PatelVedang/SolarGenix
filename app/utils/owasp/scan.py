@@ -356,22 +356,38 @@ class Scanner:
         except Exception as e:
             print('error while scanning url {}'.format(url))
             traceback.print_exc()
-            raise Exception('error while scanning url {}'.format(url))
+            if "TimeoutError" == e.__class__.__name__:
+                raise TimeoutError("Timeout error occured")
 
     
     def process_data(self, url, order_id, user_id, time_limit):
-        # Set the timeout signal and handler
-        signal.signal(signal.SIGALRM, timeout_handler)
-        # signal.signal(signal.SIGALRM, lambda signum, frame: timeout_handler(signum, frame, target[0].id))
-        signal.alarm(time_limit)
-        
+
+        start_time = datetime.utcnow()
         directoryList = [url]
         newFiles = listDirectory(url, order_id, user_id)
         for file in newFiles:
             directoryList.append(file)
-        
-        for url in directoryList:
-            self.execute_scans(url)
+        dir_list_time = round((datetime.utcnow()-start_time).total_seconds())
+        timeout_limit = time_limit - dir_list_time
+        for i in range(1, 11):
+            if timeout_limit > 0:
+                # Set the timeout signal and handler
+                signal.signal(signal.SIGALRM, timeout_handler)
+                signal.alarm(timeout_limit)
+
+                start_time = datetime.utcnow()
+                print(start_time,"=>>>Start")
+                self.execute_scans(url)
+                end = datetime.utcnow()
+                print(end,"=>>>End")
+               
+                iterationTime = round((end-start_time).total_seconds())
+                timeout_limit -= iterationTime
+                
+                # Reset the alarm after each iteration
+                signal.alarm(0)
+            else:
+                raise TimeoutError("Timeout error occur")
 
         output = {
             'alerts': dict(self.vulnerabilities)
