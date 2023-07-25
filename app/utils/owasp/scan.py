@@ -369,7 +369,7 @@ class Scanner:
             directoryList.append(file)
         dir_list_time = round((datetime.utcnow()-start_time).total_seconds())
         timeout_limit = time_limit - dir_list_time
-        for i in range(1, 11):
+        for url in directoryList:
             if timeout_limit > 0:
                 # Set the timeout signal and handler
                 signal.signal(signal.SIGALRM, timeout_handler)
