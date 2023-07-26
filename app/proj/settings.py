@@ -302,6 +302,8 @@ SPIDER_API_CALL_DELAY=os.environ.get('SPIDER_API_CALL_DELAY', env('SPIDER_API_CA
 
 CELERY_BROKER_URL = os.environ.get('CELERY_BROKER_URL', env('CELERY_BROKER_URL'))
 LOCAL_API_URL = os.environ.get('LOCAL_API_URL', env('LOCAL_API_URL')).strip()
+
+APP_ERROR_FILE_PATH = f"{BASE_DIR}/utils/custom_owasp/application_errors.xml"
 # CELERY_ROUTES = {
 #  'user.tasks.*': {'queue': 'user_queue'},
 #  'scanner.tasks.*': {'queue': 'scanner_queue'},

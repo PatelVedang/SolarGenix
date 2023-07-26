@@ -52,6 +52,7 @@ class OWASP:
         }
         tool_cmd = target.tool.tool_cmd.strip()
         if handlers.get(tool_cmd):
+            regenerate=True
             if regenerate or not target.compose_result:
                 self.result = {}
                 
@@ -80,7 +81,8 @@ class OWASP:
         or if the existing target can be used
         """
         try:
-            vul_data = await alert_response(**{**json.loads(target.raw_result),**{'tool': 'OWASP ZAP', 'alert_type':5}})
+            tool = "ISAIX OWASP" if target.tool.tool_cmd.strip() == "isaix_owasp" else "OWASP ZAP"
+            vul_data = await alert_response(**{**json.loads(target.raw_result),**{'tool': tool, 'alert_type':5}})
             self.result = {**self.result, **vul_data}
         except:
             import traceback

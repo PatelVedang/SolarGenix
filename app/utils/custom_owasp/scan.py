@@ -101,7 +101,7 @@ class Scanner:
 
                 self.add_urls('Missing Anti ClickJacking Header', anticlickjacking)
 
-            applicationError = hasApplicationError(url, f"{settings.BASE_DIR}/utils/owasp/application_errors.xml") # Use this line for local
+            applicationError = hasApplicationError(url, f"{settings.APP_ERROR_FILE_PATH}") # Use this line for local
             # applicationError = hasApplicationError(url, f"/home/techno200/projects/CyberApp/app/utils/owasp/application_errors.xml") # Use this line for local
             if applicationError:
                 if 'Application Error Disclosure' not in self.vulnerabilities:

@@ -17,7 +17,7 @@ import pandas as pd
 import traceback
 import asyncio
 import aiohttp
-from utils.owasp.scan import Scanner
+from utils.custom_owasp.scan import Scanner
 owasp = Scanner()
 from datetime import datetime
 
