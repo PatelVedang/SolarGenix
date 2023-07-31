@@ -66,30 +66,58 @@ class ScannerSerializer(serializers.ModelSerializer):
         return super().validate(attrs)
 
 
+# The ToolPayloadSerializer class is a subclass of the ModelSerializer class. It has a Meta class that
+# specifies the model to be serialized and the fields to be serialized. It also has a validate method
+# that logs the serialized data
+class ToolPayloadSerializer(serializers.ModelSerializer):
+    id = serializers.IntegerField(read_only=True)
+    class Meta:
+        model = Tool
+        exlude = ['is_deleted']
+        fields = ['id','tool_name','tool_cmd', 'time_limit']
+
+    def validate(self, attrs):
+        logger.info(f'serialize_data: {json.dumps(attrs)}')
+        return super().validate(attrs)
+
+
+# This serializer consider as a response serializer for Tool model. 
+class ToolSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Tool
+        fields = ['id', 'is_deleted', 'tool_name', 'tool_cmd', 'time_limit']
+
+    def validate(self, attrs):
+        logger.info(f'serialize_data: {json.dumps(attrs)}')
+        return super().validate(attrs)
+
 # The ScannerResponseSerializer class is a subclass of the ModelSerializer class. It has a Meta class
 # that specifies the model to be used and the fields to be serialized. The to_representation method is
 # overridden to add the tool name to the serialized data
 class ScannerResponseSerializer(serializers.ModelSerializer):
+    tool =  ToolPayloadSerializer()
+
     class Meta:
         model = Target
-        exclude = ['compose_result'] 
+        exclude = ['compose_result']
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
         requested_user = self.context['request'].user
-        if requested_user.subscription_id == 2:
-            data['tool']= Tool.default.filter(id=instance.tool.id).values('id', 'tool_name', 'tool_cmd')[0]
-            data['scan_by']= {
-                "id": instance.scan_by.id,
-                "email": instance.scan_by.email,
-                "first_name": instance.scan_by.first_name,
-                "last_name": instance.scan_by.last_name,
-                "is_staff": instance.scan_by.is_staff,
-                "is_superuser": instance.scan_by.is_superuser,
-                "subscription_id": instance.scan_by.subscription_id
-            }
-        else:
+        if not requested_user.role.tool_access:
+            data['tool']= instance.tool.id
             data['raw_result'] = ""
+        
+        data['scan_by']= {
+            "id": instance.scan_by.id,
+            "email": instance.scan_by.email,
+            "first_name": instance.scan_by.first_name,
+            "last_name": instance.scan_by.last_name,
+            "is_staff": instance.scan_by.is_staff,
+            "is_superuser": instance.scan_by.is_superuser,
+            "role_id": instance.scan_by.role_id,
+            "subscription_id": instance.scan_by.subscription_id
+        }
         data['request_by']= {
             "id": requested_user.id,
             "email": requested_user.email,
@@ -97,6 +125,12 @@ class ScannerResponseSerializer(serializers.ModelSerializer):
             "last_name": requested_user.last_name,
             "is_staff": requested_user.is_staff,
             "is_superuser": requested_user.is_superuser,
+            "role": {
+                'id': requested_user.role.id,
+                'name': requested_user.role.name,
+                'tool_access': requested_user.role.tool_access,
+                'target_access':requested_user.role.target_access
+            },
             "subscription_id": requested_user.subscription_id
         }
         return data
@@ -141,6 +175,7 @@ class OrderResponseSerailizer(serializers.ModelSerializer):
             "last_name": instance.client.last_name,
             "is_staff": instance.client.is_staff,
             "is_superuser": instance.client.is_superuser,
+            "role_id": instance.client.role_id,
             "subscription_id": instance.client.subscription_id
         }
         data['request_by']= {
@@ -150,6 +185,12 @@ class OrderResponseSerailizer(serializers.ModelSerializer):
             "last_name": requested_user.last_name,
             "is_staff": requested_user.is_staff,
             "is_superuser": requested_user.is_superuser,
+            "role": {
+                'id': requested_user.role.id,
+                'name': requested_user.role.name,
+                'tool_access': requested_user.role.tool_access,
+                'target_access':requested_user.role.target_access
+            },
             "subscription_id": requested_user.subscription_id
         }
         return data
@@ -173,6 +214,7 @@ class OrderWithoutTargetsResponseSerailizer(serializers.ModelSerializer):
             "last_name": instance.client.last_name,
             "is_staff": instance.client.is_staff,
             "is_superuser": instance.client.is_superuser,
+            "role_id": instance.client.role_id,
             "subscription_id": instance.client.subscription_id
         }
         data['request_by']= {
@@ -182,6 +224,12 @@ class OrderWithoutTargetsResponseSerailizer(serializers.ModelSerializer):
             "last_name": requested_user.last_name,
             "is_staff": requested_user.is_staff,
             "is_superuser": requested_user.is_superuser,
+            "role": {
+                'id': requested_user.role.id,
+                'name': requested_user.role.name,
+                'tool_access': requested_user.role.tool_access,
+                'target_access':requested_user.role.target_access
+            },
             "subscription_id": requested_user.subscription_id
         }
         return data
@@ -218,30 +266,6 @@ class AddInQueueByNumbersSerializer(serializers.ModelSerializer):
         return super().validate(attrs)
 
 
-# The ToolPayloadSerializer class is a subclass of the ModelSerializer class. It has a Meta class that
-# specifies the model to be serialized and the fields to be serialized. It also has a validate method
-# that logs the serialized data
-class ToolPayloadSerializer(serializers.ModelSerializer):
-    id = serializers.IntegerField(read_only=True)
-    class Meta:
-        model = Tool
-        exlude = ['is_deleted']
-        fields = ['id','tool_name','tool_cmd', 'time_limit']
-
-    def validate(self, attrs):
-        logger.info(f'serialize_data: {json.dumps(attrs)}')
-        return super().validate(attrs)
-
-
-# This serializer consider as a response serializer for Tool model. 
-class ToolSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Tool
-        fields = ['id', 'is_deleted', 'tool_name', 'tool_cmd', 'time_limit']
-
-    def validate(self, attrs):
-        logger.info(f'serialize_data: {json.dumps(attrs)}')
-        return super().validate(attrs)
     
 
 # This class is a serializer for the `Order` model. It has a field called `orders_id` which is a list

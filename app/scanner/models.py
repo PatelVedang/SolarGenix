@@ -109,6 +109,7 @@ class Subscription(SoftDelete):
     def __str__(self):
         return self.plan_type
 
+
 class SubscriptionHistory(models.Model):
     buyer = models.ForeignKey(User, on_delete=models.CASCADE)
     tools_ids = models.TextField(default="1")
@@ -131,5 +132,7 @@ class Order(SoftDelete):
     status = models.IntegerField(choices=ORDER_STATUS_CHOICES, default=0)
     retry= models.BigIntegerField(default=0)
     pdf_path = models.FileField(null=True, blank=True)
+    # scan_time store in seconds
+    scan_time = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     created_at = models.DateTimeField(auto_now_add=True, null=True)
     updated_at = models.DateTimeField(auto_now=True, null=True)

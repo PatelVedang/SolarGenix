@@ -26,6 +26,7 @@ class UserManager(BaseUserManager):
         """
         extra_fields.setdefault('is_staff', True)
         extra_fields.setdefault('is_superuser', True)
+        extra_fields.setdefault('role', 1)
         # extra_fields.setdefault('is_active', True)
 
         if extra_fields.get('is_staff') is not True:

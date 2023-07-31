@@ -30,7 +30,7 @@ class BaseAPITestCase(APITestCase):
             "password": settings.UNIT_TEST_USER_PASSWORD
         }
         self.set_response(self.client.post(f'/api/auth/login',data=self._data, format = "json"))
-        User.objects.filter(email="unittesting@yopmail.com").update(is_staff=True, is_superuser=True)
+        User.objects.filter(email="unittesting@yopmail.com").update(is_staff=True, is_superuser=True, role=1)
         self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {self._data['data']['access']}")
 
     def match_success_response(self):

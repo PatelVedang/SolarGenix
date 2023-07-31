@@ -8,7 +8,8 @@ class ScannerRetrievePremission(permissions.BasePermission):
         result = True
         if request.method == 'POST':
             if request.data.get('targets_id'):
-                if request.user.is_staff and request.user.is_superuser:
+                # if request.user.is_staff and request.user.is_superuser:
+                if request.user.role_id in [1,2]:
                     return True
                 targets_id = request.data.get('targets_id')
                 for target_id in targets_id:
@@ -20,7 +21,8 @@ class ScannerRetrievePremission(permissions.BasePermission):
     
     def has_object_permission(self, request, view, obj):
         if request.method == 'GET':
-            if request.user.is_staff and request.user.is_superuser:
+            # if request.user.is_staff and request.user.is_superuser:
+            if request.user.role_id in [1,2]:
                 return True
             return obj.scan_by == request.user
         return obj.scan_by == request.user
@@ -33,15 +35,15 @@ class IsAdminUserOrList(permissions.IsAdminUser):
         return super().has_permission(request, view)
     
 
-class UserHasSubscription(permissions.IsAdminUser):
+class UserHasPermission(permissions.IsAdminUser):
     def has_permission(self, request, view):
-        if request.user.subscription_id==2:
+        if request.user.role.target_access:
             return True
         else:
             return False
         
     def has_object_permission(self, request, view, obj):
-        if request.user.subscription_id==2:
+        if request.user.role.target_access:
             return True
         else:
             return False

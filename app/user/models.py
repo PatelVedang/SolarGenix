@@ -6,6 +6,18 @@ from django.utils.translation import gettext_lazy as _
 from datetime import datetime
 
 # Create your models here.
+class Role(models.Model):
+    name = models.CharField(max_length=50)
+    tool_access = models.BooleanField(default=False)
+    target_access = models.BooleanField(default=False)
+    is_deleted = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True, null=True)
+    updated_at = models.DateTimeField(auto_now=True, null=True)
+
+    def __str__(self):
+        return self.name
+    
+
 class User(AbstractBaseUser, PermissionsMixin):
     ROLE_CHOICES = (
         (1, "Super admin"),
@@ -17,7 +29,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     is_deleted = models.BooleanField(default=False)
     first_name = models.CharField(max_length=50) 
     last_name = models.CharField(max_length=50)
-    role = models.IntegerField(default=2)
+    role = models.ForeignKey("Role", on_delete=models.SET_NULL, null=True, blank=True)
     is_staff = models.BooleanField(default=False)
     is_superuser = models.BooleanField(default=False)
     otp = models.CharField(max_length=6, null=True)

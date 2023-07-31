@@ -1,6 +1,6 @@
 from celery import Celery, current_task
 import subprocess
-from .models import Target, TargetLog
+from .models import Target, TargetLog, Order
 import platform
 import requests
 from celery import shared_task
@@ -20,6 +20,7 @@ import aiohttp
 from utils.custom_owasp.scan import Scanner
 owasp = Scanner()
 from datetime import datetime
+from decimal import Decimal
 
 from zapv2 import ZAPv2
 zap = ZAPv2()
@@ -29,13 +30,15 @@ def update_target_and_add_log(**kwargs):
     The function updates a target object with a raw result and status, and creates a TargetLog object
     with the target ID and action.
     """
-    if kwargs.get('scan_time'):
-        kwargs.get('target').update(scan_time=kwargs.get('scan_time'))
+    target_scan_time_current = kwargs.get('target')[0].scan_time
+    target_scan_time_new = round(Decimal(kwargs.get('scan_time')),2)
+    
     if kwargs.get('output'):
-        kwargs.get('target').update(raw_result=kwargs.get('output'), status=kwargs.get('status'))
+        kwargs.get('target').update(raw_result=kwargs.get('output'), status=kwargs.get('status'), scan_time=target_scan_time_new)
     else:
-        kwargs.get('target').update(status=kwargs.get('status'))
+        kwargs.get('target').update(status=kwargs.get('status'), scan_time=target_scan_time_new)
     TargetLog.objects.create(target=Target(kwargs.get('id')), action=kwargs.get('action'))
+    kwargs.get('order').update(scan_time=(kwargs.get('order')[0].scan_time - target_scan_time_current) + target_scan_time_new)
 
 def get_scan_time(end_date=datetime.utcnow(), **kwargs):
     return round(((end_date - kwargs.get('start_time')).total_seconds()), 2)
@@ -52,6 +55,7 @@ def scan(id, time_limit, token, order_id, user_id, batch_scan):
     }
 
     target = Target.objects.filter(id=id)
+    order = Order.objects.filter(id=order_id)
     ip = ".".join(list(extract(target[0].ip))).strip(".")
     logger.info(f"====>>>>>>>>       \nIP:{ip} with id:{id} added to queue\n       <<<<<<<<====")
     output = ""
@@ -102,7 +106,7 @@ def scan(id, time_limit, token, order_id, user_id, batch_scan):
                 
                 if output.stderr.decode('utf-8') and not output.stdout.decode('utf-8'):
                     logger.info(f"====>>>>>>>>       \nBackground thread for ip:{ip} with id:{id} has been terminated due to tool issue.\n       <<<<<<<<====")
-                    update_target_and_add_log(target=target, output=output.stderr.decode('utf-8'), id=id, status=3, action=3, scan_time = get_scan_time(start_time=start_time, end_date=datetime.utcnow()))
+                    update_target_and_add_log(target=target, order=order, output=output.stderr.decode('utf-8'), id=id, status=3, action=3, scan_time = get_scan_time(start_time=start_time, end_date=datetime.utcnow()))
                     return False
                 output=output.stdout.decode('utf-8')
                 
@@ -113,14 +117,14 @@ def scan(id, time_limit, token, order_id, user_id, batch_scan):
                 error = f'{str(e)}'
 
             logger.info(f"====>>>>>>>>       \nBackground thread for ip:{ip} with id:{id} has been terminated\n       <<<<<<<<====")
-            update_target_and_add_log(target=target, output=str(error), id=id, status=3, action=3, scan_time = get_scan_time(start_time=start_time, end_date=datetime.utcnow()))
+            update_target_and_add_log(target=target, order=order, output=str(error), id=id, status=3, action=3, scan_time = get_scan_time(start_time=start_time, end_date=datetime.utcnow()))
             return False
         except Exception as e:
             traceback.print_exc()
             logger.info(f"====>>>>>>>>       \nBackground thread for ip:{ip} with id:{id} has been terminated\n       <<<<<<<<====")
-            update_target_and_add_log(target=target, output=str(e), id=id, status=3, action=3, scan_time = get_scan_time(start_time=start_time, end_date=datetime.utcnow()))
+            update_target_and_add_log(target=target, order=order, output=str(e), id=id, status=3, action=3, scan_time = get_scan_time(start_time=start_time, end_date=datetime.utcnow()))
             return False
-        update_target_and_add_log(target=target, output=output, id=id, status=4, action=4, scan_time = get_scan_time(start_time=start_time, end_date=datetime.utcnow()))
+        update_target_and_add_log(target=target, order=order, output=output, id=id, status=4, action=4, scan_time = get_scan_time(start_time=start_time, end_date=datetime.utcnow()))
         return True
     else:
         return False

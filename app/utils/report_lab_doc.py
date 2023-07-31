@@ -138,7 +138,7 @@ h2_header = PS(name= 'HeaderSubTitle',
     spaceAfter=10,
     alignment=TA_CENTER)
 
-def generate_doc(cname, date, vulnerabilities, risk_levels, output_path, hosts=[[]],  multiple_ip=False):
+def generate_doc(role, cname, date, vulnerabilities, risk_levels, output_path, hosts=[[]],  multiple_ip=False):
 
     """
     Generates a vulnerability scan report in PDF format.
@@ -395,8 +395,10 @@ def generate_doc(cname, date, vulnerabilities, risk_levels, output_path, hosts=[
 
     story.append(Paragraph('{}.{} Major Vulnerabilities List'.format(section_number, summary_find_section_num), h2))
 
-    table_header = [Paragraph('Vulnerability', table_header_style), Paragraph('System', table_header_style), Paragraph('Risk Level', table_header_style), Paragraph('Number of Instances', table_header_style), Paragraph('Alert Detection Tool', table_header_style)]
-
+    if role.tool_access:
+        table_header = [Paragraph('Vulnerability', table_header_style), Paragraph('System', table_header_style), Paragraph('Risk Level', table_header_style), Paragraph('No. of Instances', table_header_style), Paragraph('Alert Detection Tool', table_header_style)]
+    else:
+        table_header = [Paragraph('Vulnerability', table_header_style), Paragraph('System', table_header_style), Paragraph('Risk Level', table_header_style), Paragraph('No. of Instances', table_header_style)]
     top_vulns = []
 
     # Only get alerts with high enough risk
@@ -411,6 +413,8 @@ def generate_doc(cname, date, vulnerabilities, risk_levels, output_path, hosts=[
                 obj['instances'],
                 obj['tool']
             ]
+            if not role.tool_access:
+                del extracted_data[4]
 
             top_vulns.append(extracted_data)
  
@@ -445,11 +449,15 @@ def generate_doc(cname, date, vulnerabilities, risk_levels, output_path, hosts=[
                 style.add('BACKGROUND', (2, index), (2, index), color_dict[level]['bg_color'])
                 style.add('TEXTCOLOR', (2, index), (2, index), color_dict[level]['font_color'])
 
-    majorVulnTable = Table(top_vulns,  colWidths=[9.9*cm, 1.8*cm, 2.4*cm, 2.1*cm, 2.5*cm])
+    if role.tool_access:
+        majorVulnTable = Table(top_vulns,  colWidths=[9.9*cm, 1.8*cm, 2.4*cm, 2.1*cm, 2.5*cm])
+    else:
+        majorVulnTable = Table(top_vulns,  colWidths=[9.9*cm, 1.8*cm, 3.5*cm, 3.5*cm])
     majorVulnTable.setStyle(style)
     story.append(majorVulnTable)
 
     story.append(PageBreak())
+
 
     # Summary Overview
     if multiple_ip:
@@ -543,7 +551,7 @@ def generate_doc(cname, date, vulnerabilities, risk_levels, output_path, hosts=[
                 cvvs2 = alert['alert_json']['cvvs2']['base_score']
 
             
-            table = KeepTogether([
+            vul_detail = [
                 Paragraph('<b><a name="{}"/>{}.{} {}</b>'.format(alert['alert_ref'],section_number, i+1, alert['error']), h2 if 'error' in alert else 'N/A'),
                 table, 
                 Spacer(1, 5),  
@@ -555,7 +563,12 @@ def generate_doc(cname, date, vulnerabilities, risk_levels, output_path, hosts=[
                 Paragraph('<b>CWE: </b> {}'.format(alert.get('cwe_ids','N/A')), content),
                 Paragraph('<b>Evidence: </b>', content),
                 Paragraph(escape(alert.get('evidence','N/A')).replace("&amp;","&").replace("&lt;br/&gt;","<br/>"), content_layout)
-                ])
+                ]
+            
+            if not role.tool_access:
+                del vul_detail[7]
+            
+            table = KeepTogether(vul_detail)
 
             story.append(table)
             story.append(Spacer(1, 1*cm))

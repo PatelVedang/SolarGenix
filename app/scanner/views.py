@@ -15,7 +15,7 @@ from rest_framework.filters import SearchFilter, OrderingFilter
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 from rest_framework.permissions import IsAdminUser
-from .permissions import ScannerRetrievePremission, IsAdminUserOrList, IsAuthenticated, UserHasSubscription
+from .permissions import ScannerRetrievePremission, IsAdminUserOrList, IsAuthenticated, UserHasPermission
 from django.utils.decorators import method_decorator
 # from utils.pdf import PDF
 from utils.pdf_final_report import PDF
@@ -47,7 +47,7 @@ class Common:
 class ScanViewSet(viewsets.ModelViewSet, Common):
     queryset = Target.objects.all()
     serializer_class = ScannerSerializer
-    permission_classes = [IsAuthenticated, ScannerRetrievePremission, UserHasSubscription]
+    permission_classes = [IsAuthenticated, ScannerRetrievePremission, UserHasPermission]
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     search_fields = ['ip', 'scan_by__first_name', 'scan_by__last_name', 'tool__tool_name', 'updated_at']
     filterset_fields = ['id', 'ip', 'status', 'tool', 'order']
@@ -105,7 +105,8 @@ class ScanViewSet(viewsets.ModelViewSet, Common):
         if serializer.is_valid(raise_exception=True):
             # count
             n = serializer.data.get('count')
-            if (not request.user.is_staff) and (not request.user.is_superuser):
+            # if (not request.user.is_staff) and (not request.user.is_superuser):
+            if request.user.role_id == 3:
                 records = Target.objects.filter(status=0, scan_by=request.user)[:n]
             else:
                 records = Target.objects.filter(status=0)[:n]
@@ -186,7 +187,8 @@ class ScanViewSet(viewsets.ModelViewSet, Common):
         :param request: The request object
         :return: The data is being returned in the form of a list.
         """
-        if (not request.user.is_staff) and (not request.user.is_superuser):
+        # if (not request.user.is_staff) and (not request.user.is_superuser):
+        if request.user.role_id == 3:
             self.queryset = Target.objects.filter(scan_by = request.user.id).order_by('-created_at')
         if request.query_params.get('order'):
             order_id = request.query_params.get('order')
@@ -214,7 +216,7 @@ class ScanViewSet(viewsets.ModelViewSet, Common):
         self.serializer_class = ScannerResponseSerializer
         serializer = super().retrieve(request, *args, **kwargs)
         pdf= PDF()
-        pdf_path, pdf_name, file_url = pdf.generate(request.user.id, serializer.data.get('order'), [serializer.data.get('id')])
+        pdf_path, pdf_name, file_url = pdf.generate(request.user.role, request.user.id, serializer.data.get('order'), [serializer.data.get('id')])
         
         data = {
             'file_path':file_url
@@ -242,7 +244,7 @@ class ScanViewSet(viewsets.ModelViewSet, Common):
         self.serializer_class = ScannerResponseSerializer
         serializer = super().retrieve(request, *args, **kwargs)
         pdf= PDF()
-        pdf_path, pdf_name, file_url = pdf.generate(request.user.id, serializer.data.get('order'), [serializer.data.get('id')])
+        pdf_path, pdf_name, file_url = pdf.generate(request.user.role, request.user.id, serializer.data.get('order'), [serializer.data.get('id')])
         FilePointer = open(pdf_path,"rb")
         response = HttpResponse(FilePointer,content_type='application/pdf')
         response['Content-Disposition'] = f'attachment; filename={pdf_name}'
@@ -268,7 +270,7 @@ class ScanViewSet(viewsets.ModelViewSet, Common):
         serializer = super().retrieve(request, *args, **kwargs)
         pdf= PDF()
         
-        html_data = pdf.generate(request.user.id, serializer.data.get('order'), [serializer.data.get('id')], generate_pdf=False)
+        html_data = pdf.generate(request.user.role, request.user.id, serializer.data.get('order'), [serializer.data.get('id')], generate_pdf=False)
 
         data = {
             'html_content':html_data
@@ -507,7 +509,8 @@ class OrderViewSet(viewsets.ModelViewSet, Common):
         :param request: The request object
         :return: The response is being returned.
         """
-        if not request.user.is_superuser:
+        # if not request.user.is_superuser:
+        if request.user.role_id!=1:
             self.queryset = Order.objects.filter(client_id = request.user.id)
         self.serializer_class = OrderResponseSerailizer
         data = super().list(request, *args, **kwargs)
@@ -587,7 +590,7 @@ class OrderViewSet(viewsets.ModelViewSet, Common):
         serializer = super().retrieve(request, *args, **kwargs)
         pdf= PDF()
         targets = [target.get('id') for target in (list(Target.objects.filter(order_id= serializer.data.get('id')).values('id')))]
-        pdf_path, pdf_name, file_url = pdf.generate(request.user.id, serializer.data.get('id'), targets_ids=targets, generate_order_pdf=True)
+        pdf_path, pdf_name, file_url = pdf.generate(request.user.role, request.user.id, serializer.data.get('id'), targets_ids=targets, generate_order_pdf=True)
         data = {
             'file_path':file_url
         }

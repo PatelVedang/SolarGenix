@@ -18,11 +18,20 @@ import json
 from django.contrib.auth.hashers import check_password
 import threading
 
-class UserSerializer(serializers.ModelSerializer):
+
+# The RoleSerializer class is a serializer for the Role model, specifying the fields to be included in
+# the serialized representation.
+class RoleSerializer(serializers.ModelSerializer):
 
     class Meta:
+        model = Role
+        fields = ['id', 'name', 'tool_access', 'target_access']
+
+
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
         model = User
-        fields = ['id', 'email']
+        fields = ['id', 'email', 'role']
 
     def validate(self, attrs):
         logger.info(f'serialize_data: {json.dumps(attrs)}')
@@ -173,10 +182,13 @@ class ResetPasswordSerializer(serializers.Serializer):
         user.save()
         return user
 
+# The `UpdateProfileSerializer` class is a serializer in Python that updates user profiles and
+# includes a nested serializer for the user's role.
 class UpdateProfileSerializer(serializers.ModelSerializer):
+    role = RoleSerializer()
     class Meta:
         model = User
-        fields = ['id', 'first_name', 'last_name']
+        fields = ['id', 'first_name', 'last_name', 'role']
 
     def validate(self, attrs):
         logger.info(f'serialize_data: {json.dumps(attrs)}')

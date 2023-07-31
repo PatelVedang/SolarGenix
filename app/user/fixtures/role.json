@@ -1,0 +1,31 @@
+[
+    {
+      "model": "user.role",
+      "pk": 1,
+      "fields": {
+        "name": "admin",
+        "tool_access": true,
+        "target_access": true
+      }
+    },
+    {
+      "model": "user.role",
+      "pk": 2,
+      "fields": {
+        "name": "staff",
+        "tool_access": true,
+        "target_access": true
+      }
+    },
+    {
+      "model": "user.role",
+      "pk": 3,
+      "fields": {
+        "name": "user",
+        "tool_access": false,
+        "target_access": false
+      }
+    }
+    
+]
+  
