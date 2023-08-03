@@ -1,7 +1,6 @@
 from django.contrib.auth.base_user import BaseUserManager
 from django.contrib.auth.hashers import make_password
 
-
 class UserManager(BaseUserManager):
     """
     Custom user model manager where email is the unique identifiers
@@ -15,7 +14,6 @@ class UserManager(BaseUserManager):
             raise ValueError(_('The Email must be set'))
         email = self.normalize_email(email)
         user = self.model(email=email, **extra_fields)
-        password = make_password(password)
         user.set_password(password)
         user.save()
         return user
@@ -26,8 +24,10 @@ class UserManager(BaseUserManager):
         """
         extra_fields.setdefault('is_staff', True)
         extra_fields.setdefault('is_superuser', True)
-        extra_fields.setdefault('role', 1)
-        # extra_fields.setdefault('is_active', True)
+        extra_fields.setdefault('role_id', 1)
+        extra_fields.setdefault('subscription_id', 2)
+        extra_fields.setdefault('first_name', 'Admin')
+        extra_fields.setdefault('last_name', 'Admin')
 
         if extra_fields.get('is_staff') is not True:
             raise ValueError('Superuser must have is_staff=True.')
