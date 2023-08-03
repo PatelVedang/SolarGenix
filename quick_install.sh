@@ -90,10 +90,20 @@ printf "Test database and user created 😎 \n\n\n"
 
 echo "Installing MySQL development headers"
 echo "----------------------------------------------------"
-if ! is_package_installed libmysqlclient-dev; then
-    sudo apt-get install libmysqlclient-dev -y || ( echo "Failed to install MySQL development headers" && exit 1 )
+if ! is_package_installed python3-dev; then
+    sudo apt-get install python3-dev -y || ( echo "Failed to install python3-dev in MySQL development headers." && exit 1 )
 else
-    echo "MySQL development headers are already installed. Skipping installation."
+    echo "python3-dev is already installed in MySQL development headers. Skipping installation python3-dev."
+fi
+if ! is_package_installed default-libmysqlclient-dev; then
+    sudo apt-get install default-libmysqlclient-dev -y || ( echo "Failed to install default-libmysqlclient-dev in MySQL development headers." && exit 1 )
+else
+    echo "default-libmysqlclient-dev is already installed in MySQL development headers. Skipping installation default-libmysqlclient-dev."
+fi
+if ! is_package_installed build-essential; then
+    sudo apt-get install build-essential -y || ( echo "Failed to install build-essential in MySQL development headers." && exit 1 )
+else
+    echo "build-essential is already installed in MySQL development headers. Skipping installation build-essential."
 fi
 echo "----------------------------------------------------"
 printf "MySQL development headers Installed 😎 \n\n\n"
