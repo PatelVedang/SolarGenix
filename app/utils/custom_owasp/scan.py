@@ -361,12 +361,31 @@ class Scanner:
 
     
     def process_data(self, url, order_id, user_id, time_limit):
+        """
+        The function `process_data` takes in a URL, order ID, user ID, and time limit, and performs a
+        series of operations on the data within the given time limit, returning the results in JSON
+        format.
+        
+        :param url: The `url` parameter is the URL of the directory where the files are located. It is a
+        string that represents the directory's location
+        :param order_id: The `order_id` parameter is used to identify the order for which the data is
+        being processed. It could be a unique identifier for the order, such as an order number or an
+        order ID
+        :param user_id: The `user_id` parameter is used to identify the user for whom the data is being
+        processed. It could be a unique identifier such as a user's username or ID
+        :param time_limit: The `time_limit` parameter specifies the maximum amount of time (in seconds)
+        that the `process_data` function is allowed to run
+        :return: a JSON string representation of the 'output' dictionary.
+        """
 
         start_time = datetime.utcnow()
         directoryList = [url]
-        newFiles = listDirectory(url, order_id, user_id)
+        signal.signal(signal.SIGALRM, timeout_handler)
+        signal.alarm(time_limit)
+        newFiles = listDirectory(url, order_id, user_id, time_limit-5)
         for file in newFiles:
             directoryList.append(file)
+        signal.alarm(0)
         dir_list_time = round((datetime.utcnow()-start_time).total_seconds())
         timeout_limit = time_limit - dir_list_time
         for url in directoryList:

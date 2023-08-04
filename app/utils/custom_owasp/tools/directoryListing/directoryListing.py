@@ -6,7 +6,7 @@ from django.conf import settings
 # the website to download
 class directoryListing:
 
-    def get_dir_structure(self, url, order_id, user_id):
+    def get_dir_structure(self, url, order_id, user_id, time_limit):
         website = url
         protocol = ''
         if website.startswith('http://'):
@@ -23,12 +23,15 @@ class directoryListing:
 
         # Create the directory if it does not exist
         os.makedirs(path_to_save, exist_ok=True)
-
-        # Use wget to download the website's content // add "-l", "3" in array to set the depth of scan to 3
-        subprocess.run(["wget", "-t", "3", "-l", "3", "--mirror", "--no-parent", 
-                "--adjust-extension", "--convert-links", "--no-clobber", 
-                "-P", path_to_save, website])
-
+        
+        try:
+            # Use wget to download the website's content // add "-l", "3" in array to set the depth of scan to 3
+            subprocess.run(["wget", "-t", "3", "-l", "3", "--mirror", "--no-parent", 
+                    "--adjust-extension", "--convert-links", "--no-clobber", 
+                    "-P", path_to_save, website], timeout=time_limit)
+        
+        except subprocess.TimeoutExpired as e:
+            raise Exception("Timeout occurs in the directory traversal subprocess.")
 
 
        # List to store all directories
@@ -52,8 +55,8 @@ class directoryListing:
 
         return all_files
 
-def listDirectory(url, order_id, user_id):
+def listDirectory(url, order_id, user_id, time_limit):
     lister = directoryListing()
-    return lister.get_dir_structure(url, order_id, user_id)
+    return lister.get_dir_structure(url, order_id, user_id, time_limit)
 
 # print(listDirectory('https://darkwebscanner.mackstathis.dev'))
