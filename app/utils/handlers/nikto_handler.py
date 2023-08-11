@@ -75,7 +75,7 @@ class NIKTO:
                 self.jquery_handler,
                 self.jquery_detection_handler,
                 self.asp_version_handler,
-                self.cookie_hanlder,
+                self.cookie_handler,
                 self.put_del_handler,
                 self.XSS_handler,
                 self.subdomain_handler,
@@ -213,7 +213,7 @@ class NIKTO:
                     vul_data = await alert_response(cve="CVE-2010-3332", error=error, tool="nikto", alert_type=1, evidence=search_result.group())
                     self.result = {**self.result, **vul_data}
 
-    async def cookie_hanlder(self, target, regenerate):
+    async def cookie_handler(self, target, regenerate):
         """
         This function checks if a target has a sensitive cookie without the 'HttpOnly' flag and adds a
         vulnerability to the result if it does.
