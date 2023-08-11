@@ -108,15 +108,35 @@ fi
 echo "----------------------------------------------------"
 printf "MySQL development headers Installed 😎 \n\n\n"
 
-echo "Installing RabbitMQ"
-echo "----------------------------------------------------"
-if ! is_command_available rabbitmq; then
-    sudo apt-get install rabbitmq -y || ( echo "Failed to install RabbitMQ" && exit 1 )
-else
-    echo "RabbitMQ is already installed. Skipping installation."
+# echo "Installing rabbitmq-server"
+# echo "----------------------------------------------------"
+# if ! is_command_available rabbitmq-server; then
+#     sudo apt-get install rabbitmq-server -y || ( echo "Failed to install RabbitMQ" && exit 1 )
+#     sudo systemctl start rabbitmq-server
+#     sudo systemctl enable rabbitmq-server
+# else
+#     echo "Redis server is already installed. Skipping installation."
+#     sudo systemctl start rabbitmq-server
+#     sudo systemctl enable rabbitmq-server
+#     echo "RabbitMQ is already installed. Skipping installation."
 fi
 echo "----------------------------------------------------"
 printf "RabbitMQ Installed 😎 \n\n\n"
+
+echo "Installing redis-server"
+echo "----------------------------------------------------"
+if ! is_command_available Redis server; then
+    sudo apt-get install redis-server -y || ( echo "Failed to install Redis server" && exit 1 )
+    # Start and enable the service
+    sudo systemctl start redis-server
+    sudo systemctl enable redis-server
+else
+    echo "Redis server is already installed. Skipping installation."
+    sudo systemctl start redis-server
+    sudo systemctl enable redis-server
+fi
+echo "----------------------------------------------------"
+printf "Redis Server Has Been Installed And Started 😎 \n\n\n"
 
 echo "Installing OWASP_ZAP server"
 echo "----------------------------------------------------"

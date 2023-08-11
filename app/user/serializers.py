@@ -47,6 +47,7 @@ class RegisterSerializer(serializers.ModelSerializer):
         fields = ['id', 'first_name', 'last_name', 'email', 'password']
 
     def validate(self, attrs):
+        attrs['role_id'] = 3
         logger.info(f'serialize_data: {json.dumps(attrs)}')
         return super().validate(attrs)
     
