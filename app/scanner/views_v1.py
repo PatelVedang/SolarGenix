@@ -28,8 +28,7 @@ from django.conf import settings
 import logging
 logger = logging.getLogger('django')
 import json
-from django.core.cache import cache
-
+import threading
 class Common:
 
     def update_order_targets(self, order, targets):

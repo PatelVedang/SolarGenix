@@ -1,6 +1,7 @@
 from django.urls import path, include
-from . import views
-from .views import ScanViewSet, ToolViewSet, OrderViewSet
+# from . import views
+from . import views_v2 as views
+from .views_v2 import ScanViewSet, ToolViewSet, OrderViewSet
 from rest_framework import routers
 from drf_yasg.utils import swagger_auto_schema
 

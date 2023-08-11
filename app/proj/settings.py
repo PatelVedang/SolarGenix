@@ -232,11 +232,12 @@ PDF_DOWNLOAD_ORIGIN=os.environ.get('PDF_DOWNLOAD_ORIGIN', env('PDF_DOWNLOAD_ORIG
 #Django channels
 CHANNEL_LAYERS = {
     "default": {
-        "BACKEND": "channels_rabbitmq.core.RabbitmqChannelLayer",
-        # "BACKEND": "channels_redis.core.RedisChannelLayer",
+        # "BACKEND": "channels_rabbitmq.core.RabbitmqChannelLayer",
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
         "CONFIG": {
-            "host": "amqp://guest:guest@localhost:5672/%2F",
-            # "hosts": [("redis", 6379)],
+            # "host": "amqp://guest:guest@localhost:5672/%2F",
+            "hosts": [("localhost", 6379)],
+            # "hosts": ["redis://localhost:6379/0"],
         },
     },
 }
@@ -302,9 +303,22 @@ SPIDER_API_CALL_DELAY=os.environ.get('SPIDER_API_CALL_DELAY', env('SPIDER_API_CA
 
 CELERY_BROKER_URL = os.environ.get('CELERY_BROKER_URL', env('CELERY_BROKER_URL'))
 LOCAL_API_URL = os.environ.get('LOCAL_API_URL', env('LOCAL_API_URL')).strip()
+EXTRA_BG_TASK_TIME = os.environ.get('EXTRA_BG_TASK_TIME', env('EXTRA_BG_TASK_TIME'))
 
 APP_ERROR_FILE_PATH = f"{BASE_DIR}/utils/custom_owasp/application_errors.xml"
 # CELERY_ROUTES = {
 #  'user.tasks.*': {'queue': 'user_queue'},
 #  'scanner.tasks.*': {'queue': 'scanner_queue'},
 # }
+
+# Django cache
+CACHES = {
+    'default': {
+        'BACKEND': 'django_redis.cache.RedisCache',
+        'LOCATION': 'redis://127.0.0.1:6379/0',
+        "TIMEOUT": int(os.environ.get('CACHE_TTL', env('CACHE_TTL'))),
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+        }
+    }
+}

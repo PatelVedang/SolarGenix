@@ -23,7 +23,7 @@ owasp = Scanner()
 from datetime import datetime
 from decimal import Decimal
 from .serializers import *
-from utils.cache_helper import Cache
+from django.core.cache import cache
 
 from zapv2 import ZAPv2
 zap = ZAPv2()
@@ -33,26 +33,15 @@ def update_target_and_add_log(**kwargs):
     The function updates a target object with a raw result and status, and creates a TargetLog object
     with the target ID and action.
     """
-    try:
-        target_scan_time_current = kwargs.get('target')[0].scan_time
-        target_scan_time_new = round(Decimal(kwargs.get('scan_time')),2)
-        target_id = kwargs.get('id')
-
-        if kwargs.get('output'):
-            kwargs.get('target').update(raw_result=kwargs.get('output'), status=kwargs.get('status'), scan_time=target_scan_time_new)
-            Cache.update(key=f'target_{target_id}', **{'raw_result':kwargs.get('output'), 'status':kwargs.get('status'), 'scan_time':target_scan_time_new})
-        else:
-            kwargs.get('target').update(status=kwargs.get('status'), scan_time=target_scan_time_new)
-            Cache.update(key=f'target_{target_id}', **{'raw_result':kwargs.get('output'), 'status':kwargs.get('status'), 'scan_time':target_scan_time_new})
-
-        TargetLog.objects.create(target=Target(kwargs.get('id')), action=kwargs.get('action'))
-        order_id = kwargs.get('order')[0].id
-        order_scan_time = (kwargs.get('order')[0].scan_time - target_scan_time_current) + target_scan_time_new
-        kwargs.get('order').update(scan_time=order_scan_time)
-        Cache.update(key=f'order_{order_id}', **{'scan_time':order_scan_time})
-    except Exception as e:
-        import traceback
-        traceback.print_exc()
+    target_scan_time_current = kwargs.get('target')[0].scan_time
+    target_scan_time_new = round(Decimal(kwargs.get('scan_time')),2)
+    
+    if kwargs.get('output'):
+        kwargs.get('target').update(raw_result=kwargs.get('output'), status=kwargs.get('status'), scan_time=target_scan_time_new)
+    else:
+        kwargs.get('target').update(status=kwargs.get('status'), scan_time=target_scan_time_new)
+    TargetLog.objects.create(target=Target(kwargs.get('id')), action=kwargs.get('action'))
+    kwargs.get('order').update(scan_time=(kwargs.get('order')[0].scan_time - target_scan_time_current) + target_scan_time_new)
 
 def get_scan_time(end_date=datetime.utcnow(), **kwargs):
     return round(((end_date - kwargs.get('start_time')).total_seconds()), 2)
@@ -60,30 +49,38 @@ def get_scan_time(end_date=datetime.utcnow(), **kwargs):
 c = Celery('proj')
 @c.task
 def scan(id, time_limit, token, order_id, requested_by_id, client_id, batch_scan):
+    """
+    The `scan` function is responsible for initiating a scanning process on a target IP address using a
+    specified tool, updating the status of the target, and logging the output and scan time.
+    
+    :param id: The `id` parameter is the ID of the target that needs to be scanned. It is used to
+    retrieve the target object from the database
+    :param time_limit: The `time_limit` parameter specifies the maximum time (in seconds) that the scan
+    should run for
+    :param token: The `token` parameter is used to authenticate the user making the scan request. It is
+    typically a string value that represents the user's authentication token or session token
+    :param order_id: The `order_id` parameter is the ID of the order associated with the scan
+    :param requested_by_id: The parameter "requested_by_id" is the ID of the user who requested the scan
+    :param client_id: The `client_id` parameter is the ID of the client who requested the scan
+    :param batch_scan: The `batch_scan` parameter is a boolean value that indicates whether the scan is
+    part of a batch scan or not. If `batch_scan` is `True`, it means that the scan is part of a batch
+    scan. If `batch_scan` is `False`, it means that the scan is
+    :return: a boolean value. It returns True if the scanning process is successful and False if it is
+    not.
+    """
     target = Target.objects.filter(id=id)
     order = Order.objects.filter(id=order_id)
-    
-    # Set cache of order and targets if it's not exist 
-    if not Cache.has_key(f'order_{order_id}'):
-        order_serializer = WithoutRequestUserOrderSerializer(order, many=True, context={"requested_by_id": requested_by_id})
-        Cache.set(f'order_{order_id}', **json.loads(json.dumps(order_serializer.data[0])))
-        
-        targets = Target.objects.filter(order_id=order_id)
-        targets = WithoutRequestUserTargetSerializer(targets, many=True, context={"requested_by_id": requested_by_id}).data
-        
-        for target_obj in targets:
-            Cache.set(f'target_{target_obj["id"]}', **json.loads(json.dumps(target_obj)))
 
     thread = threading.Thread(target=send_message, args=(id, token, order_id, batch_scan))
     thread.start()
     
+
     py_tools={
         'owasp_zap':OWASP_ZAP_spider_scan_v3,
         'isaix_owasp': custom_OWASP_ZAP_scan
     }
 
     ip = ".".join(list(extract(target[0].ip))).strip(".")
-    print(f"Task started for ip:{ip}  with order id:{order_id} and target with id:{id}")
     logger.info(f"====>>>>>>>>       \nIP:{ip} with id:{id} added to queue\n       <<<<<<<<====")
     output = ""
     tool_cmd = target[0].tool.tool_cmd
@@ -109,7 +106,6 @@ def scan(id, time_limit, token, order_id, requested_by_id, client_id, batch_scan
         try:
             logger.info(f"====>>>>>>>>       \nScanning began for IP:{ip} with id:{id}\n       <<<<<<<<====")
             target.update(status = 2)
-            Cache.update(key=f'target_{id}', **{'status':2})
             start_time = datetime.utcnow()
             if target[0].tool.py_tool:
                 tool_cmd = target[0].tool.tool_cmd
@@ -135,7 +131,6 @@ def scan(id, time_limit, token, order_id, requested_by_id, client_id, batch_scan
                 if output.stderr.decode('utf-8') and not output.stdout.decode('utf-8'):
                     logger.info(f"====>>>>>>>>       \nBackground thread for ip:{ip} with id:{id} has been terminated due to tool issue.\n       <<<<<<<<====")
                     update_target_and_add_log(target=target, order=order, output=output.stderr.decode('utf-8'), id=id, status=3, action=3, scan_time = get_scan_time(start_time=start_time, end_date=datetime.utcnow()))
-                    print(f"Task Completed for ip:{ip}  with order id:{order_id} and target with id:{id}")
                     return False
                 output=output.stdout.decode('utf-8')
                 
@@ -147,20 +142,16 @@ def scan(id, time_limit, token, order_id, requested_by_id, client_id, batch_scan
 
             logger.info(f"====>>>>>>>>       \nBackground thread for ip:{ip} with id:{id} has been terminated\n       <<<<<<<<====")
             update_target_and_add_log(target=target, order=order, output=str(error), id=id, status=3, action=3, scan_time = get_scan_time(start_time=start_time, end_date=datetime.utcnow()))
-            print(f"Task Completed for ip:{ip}  with order id:{order_id} and target with id:{id}")
             return False
         except Exception as e:
             traceback.print_exc()
             logger.info(f"====>>>>>>>>       \nBackground thread for ip:{ip} with id:{id} has been terminated\n       <<<<<<<<====")
             update_target_and_add_log(target=target, order=order, output=str(e), id=id, status=3, action=3, scan_time = get_scan_time(start_time=start_time, end_date=datetime.utcnow()))
-            print(f"Task Completed for ip:{ip}  with order id:{order_id} and target with id:{id}")
             return False
         update_target_and_add_log(target=target, order=order, output=output, id=id, status=4, action=4, scan_time = get_scan_time(start_time=start_time, end_date=datetime.utcnow()))
-        print(f"Task Completed for ip:{ip}  with order id:{order_id} and target with id:{id}")
         return True
     else:
         return False
-
 
 def send_message(id, token, order_id, batch_scan):
     """
@@ -170,20 +161,13 @@ def send_message(id, token, order_id, batch_scan):
     :param token: The token you get from the login API
     """
     try:
-        # if entire order is scan
         if batch_scan:
-            order = Cache.get(f'order_{order_id}')
-            # if order found in cache
-            if order:
-                targets = Cache.get_order_targets(f'order_{order_id}')
-                # if not found any running target for same order
-                if not len(Cache.apply_filter(targets, [['id', 'nq', id],['status', 'eq', 2]])):
-                    logger.info(f"====>>>>>>>>       \nWebsocket API trigger for order_id:{order_id}\n       <<<<<<<<====")
-                    response = requests.get(f'{settings.LOCAL_API_URL}/api/sendMessage/?order={order_id}', headers={'Authorization': token})
+            if not Target.objects.filter(order_id=order_id).exclude(id=id).filter(status__in=[2]).count():
+                logger.info(f"====>>>>>>>>       \nWebsocket API trigger for order_id:{order_id}\n       <<<<<<<<====")
+                response = requests.get(f'{settings.LOCAL_API_URL}/api/sendMessage/?order={order_id}', headers={'Authorization': token})
         else:
-            if Cache.get(f'target_{id}'):
-                logger.info(f"====>>>>>>>>       \nWebsocket API trigger for target id:{id}\n       <<<<<<<<====")
-                response = requests.get(f'{settings.LOCAL_API_URL}/api/sendMessage/?id={id}', headers={'Authorization': token})
+            logger.info(f"====>>>>>>>>       \nWebsocket API trigger for target id:{id}\n       <<<<<<<<====")
+            response = requests.get(f'{settings.LOCAL_API_URL}/api/sendMessage/?id={id}', headers={'Authorization': token})
     except Exception as e:
         return True
     return True

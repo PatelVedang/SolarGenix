@@ -29,10 +29,21 @@ import logging
 logger = logging.getLogger('django')
 import json
 from django.core.cache import cache
+from utils.cache_helper import Cache
+
 
 class Common:
 
     def update_order_targets(self, order, targets):
+        """
+        The function updates the status of an order based on the status of its associated targets.
+        
+        :param order: The "order" parameter is an object representing an order. It likely has attributes
+        such as order number, customer information, and order details
+        :param targets: The "targets" parameter is a queryset or a list of objects representing the
+        targets associated with an order. Each target has a "status" field that indicates its current
+        status
+        """
         total_targets = targets.count()
         if targets.filter(status__gt=2).count() == total_targets:
             if targets.filter(status=4).count() == total_targets:
@@ -41,6 +52,55 @@ class Common:
                 order.update(status=2)
         else:
             order.update(status=1)
+
+    def order_update_in_cache(self, order, targets):
+        """
+        The function `order_update_in_cache` updates the status of an order in the cache based on the
+        status of its targets.
+        
+        :param order: The "order" parameter is a dictionary object that represents an order. It contains
+        various attributes such as the order ID, status, and other relevant information
+        :param targets: The "targets" parameter is a list of targets that need to be updated in the
+        cache. Each target is represented as a dictionary
+        :return: the value of the variable "order_scan_finish".
+        """
+        order_scan_finish = False
+
+        total_targets = len(targets)
+        print("\n\n",total_targets, "=>>>>>>>>>>>>total_targets")
+        running_targets = Cache.apply_filter(targets,[['status','gt',2]])
+        print("\n\n",len(running_targets), "=>>>>>>>>>>>>fail/completed targets")
+        complete_targets = Cache.apply_filter(running_targets,[['status','eq',4]])
+        print("\n\n",len(complete_targets), "=>>>>>>>>>>>>complete_targets")
+        
+        if len(running_targets) == total_targets:
+            order_scan_finish = True
+            if len(complete_targets) == total_targets:
+                Order.objects.filter(id=order.get('id')).update(status=3)
+                Cache.update(key=f'order_{order.get("id")}',**{'status': 3})
+            else:
+                Order.objects.filter(id=order.get('id')).update(status=2)
+                Cache.update(key=f'order_{order.get("id")}',**{'status': 2})
+
+        return order_scan_finish
+
+    def delete_order_targets_cache(self, order_id):
+        """
+        The function `delete_order_targets_cache` deletes the cache entries for a specific order and its
+        associated targets.
+        
+        :param order_id: The `order_id` parameter is the unique identifier of the order for which the
+        targets cache needs to be deleted
+        """
+        cache_targets_keys=[]
+        order_obj = json.loads(cache.get(f'order_{order_id}','{}'))
+        if order_obj:
+            targets = order_obj.get('targets',[])
+            for target in targets:
+                cache_targets_keys.append(f'target_{target["id"]}')
+        Cache.delete_many(cache_targets_keys)
+        Cache.delete(f'order_{order_id}')
+        
 
 
 @method_decorator(name='partial_update', decorator=swagger_auto_schema(tags=['Targets'], auto_schema=None))
@@ -82,7 +142,7 @@ class ScanViewSet(viewsets.ModelViewSet, Common):
                 target_obj.save()
                 client_id = target_obj.scan_by.id
                 tool_time_limit = target_obj.tool.time_limit
-                scan.apply_async(args=[], kwargs={'id':target_id, 'time_limit':tool_time_limit, 'token':request.headers.get('Authorization'), 'order_id': target_obj.order_id, 'requested_by_id': requested_by_id, 'client_id': client_id, 'batch_scan': False}, time_limit=tool_time_limit+10, ignore_result=True)
+                scan.apply_async(args=[], kwargs={'id':target_id, 'time_limit':tool_time_limit, 'token':request.headers.get('Authorization'), 'order_id': target_obj.order_id, 'requested_by_id': requested_by_id, 'client_id': client_id, 'batch_scan': False}, time_limit=tool_time_limit+int(settings.EXTRA_BG_TASK_TIME), ignore_result=True)
         custom_response = ScannerResponseSerializer(Target.objects.filter(id__in=targets_id), many=True, context={"request": request})
         return response(status=True, data=custom_response.data, status_code=status.HTTP_200_OK, message="host successfully added in queue")
         
@@ -117,7 +177,7 @@ class ScanViewSet(viewsets.ModelViewSet, Common):
             for record in records:
                 client_id = record.scan_by.id
                 tool_time_limit = record.tool.time_limit
-                scan.apply_async(args=[], kwargs={'id':record.id, 'time_limit':tool_time_limit, 'token':request.headers.get('Authorization'), 'order_id': record.order_id, 'requested_by_id': requested_by_id, 'client_id': client_id, 'batch_scan': False}, time_limit=tool_time_limit+10, ignore_result=True)
+                scan.apply_async(args=[], kwargs={'id':record.id, 'time_limit':tool_time_limit, 'token':request.headers.get('Authorization'), 'order_id': record.order_id, 'requested_by_id': requested_by_id, 'client_id': client_id, 'batch_scan': False}, time_limit=tool_time_limit+int(settings.EXTRA_BG_TASK_TIME), ignore_result=True)
         custom_response = ScannerResponseSerializer(records, many=True, context={"request": request})
         return response(status=True, data=custom_response.data, status_code=status.HTTP_200_OK, message="host successfully added in queue")
 
@@ -350,6 +410,7 @@ class ToolViewSet(viewsets.ModelViewSet, Common):
         
         :param request: The request object
         """
+        self.serializer_class = ToolPayloadSerializer
         serializer = super().retrieve(request, *args, **kwargs)
         return response(status=True, data=serializer.data, status_code=status.HTTP_200_OK, message="record found successfully")
 
@@ -382,92 +443,115 @@ class SendMessageView(generics.GenericAPIView, Common):
         :param request: The request object
         :return: The above code is returning the status of the scan.
         """
-        params = request.query_params
-        if params.get('order'):
-            targets_start_time = {}
-            order_id = params.get('order')
-            order = Order.objects.filter(id=order_id)
-            # order.update(status=1)
-            while True:
-                targets = Target.objects.filter(order_id=order_id)
-                total_targets = targets.count()
-                tool_perecent = 100/total_targets
-                response = []
-                order_percent = 0
-                for target in targets:
-                    serializer = self.serializer_class(target, context={"request": request})
-                    if target.status == 1:
-                        targets_start_time[target.id] = datetime.utcnow()
-                        record_obj = {**serializer.data, **{'target_percent':0}}
-                        order_percent += int((0*tool_perecent)/100)
-                    elif (target.status == 2) and targets_start_time.get(target.id):
-                        diff= (datetime.utcnow() - targets_start_time[target.id]).total_seconds()
-                        target_percent = int(diff*100/((target.tool.time_limit+10)))
-                        record_obj = {**serializer.data, **{'target_percent':target_percent}}
-                        order_percent += int((target_percent*tool_perecent)/100)
-                    elif (target.status == 2) and not targets_start_time.get(target.id):
-                        targets_start_time[target.id] = datetime.utcnow()
-                        diff= (datetime.utcnow() - targets_start_time[target.id]).total_seconds()
-                        target_percent = int(diff*100/((target.tool.time_limit+10)))
-                        record_obj = {**serializer.data, **{'target_percent':target_percent}}
-                        order_percent += int((target_percent*tool_perecent)/100)
-                    elif target.status > 2:
-                        record_obj = {**serializer.data, **{'target_percent':100, 'scan_complete': True}}
-                        order_percent += int((100*tool_perecent)/100)
+        try:
+            params = request.query_params
+            if params.get('order'):
+                targets_start_time = {}
+                order_id = params.get('order')
+                # order = Order.objects.filter(id=order_id)
+                order = Cache.get(f'order_{order_id}')
+                while True:
+                    order_update = False
+                    targets = Cache.get_order_targets(f'order_{order_id}')
+                    total_targets = len(targets)
+                    print("\n\n",total_targets,"=>>>>>total_targets")
+                    # If not found any target relaterd to single order the break while loop
+                    if not total_targets:
+                        order_percent = 100
+                        break   
+                    tool_perecent = 100/total_targets
+                    response = []
+                    order_percent = 0
+                    for target_obj in targets:
+                        # Break for loop if target_obj is empty
+                        if not target_obj:
+                            break
+                        # If target in queue
+                        if target_obj['status'] == 1:
+                            targets_start_time[target_obj['id']] = datetime.utcnow()
+                            record_obj = {**target_obj, **{'target_percent':0}}
+                            order_percent += int((0*tool_perecent)/100)
+                        # If target is running
+                        elif (target_obj['status'] == 2) and targets_start_time.get(target_obj['id']):
+                            diff= (datetime.utcnow() - targets_start_time[target_obj['id']]).total_seconds()
+                            target_percent = int(diff*100/((target_obj['tool']['time_limit']+10)))
+                            record_obj = {**target_obj, **{'target_percent':target_percent}}
+                            order_percent += int((target_percent*tool_perecent)/100)
+                        # if target is just enterd in running stage
+                        elif (target_obj['status'] == 2) and not targets_start_time.get(target_obj['id']):
+                            targets_start_time[target_obj['id']] = datetime.utcnow()
+                            diff= (datetime.utcnow() - targets_start_time[target_obj['id']]).total_seconds()
+                            target_percent = int(diff*100/((target_obj['tool']['time_limit']+10)))
+                            record_obj = {**target_obj, **{'target_percent':target_percent}}
+                            order_percent += int((target_percent*tool_perecent)/100)
+                        #  if target is ither fail/complete
+                        elif target_obj['status'] > 2:
+                            record_obj = {**target_obj, **{'target_percent':100, 'scan_complete': True}}
+                            order_percent += int((100*tool_perecent)/100)
+                        
+                        print(f"Target with id {record_obj['id']} is completed {record_obj['target_percent']}%")
+                        response.append(record_obj)                    
                     
-                    response.append(record_obj)
-
-                    super().update_order_targets(order, targets)
-                    
-                serializer = OrderWithoutTargetsResponseSerailizer(order, many=True, context={"request": request})
-                order_obj = {**serializer.data[0], **{'order_percent': order_percent}}
-                send([str(order[0].client_id), str(request.user.id)],{'order': order_obj, 'targets': response})
-                if order[0].status >= 2:
-                    break
-                time.sleep(round(float(settings.WEB_SOCKET_INTERVAL),2))
-        else:
-            start_time = datetime.utcnow()
-            while True:
-                target = Target.objects.filter(id=params.get('id'))
-                serializer = self.serializer_class(target[0], context={"request": request})
-                
-                # Check to see if the target's status is below 3, and if it is, extend the start time to attain a 100% completion rate for the target. 
-                if target[0].status<2:
-                    start_time = datetime.utcnow()
-
-                diff= (datetime.utcnow() - start_time).total_seconds()
-                # target_percent = round(diff*100/((target[0].tool.time_limit+10)), 2)
-                target_percent = int(diff*100/((target[0].tool.time_limit+10)))
-                record_obj = {**serializer.data, **{'target_percent':target_percent}}
-                send([str(record_obj['scan_by']['id']), str(request.user.id)],record_obj)
-                response = []
-                
-                # Update order status 1 to higher, when last target is update 
-                if record_obj.get('status') >= 3:
-                    order_id=target[0].order_id
-                    targets = Target.objects.filter(order_id=order_id)
-                    order = Order.objects.filter(id=order_id)
-                    if targets.filter(status__gt=2).count() == targets.count():
-                        if targets.filter(status=4).count() == targets.count():
-                            order.update(status=3)
-                        else:
-                            order.update(status=2)
-                        targets = self.serializer_class(targets, many=True, context={"request": request})
-                        for record in targets.data:
-                            if record['id'] == target[0].id:
-                                obj = {**record, **{'target_percent':100}}
-                            else:
-                                obj = {**record, **{'target_percent':100, 'scan_complete': True}}
-                            response.append(obj)
-                        serializer = OrderWithoutTargetsResponseSerailizer(order, many=True, context={"request": request})
-                        order_obj = {**serializer.data[0], **{'order_percent': 100}}
-                        send([str(order[0].client_id), str(request.user.id)],{'order': order_obj, 'targets': response})
+                    order_update = super().order_update_in_cache(order, response)
+                    print(order_update,"=>>>>>>order_update")
+                    # If order status is updated
+                    if order_update:
+                        fresh_order = Cache.get(f'order_{order_id}')
+                        order_obj = {**fresh_order, **{'order_percent': order_percent}}
                     else:
-                        # When more than one targets present with status<=2
-                        record_obj['target_percent'] = 100
-                        send([str(record_obj['scan_by']['id']), str(request.user.id)],record_obj)
-                    break
-                time.sleep(round(float(settings.WEB_SOCKET_INTERVAL),2))
+                        order_obj = {**order, **{'order_percent': order_percent}}
+                    
+                    send([str(order['client']['id']), str(request.user.id)],{'order': order_obj, 'targets': response})
+                    if order_update:
+                        break
+                    time.sleep(round(float(settings.WEB_SOCKET_INTERVAL),2))
+                # after order is complete we need to remove all the data related to that order from cache
+                super().delete_order_targets_cache(order_id)
+            else:
+                start_time = datetime.utcnow()
+                order_id = ''
+                while True:
+                    target = Cache.get(f'target_{params.get("id")}')
+                    
+                    if not target:
+                        break
+                    # serializer = self.serializer_class(target[0], context={"request": request})
+                    
+                    # Check to see if the target's status is below 3, and if it is, extend the start time to attain a 100% completion rate for the target. 
+                    if target.get('status') < 2:
+                        start_time = datetime.utcnow()
+
+                    diff= (datetime.utcnow() - start_time).total_seconds()
+                    # target_percent = round(diff*100/((target[0].tool.time_limit+10)), 2)
+                    target_percent = int(diff*100/((target['tool']['time_limit']+10)))
+                    record_obj = {**target, **{'target_percent':target_percent}}
+                    send([str(record_obj['scan_by']['id']), str(request.user.id)],record_obj)
+                    
+                    # Update order status 1 to higher, when last target is update 
+                    if record_obj.get('status') >= 3:
+                        order_id = record_obj.get('order')
+                        order = Cache.get(f'order_{order_id}')
+                        targets = Cache.get_order_targets(f'order_{order_id}')
+                        order_update = super().order_update_in_cache(order, targets)
+                        print(order_update,"=>>>>>>>>>>>>>Order Update")
+                        if order_update:
+                            order = Cache.get(f'order_{order_id}')
+                            order_obj = {**order, **{'order_percent': 100}}
+                            record_obj = {**record_obj, **{'target_percent':100}}
+                            send([str(order['client']['id']), str(request.user.id)],{'order': order_obj, 'targets': [record_obj]})
+                            super().delete_order_targets_cache(order_id)
+                        else:
+                            # When more than one targets present with status<=2
+                            record_obj['target_percent'] = 100
+                            send([str(record_obj['scan_by']['id']), str(request.user.id)],record_obj)
+                        break
+                    time.sleep(round(float(settings.WEB_SOCKET_INTERVAL),2))
+
+
+        except Exception as e:
+            print("Error=>", e)
+            import traceback
+            traceback.print_exc()
         return HttpResponse("Done")
 
 
@@ -570,7 +654,7 @@ class OrderViewSet(viewsets.ModelViewSet, Common):
                 super().update_order_targets(order, targets)
                 for target in targets:
                     client_id = target.scan_by.id
-                    scan.apply_async(args=[], kwargs={'id':target.id, 'time_limit':target.tool.id, 'token':request.headers.get('Authorization'), 'order_id': order_id, 'requested_by_id': requested_by_id, 'client_id': client_id, 'batch_scan': True}, time_limit=target.tool.time_limit +10, ignore_result=True)
+                    scan.apply_async(args=[], kwargs={'id':target.id, 'time_limit':target.tool.id, 'token':request.headers.get('Authorization'), 'order_id': order_id, 'requested_by_id': requested_by_id, 'client_id': client_id, 'batch_scan': True}, time_limit=target.tool.time_limit + int(settings.EXTRA_BG_TASK_TIME), ignore_result=True)
         custom_response = OrderResponseSerailizer(Order.objects.filter(id__in=orders_id), many=True, context={"request": request})
         return response(status=True, data=custom_response.data, status_code=status.HTTP_200_OK, message="targets of order is successfully added in queue")
 

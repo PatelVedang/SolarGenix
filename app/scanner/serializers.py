@@ -283,3 +283,98 @@ class AddInQueueByOrderIdsSerializer(serializers.ModelSerializer):
             if not Order.objects.filter(id=order_id).exists():
                 raise serializers.DjangoValidationError(f"Order does not exist with id {order_id}")
         return super().validate(attrs)
+
+
+# The class `WithoutRequestUserTargetSerializer` is a serializer that excludes the `compose_result`
+# field from the `Target` model and adds additional representation data based on the context.
+# This serializer is provide targets without providing requested user from request
+class WithoutRequestUserTargetSerializer(serializers.ModelSerializer):
+    tool =  ToolPayloadSerializer()
+
+    class Meta:
+        model = Target
+        exclude = ['compose_result']
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        requested_by_id = self.context['requested_by_id']
+        requested_by = User.objects.get(id=requested_by_id)
+        if not requested_by.role.tool_access:
+            data['tool']= instance.tool.id
+            data['raw_result'] = ""
+        
+        data['scan_by']= {
+            "id": instance.scan_by.id,
+            "email": instance.scan_by.email,
+            "first_name": instance.scan_by.first_name,
+            "last_name": instance.scan_by.last_name,
+            "is_staff": instance.scan_by.is_staff,
+            "is_superuser": instance.scan_by.is_superuser,
+            "role_id": instance.scan_by.role_id,
+            "subscription_id": instance.scan_by.subscription_id
+        }
+        data['request_by']= {
+            "id": requested_by.id,
+            "email": requested_by.email,
+            "first_name": requested_by.first_name,
+            "last_name": requested_by.last_name,
+            "is_staff": requested_by.is_staff,
+            "is_superuser": requested_by.is_superuser,
+            "role": {
+                'id': requested_by.role.id,
+                'name': requested_by.role.name,
+                'tool_access': requested_by.role.tool_access,
+                'target_access':requested_by.role.target_access
+            },
+            "subscription_id": requested_by.subscription_id
+        }
+        return data
+
+# The class `ScannerDummyResponseSerializer` is a serializer for the `Target` model that only includes
+# the `id` field.
+class ScannerDummyResponseSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Target
+        fields = ['id']
+
+
+# The class `WithoutRequestUserOrderSerializer` is a serializer class in Python that serializes an
+# `Order` model and includes additional information about the client and the user who requested the
+# order.
+# This serializer is provide orders without providing requested user from request
+class WithoutRequestUserOrderSerializer(serializers.ModelSerializer):
+    targets = ScannerDummyResponseSerializer(many=True, read_only= True)
+    class Meta:
+        model = Order
+        fields = "__all__"
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        requested_by_id = self.context['requested_by_id']
+        requested_by = User.objects.get(id=requested_by_id)
+        data['client']= {
+            "id": instance.client.id,
+            "email": instance.client.email,
+            "first_name": instance.client.first_name,
+            "last_name": instance.client.last_name,
+            "is_staff": instance.client.is_staff,
+            "is_superuser": instance.client.is_superuser,
+            "role_id": instance.client.role_id,
+            "subscription_id": instance.client.subscription_id
+        }
+        data['request_by']= {
+            "id": requested_by.id,
+            "email": requested_by.email,
+            "first_name": requested_by.first_name,
+            "last_name": requested_by.last_name,
+            "is_staff": requested_by.is_staff,
+            "is_superuser": requested_by.is_superuser,
+            "role": {
+                'id': requested_by.role.id,
+                'name': requested_by.role.name,
+                'tool_access': requested_by.role.tool_access,
+                'target_access':requested_by.role.target_access
+            },
+            "subscription_id": requested_by.subscription_id
+        }
+        return data
