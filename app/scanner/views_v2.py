@@ -512,7 +512,8 @@ class SendMessageView(generics.GenericAPIView, Common):
                 order_id = ''
                 while True:
                     target = Cache.get(f'target_{params.get("id")}')
-                    
+                    print(f"\n\n{target.get('id')} has status {target.get('status')} at {datetime.utcnow()}")
+                    print(f"\n\n{target.get('id')} has scan_time {target.get('scan_time')} at {datetime.utcnow()}")
                     if not target:
                         break
                     # serializer = self.serializer_class(target[0], context={"request": request})

@@ -35,7 +35,9 @@ def update_target_and_add_log(**kwargs):
     """
     try:
         target_scan_time_current = kwargs.get('target')[0].scan_time
+        print(target_scan_time_current, "target_scan_time_current=>>>>")
         target_scan_time_new = round(Decimal(kwargs.get('scan_time')),2)
+        print(target_scan_time_new, "target_scan_time_new=>>>>")
         target_id = kwargs.get('id')
 
         if kwargs.get('output'):
@@ -73,6 +75,12 @@ def scan(id, time_limit, token, order_id, requested_by_id, client_id, batch_scan
         
         for target_obj in targets:
             Cache.set(f'target_{target_obj["id"]}', **json.loads(json.dumps(target_obj)))
+    else:
+        if not batch_scan:
+            targets = WithoutRequestUserTargetSerializer(target, many=True, context={"requested_by_id": requested_by_id}).data
+        
+            for target_obj in targets:
+                Cache.set(f'target_{target_obj["id"]}', **json.loads(json.dumps(target_obj)))
 
     thread = threading.Thread(target=send_message, args=(id, token, order_id, batch_scan))
     thread.start()

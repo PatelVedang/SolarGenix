@@ -89,8 +89,9 @@ class Scanner:
                 cookies = driver.get_cookies()
             except Exception as e:
                 print('error while booting selenium on url {}'.format(url))
-                # traceback.print_exc()
+                traceback.print_exc()
                 pass
+                # return False
             
             retval = {}
             anticlickjacking = antiClickJacking(url)
@@ -383,6 +384,7 @@ class Scanner:
         signal.signal(signal.SIGALRM, timeout_handler)
         signal.alarm(time_limit)
         newFiles = listDirectory(url, order_id, user_id, time_limit-5)
+        # print(time_limit,"=>>>>>Timelimit")
         for file in newFiles:
             directoryList.append(file)
         signal.alarm(0)
