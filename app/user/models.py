@@ -19,10 +19,6 @@ class Role(models.Model):
     
 
 class User(AbstractBaseUser, PermissionsMixin):
-    ROLE_CHOICES = (
-        (1, "Super admin"),
-        (2, "User"),
-    )
     username = None
     email = models.EmailField(_('email address'), unique=True, blank=False, null=False)
     # is_active = models.BooleanField(default=True)

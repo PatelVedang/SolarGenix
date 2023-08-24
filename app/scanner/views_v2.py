@@ -144,7 +144,7 @@ class ScanViewSet(viewsets.ModelViewSet, Common):
                 tool_time_limit = target_obj.tool.time_limit
                 scan.apply_async(args=[], kwargs={'id':target_id, 'time_limit':tool_time_limit, 'token':request.headers.get('Authorization'), 'order_id': target_obj.order_id, 'requested_by_id': requested_by_id, 'client_id': client_id, 'batch_scan': False}, time_limit=tool_time_limit+int(settings.EXTRA_BG_TASK_TIME), ignore_result=True)
         custom_response = ScannerResponseSerializer(Target.objects.filter(id__in=targets_id), many=True, context={"request": request})
-        return response(status=True, data=custom_response.data, status_code=status.HTTP_200_OK, message="host successfully added in queue")
+        return response(data=custom_response.data, status_code=status.HTTP_200_OK, message="host successfully added in queue")
         
     @swagger_auto_schema(
         method = 'post',
@@ -179,7 +179,7 @@ class ScanViewSet(viewsets.ModelViewSet, Common):
                 tool_time_limit = record.tool.time_limit
                 scan.apply_async(args=[], kwargs={'id':record.id, 'time_limit':tool_time_limit, 'token':request.headers.get('Authorization'), 'order_id': record.order_id, 'requested_by_id': requested_by_id, 'client_id': client_id, 'batch_scan': False}, time_limit=tool_time_limit+int(settings.EXTRA_BG_TASK_TIME), ignore_result=True)
         custom_response = ScannerResponseSerializer(records, many=True, context={"request": request})
-        return response(status=True, data=custom_response.data, status_code=status.HTTP_200_OK, message="host successfully added in queue")
+        return response(data=custom_response.data, status_code=status.HTTP_200_OK, message="host successfully added in queue")
 
     @swagger_auto_schema(
         request_body=ScannerSerializer,
@@ -217,7 +217,7 @@ class ScanViewSet(viewsets.ModelViewSet, Common):
                     obj = Target.objects.create(ip=ip, scan_by=request.user,tool=tool, order=order)
                     record_ids.append(obj.id)
         custom_response = ScannerResponseSerializer(Target.objects.filter(id__in=record_ids), many=True, context={"request": request})
-        return response(status=True, data=custom_response.data, status_code=status.HTTP_200_OK, message="host successfully added in database")
+        return response(data=custom_response.data, status_code=status.HTTP_200_OK, message="host successfully added in database")
 
 
     # API to retrieve any scaned host
@@ -235,7 +235,7 @@ class ScanViewSet(viewsets.ModelViewSet, Common):
         """
         self.serializer_class = ScannerResponseSerializer
         serializer = super().retrieve(request, *args, **kwargs)
-        return response(status=True, data=serializer.data, status_code=status.HTTP_200_OK, message="record found successfully")
+        return response(data=serializer.data, status_code=status.HTTP_200_OK, message="record found successfully")
 
     @swagger_auto_schema(
         operation_description= "Get list of targets.",
@@ -258,7 +258,7 @@ class ScanViewSet(viewsets.ModelViewSet, Common):
             self.queryset.filter(order_id=order_id)
         self.serializer_class = ScannerResponseSerializer
         data = super().list(request, *args, **kwargs)
-        return response(status=True, data=data.data, status_code=status.HTTP_200_OK, message="record found successfully")
+        return response(data=data.data, status_code=status.HTTP_200_OK, message="record found successfully")
 
     @swagger_auto_schema(
         method = 'get',
@@ -285,7 +285,7 @@ class ScanViewSet(viewsets.ModelViewSet, Common):
             'file_path':file_url
         }
         TargetLog.objects.create(target=Target(serializer.data.get('id')), action=6)
-        return response(status=True, data=data, status_code=status.HTTP_200_OK, message="PDF generated successfully")
+        return response(data=data, status_code=status.HTTP_200_OK, message="PDF generated successfully")
     
     @swagger_auto_schema(
         method = 'get',
@@ -340,7 +340,7 @@ class ScanViewSet(viewsets.ModelViewSet, Common):
         }
 
         TargetLog.objects.create(target=Target(serializer.data.get('id')), action=7)
-        return response(status=True, data=data, status_code=status.HTTP_200_OK, message="HTML generated successfully") 
+        return response(data=data, status_code=status.HTTP_200_OK, message="HTML generated successfully") 
     
     @swagger_auto_schema(
         tags=['Targets'],
@@ -355,7 +355,7 @@ class ScanViewSet(viewsets.ModelViewSet, Common):
         :return: The response is being returned.
         """
         self.get_object().soft_delete()
-        return response(status=True, data={}, status_code=status.HTTP_200_OK, message="record deleted successfully")
+        return response(data={}, status_code=status.HTTP_200_OK, message="record deleted successfully")
 
 @method_decorator(name='list', decorator=swagger_auto_schema(tags=['Tool'], operation_description= "List API.", operation_summary="API to get list of records."))
 @method_decorator(name='create', decorator=swagger_auto_schema(tags=['Tool'], operation_description= "Create API.", operation_summary="API to create new record."))
@@ -380,7 +380,7 @@ class ToolViewSet(viewsets.ModelViewSet, Common):
         :return: The response is being returned.
         """
         serializer = super().list(request, *args, **kwargs)
-        return response(status=True, data=serializer.data, status_code=status.HTTP_200_OK, message="record found successfully")
+        return response(data=serializer.data, status_code=status.HTTP_200_OK, message="record found successfully")
 
     def create(self, request, *args, **kwargs):
         """
@@ -391,7 +391,7 @@ class ToolViewSet(viewsets.ModelViewSet, Common):
         """
         self.serializer_class = ToolPayloadSerializer
         serializer = super().create(request, *args, **kwargs)
-        return response(status=True, data=serializer.data, status_code=status.HTTP_200_OK, message="record successfully added in database.")
+        return response(data=serializer.data, status_code=status.HTTP_200_OK, message="record successfully added in database.")
 
     def partial_update(self, request, *args, **kwargs):
         """
@@ -402,7 +402,7 @@ class ToolViewSet(viewsets.ModelViewSet, Common):
         """
         self.serializer_class = ToolPayloadSerializer
         serializer = super().partial_update(request, *args, **kwargs)
-        return response(status=True, data=serializer.data, status_code=status.HTTP_200_OK, message="record successfully updated in database.")
+        return response(data=serializer.data, status_code=status.HTTP_200_OK, message="record successfully updated in database.")
 
     def retrieve(self, request, *args, **kwargs):
         """
@@ -412,7 +412,7 @@ class ToolViewSet(viewsets.ModelViewSet, Common):
         """
         self.serializer_class = ToolPayloadSerializer
         serializer = super().retrieve(request, *args, **kwargs)
-        return response(status=True, data=serializer.data, status_code=status.HTTP_200_OK, message="record found successfully")
+        return response(data=serializer.data, status_code=status.HTTP_200_OK, message="record found successfully")
 
     def destroy(self, request, *args, **kwargs):
         """
@@ -422,7 +422,7 @@ class ToolViewSet(viewsets.ModelViewSet, Common):
         :return: The response is being returned.
         """
         self.get_object().soft_delete()
-        return response(status=True, data={}, status_code=status.HTTP_200_OK, message="record deleted successfully")
+        return response(data={}, status_code=status.HTTP_200_OK, message="record deleted successfully")
 
 @method_decorator(name='get', decorator=swagger_auto_schema(auto_schema=None))
 class SendMessageView(generics.GenericAPIView, Common):
@@ -462,7 +462,7 @@ class SendMessageView(generics.GenericAPIView, Common):
                     tool_perecent = 100/total_targets
                     response = []
                     order_percent = 0
-                    for target_obj in targets:
+                    for target_obj in targets:  
                         # Break for loop if target_obj is empty
                         if not target_obj:
                             break
@@ -489,7 +489,7 @@ class SendMessageView(generics.GenericAPIView, Common):
                             record_obj = {**target_obj, **{'target_percent':100, 'scan_complete': True}}
                             order_percent += int((100*tool_perecent)/100)
                         
-                        print(f"Target with id {record_obj['id']} is completed {record_obj['target_percent']}%")
+                        print(f"Target with id {record_obj['id']} is completed {record_obj['target_percent']}% with status {record_obj['status']}")
                         response.append(record_obj)                    
                     
                     order_update = super().order_update_in_cache(order, response)
@@ -588,7 +588,7 @@ class OrderViewSet(viewsets.ModelViewSet, Common):
             target_ip= serializer.data.get('target_ip')
             order = Order.objects.create(client_id=request.user.id, subscrib_id=request.user.subscription_id, target_ip=target_ip)
             custom_response = OrderResponseSerailizer(order, context={"request": request})
-            return response(status=True, data=custom_response.data, status_code=status.HTTP_200_OK, message="order successfully added in database")
+            return response(data=custom_response.data, status_code=status.HTTP_200_OK, message="order successfully added in database")
         
     def list(self, request, *args, **kwargs):
         """
@@ -602,7 +602,7 @@ class OrderViewSet(viewsets.ModelViewSet, Common):
             self.queryset = Order.objects.filter(client_id = request.user.id)
         self.serializer_class = OrderResponseSerailizer
         data = super().list(request, *args, **kwargs)
-        return response(status=True, data=data.data, status_code=status.HTTP_200_OK, message="record found successfully")
+        return response(data=data.data, status_code=status.HTTP_200_OK, message="record found successfully")
     
     def retrieve(self, request, *args, **kwargs):
         """
@@ -613,7 +613,7 @@ class OrderViewSet(viewsets.ModelViewSet, Common):
         """
         self.serializer_class = OrderResponseSerailizer
         data = super().retrieve(request, *args, **kwargs)
-        return response(status=True, data=data.data, status_code=status.HTTP_200_OK, message="record found successfully")
+        return response(data=data.data, status_code=status.HTTP_200_OK, message="record found successfully")
     
     def destroy(self, request, *args, **kwargs):
         """
@@ -625,7 +625,7 @@ class OrderViewSet(viewsets.ModelViewSet, Common):
         order = self.get_object()
         Target.objects.filter(order=order).update(is_deleted=True)
         self.get_object().soft_delete()
-        return response(status=True, data={}, status_code=status.HTTP_200_OK, message="record deleted successfully")
+        return response(data={}, status_code=status.HTTP_200_OK, message="record deleted successfully")
     
     @swagger_auto_schema(
         method = 'post',
@@ -657,7 +657,7 @@ class OrderViewSet(viewsets.ModelViewSet, Common):
                     client_id = target.scan_by.id
                     scan.apply_async(args=[], kwargs={'id':target.id, 'time_limit':target.tool.id, 'token':request.headers.get('Authorization'), 'order_id': order_id, 'requested_by_id': requested_by_id, 'client_id': client_id, 'batch_scan': True}, time_limit=target.tool.time_limit + int(settings.EXTRA_BG_TASK_TIME), ignore_result=True)
         custom_response = OrderResponseSerailizer(Order.objects.filter(id__in=orders_id), many=True, context={"request": request})
-        return response(status=True, data=custom_response.data, status_code=status.HTTP_200_OK, message="targets of order is successfully added in queue")
+        return response(data=custom_response.data, status_code=status.HTTP_200_OK, message="targets of order is successfully added in queue")
 
     @swagger_auto_schema(
         method = 'get',
@@ -683,4 +683,4 @@ class OrderViewSet(viewsets.ModelViewSet, Common):
         data = {
             'file_path':file_url
         }
-        return response(status=True, data=data, status_code=status.HTTP_200_OK, message="PDF generated successfully")
+        return response(data=data, status_code=status.HTTP_200_OK, message="PDF generated successfully")

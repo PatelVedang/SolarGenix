@@ -9,7 +9,7 @@ from datetime import datetime
 from tldextract import extract
 import json
 logger = logging.getLogger('django')
-from .handlers.nmap_hanlder import NMAP
+from .handlers.nmap_handler import NMAP
 nmap = NMAP()
 from .handlers.sslyze_handler import SSLYSE
 sslyze = SSLYSE()
@@ -19,7 +19,7 @@ from .handlers.curl_handler import CURL
 curl = CURL()
 from .handlers.default_handler import DEFAULT
 default = DEFAULT()
-from .handlers.owasp_zap_hanlder import OWASP
+from .handlers.owasp_zap_handler import OWASP
 owasp = OWASP()
 from .handlers.common_handler import Templates
 t = Templates()

@@ -106,7 +106,7 @@ class TargetAdmin(BulkSelect):
     list_display = [
         'id', 'ip','get_full_name','status', 'tool', 'is_deleted','order_id', 'scan_time'
     ]
-    search_fields = ('ip','id', 'scan_by__first_name', 'scan_by__first_name')
+    search_fields = ('ip','id', 'scan_by__first_name', 'scan_by__last_name', 'tool__tool_name')
 
     def get_full_name(self, obj):
         """
@@ -124,7 +124,7 @@ class TargetAdmin(BulkSelect):
 
 class OrderAdmin(BulkSelect):
     readonly_fields = ('id','retry')
-    search_fields = ('target_ip','id')
+    search_fields = ('target_ip','id', 'client__first_name', 'client__last_name')
     list_display = [
         'id','target_ip', 'status', 'get_full_name', 'get_targets_count', 'is_deleted'
     ]

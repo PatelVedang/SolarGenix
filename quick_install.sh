@@ -108,33 +108,33 @@ fi
 echo "----------------------------------------------------"
 printf "MySQL development headers Installed 😎 \n\n\n"
 
-echo "Installing rabbitmq-server"
-echo "----------------------------------------------------"
-if ! is_command_available rabbitmq-server; then
-    sudo apt-get install rabbitmq-server -y || ( echo "Failed to install RabbitMQ" && exit 1 )
-    sudo systemctl start rabbitmq-server
-    sudo systemctl enable rabbitmq-server
-else
-    echo "Redis server is already installed. Skipping installation."
-    sudo systemctl start rabbitmq-server
-    sudo systemctl enable rabbitmq-server
-    echo "RabbitMQ is already installed. Skipping installation."
-fi
+# echo "Installing rabbitmq-server"
 # echo "----------------------------------------------------"
-# printf "RabbitMQ Installed 😎 \n\n\n"
-
-# echo "Installing redis-server"
-# echo "----------------------------------------------------"
-# if ! is_command_available Redis server; then
-#     sudo apt-get install redis-server -y || ( echo "Failed to install Redis server" && exit 1 )
-#     # Start and enable the service
-#     sudo systemctl start redis-server
-#     sudo systemctl enable redis-server
+# if ! is_command_available rabbitmq-server; then
+#     sudo apt-get install rabbitmq-server -y || ( echo "Failed to install RabbitMQ" && exit 1 )
+#     sudo systemctl start rabbitmq-server
+#     sudo systemctl enable rabbitmq-server
 # else
 #     echo "Redis server is already installed. Skipping installation."
-#     sudo systemctl start redis-server
-#     sudo systemctl enable redis-server
+#     sudo systemctl start rabbitmq-server
+#     sudo systemctl enable rabbitmq-server
+#     echo "RabbitMQ is already installed. Skipping installation."
 # fi
+# echo "----------------------------------------------------"
+# printf "RabbitMQ Installed And Started 😎 \n\n\n"
+
+echo "Installing redis-server"
+echo "----------------------------------------------------"
+if ! is_command_available Redis server; then
+    sudo apt-get install redis-server -y || ( echo "Failed to install Redis server" && exit 1 )
+    # Start and enable the service
+    sudo systemctl start redis-server
+    sudo systemctl enable redis-server
+else
+    echo "Redis server is already installed. Skipping installation."
+    sudo systemctl start redis-server
+    sudo systemctl enable redis-server
+fi
 echo "----------------------------------------------------"
 printf "Redis Server Has Been Installed And Started 😎 \n\n\n"
 
@@ -143,11 +143,15 @@ echo "----------------------------------------------------"
 if ! is_command_available zap.sh; then
     sudo apt update -y
     sudo apt install default-jdk -y
-    sudo apt install default-jre -y
-    wget https://github.com/zaproxy/zaproxy/releases/download/v2.12.0/ZAP_2_12_0_unix.sh
-    sudo chmod +x ZAP_2_12_0_unix.sh
-    sudo bash ZAP_2_12_0_unix.sh
-    sudo rm ZAP_2_12_0_unix.sh
+    sudo apt install default-jre -y 
+    # wget https://github.com/zaproxy/zaproxy/releases/download/v2.12.0/ZAP_2_12_0_unix.sh
+    # sudo chmod +x ZAP_2_12_0_unix.sh
+    # sudo bash ZAP_2_12_0_unix.sh
+    # sudo rm ZAP_2_12_0_unix.sh
+    wget https://github.com/zaproxy/zaproxy/releases/download/v2.13.0/ZAP_2_13_0_unix.sh
+    sudo chmod +x ZAP_2_13_0_unix.sh
+    sudo bash ZAP_2_13_0_unix.sh
+    sudo rm ZAP_2_13_0_unix.sh
 else
     echo "OWASP_ZAP server is already installed. Skipping installation."
 fi
@@ -157,6 +161,7 @@ printf "OWASP_ZAP server Installed 😎 \n\n\n"
 echo "Installing PM2 with NVM"
 echo "----------------------------------------------------"
 if ! is_command_available pm2; then
+    sudo apt-get install curl -y
     curl https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.4/install.sh | bash
     source ~/.bashrc
     nvm install latest

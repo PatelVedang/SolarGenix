@@ -83,6 +83,7 @@ class Target(SoftDelete):
     def __str__(self):
         return self.ip
 
+
 class Tool(SoftDelete):
     tool_name = models.CharField(max_length= 50)
     tool_cmd = models.CharField(max_length=500)
@@ -118,6 +119,7 @@ class SubscriptionHistory(models.Model):
     end_date = models.DateTimeField()
     status = models.IntegerField(choices=PAYMENT_STATUS_CHOICES, default=0)
     transaction_payload = models.JSONField(default=dict)
+
 
 class TargetLog(models.Model):
     target = models.ForeignKey(Target, on_delete=models.SET_NULL, null=True)

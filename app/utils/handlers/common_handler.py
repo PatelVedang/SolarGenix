@@ -17,7 +17,7 @@ class AlertSortOrder:
         'low' : {'order': 3, 'label': 'Low'},
         'info' : {'order': 4, 'label': 'Informational'},
         'informational' : {'order': 4, 'label': 'Informational'},
-        'False-Positive' : {'order': 5, 'label': 'False-Positive'}
+        'false-positive' : {'order': 5, 'label': 'False-Positive'}
     }
 
 

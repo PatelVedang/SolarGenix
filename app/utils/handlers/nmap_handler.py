@@ -89,7 +89,6 @@ class NMAP:
         }
         tool_cmd = target.tool.tool_cmd.strip()
         if handlers.get(tool_cmd):
-            regenerate=True
             if regenerate or not target.compose_result:
                 self.result = {}
                 self.ports = []

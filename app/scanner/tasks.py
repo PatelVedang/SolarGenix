@@ -87,7 +87,8 @@ def scan(id, time_limit, token, order_id, requested_by_id, client_id, batch_scan
     
     py_tools={
         'owasp_zap':OWASP_ZAP_spider_scan_v3,
-        'isaix_owasp': custom_OWASP_ZAP_scan
+        'isaix_owasp': custom_OWASP_ZAP_scan,
+        'active_owasp': OWASP_ZAP_active_scan_v1
     }
 
     ip = ".".join(list(extract(target[0].ip))).strip(".")
@@ -332,7 +333,7 @@ def OWASP_ZAP_spider_scan_v3(url, order_id, requested_by_id, time_limit):
     # To store json as a scan result
 
     # Set the timeout signal and handler
-    signal.signal(signal.SIGALRM, timeout_handler, )
+    signal.signal(signal.SIGALRM, timeout_handler)
     # signal.signal(signal.SIGALRM, lambda signum, frame: timeout_handler(signum, frame, target[0].id))
     signal.alarm(time_limit)
 
@@ -446,7 +447,12 @@ def OWASP_ZAP_spider_scan_v3(url, order_id, requested_by_id, time_limit):
 def timeout_handler(signum, frame):
     raise TimeoutError("Timeout occurred")
 
-def OWASP_ZAP_active_scan_v1(url):
+def OWASP_ZAP_active_scan_v1(url, order_id, requested_by_id, time_limit):
+    # Set the timeout signal and handler
+    signal.signal(signal.SIGALRM, timeout_handler)
+    # signal.signal(signal.SIGALRM, lambda signum, frame: timeout_handler(signum, frame, target[0].id))
+    signal.alarm(time_limit)
+    
     # To store json as a scan result in active scan
     if not ('http://' in url or 'https://' in url):
         url = f"http://{url}"
@@ -507,7 +513,8 @@ def OWASP_ZAP_active_scan_v1(url):
 
     zap.ascan.remove_scan(scanid=scan_id)
 
-    return json.dumps({'alerts': alerts, 'risk_levels': risk_levels})
+    # return json.dumps({'alerts': alerts, 'risk_levels': risk_levels})
+    return json.dumps({'alerts': alerts})
 
 def custom_OWASP_ZAP_scan(url, order_id, requested_by_id, time_limit):
     domain = ".".join(list(extract(url))).strip(".")

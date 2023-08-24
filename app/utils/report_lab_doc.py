@@ -184,12 +184,34 @@ def generate_doc(role, cname, date, vulnerabilities, risk_levels, output_path, h
     toc.levelStyles = [h1_toc, h2_toc]
 
     # HEADER
-    story.append(Spacer(1, 3*inch))
+    story.append(Spacer(1, 2*inch))
     story.append(Paragraph('ISAIX', h1_header))
     story.append(Paragraph('Scan Report', h2_header))
     story.append(Spacer(1, 3*inch))
-    story.append(Paragraph('Created for: {}'.format(cname), h2_header))
-    story.append(Spacer(1, 2*inch))
+
+    # Domain(hosts) table
+    table_header = ["IP Address", "Domain Name"]
+    table_data = [[row[0], row[1]] for row in hosts]
+    table_data.insert(0, table_header)
+    table = Table(table_data, colWidths=7*cm)
+    # Add some style to the table (borders, background colors, fonts, etc.)
+    style = TableStyle([
+        ('BACKGROUND', (0,0), (-1,0), colors.grey),  # Add a grey background color to header row
+        ('TEXTCOLOR', (0,0), (-1,0), colors.whitesmoke),  # Change the header text color to white
+
+        ('ALIGN', (0,0), (-1,-1), 'CENTER'),  # Align all text to center
+        ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),  # Change the font of the header row to Helvetica-Bold
+        ('FONTSIZE', (0,0), (-1,0), 14),  # Change the font size of the header row to 14
+
+        ('BOTTOMPADDING', (0,0), (-1,0), 12),  # Add more space at the bottom of the header row text
+        ('GRID', (0,0), (-1,-1), 1, colors.black)  # Add a black grid around the cells
+    ])
+    story.append(table)
+
+    # Add the style to the table
+    table.setStyle(style)
+    # story.append(Paragraph('Created for: {}'.format(cname), h2_header))
+    story.append(Spacer(1, 2.5*inch))
     story.append(Paragraph('Created on: {}'.format(date), h2_header))
     story.append(PageBreak())
 
@@ -221,29 +243,7 @@ def generate_doc(role, cname, date, vulnerabilities, risk_levels, output_path, h
         intro_sub_section_number = intro_sub_section_number + 1
         story.append(Paragraph("Per {}'s request 3 public IP addresses which are hosting 10 domains that must be penetration tested by 3rd party. Here is the list:".format(cname)))
         story.append(Spacer(1, 1*inch))
-
-        table_header = ["IP Address", "Domain Name"]
-        table_data = [[row[0], row[1]] for row in hosts]
-        table_data.insert(0, table_header)
-
-        table = Table(table_data, colWidths=7*cm)
-
-        # Add some style to the table (borders, background colors, fonts, etc.)
-        style = TableStyle([
-            ('BACKGROUND', (0,0), (-1,0), colors.grey),  # Add a grey background color to header row
-            ('TEXTCOLOR', (0,0), (-1,0), colors.whitesmoke),  # Change the header text color to white
-
-            ('ALIGN', (0,0), (-1,-1), 'CENTER'),  # Align all text to center
-            ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),  # Change the font of the header row to Helvetica-Bold
-            ('FONTSIZE', (0,0), (-1,0), 14),  # Change the font size of the header row to 14
-
-            ('BOTTOMPADDING', (0,0), (-1,0), 12),  # Add more space at the bottom of the header row text
-            ('GRID', (0,0), (-1,-1), 1, colors.black)  # Add a black grid around the cells
-        ])
-
-        # Add the style to the table
-        table.setStyle(style)
-
+        
         story.append(table)
     section_number = section_number + 1
     summary_section_number = 1

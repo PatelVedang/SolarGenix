@@ -33,7 +33,7 @@ class RegisterView(generics.CreateAPIView):
         register_serializer = self.serializer_class(data=request.data)
         if register_serializer.is_valid(raise_exception=True):
             result = super().create(request, *args, **kwargs)
-            return response(status=True, data=result.data, status_code=status.HTTP_200_OK, message="user created successfully.")
+            return response(data=result.data, status_code=status.HTTP_200_OK, message="user created successfully.")
 
 class LoginView(TokenObtainPairView):
     serializer_class = LoginSerializer
@@ -52,7 +52,7 @@ class LoginView(TokenObtainPairView):
         """
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid(raise_exception=True):
-            return response(status=True, data=serializer.validated_data, status_code=status.HTTP_200_OK, message="user login successfully.")
+            return response(data=serializer.validated_data, status_code=status.HTTP_200_OK, message="user login successfully.")
 
 class RefreshTokenView(TokenObtainPairView):
     serializer_class = CustomTokenRefreshSerializer
@@ -72,7 +72,7 @@ class RefreshTokenView(TokenObtainPairView):
         """
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid(raise_exception=True):
-            return response(status=True, data=serializer.validated_data, status_code=status.HTTP_200_OK, message="user login successfully.")
+            return response(data=serializer.validated_data, status_code=status.HTTP_200_OK, message="user login successfully.")
 
 class VerifyTokenView(TokenObtainPairView):
     serializer_class = TokenVerifySerializer
@@ -91,7 +91,7 @@ class VerifyTokenView(TokenObtainPairView):
         """
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid(raise_exception=True):
-            return response(status=True, data={}, status_code=status.HTTP_200_OK, message="token verified successfully.")
+            return response(data={}, status_code=status.HTTP_200_OK, message="token verified successfully.")
 
 class ForgotPasswordView(generics.CreateAPIView):
     serializer_class = ForgotPasswordSerializer
@@ -113,7 +113,7 @@ class ForgotPasswordView(generics.CreateAPIView):
         if serializer.is_valid(raise_exception=True):
             serializer.save()
             user = User.objects.get(email=serializer.validated_data["email"])
-            return response(status=True, data={'success': True, 'otp': int(user.otp), 'expire_time': user.otp_expires}, status_code=status.HTTP_200_OK, message="successfully sent an OTP in mail. Please check your inbox.")
+            return response(data={'success': True, 'otp': int(user.otp), 'expire_time': user.otp_expires}, status_code=status.HTTP_200_OK, message="successfully sent an OTP in mail. Please check your inbox.")
 
 
 class ValidateOTPView(generics.GenericAPIView):
@@ -134,7 +134,7 @@ class ValidateOTPView(generics.GenericAPIView):
         """
         serializer = self.serializer_class(data=request.data, context={"request": request})
         if serializer.is_valid(raise_exception=True):
-            return response(status=True, data={}, status_code=status.HTTP_200_OK, message="OTP has successfully validated.")
+            return response(data={}, status_code=status.HTTP_200_OK, message="OTP has successfully validated.")
         
 
 
@@ -157,7 +157,7 @@ class ResetPasswordView(generics.GenericAPIView):
         
         if serializer.is_valid(raise_exception=True):
             serializer.save()
-            return response(status=True, data={}, status_code=status.HTTP_200_OK, message="successful changing of the password.")
+            return response(data={}, status_code=status.HTTP_200_OK, message="successful changing of the password.")
 
 
 @method_decorator(name='get', decorator=swagger_auto_schema(
@@ -184,7 +184,7 @@ class ProfileView(generics.RetrieveUpdateAPIView):
         """
         instance = self.request.user
         serializer = self.get_serializer(instance)
-        return response(status=True, data=serializer.data, status_code=status.HTTP_200_OK, message="profile found successfully.")
+        return response(data=serializer.data, status_code=status.HTTP_200_OK, message="profile found successfully.")
 
     def patch(self, request, *args, **kwargs):
         """
@@ -197,7 +197,7 @@ class ProfileView(generics.RetrieveUpdateAPIView):
         serializer = self.get_serializer(instance, data=request.data, partial=partial)
         if serializer.is_valid(raise_exception=True):
             serializer.save()
-            return response(status=True, data=serializer.data, status_code=status.HTTP_200_OK, message="profile updated successfully.")
+            return response(data=serializer.data, status_code=status.HTTP_200_OK, message="profile updated successfully.")
 
 class ChangePasswordView(generics.CreateAPIView):    
     serializer_class = ChangePasswordSerializer
@@ -212,5 +212,5 @@ class ChangePasswordView(generics.CreateAPIView):
         serializer = self.serializer_class(data=request.data, context={"request": request})
         if serializer.is_valid(raise_exception=True):
             serializer.save()
-        return response(status=True, data={}, status_code=status.HTTP_200_OK, message="successful changing of the password.")
+        return response(data={}, status_code=status.HTTP_200_OK, message="successful changing of the password.")
     
