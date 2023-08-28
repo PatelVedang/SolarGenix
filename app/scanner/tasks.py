@@ -61,11 +61,11 @@ def get_scan_time(end_date=datetime.utcnow(), **kwargs):
 
 c = Celery('proj')
 @c.task
-def scan(id, time_limit, token, order_id, requested_by_id, client_id, batch_scan):
+def scan(id, time_limit, token, order_id, requested_by_id, client_id, batch_scan, ws_trigger):
     target = Target.objects.filter(id=id)
     order = Order.objects.filter(id=order_id)
     
-    # Set cache of order and targets if it's not exist 
+    # Set cache of order and targets if it's not exist
     if not Cache.has_key(f'order_{order_id}'):
         order_serializer = WithoutRequestUserOrderSerializer(order, many=True, context={"requested_by_id": requested_by_id})
         Cache.set(f'order_{order_id}', **json.loads(json.dumps(order_serializer.data[0])))
@@ -82,8 +82,9 @@ def scan(id, time_limit, token, order_id, requested_by_id, client_id, batch_scan
             for target_obj in targets:
                 Cache.set(f'target_{target_obj["id"]}', **json.loads(json.dumps(target_obj)))
 
-    thread = threading.Thread(target=send_message, args=(id, token, order_id, batch_scan))
-    thread.start()
+    if ws_trigger:
+        thread = threading.Thread(target=send_message, args=(id, token, order_id, batch_scan))
+        thread.start()
     
     py_tools={
         'owasp_zap':OWASP_ZAP_spider_scan_v3,
@@ -173,10 +174,20 @@ def scan(id, time_limit, token, order_id, requested_by_id, client_id, batch_scan
 
 def send_message(id, token, order_id, batch_scan):
     """
-    This function sends a request to the API to send a message to the target user
+    This is the callback function to get the realtime percentage of running target scan.
+    The function `send_message` triggers a WebSocket API to send a message based on the provided
+    parameters.
     
-    :param id: The id of the target user
-    :param token: The token you get from the login API
+    :param id: The `id` parameter represents the target ID or the ID of the recipient of the message
+    :param token: The `token` parameter is a string that represents the authorization token for making
+    API requests. It is used as a header in the `requests.get()` function call to authenticate the
+    request
+    :param order_id: The order_id parameter is the unique identifier for an order. It is used to
+    retrieve information about a specific order from the cache
+    :param batch_scan: The `batch_scan` parameter is a boolean value that indicates whether the entire
+    order should be scanned or not. If `batch_scan` is `True`, it means that the entire order should be
+    scanned. If `batch_scan` is `False`, it means that only a specific target with the given
+    :return: a boolean value of True.
     """
     try:
         # if entire order is scan
@@ -184,11 +195,16 @@ def send_message(id, token, order_id, batch_scan):
             order = Cache.get(f'order_{order_id}')
             # if order found in cache
             if order:
-                targets = Cache.get_order_targets(f'order_{order_id}')
-                # if not found any running target for same order
-                if not len(Cache.apply_filter(targets, [['id', 'nq', id],['status', 'eq', 2]])):
-                    logger.info(f"====>>>>>>>>       \nWebsocket API trigger for order_id:{order_id}\n       <<<<<<<<====")
-                    response = requests.get(f'{settings.LOCAL_API_URL}/api/sendMessage/?order={order_id}', headers={'Authorization': token})
+                # # time.sleep(6)
+                # targets = Cache.get_order_targets(f'order_{order_id}')
+                # print("\n\n\n",targets, "=>>>Targets","\n\n\n")
+                # # if not found any running target for same order
+                # a = len(Cache.apply_filter(targets, [['id', 'nq', f'target_{id}'],['status', 'eq', 2]]))
+                # print(a,"=>>=>>>>>>>")
+                # if not a:
+                #     print(f"Target who started the ws is : {id}")
+                logger.info(f"====>>>>>>>>       \nWebsocket API trigger for order_id:{order_id}\n       <<<<<<<<====")
+                response = requests.get(f'{settings.LOCAL_API_URL}/api/sendMessage/?order={order_id}', headers={'Authorization': token})
         else:
             if Cache.get(f'target_{id}'):
                 logger.info(f"====>>>>>>>>       \nWebsocket API trigger for target id:{id}\n       <<<<<<<<====")
@@ -337,15 +353,6 @@ def OWASP_ZAP_spider_scan_v3(url, order_id, requested_by_id, time_limit):
     # signal.signal(signal.SIGALRM, lambda signum, frame: timeout_handler(signum, frame, target[0].id))
     signal.alarm(time_limit)
 
-    # risk_levels object to get alerts count riks wise
-    risk_levels = {
-        'High': {'class':'risk-3', 'count':0},
-        'Medium': {'class':'risk-2', 'count':0},
-        'Low': {'class':'risk-1', 'count':0},
-        'Informational': {'class':'risk-0', 'count':0},
-        'False Positives:': {'class':'risk--1', 'count':0},
-    }
-
     domain = ".".join(list(extract(url))).strip(".")
     http_url = f"http://{domain}"
     https_url = f"https://{domain}"
@@ -363,86 +370,62 @@ def OWASP_ZAP_spider_scan_v3(url, order_id, requested_by_id, time_limit):
         time.sleep(1)
 
     
-    # All message id objects for current scan
+    # # All message id objects for current scan
+    # full_results = pd.DataFrame(data=zap.spider.full_results(scanid=spider_scan_id))
+    # spider_requests = pd.DataFrame(data=[*full_results.loc[full_results.index[0]]['urlsInScope'], *full_results.loc[full_results.index[2]]['urlsIoError']])
+    # spider_msg_ids = spider_requests['messageId'].to_list()
+    # spider_msg_ids.sort()
+    
+    # alerts = []
+    # counter = 0
+    # while True:
+    #     # All alerts of specific base url
+    #     alerts = pd.DataFrame(data=[*zap.alert.alerts(baseurl=http_url), *zap.alert.alerts(baseurl=https_url)])
+    #     if len(alerts.columns) and 'messageId' in alerts.columns:
+    #         alert_message_ids = alerts['messageId'].tolist()
+    #         alert_message_ids.sort()
+    #     else:
+    #         alert_message_ids = []
+    #     matched_msg_ids  = sorted(list(set(alert_message_ids).intersection(spider_msg_ids)))
+    #     if matched_msg_ids==spider_msg_ids:
+    #         print("Match found")
+    #         break
+    #     else:
+    #         if counter==10:
+    #             print("Match not found")
+    #             break
+    #         counter += 1
+    #         time.sleep(int(settings.SPIDER_API_CALL_DELAY))
+    #         continue
+    
+    
+    #Get full result of spider scan 
     full_results = pd.DataFrame(data=zap.spider.full_results(scanid=spider_scan_id))
+
+    # Getting all the objects of urlsInScope and urlsIoError of spider scan
     spider_requests = pd.DataFrame(data=[*full_results.loc[full_results.index[0]]['urlsInScope'], *full_results.loc[full_results.index[2]]['urlsIoError']])
+
+    # Getting message ids from urlsInScope and urlsIoError of spider scan
     spider_msg_ids = spider_requests['messageId'].to_list()
-    spider_msg_ids.sort()
     
-    alerts = []
-    counter = 0
-    while True:
-        # All alerts of specific base url
-        alerts = pd.DataFrame(data=[*zap.alert.alerts(baseurl=http_url), *zap.alert.alerts(baseurl=https_url)])
-        if len(alerts.columns) and 'messageId' in alerts.columns:
-            alert_message_ids = alerts['messageId'].tolist()
-            alert_message_ids.sort()
-        else:
-            alert_message_ids = []
-        matched_msg_ids  = sorted(list(set(alert_message_ids).intersection(spider_msg_ids)))
-        if matched_msg_ids==spider_msg_ids:
-            print("Match found")
-            break
-        else:
-            if counter==10:
-                print("Match not found")
-                break
-            counter += 1
-            time.sleep(int(settings.SPIDER_API_CALL_DELAY))
-            continue
-    
-    # Alerts with message Id(We are accessing alerts based on message id to delete specific alerts of single scan) 
-    alert_with_msg_ids = {}
-    
-    # Update in future
-    if len(alerts):
-        for alert in alerts.to_dict('records'):
-            alert_with_msg_ids[alert.get('messageId')] = {**alert_with_msg_ids.get(alert.get('messageId'),{}), **{alert.get('id'):alert}}
+    # Make main thread to 10 seconds sleep to owasp update it's cache
+    time.sleep(10)
 
-    # custom alert object
-    alerts = {}
-    
-    if len(spider_requests) and len(alert_with_msg_ids.keys()):
-        for obj in spider_requests.to_dict('records'):
-            message_id = obj.get('messageId')
-            if alert_with_msg_ids.get(message_id):
-                for alert_key, alert_obj in alert_with_msg_ids.get(message_id).items():
-                    if isinstance(alert_obj,dict):
-                        alert_title = alert_obj.get('name')
-                        custom_alert_obj = {
-                            'name': alert_obj.get('name'),
-                            'description' : alert_obj.get('description'),
-                            'urls':[
-                                {
-                                'url' : alert_obj.get('url'),
-                                'method': alert_obj.get('method'),
-                                'parameter': alert_obj.get('param'),
-                                'attack': alert_obj.get('attack'),
-                                'evidence': alert_obj.get('evidence'),
-                                }
-                            ],
-                            'instances': 1,
-                            'wasc_id': alert_obj.get('wascid') if alert_obj.get('wascid')!="-1" else "",
-                            'cweid': alert_obj.get('cweid') if alert_obj.get('cweid')!="-1" else "",
-                            'plugin_id': alert_obj.get('pluginId'),
-                            'reference': "<br>".join(alert_obj.get('reference').split("\n")),
-                            'solution': alert_obj.get('solution'),
-                            'risk': alert_obj.get('risk')
-                        }
+    # Getting all the alerts of url with http and https
+    alerts = pd.DataFrame(data=[*zap.alert.alerts(baseurl=http_url), *zap.alert.alerts(baseurl=https_url)])
 
-                        if alert_title and alerts.get(alert_title):
-                            custom_alert_obj['urls'] = [*alerts[alert_title]['urls'], *custom_alert_obj['urls']]
-                            custom_alert_obj['instances'] = alerts[alert_title]['instances']+1
-                        else:
-                            risk_levels[custom_alert_obj['risk']]['count'] += 1
-                        
-                        alerts[alert_title] = custom_alert_obj
-                    zap.alert.delete_alert(id=alert_key)
+    # Spider scan alerts ids
+    spider_alerts_ids = alerts[alerts['messageId'].isin(spider_msg_ids)]['id'].tolist()
+
+    alerts_objs = {}
+    if len(spider_requests) and len(spider_alerts_ids):
+        # Getting all the alert based on alerts ids
+        alerts_objs = create_alerts_response(spider_alerts_ids)
     
     # Remove spider scan
     zap.spider.remove_scan(scanid=spider_scan_id)
 
-    return json.dumps({'alerts': alerts})
+    return json.dumps({'alerts': alerts_objs})
 
 def timeout_handler(signum, frame):
     raise TimeoutError("Timeout occurred")
@@ -452,31 +435,85 @@ def OWASP_ZAP_active_scan_v1(url, order_id, requested_by_id, time_limit):
     signal.signal(signal.SIGALRM, timeout_handler)
     # signal.signal(signal.SIGALRM, lambda signum, frame: timeout_handler(signum, frame, target[0].id))
     signal.alarm(time_limit)
-    
-    # To store json as a scan result in active scan
+
+    domain = ".".join(list(extract(url))).strip(".")
+    http_url = f"http://{domain}"
+    https_url = f"https://{domain}"
+
     if not ('http://' in url or 'https://' in url):
-        url = f"http://{url}"
-    # risk_levels object to get alerts count riks wise
-    risk_levels = {
-        'High': {'class':'risk-3', 'count':0},
-        'Medium': {'class':'risk-2', 'count':0},
-        'Low': {'class':'risk-1', 'count':0},
-        'Informational': {'class':'risk-0', 'count':0},
-        'False Positives:': {'class':'risk--1', 'count':0},
-    }
-    # scan url with active tool of OWASP ZAP fro quick scan
-    scan_id = zap.ascan.scan(url=url)
+        url = http_url
+
+    scan_id = zap.ascan.scan(url)
+
+    # Start Spider scan
+    spider_scan_id = zap.spider.scan(url)
+
+    # Waiting to complete spider scan
+    while int(zap.spider.status(spider_scan_id)) < 100:
+        print(f'Spider scan progress %:{zap.spider.status(spider_scan_id)} for scan id:{spider_scan_id}')
+        time.sleep(1)
+    print("Percentage of Spider scan is:",int(zap.spider.status(spider_scan_id)))
+
+    #Get full result of spider scan 
+    full_results = pd.DataFrame(data=zap.spider.full_results(scanid=spider_scan_id))
+
+    # Getting all the objects of urlsInScope and urlsIoError of spider scan
+    spider_requests = pd.DataFrame(data=[*full_results.loc[full_results.index[0]]['urlsInScope'], *full_results.loc[full_results.index[2]]['urlsIoError']])
+
+    # Getting message ids from urlsInScope and urlsIoError of spider scan
+    spider_msg_ids = spider_requests['messageId'].to_list()
     
-    # Here we are checking if spider scan still in progress then current process is sleep for 1s until 100% is compelete
-    while int(zap.ascan.status(scan_id)) < 100:
-        print('Active scan progress %: {} for scan id {} with url {}'.format(zap.ascan.status(scan_id), scan_id, url))
-        time.sleep(10)
+    # Start Active scan
+    active_scan_id = zap.ascan.scan(url)
 
-    # All alerts of single current active scan
-    alerts_ids = zap.ascan.alerts_ids(scanid=scan_id)
+    # Waiting to complete active scan
+    while int(zap.ascan.status(scanid=scan_id)) < 100:
+        print('Active scan progress %: {} for scan id {} with url {}'.format(zap.ascan.status(scanid=active_scan_id), active_scan_id, url))
+        time.sleep(1)
+    print("Percentage of Active scan is:",int(zap.ascan.status(active_scan_id)))
 
-    # custom alert object
-    alerts = {}
+    # Getting all the alerts of url with http and https
+    alerts = pd.DataFrame(data=[*zap.alert.alerts(baseurl=http_url), *zap.alert.alerts(baseurl=https_url)])
+
+    # Spider scan alerts ids
+    spider_alerts_ids = alerts[alerts['messageId'].isin(spider_msg_ids)]['id'].tolist()
+
+    # Active scan's alerts ids 
+    active_alerts_ids = zap.ascan.alerts_ids(scanid=active_scan_id)
+
+
+    # Getting all the alert based on alerts ids
+    alerts_objs = {}
+    alerts_objs = create_alerts_response([*spider_alerts_ids, *active_alerts_ids])
+
+    # Remove scan cache  
+    zap.spider.remove_scan(scanid=spider_scan_id)
+    zap.ascan.remove_scan(scanid=active_scan_id)
+
+    return json.dumps({'alerts': alerts_objs})
+
+def custom_OWASP_ZAP_scan(url, order_id, requested_by_id, time_limit):
+    domain = ".".join(list(extract(url))).strip(".")
+    http_url = f"http://{domain}"
+    https_url = f"https://{domain}"
+    if not ('http://' in url or 'https://' in url):
+        url = http_url
+    # try:
+    return owasp.process_data(url, order_id, requested_by_id, time_limit)
+    # except Exception as e:
+    #     pass
+
+def create_alerts_response(alerts_ids):
+    """
+    The function `create_alerts_response` takes a list of alert IDs, retrieves information about each
+    alert, and returns a dictionary containing custom alert objects grouped by alert title.
+    
+    :param alerts_ids: The `alerts_ids` parameter is a list of alert IDs. These IDs are used to retrieve
+    information about specific alerts from the ZAP (Zed Attack Proxy) core
+    :return: The function `create_alerts_response` returns a dictionary object `alerts_objs` which
+    contains information about the alerts.
+    """
+    alerts_objs = {}
     for alert_id in alerts_ids:
         alert_obj = zap.core.alert(id=alert_id)
         if isinstance(alert_obj,dict):
@@ -494,7 +531,7 @@ def OWASP_ZAP_active_scan_v1(url, order_id, requested_by_id, time_limit):
                     }
                 ],
                 'instances': 1,
-                'wsac_id': alert_obj.get('wascid') if alert_obj.get('wascid')!="-1" else "",
+                'wascid': alert_obj.get('wascid') if alert_obj.get('wascid')!="-1" else "",
                 'cweid': alert_obj.get('cweid') if alert_obj.get('cweid')!="-1" else "",
                 'plugin_id': alert_obj.get('pluginId'),
                 'reference': "<br>".join(alert_obj.get('reference').split("\n")),
@@ -502,27 +539,10 @@ def OWASP_ZAP_active_scan_v1(url, order_id, requested_by_id, time_limit):
                 'risk': alert_obj.get('risk')
             }
 
-            if alert_title and alerts.get(alert_title):
-                custom_alert_obj['urls'] = [*alerts[alert_title]['urls'], *custom_alert_obj['urls']]
-                custom_alert_obj['instances'] = alerts[alert_title]['instances']+1
-            else:
-                risk_levels[custom_alert_obj['risk']]['count'] += 1
+            if alert_title and alerts_objs.get(alert_title):
+                custom_alert_obj['urls'] = [*alerts_objs[alert_title]['urls'], *custom_alert_obj['urls']]
+                custom_alert_obj['instances'] = alerts_objs[alert_title]['instances']+1
             
-            alerts[alert_title] = custom_alert_obj
-        zap.core.delete_alert(alert_id)
-
-    zap.ascan.remove_scan(scanid=scan_id)
-
-    # return json.dumps({'alerts': alerts, 'risk_levels': risk_levels})
-    return json.dumps({'alerts': alerts})
-
-def custom_OWASP_ZAP_scan(url, order_id, requested_by_id, time_limit):
-    domain = ".".join(list(extract(url))).strip(".")
-    http_url = f"http://{domain}"
-    https_url = f"https://{domain}"
-    if not ('http://' in url or 'https://' in url):
-        url = http_url
-    # try:
-    return owasp.process_data(url, order_id, requested_by_id, time_limit)
-    # except Exception as e:
-    #     pass
+            alerts_objs[alert_title] = custom_alert_obj
+        zap.alert.delete_alert(alert_id)
+    return alerts_objs

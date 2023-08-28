@@ -45,6 +45,9 @@ class OWASP:
             'owasp_zap': [
                 self.zap_handler,
             ],
+            'active_owasp': [
+                self.zap_handler,
+            ],
             'isaix_owasp': [
                 self.zap_handler,
             ],
@@ -84,7 +87,8 @@ class OWASP:
             tool = "ISAIX OWASP" if target.tool.tool_cmd.strip() == "isaix_owasp" else "OWASP ZAP"
             vul_data = await alert_response(**{**json.loads(target.raw_result),**{'tool': tool, 'alert_type':5}})
             self.result = {**self.result, **vul_data}
-        except:
+        except Exception as e:
+            print(e,"=>>>>>>>>>>>>>>Vul data")
             import traceback
             traceback.print_exc()
             pass

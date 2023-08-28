@@ -306,6 +306,7 @@ LOCAL_API_URL = os.environ.get('LOCAL_API_URL', env('LOCAL_API_URL')).strip()
 EXTRA_BG_TASK_TIME = os.environ.get('EXTRA_BG_TASK_TIME', env('EXTRA_BG_TASK_TIME'))
 
 APP_ERROR_FILE_PATH = f"{BASE_DIR}/utils/custom_owasp/application_errors.xml"
+DIR_LISTING_RESULT_PATH = f"{BASE_DIR}/utils/custom_owasp/tools/directoryListing"
 # CELERY_ROUTES = {
 #  'user.tasks.*': {'queue': 'user_queue'},
 #  'scanner.tasks.*': {'queue': 'scanner_queue'},

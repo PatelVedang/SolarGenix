@@ -18,8 +18,7 @@ class directoryListing:
         website_without_http = website.replace("http://", "").replace("https://", "")
 
         # Location to save the files. This will save in a "dirstruct" directory under your current working directory
-        path_to_save = f'{settings.BASE_DIR}/utils/owasp/tools/directoryListing/dirstruct_{order_id}_{user_id}/{website_without_http}'
-        # path_to_save = f'dirstruct_{order_id}_{user_id}/{website_without_http}'
+        path_to_save = f'{settings.DIR_LISTING_RESULT_PATH}/dirstruct_{order_id}_{user_id}/{website_without_http}'
 
         # Create the directory if it does not exist
         os.makedirs(path_to_save, exist_ok=True)

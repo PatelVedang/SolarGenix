@@ -34,6 +34,7 @@ class PDF:
         'curl': curl.main,
         'owasp_zap': owasp.main,
         'isaix_owasp': owasp.main,
+        'active_owasp': owasp.main,
         'default': default.default_handler
     }
 
