@@ -66,7 +66,7 @@ def scan(id, time_limit, token, order_id, requested_by_id, client_id, batch_scan
     order = Order.objects.filter(id=order_id)
     
     # Set cache of order and targets if it's not exist
-    if not Cache.has_key(f'order_{order_id}'):
+    if not Cache.has_key(f'order_{order_id}') or ws_trigger:
         order_serializer = WithoutRequestUserOrderSerializer(order, many=True, context={"requested_by_id": requested_by_id})
         Cache.set(f'order_{order_id}', **json.loads(json.dumps(order_serializer.data[0])))
         
