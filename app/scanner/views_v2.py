@@ -137,7 +137,7 @@ class ScanViewSet(viewsets.ModelViewSet, Common):
             targets_id = serializer.data.get('targets_id')
             requested_by_id = request.user.id
             for target_id in targets_id:
-                ws_trigger = True
+                ws_trigger = False
                 target_obj = Target.objects.get(id=target_id)
                 target_obj.status = 1
                 target_obj.save()
@@ -176,7 +176,7 @@ class ScanViewSet(viewsets.ModelViewSet, Common):
             records.update(status=1)
             requested_by_id = request.user.id
             for record in records:
-                ws_trigger = True
+                ws_trigger = False
                 client_id = record.scan_by.id
                 tool_time_limit = record.tool.time_limit
                 scan.apply_async(args=[], kwargs={'id':record.id, 'time_limit':tool_time_limit, 'token':request.headers.get('Authorization'), 'order_id': record.order_id, 'requested_by_id': requested_by_id, 'client_id': client_id, 'batch_scan': False, 'ws_trigger': ws_trigger}, time_limit=tool_time_limit+int(settings.EXTRA_BG_TASK_TIME), ignore_result=True)

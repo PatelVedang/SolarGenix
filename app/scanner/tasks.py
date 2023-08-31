@@ -65,8 +65,11 @@ def scan(id, time_limit, token, order_id, requested_by_id, client_id, batch_scan
     target = Target.objects.filter(id=id)
     order = Order.objects.filter(id=order_id)
     
-    # Set cache of order and targets if it's not exist
+    # print(f"target_id: {id} with web socket trigger: {ws_trigger} \n\n\n\n\n\n\n\n\n\n\n\n")
+
+    # Set cache of order and targets if it's not exist or and this is the first target of entire order
     if not Cache.has_key(f'order_{order_id}') or ws_trigger:
+        # print(f"\n\n\n\n\n\n\n target_id: {id} with order_id:{order_id} with ws trigger:{ws_trigger} with order_cache check:{not Cache.has_key(f'order_{order_id}')}is trying to add cache \n\n\n\n\n\n\n")
         order_serializer = WithoutRequestUserOrderSerializer(order, many=True, context={"requested_by_id": requested_by_id})
         Cache.set(f'order_{order_id}', **json.loads(json.dumps(order_serializer.data[0])))
         
@@ -76,13 +79,14 @@ def scan(id, time_limit, token, order_id, requested_by_id, client_id, batch_scan
         for target_obj in targets:
             Cache.set(f'target_{target_obj["id"]}', **json.loads(json.dumps(target_obj)))
     else:
+        # print(f"\n\n\n\n\n\n\n target_id: {id} with order_id:{order_id} with ws trigger:{ws_trigger} with order_cache check:{not Cache.has_key(f'order_{order_id}')} 111111111111111 \n\n\n\n\n\n\n")
         if not batch_scan:
             targets = WithoutRequestUserTargetSerializer(target, many=True, context={"requested_by_id": requested_by_id}).data
         
             for target_obj in targets:
                 Cache.set(f'target_{target_obj["id"]}', **json.loads(json.dumps(target_obj)))
 
-    if ws_trigger:
+    if ws_trigger or not batch_scan:
         thread = threading.Thread(target=send_message, args=(id, token, order_id, batch_scan))
         thread.start()
     

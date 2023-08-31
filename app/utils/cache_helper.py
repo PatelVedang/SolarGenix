@@ -1,6 +1,7 @@
 from django.core.cache import cache
 import json
 import pandas as pd
+import time
 
 
 # The `Cache` class provides methods for interacting with a cache, including getting, setting,
@@ -37,6 +38,7 @@ class Cache:
         :param key: The key parameter is a unique identifier for the data being stored in the cache. It
         is used to retrieve the data later when needed
         """
+        print(f"Cache set for key : {key}")
         cache.set(key, json.dumps(kwargs, default=str))
 
     @classmethod
@@ -53,6 +55,13 @@ class Cache:
         values provided in the `kwargs` parameter
         """
         # Update take only json
+        counter = 0
+        while counter!=4:
+            if cache.has_key(key):
+                break
+            counter += 1
+            time.sleep(1)
+            
         if cache.has_key(key):
             cache.set(key, json.dumps(
                 {**json.loads(cache.get(key)), **kwargs}, default=str))
