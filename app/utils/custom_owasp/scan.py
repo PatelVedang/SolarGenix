@@ -36,6 +36,14 @@ from .tools.XPoweredByHeaderInfoLeakScanRule.XPoweredByHeaderInfoLeakScanRule im
 from .tools.informationDisclosureSusComment.informationDisclosureSusComment import hasSusComment
 from .tools.cacheControlScan.cacheControlScan import badCacheControl
 from .tools.directoryListing.directoryListing import listDirectory
+from .tools.cookieHttpOnlyScanRule.cookieHttpOnlyScanRule import scan as httpOnlyScan
+from .tools.cookieLooselyScopedScanRule.cookieLooselyScopedScanRule import scan as looselyScopedScan
+from .tools.cookieSecureFlagScanRule.cookieSecureFlagScanRule import scan as secureFlagScan
+from .tools.charsetMismatchScanRule.charsetMismatchScanRule import scan as charsetMismatchScan
+from .tools.hashDisclosureScan.hashDisclosureScan import scan as hashDisclosureScan
+from .tools.informationDisclosureReferrer.informationDisclosureReferrer import scan as referrerScan
+from .tools.insecureAuthenticationScan.insecureAuthenticationScan import scan as insecureAuthScan
+from .tools.insecureJsfViewState.insecureJsfPassiveViewState import scan as insecureJsfScan
 import json
 import asyncio
 import traceback
@@ -349,6 +357,58 @@ class Scanner:
                     self.vulnerabilities['Cache Control'] = self.create_vuln_entry('Re-examine Cache-control Directives', "The cache-control header has not been set properly or is missing, allowing the browser and proxies to cache content. For static assets like css, js, or image files this might be intended, however, the resources should be reviewed to ensure that no sensitive content will be cached.", 13, "CWE-525: Use of Web Browser Cache Containing Sensitive Information", "https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html#web-content-caching", "For secure content, ensure the cache-control HTTP header is set with 'no-cache, no-store, must-revalidate'. If an asset should be cached consider setting the directives 'public, max-age, immutable'.", "Informational")
 
                 self.add_urls('Cache Control', cacheControlDirective)
+                
+            notHttpCookie = httpOnlyScan(cookies, url)
+            if notHttpCookie:
+                if 'HttpOnly' not in self.vulnerabilities:
+                    self.vulnerabilities['HttpOnly'] = self.create_vuln_entry('Cookie No HttpOnly Flag', 'A cookie has been set without the HttpOnly flag, which means that the cookie can be accessed by JavaScript. If a malicious script can be run on this page then the cookie will be accessible and can be transmitted to another site. If this is a session cookie then session hijacking may be possible.', 13, "CWE-1004: Sensitive Cookie Without 'HttpOnly' Flag", "https://owasp.org/www-community/HttpOnly", 'Ensure that the HttpOnly flag is set for all cookies.', 'Low')
+
+                self.add_urls('HttpOnly', notHttpCookie)
+
+            looselyScopedCookie = looselyScopedScan(cookies, url)
+            if looselyScopedCookie:
+                if 'LooselyScopedCookie' not in self.vulnerabilities:
+                    self.vulnerabilities['LooselyScopedCookie'] = self.create_vuln_entry('Loosely Scoped Cookie', "Cookies can be scoped by domain or path. This check is only concerned with domain scope.The domain scope applied to a cookie determines which domains can access it. For example, a cookie can be scoped strictly to a subdomain e.g. www.nottrusted.com, or loosely scoped to a parent domain e.g. nottrusted.com. In the latter case, any subdomain of nottrusted.com can access the cookie. Loosely scoped cookies are common in mega-applications like google.com and live.com. Cookies set from a subdomain like app.foo.bar are transmitted only to that domain by the browser. However, cookies scoped to a parent-level domain may be transmitted to the parent, or any subdomain of the parent.", 15, 'CWE-565: Reliance on Cookies without Validation and Integrity Checking', "https://tools.ietf.org/html/rfc6265#section-4.1", "Always scope cookies to a FQDN (Fully Qualified Domain Name).", "Informational")
+
+                self.add_urls("LooselyScopedCookie", looselyScopedCookie)
+
+            secureFlagCookie = secureFlagScan(cookies, url)
+            if secureFlagCookie:
+                if 'SecureFlagCookie' not in self.vulnerabilities:
+                    self.vulnerabilities['SecureFlagCookie'] = self.create_vuln_entry("Cookie Without Secure Flag", "A cookie has been set without the secure flag, which means that the cookie can be accessed via unencrypted connections.", 13, "CWE-614: Sensitive Cookie in HTTPS Session Without 'Secure' Attribute", "https://owasp.org/www-project-web-security-testing-guide/v41/4-Web_Application_Security_Testing/06-Session_Management_Testing/02-Testing_for_Cookies_Attributes.html", "Whenever a cookie contains sensitive information or is a session token, then it should always be passed using an encrypted channel. Ensure that the secure flag is set for cookies containing such sensitive information.", "Low")
+
+                self.add_urls("SecureFlagCookie", secureFlagCookie)
+
+            charsetMismatch = charsetMismatchScan(url, html)
+            if charsetMismatch:
+                if 'charsetMismatch' not in self.vulnerabilities:
+                    self.vulnerabilities['charSetMismatch'] = self.create_vuln_entry('Charset Mismatch', "This check identifies responses where the HTTP Content-Type header declares a charset different from the charset defined by the body of the HTML or XML. When there’s a charset mismatch between the HTTP header and content body Web browsers can be forced into an undesirable content-sniffing mode to determine the content’s correct character set. An attacker could manipulate content on the page to be interpreted in an encoding of their choice. For example, if an attacker can control content at the beginning of the page, they could inject script using UTF-7 encoded text and manipulate some browsers into interpreting that text.", 15, "CWE-436: Interpretation Conflict", "http://code.google.com/p/browsersec/wiki/Part2#Character_set_handling_and_detection", "Force UTF-8 for all text content in both the HTTP header and meta tags in HTML or encoding declarations in XML.", 'Informational')
+                self.add_urls('charsetMismatch', charsetMismatch)
+
+            hashDisclosure = hashDisclosureScan(url, html)
+            if hashDisclosure:
+                if 'hashDisclosure' not in self.vulnerabilities:
+                    self.vulnerabilities['hashDisclosure'] = self.create_vuln_entry("Hash Disclosure", "A hash was disclosed by the web server.", 13, "CWE-200: Exposure of Sensitive Information to an Unauthorized Actor", "http://projects.webappsec.org/w/page/13246936/Information%20Leakage", "Ensure that hashes that are used to protect credentials or other resources are not leaked by the web server or database. There is typically no requirement for password hashes to be accessible to the web browser.", "Informational")
+
+                self.add_urls('hashDisclosure', hashDisclosure)
+
+            referrerInfo = referrerScan(url)
+            if referrerInfo:
+                if 'Information Disclosure Referrer' not in self.vulnerabilities:
+                    self.vulnerabilities['Information Disclosure Referrer'] = self.create_vuln_entry('Information Disclosure - Sensitive Information in HTTP Referrer Header', "The HTTP header may have leaked a potentially sensitive parameter to another domain. This can violate PCI and most organizational compliance policies. You can configure the list of strings for this check to add or remove values specific to your environment.", 13, "CWE-200: Exposure of Sensitive Information to an Unauthorized Actor", "", "Do not pass sensitive information in URIs.", "Informational")
+                self.add_urls('Information Disclosure Referrer', referrerInfo)
+
+            insecureAuth = insecureAuthScan(url)
+            if insecureAuth:
+                if 'Insecure Authentication' not in self.vulnerabilities:
+                    self.vulnerabilities['Insecure Authentication'] = self.create_vuln_entry("Weak Authentication Method", "HTTP basic or digest authentication has been used over an unsecured connection. The credentials can be read and then reused by someone with access to the network.", 4, "CWE-326: Inadequate Encryption Strength", "https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html", "Protect the connection using HTTPS or use a stronger authentication mechanism", "")
+                self.add_urls('Insecure Authentication', insecureAuth)
+
+            insecureJsfViewState = insecureJsfScan(url)
+            if insecureJsfViewState:
+                if 'Insecure JSF ViewState' not in self.vulnerabilities:
+                    self.vulnerabilities['Insecure JSF ViewState'] = self.create_vuln_entry('Insecure JSF ViewState', 'The response at the following URL contains a ViewState value that has no cryptographic protections.', 14, 'CWE-642: External Control of Critical State Data', 'https://www.trustwave.com/spiderlabs/advisories/TWSL2010-001.txt', 'Secure VIEWSTATE with a MAC specific to your environment', 'Medium')
+                self.add_urls('Insecure JSF ViewState', insecureJsfViewState)
 
             print(f"Scan for url:{url} has been done")
             driver.quit()
