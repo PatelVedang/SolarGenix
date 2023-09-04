@@ -12,7 +12,7 @@ class cookieHttpOnlyScanRule:
                     'method': "GET",
                     "parameter": "",
                     "attack": "",
-                    "evidence": cookie
+                    "evidence": cookie.get('value','')
                 }
             
 

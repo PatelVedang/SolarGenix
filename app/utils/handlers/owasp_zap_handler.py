@@ -55,7 +55,6 @@ class OWASP:
         }
         tool_cmd = target.tool.tool_cmd.strip()
         if handlers.get(tool_cmd):
-            regenerate=True
             if regenerate or not target.compose_result:
                 self.result = {}
                 
@@ -88,7 +87,6 @@ class OWASP:
             vul_data = await alert_response(**{**json.loads(target.raw_result),**{'tool': tool, 'alert_type':5}})
             self.result = {**self.result, **vul_data}
         except Exception as e:
-            print(e,"=>>>>>>>>>>>>>>Vul data")
             import traceback
             traceback.print_exc()
             pass

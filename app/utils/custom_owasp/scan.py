@@ -357,7 +357,7 @@ class Scanner:
                     self.vulnerabilities['Cache Control'] = self.create_vuln_entry('Re-examine Cache-control Directives', "The cache-control header has not been set properly or is missing, allowing the browser and proxies to cache content. For static assets like css, js, or image files this might be intended, however, the resources should be reviewed to ensure that no sensitive content will be cached.", 13, "CWE-525: Use of Web Browser Cache Containing Sensitive Information", "https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html#web-content-caching", "For secure content, ensure the cache-control HTTP header is set with 'no-cache, no-store, must-revalidate'. If an asset should be cached consider setting the directives 'public, max-age, immutable'.", "Informational")
 
                 self.add_urls('Cache Control', cacheControlDirective)
-                
+
             notHttpCookie = httpOnlyScan(cookies, url)
             if notHttpCookie:
                 if 'HttpOnly' not in self.vulnerabilities:
@@ -382,7 +382,7 @@ class Scanner:
             charsetMismatch = charsetMismatchScan(url, html)
             if charsetMismatch:
                 if 'charsetMismatch' not in self.vulnerabilities:
-                    self.vulnerabilities['charSetMismatch'] = self.create_vuln_entry('Charset Mismatch', "This check identifies responses where the HTTP Content-Type header declares a charset different from the charset defined by the body of the HTML or XML. When there’s a charset mismatch between the HTTP header and content body Web browsers can be forced into an undesirable content-sniffing mode to determine the content’s correct character set. An attacker could manipulate content on the page to be interpreted in an encoding of their choice. For example, if an attacker can control content at the beginning of the page, they could inject script using UTF-7 encoded text and manipulate some browsers into interpreting that text.", 15, "CWE-436: Interpretation Conflict", "http://code.google.com/p/browsersec/wiki/Part2#Character_set_handling_and_detection", "Force UTF-8 for all text content in both the HTTP header and meta tags in HTML or encoding declarations in XML.", 'Informational')
+                    self.vulnerabilities['charsetMismatch'] = self.create_vuln_entry('Charset Mismatch', "This check identifies responses where the HTTP Content-Type header declares a charset different from the charset defined by the body of the HTML or XML. When there’s a charset mismatch between the HTTP header and content body Web browsers can be forced into an undesirable content-sniffing mode to determine the content’s correct character set. An attacker could manipulate content on the page to be interpreted in an encoding of their choice. For example, if an attacker can control content at the beginning of the page, they could inject script using UTF-7 encoded text and manipulate some browsers into interpreting that text.", 15, "CWE-436: Interpretation Conflict", "http://code.google.com/p/browsersec/wiki/Part2#Character_set_handling_and_detection", "Force UTF-8 for all text content in both the HTTP header and meta tags in HTML or encoding declarations in XML.", 'Informational')
                 self.add_urls('charsetMismatch', charsetMismatch)
 
             hashDisclosure = hashDisclosureScan(url, html)

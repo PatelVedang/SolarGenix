@@ -4,13 +4,13 @@ class cookieSecureFlagScanRule:
 
     def scan_http_response_receive(self, cookies, url):
         for cookie in cookies:
-            if cookie.get('domain').count('.') < 2:
+            if cookie.get('domain','').count('.') < 2:
                 return {
                     'url': url,
                     'method': "GET",
                     "parameter": "",
                     "attack": "",
-                    "evidence": cookie
+                    "evidence": cookie.get('value', '')
                 }
             
 
