@@ -96,7 +96,7 @@ class SSLYSE:
                 if cert_expire_on < datetime.utcnow():
                     error = "Expired SSL certificate"
                     evidence = self.services_objects.get('Certificates Information:', '')
-                    vul_data = await alert_response(cve="CVE-2015-3886", error=error, tool="sslyze", alert_type=1, evidence=evidence)
+                    vul_data = await alert_response(cve="CVE-2015-3886", error=error, tool=target.tool.tool_name, alert_type=1, evidence=evidence)
                     self.result = {**self.result, **vul_data}
     
     async def tls1_detect_handler(self, target, regenerate):
@@ -115,7 +115,7 @@ class SSLYSE:
                 if search_result.groupdict().get('suites') and int(search_result.groupdict().get('suites')) >= 1:
                     error = "TLS 1.0 Weak Protocol"
                     evidence = self.services_objects.get('TLS 1.0 Cipher Suites:', '')
-                    vul_data = await alert_response(cve="CVE-2022-34757", error=error, tool="sslyze", alert_type=1, evidence=evidence)
+                    vul_data = await alert_response(cve="CVE-2022-34757", error=error, tool=target.tool.tool_name, alert_type=1, evidence=evidence)
                     self.result = {**self.result, **vul_data}
     
     async def tls11_detect_handler(self, target, regenerate):
@@ -149,7 +149,7 @@ class SSLYSE:
                         error=error,
                         description=desc,
                         solution=solution,
-                        tool="sslyze",
+                        tool=target.tool.tool_name,
                         alert_type=4,
                         evidence=evidence
                     )
@@ -179,7 +179,7 @@ class SSLYSE:
                         error=error,
                         description=desc,
                         solution=solution,
-                        tool="sslyze",
+                        tool=target.tool.tool_name,
                         alert_type=4,
                         evidence=evidence
                     )
