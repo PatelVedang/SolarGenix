@@ -162,13 +162,13 @@ class NMAP:
                 description=desc,
                 solution=solution,
                 port=port_number,
-                tool="nmap",
+                tool=target.tool.tool_name,
                 alert_type=4,
                 evidence=evidence
             )}
     
 
-    async def set_vul_data(self, port):
+    async def set_vul_data(self, port, target):
         """
         The function `set_vul_data` sets vulnerability data based on the given port number.
         
@@ -181,7 +181,7 @@ class NMAP:
         version = self.open_ports_obj.get(port).get('version')
         # if version:
         #     cve_id = await cve.mitre_keyword_search(version)
-        #     vul_data = await alert_response(cve=cve_id, error=error, tool="nmap", alert_type=1, evidence=evidence)
+        #     vul_data = await alert_response(cve=cve_id, error=error, tool=target.tool.tool_name, alert_type=1, evidence=evidence)
         #     self.result = {**self.result, **vul_data}
         # else:
         status = self.open_ports_obj[port]['status']
@@ -199,7 +199,7 @@ class NMAP:
             description=desc,
             solution=solution,
             port=port_number,
-            tool="nmap",
+            tool=target.tool.tool_name,
             alert_type=4,
             evidence=evidence
         )}
@@ -224,7 +224,7 @@ class NMAP:
         #     """
         jobs = []
         for port in self.open_ports_obj.keys():
-            jobs.append(self.set_vul_data(port))
+            jobs.append(self.set_vul_data(port, target))
         await asyncio.gather(*jobs)
 
         # loop = asyncio.new_event_loop()

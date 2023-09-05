@@ -384,7 +384,7 @@ class NIKTO:
             vul_data = await alert_response(**data)
             self.result = {**self.result, **vul_data}
 
-    async def set_vul_data(self, obj):
+    async def set_vul_data(self, obj, target):
         """
         The function `set_vul_data` sets vulnerability data by extracting error information, test links,
         and performing a keyword search for CVE IDs.
@@ -430,7 +430,7 @@ class NIKTO:
                 if val.get('Description'):
                     error = val.get('Description').replace("/:","")
                     jobs.append(
-                        self.set_vul_data(val)
+                        self.set_vul_data(val, target)
                     )
         
         await asyncio.gather(*jobs)
