@@ -411,7 +411,7 @@ def generate_doc(role, cname, date, vulnerabilities, risk_levels, output_path, h
                 cname,
                 obj['complexity'],
                 obj['instances'],
-                obj['tool']
+                Paragraph(obj['tool'], style=styles["Normal"])
             ]
             if not role.tool_access:
                 del extracted_data[4]

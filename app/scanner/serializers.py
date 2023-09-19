@@ -53,6 +53,7 @@ class ScannerSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField(read_only=True)
     ip = serializers.ListField(child=serializers.CharField(validators=[validate_ipv4_address]))
     tools_id = serializers.ListField(child=serializers.IntegerField(), allow_empty=False)
+    
     class Meta:
         model = Target
         fields = ['ip','id','tools_id']
