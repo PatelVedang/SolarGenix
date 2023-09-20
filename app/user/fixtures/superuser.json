@@ -10,7 +10,8 @@
         "is_superuser": true,
         "is_staff": true,
         "role":1,
-        "subscription_id":2
+        "subscription_id":2,
+        "is_verified":true
       }
     }
     

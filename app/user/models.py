@@ -33,6 +33,9 @@ class User(AbstractBaseUser, PermissionsMixin):
     subscription = models.ForeignKey('scanner.Subscription', on_delete=models.SET_NULL, null=True, blank=True, default=1)
     created_at = models.DateTimeField(auto_now_add=True, null=True)
     updated_at = models.DateTimeField(auto_now=True, null=True)
+    is_verified = models.BooleanField(default=False)
+    verification_token = models.CharField(max_length=255, null=True, blank=True)
+    token_expiration = models.DateTimeField(null=True, blank=True)
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = []

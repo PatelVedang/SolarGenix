@@ -11,12 +11,12 @@ import random
 from django.conf import settings
 from datetime import datetime, timedelta
 import re
-from django.conf import settings
 import logging
 logger = logging.getLogger('django')
 import json
 from django.contrib.auth.hashers import check_password
 import threading
+import uuid
 
 
 # The RoleSerializer class is a serializer for the Role model, specifying the fields to be included in
@@ -47,7 +47,9 @@ class RegisterSerializer(serializers.ModelSerializer):
         fields = ['id', 'first_name', 'last_name', 'email', 'password']
 
     def validate(self, attrs):
-        attrs['role_id'] = 3
+        attrs['role_id'] = Role.objects.filter(name='user')[0].id
+        # attrs['verification_token'] = str(uuid.uuid4())
+        # attrs['token_expiration'] = datetime.utcnow() + timedelta(hours=1)
         logger.info(f'serialize_data: {json.dumps(attrs)}')
         return super().validate(attrs)
     
@@ -57,6 +59,34 @@ class RegisterSerializer(serializers.ModelSerializer):
                 settings.PASSWORD_VALIDATE_STRING
             )
         return make_password(value)
+
+    def create(self, validated_data):
+        user = super().create(validated_data)
+
+        role_id = Role.objects.filter(name='user')[0].id
+        verification_token = str(uuid.uuid4())
+        token_expiration = datetime.utcnow() + timedelta(hours=1)
+        
+        email = validated_data.get("email")
+        link = f"{settings.PDF_DOWNLOAD_ORIGIN}/api/auth/verifyUserToken/{verification_token}"
+        email_body =  f'Please confirm that {email} is your email address by use this link {link} within 1 hour.'
+        user.role_id = role_id
+        user.verification_token = verification_token
+        user.token_expiration = token_expiration
+        user.save()
+        
+        thread= threading.Thread(target=send_email,
+                                 kwargs={
+                                    'subject':'Verify User',
+                                    'body':email_body,
+                                    'sender':settings.EMAIL_HOST_USER,
+                                    'recipients':[validated_data.get("email")],
+                                    'fail_silently':False,
+                                    'link':link,
+                                    'email':email
+                                })
+        thread.start()
+        return user
 
 
 class LoginSerializer(TokenObtainPairSerializer):
@@ -74,6 +104,10 @@ class LoginSerializer(TokenObtainPairSerializer):
         if not user:
             raise serializers.ValidationError(
                 'No active account found with the given credentials.'
+            )
+        if not user.is_verified:
+            raise serializers.ValidationError(
+                'Your account is not activated please contact to admin for further instructions!!'
             )
         return super().validate(attrs)
 
@@ -211,5 +245,82 @@ class ChangePasswordSerializer(serializers.Serializer):
     def create(self, validated_data):
         user = self.context['request'].user
         user.set_password(validated_data['new_password'])
+        user.save()
+        return user
+    
+
+class ResendUserTokenSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    class Meta:
+        model = User
+        fields = ["email"]
+    
+    def validate(self, attrs):
+        logger.info(f'serialize_data: {json.dumps(attrs)}')
+        email = attrs.get("email", "")
+        user = User.objects.filter(email=email)
+        if not user.exists():
+            raise serializers.ValidationError("Something went wrong.")
+        
+        if user[0].is_verified:
+            raise serializers.ValidationError("Account is already verified.")
+
+        return attrs
+
+    def create(self, validated_data):
+        email = validated_data.get("email")
+        user = User.objects.get(email=email)
+
+        verification_token = str(uuid.uuid4())
+        token_expiration = datetime.utcnow() + timedelta(hours=1)
+
+        link = f"{settings.PDF_DOWNLOAD_ORIGIN}/api/auth/verifyUserToken/{verification_token}"
+        email_body =  f'Please confirm that {email} is your email address by use this link {link} within 1 hour.'
+        user.verification_token = verification_token
+        user.token_expiration = token_expiration
+        user.save()
+        
+        thread= threading.Thread(target=send_email,
+                                 kwargs={
+                                    'subject':'Verify User',
+                                    'body':email_body,
+                                    'sender':settings.EMAIL_HOST_USER,
+                                    'recipients':[validated_data.get("email")],
+                                    'fail_silently':False,
+                                    'link':link,
+                                    'email':email
+                                })
+        thread.start()
+        return user
+    
+
+class VerifyUserTokenSerializer(serializers.Serializer):
+    token = serializers.CharField()
+    class Meta:
+        fields = ["token"]
+    
+    def validate(self, attrs):
+        logger.info(f'serialize_data: {json.dumps(attrs)}')
+        token = attrs.get("token")
+        user = User.objects.filter(verification_token=token)
+        if not user.exists():
+            raise serializers.ValidationError("Something went wrong.")
+        
+        if user[0].is_verified:
+            raise serializers.ValidationError("Account is already verified.")
+        
+
+        datetime_diff = (datetime.strptime(user[0].token_expiration.strftime('%Y-%m-%d %H:%M:%S'),"%Y-%m-%d %H:%M:%S") - datetime.utcnow()).total_seconds()/60
+        if datetime_diff <= 0:
+            raise serializers.ValidationError("Invalid or expired verification token")
+
+        return attrs
+
+    def create(self, validated_data):
+        token = validated_data.get("token")
+        user = User.objects.get(verification_token=token)
+        user.verification_token = None
+        user.token_expiration = None
+        user.is_verified = True
         user.save()
         return user

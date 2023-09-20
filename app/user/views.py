@@ -3,7 +3,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from rest_framework import viewsets
 from .serializers import *
 from rest_framework.decorators import action
-from rest_framework import generics
+from rest_framework import generics, viewsets
 from utils.make_response import response
 from rest_framework import status
 from drf_yasg.utils import swagger_auto_schema
@@ -214,3 +214,45 @@ class ChangePasswordView(generics.CreateAPIView):
             serializer.save()
         return response(data={}, status_code=status.HTTP_200_OK, message="successful changing of the password.")
     
+
+class ResendUserTokenView(generics.GenericAPIView):
+    serializer_class = ResendUserTokenSerializer
+    permission_classes = [AllowAny]
+
+    @swagger_auto_schema(
+        tags=['Auth'],
+        operation_description="This API allows users to reset their password. It requires the user to submit both a new password and a confirmation of the new password in the payload. Upon successful submission, the user's password is reset.",
+        operation_summary="Reset Password API"
+    )
+    def post(self, request):
+        """
+        A function that is used to reset the password of a user.
+        
+        :param request: The request object
+        """
+        serializer = self.serializer_class(data=request.data,context={'request':request})
+        
+        if serializer.is_valid(raise_exception=True):
+            serializer.save()
+            return response(data={}, status_code=status.HTTP_200_OK, message="A new verification link has been sent to your mail")
+
+
+class VerifyUserTokenView(viewsets.ViewSet):
+
+    serializer_class = VerifyUserTokenSerializer
+    permission_classes = [AllowAny]
+
+    @swagger_auto_schema(
+        method = 'get',
+        operation_description= "Verify User token",
+        operation_summary="API to verify user token to complete signing process.",
+        tags=['Auth']
+
+    )
+    @action(methods=['GET'], detail=True)
+    def verify_token(self, request, token):
+        serializer = self.serializer_class(data={'token':token},context={'request':request})
+        
+        if serializer.is_valid(raise_exception=True):
+            serializer.save()
+            return response(data={}, status_code=status.HTTP_200_OK, message="Your acount has been verified successfully")

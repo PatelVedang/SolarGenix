@@ -18,5 +18,7 @@ urlpatterns = [
     path('auth/validateOtp', views.ValidateOTPView.as_view(), name='validate-otp'),
     path('auth/resetPassword', views.ResetPasswordView.as_view(), name="reset-password"),
     path('users/profile', views.ProfileView.as_view(), name='update-profile'),
-    path('users/changePassword', views.ChangePasswordView.as_view(), name='change-password')
+    path('users/changePassword', views.ChangePasswordView.as_view(), name='change-password'),
+    path('auth/resendUserVerifyToken', views.ResendUserTokenView.as_view(), name='resend-user-verify-token'),
+    path('auth/verifyUserToken/<str:token>', views.VerifyUserTokenView.as_view({'get': 'verify_token'}), name='verify-user-token'),
 ]
