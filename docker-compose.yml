@@ -1,0 +1,63 @@
+version: '3.8'
+
+services:
+  # APP (Django)
+  web:
+    container_name: cyber_django
+    build: ./app
+    command: python manage.py runserver 0.0.0.0:8000
+    volumes:
+      - ./app/:/usr/src/app/
+    ports:
+      - 8000:8000
+    env_file:
+      - ./.env.dev
+    depends_on:
+      - db
+
+  db:
+    container_name: cyber_db
+    build:
+      context: .
+      dockerfile: ./mysql/Dockerfile
+    volumes:
+      - mysql_data:/var/lib/mysql
+    restart: unless-stopped
+    env_file: .env.dev
+    environment:
+      MYSQL_TCP_PORT: 33062
+    ports:
+      - "33062:33062"
+    expose:
+      - 33062
+    
+  # MQ BROKER (RabbitMQ)
+  rabbitmq:
+    container_name: cyber_rabbitmq
+    image: rabbitmq:3-management
+    env_file:
+      - ./.env.dev
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq/mnesia/guest@guest
+    ports:
+      # - "5672:5672"
+      - "15672:15672"
+  
+  # WORKER (Celery)
+  worker:
+    container_name: cyber_celery
+    build:
+      context: ./app
+      dockerfile: Dockerfile
+    command: celery -A proj worker
+    volumes:
+      - ./app/:/usr/src/app/
+    env_file:
+      - ./.env.dev
+    depends_on:
+      - rabbitmq
+  
+
+volumes:
+  mysql_data:
+  rabbitmq_data:

@@ -1,0 +1,56 @@
+[
+  {
+    "model": "scanner.tool",
+    "pk": 1,
+    "fields": {
+      "tool_name": "nmap",
+      "tool_cmd": "nmap -Pn -sV",
+      "time_limit": 30,
+      "subscription_id": 1,
+      "is_deleted":true
+    }
+  },
+  {
+    "model": "scanner.tool",
+    "pk": 2,
+    "fields": {
+      "tool_name": "nmap-vulners",
+      "tool_cmd": "nmap -Pn -sV --script vuln,vulners --script-args mincvvs=5.0",
+      "time_limit": 200,
+      "subscription_id": 1,
+      "is_deleted":true
+    }
+  },
+  {
+    "model": "scanner.tool",
+    "pk": 3,
+    "fields": {
+      "tool_name": "nmap-vuln",
+      "tool_cmd": "nmap -Pn -sV -sT",
+      "time_limit": 200,
+      "subscription_id": 1
+    }
+  },
+  {
+    "model": "scanner.tool",
+    "pk": 4,
+    "fields": {
+      "tool_name": "nmap-poodle",
+      "tool_cmd": "nmap -p443 --script ssl-poodle -Pn",
+      "time_limit": 30,
+      "subscription_id": 1,
+      "is_deleted":true
+    }
+  },
+  {
+    "model": "scanner.tool",
+    "pk": 5,
+    "fields": {
+      "tool_name": "sslyze",
+      "tool_cmd": "sslyze",
+      "time_limit": 300,
+      "subscription_id": 1
+    }
+  }
+  
+]
