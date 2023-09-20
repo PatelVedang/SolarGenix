@@ -47,9 +47,6 @@ class RegisterSerializer(serializers.ModelSerializer):
         fields = ['id', 'first_name', 'last_name', 'email', 'password']
 
     def validate(self, attrs):
-        attrs['role_id'] = Role.objects.filter(name='user')[0].id
-        # attrs['verification_token'] = str(uuid.uuid4())
-        # attrs['token_expiration'] = datetime.utcnow() + timedelta(hours=1)
         logger.info(f'serialize_data: {json.dumps(attrs)}')
         return super().validate(attrs)
     
@@ -62,30 +59,88 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         user = super().create(validated_data)
+        admin = User.objects.get(id=1)
 
         role_id = Role.objects.filter(name='user')[0].id
         verification_token = str(uuid.uuid4())
         token_expiration = datetime.utcnow() + timedelta(hours=1)
+        link="https://google.com"
+        user_name = f"{user.first_name} {user.last_name}".upper()
+        user_email = user.email
+        user_created_at = user.created_at
+        admin_name = f"{admin.first_name} {admin.last_name}".upper()
         
-        email = validated_data.get("email")
-        link = f"{settings.PDF_DOWNLOAD_ORIGIN}/api/auth/verifyUserToken/{verification_token}"
-        email_body =  f'Please confirm that {email} is your email address by use this link {link} within 1 hour.'
-        user.role_id = role_id
-        user.verification_token = verification_token
-        user.token_expiration = token_expiration
-        user.save()
-        
+
+        # End-user mail confirmation
+        email_body =  f'''
+        Dear {user_name},
+
+        Thank you for registering on Cyber Appliance. We're delighted to have you as a part of our community!
+
+        Your account has been created, but it is currently pending activation by our admin team. Please allow us some time to review your account information.
+        '''
         thread= threading.Thread(target=send_email,
-                                 kwargs={
-                                    'subject':'Verify User',
+                                kwargs={
+                                    'subject':'Welcome to Cyber Appliance',
                                     'body':email_body,
                                     'sender':settings.EMAIL_HOST_USER,
                                     'recipients':[validated_data.get("email")],
                                     'fail_silently':False,
-                                    'link':link,
-                                    'email':email
+                                    'end_user_confimartion': True,
+                                    'allow_html':True,
+                                    'user_name':user_name
                                 })
         thread.start()
+
+        # Admin mail confirmation
+        email_body =  f'''
+        Hello {admin_name},
+
+        A new user has registered on Cyber Appliance. Please review the user's information and consider activating their account. Here are the details:
+
+        User Details:
+        Name : {user_name}
+        Email: {user_email}
+        Registartion Date: {user_created_at}
+        '''
+        thread= threading.Thread(target=send_email,
+                                kwargs={
+                                    'subject': f'New User Registration: {user_name}',
+                                    'body':email_body,
+                                    'sender':settings.EMAIL_HOST_USER,
+                                    'recipients':[admin.email],
+                                    'fail_silently':False,
+                                    'admin_user_confimartion': True,
+                                    'allow_html':True,
+                                    'user_name':user_name,
+                                    'user_email':user_email,
+                                    'user_created_at':user_created_at,
+                                    'admin_name':admin_name
+                                })
+        thread.start()
+
+
+
+        # email = validated_data.get("email")
+        # link = f"{settings.PDF_DOWNLOAD_ORIGIN}/api/auth/verifyUserToken/{verification_token}"
+        # email_body =  f'Please confirm that {email} is your email address by use this link {link} within 1 hour.'
+        user.role_id = role_id
+        # user.verification_token = verification_token
+        # user.token_expiration = token_expiration
+        user.save()
+        
+        # thread= threading.Thread(target=send_email,
+        #                          kwargs={
+        #                             'subject':'Verify User',
+        #                             'body':email_body,
+        #                             'sender':settings.EMAIL_HOST_USER,
+        #                             'recipients':[validated_data.get("email")],
+        #                             'fail_silently':False,
+        #                             'link':link,
+        #                             'email':email,
+        #                             'allow_html':True
+        #                         })
+        # thread.start()
         return user
 
 
@@ -148,7 +203,8 @@ class ForgotPasswordSerializer(serializers.Serializer):
                                     'sender':settings.EMAIL_HOST_USER,
                                     'recipients':[validated_data.get("email")],
                                     'fail_silently':False,
-                                    'otp':otp
+                                    'otp':otp,
+                                    'allow_html':True
                                 })
         thread.start()
         return user
@@ -288,7 +344,8 @@ class ResendUserTokenSerializer(serializers.Serializer):
                                     'recipients':[validated_data.get("email")],
                                     'fail_silently':False,
                                     'link':link,
-                                    'email':email
+                                    'email':email,
+                                    'allow_html':True
                                 })
         thread.start()
         return user
