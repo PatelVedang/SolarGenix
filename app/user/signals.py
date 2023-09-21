@@ -34,7 +34,7 @@ def user_verify_signal(sender, instance, **kwargs):
                                         kwargs={
                                             'subject':'Your account with Cyber Appliance is now active!',
                                             'body':email_body,
-                                            'sender':settings.EMAIL_HOST_USER,
+                                            'sender':settings.BUSINESS_EMAIL,
                                             'recipients':[new_user.email],
                                             'fail_silently':False,
                                             'account_activation': True,
