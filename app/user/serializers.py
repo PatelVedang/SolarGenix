@@ -83,7 +83,7 @@ class RegisterSerializer(serializers.ModelSerializer):
                                 kwargs={
                                     'subject':'Welcome to Cyber Appliance',
                                     'body':email_body,
-                                    'sender':settings.EMAIL_HOST_USER,
+                                    'sender':settings.BUSINESS_EMAIL,
                                     'recipients':[validated_data.get("email")],
                                     'fail_silently':False,
                                     'end_user_confimartion': True,
@@ -107,7 +107,7 @@ class RegisterSerializer(serializers.ModelSerializer):
                                 kwargs={
                                     'subject': f'New User Registration: {user_name}',
                                     'body':email_body,
-                                    'sender':settings.EMAIL_HOST_USER,
+                                    'sender':settings.BUSINESS_EMAIL,
                                     'recipients':[admin.email],
                                     'fail_silently':False,
                                     'admin_user_confimartion': True,
@@ -133,7 +133,7 @@ class RegisterSerializer(serializers.ModelSerializer):
         #                          kwargs={
         #                             'subject':'Verify User',
         #                             'body':email_body,
-        #                             'sender':settings.EMAIL_HOST_USER,
+        #                             'sender':settings.BUSINESS_EMAIL,
         #                             'recipients':[validated_data.get("email")],
         #                             'fail_silently':False,
         #                             'link':link,
@@ -200,7 +200,7 @@ class ForgotPasswordSerializer(serializers.Serializer):
                                  kwargs={
                                     'subject':'Password Reset',
                                     'body':email_body,
-                                    'sender':settings.EMAIL_HOST_USER,
+                                    'sender':settings.BUSINESS_EMAIL,
                                     'recipients':[validated_data.get("email")],
                                     'fail_silently':False,
                                     'otp':otp,
@@ -340,7 +340,7 @@ class ResendUserTokenSerializer(serializers.Serializer):
                                  kwargs={
                                     'subject':'Verify User',
                                     'body':email_body,
-                                    'sender':settings.EMAIL_HOST_USER,
+                                    'sender':settings.BUSINESS_EMAIL,
                                     'recipients':[validated_data.get("email")],
                                     'fail_silently':False,
                                     'link':link,

@@ -300,9 +300,9 @@ class WithoutRequestUserTargetSerializer(serializers.ModelSerializer):
         data = super().to_representation(instance)
         requested_by_id = self.context['requested_by_id']
         requested_by = User.objects.get(id=requested_by_id)
-        if not requested_by.role.tool_access:
-            data['tool']= instance.tool.id
-            data['raw_result'] = ""
+        # if not requested_by.role.tool_access:
+        #     data['tool']= instance.tool.id
+        #     data['raw_result'] = ""
         
         data['scan_by']= {
             "id": instance.scan_by.id,
