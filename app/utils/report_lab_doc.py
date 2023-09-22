@@ -231,7 +231,7 @@ def generate_doc(role, cname, date, vulnerabilities, risk_levels, output_path, h
     
     story.append(Paragraph('<a name="imp"></a><b>{}.{} Why This Scan Is Important</b>'.format(section_number, intro_sub_section_number), h2))
     intro_sub_section_number = intro_sub_section_number + 1
-    story.append(Paragraph("In today's digital era, the threat landscacontenttantly evolving, with new vulnerabilities emerging regularly. These vulnerabilities, if left undetected, could lead to serious breaches, causing loss of data, financial losses, and damage to your organization's reputation.", content))
+    story.append(Paragraph("In today's digital era, the threat landscape is constantly evolving, with new vulnerabilities emerging regularly. These vulnerabilities, if left undetected, could lead to serious breaches, causing loss of data, financial losses, and damage to your organization's reputation.", content))
 
     story.append(Paragraph('<a name="goal"></a><b>{}.{} Our Goal</b>'.format(section_number, intro_sub_section_number), h2))
     story.append(Paragraph("With this vulnerability scan, we aim to identify, categorize, and prioritize potential vulnerabilities in your system. Our approach includes a detailed analysis of the network and system components, using the latest tools and techniques in the cybersecurity domain. The subsequent sections will outline our findings, recommendations, and strategies to mitigate the detected vulnerabilities.", content))

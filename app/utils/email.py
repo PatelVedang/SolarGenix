@@ -28,6 +28,10 @@ def send_email(**kwargs):
             elif link:
                 html_message = render_to_string('verify-user.html', kwargs)
             elif kwargs.get('admin_user_confimartion'):
+                print(settings.SUPPORT_EMAILS)
+                if settings.SUPPORT_EMAILS:
+                    recipients = [*recipients, *settings.SUPPORT_EMAILS.split()]
+                print(recipients)
                 html_message = render_to_string('admin-confirmation.html', kwargs)
             elif kwargs.get('end_user_confimartion'):
                 html_message = render_to_string('user-confirmation.html', kwargs)
