@@ -5,7 +5,7 @@
       "fields": {
         "first_name": "Reza",
         "last_name": "Admin",
-        "email": "admin1@yopmail.com",
+        "email": "reza.gholami@isaix.com",
         "password": "pbkdf2_sha256$390000$YCv2dg8yGtIfigtKcEXRCf$wsXj1c3vzVZ3O0xA3nSyscq2Bl9PFra3MjEJpCuR4h8=",
         "is_superuser": true,
         "is_staff": true,
