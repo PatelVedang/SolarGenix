@@ -5,7 +5,9 @@
       "fields": {
         "name": "admin",
         "tool_access": true,
-        "target_access": true
+        "target_access": true,
+        "client_name_access": true,
+        "scan_result_access": true
       }
     },
     {
@@ -14,7 +16,9 @@
       "fields": {
         "name": "staff",
         "tool_access": true,
-        "target_access": true
+        "target_access": true,
+        "client_name_access": true,
+        "scan_result_access": false
       }
     },
     {
@@ -23,7 +27,9 @@
       "fields": {
         "name": "user",
         "tool_access": false,
-        "target_access": false
+        "target_access": false,
+        "client_name_access": false,
+        "scan_result_access": false
       }
     }
     

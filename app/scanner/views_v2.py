@@ -664,7 +664,7 @@ class OrderViewSet(viewsets.ModelViewSet, Common):
                     
                     scan.apply_async(args=[], kwargs={'id':targets[index].id, 'time_limit':targets[index].tool.id, 'token':request.headers.get('Authorization'), 'order_id': order_id, 'requested_by_id': requested_by_id, 'client_id': client_id, 'batch_scan': True, 'ws_trigger': ws_trigger}, time_limit=targets[index].tool.time_limit + int(settings.EXTRA_BG_TASK_TIME), ignore_result=True)
         custom_response = OrderResponseSerailizer(Order.objects.filter(id__in=orders_id), many=True, context={"request": request})
-        return response(data=custom_response.data, status_code=status.HTTP_200_OK, message="targets of order is successfully added in queue")
+        return response(data=custom_response.data, status_code=status.HTTP_200_OK, message="Your target has been added to the scan queue.")
 
     @swagger_auto_schema(
         method = 'get',

@@ -49,9 +49,11 @@ def update_target_and_add_log(**kwargs):
 
         TargetLog.objects.create(target=Target(kwargs.get('id')), action=kwargs.get('action'))
         order_id = kwargs.get('order')[0].id
-        order_scan_time = (kwargs.get('order')[0].scan_time - target_scan_time_current) + target_scan_time_new
-        kwargs.get('order').update(scan_time=order_scan_time)
-        Cache.update(key=f'order_{order_id}', **{'scan_time':order_scan_time})
+        if kwargs.get('order')[0].scan_time < target_scan_time_new:
+            order_scan_time = target_scan_time_new
+            kwargs.get('order').update(scan_time=order_scan_time)
+            Cache.update(key=f'order_{order_id}', **{'scan_time':order_scan_time})
+            
     except Exception as e:
         import traceback
         traceback.print_exc()

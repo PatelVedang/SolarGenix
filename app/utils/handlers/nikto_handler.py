@@ -49,11 +49,9 @@ class NIKTO:
         should regenerate the target before running their operations
         """
         jobs = []
-        print("start_time=>>>>>", datetime.utcnow())
         for vul_handler in handlers[tool_cmd]:
             jobs.append(vul_handler(target, regenerate))
         await asyncio.gather(*jobs)
-        print("end_time=>>>>>", datetime.utcnow())
 
     def main(self, target, regenerate):
         """

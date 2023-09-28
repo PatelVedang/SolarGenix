@@ -229,6 +229,11 @@ SUPPORT_EMAILS=os.environ.get('SUPPORT_EMAILS', env('SUPPORT_EMAILS'))
 PASSWORD_VALIDATE_STRING =  "A minimum 8 characters and maximum 30 character password contains a combination of uppercase and lowercase letter, special symbol and number are required."
 PASSWORD_VALIDATE_REGEX = "^(?=\S*[a-z])(?=\S*[A-Z])(?=\S*\d)(?=\S*[^\w\s])\S{8,30}$"
 
+# mobile number validation
+MOBILE_NUM_VALIDATE_STRING =  "Invalid mobile number"
+MOBILE_NUMBER_REGEX = "^([0-9]{10})$"
+COUNTRY_CODE_REGEX = "^(\+[0-9]{1,3})$"
+
 #PDF
 PDF_DOWNLOAD_ORIGIN=os.environ.get('PDF_DOWNLOAD_ORIGIN', env('PDF_DOWNLOAD_ORIGIN'))
 

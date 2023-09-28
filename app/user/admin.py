@@ -6,7 +6,7 @@ from .models import User, Role
 # Register your models here.
 class RoleAdmin(admin.ModelAdmin):
     list_display = [
-        'id', 'name', 'tool_access', 'target_access', 'is_deleted'
+        'id', 'name', 'tool_access', 'target_access', 'client_name_access', 'scan_result_access', 'is_deleted'
     ]
 
 class UserAdmin(admin.ModelAdmin):

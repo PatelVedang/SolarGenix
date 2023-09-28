@@ -10,6 +10,8 @@ class Role(models.Model):
     name = models.CharField(max_length=50)
     tool_access = models.BooleanField(default=False)
     target_access = models.BooleanField(default=False)
+    client_name_access = models.BooleanField(default=True)
+    scan_result_access = models.BooleanField(default=False)
     is_deleted = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True, null=True)
     updated_at = models.DateTimeField(auto_now=True, null=True)
@@ -36,6 +38,8 @@ class User(AbstractBaseUser, PermissionsMixin):
     is_verified = models.BooleanField(default=False)
     verification_token = models.CharField(max_length=255, null=True, blank=True)
     token_expiration = models.DateTimeField(null=True, blank=True)
+    mobile_number = models.CharField(max_length=13, null=True, blank=True) 
+    country_code = models.CharField(max_length=13, null=True, blank=True) 
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = []

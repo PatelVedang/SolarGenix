@@ -25,7 +25,7 @@ class RoleSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Role
-        fields = ['id', 'name', 'tool_access', 'target_access']
+        fields = ['id', 'name', 'tool_access', 'target_access', 'client_name_access', 'scan_result_access']
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -41,21 +41,27 @@ class UserSerializer(serializers.ModelSerializer):
 class RegisterSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField(read_only=True)
     password = serializers.CharField(max_length=255, style={'input-type':'password'},write_only=True)
+    confirm_password = serializers.CharField(max_length=255, style={'input_type': 'password'}, write_only=True)
     
     class Meta:
         model = User
-        fields = ['id', 'first_name', 'last_name', 'email', 'password']
+        fields = ['id', 'first_name', 'last_name', 'email', 'password', 'mobile_number', 'country_code', 'confirm_password']
 
     def validate(self, attrs):
-        logger.info(f'serialize_data: {json.dumps(attrs)}')
-        return super().validate(attrs)
-    
-    def validate_password(self, value):
-        if not re.search(settings.PASSWORD_VALIDATE_REGEX, value):
+        if (not re.search(settings.PASSWORD_VALIDATE_REGEX, attrs['password'])) or (not re.search(settings.PASSWORD_VALIDATE_REGEX, attrs['confirm_password'])):
             raise serializers.ValidationError(
                 settings.PASSWORD_VALIDATE_STRING
             )
-        return make_password(value)
+        if (not re.search(settings.MOBILE_NUMBER_REGEX, attrs['mobile_number'])) or (not re.search(settings.COUNTRY_CODE_REGEX, attrs['country_code'])):
+            raise serializers.ValidationError(
+                settings.MOBILE_NUM_VALIDATE_STRING
+            )
+        if attrs['password'] != attrs['confirm_password']:
+            raise serializers.ValidationError({"password": "Password fields didn't match."})
+        logger.info(f'serialize_data: {json.dumps(attrs)}')
+        del attrs['confirm_password']
+        attrs['password'] = make_password(attrs['password'])
+        return super().validate(attrs)
 
     def create(self, validated_data):
         user = super().create(validated_data)
@@ -235,7 +241,7 @@ class ResetPasswordSerializer(serializers.Serializer):
     email = serializers.EmailField()
     otp = serializers.CharField()
     password = serializers.CharField(max_length=255, style={'input_type': 'password'}, write_only=True)
-    confirm_password = serializers.CharField(max_length=255, style={'input_type': 'password'}, write_only=True)    
+    confirm_password = serializers.CharField(max_length=255, style={'input_type': 'password'}, write_only=True)
     class Meta:
         model = User
         fields = ["email", "otp", "password", "confirm_password"]
