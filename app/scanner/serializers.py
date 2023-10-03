@@ -390,3 +390,9 @@ class WithoutRequestUserOrderSerializer(serializers.ModelSerializer):
             "subscription_id": requested_by.subscription_id
         }
         return data
+
+class SubscriptionSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Subscription
+        fields = ['id', 'plan_type', 'updated_at']

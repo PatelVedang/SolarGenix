@@ -7,11 +7,15 @@ from rest_framework import generics, viewsets
 from utils.make_response import response
 from rest_framework import status
 from drf_yasg.utils import swagger_auto_schema
-from .permissions import  AllowAny, AllowAnyWithoutLog
+from .permissions import  AllowAny, AllowAnyWithoutLog, CustomIsAdminUser
 from rest_framework_simplejwt.serializers import TokenVerifySerializer
 from scanner.permissions import IsAuthenticated
+from rest_framework.permissions import IsAdminUser
 from django.utils.decorators import method_decorator 
 import logging
+from django.db.models import Q
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework.filters import SearchFilter, OrderingFilter
 logger = logging.getLogger('django')
 
 class RegisterView(generics.CreateAPIView):
@@ -256,3 +260,92 @@ class VerifyUserTokenView(viewsets.ViewSet):
         if serializer.is_valid(raise_exception=True):
             serializer.save()
             return response(data={}, status_code=status.HTTP_200_OK, message="Your acount has been verified successfully")
+
+@method_decorator(name='list', decorator=swagger_auto_schema(tags=['Users'], operation_description= "List API.", operation_summary="API to get list of records."))
+@method_decorator(name='create', decorator=swagger_auto_schema(tags=['Users'], auto_schema=None))
+@method_decorator(name='retrieve', decorator=swagger_auto_schema(tags=['Users'], operation_description= "Retrieve API.", operation_summary="API for retrieve single record by id."))
+@method_decorator(name='update', decorator=swagger_auto_schema(tags=['Users'], auto_schema=None))
+@method_decorator(name='partial_update', decorator=swagger_auto_schema(tags=['Users'], operation_description= "Partial update API.", operation_summary="API for partial update record."))
+@method_decorator(name='destroy', decorator=swagger_auto_schema(tags=['Users'], operation_description= "Delete API.", operation_summary="API to delete single record by id."))
+class UserViewSet(viewsets.ModelViewSet):
+    queryset = User.objects.filter(~Q(role_id=1))
+    serializer_class = EndUserSerializer
+    permission_classes = [CustomIsAdminUser]
+    filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
+    search_fields = ['email', 'first_name', 'last_name', 'updated_at', 'role__name', 'subscription__plan_type']
+    filterset_fields = ['email', 'first_name', 'last_name']
+    ordering_fields = ['email', 'first_name', 'first_name', 'updated_at', 'role__name', 'subscription__plan_type']
+
+    def list(self, request, *args, **kwargs):
+        self.serializer_class = UserResponseSerializer
+        serializer = super().list(request, *args, **kwargs)
+        return response(data=serializer.data, status_code=status.HTTP_200_OK, message="record found successfully")
+
+    def retrieve(self, request, *args, **kwargs):
+        self.serializer_class = UserResponseSerializer
+        serializer = super().retrieve(request, *args, **kwargs)
+        return response(data=serializer.data, status_code=status.HTTP_200_OK, message="record found successfully")
+    
+    def create(self, request, *args, **kwargs):
+        self.serializer_class = UserResponseSerializer
+        serializer = super().create(request, *args, **kwargs)
+        return response(data=serializer.data, status_code=status.HTTP_200_OK, message="record successfully added in database.")
+    
+    def partial_update(self, request, *args, **kwargs):
+        self.serializer_class = UserResponseSerializer
+        serializer = super().partial_update(request, *args, **kwargs)
+        return response(data=serializer.data, status_code=status.HTTP_200_OK, message="record successfully updated in database.")
+    
+    def destroy(self, request, *args, **kwargs):
+        super().destroy(request, *args, **kwargs)
+        return response(data={}, status_code=status.HTTP_200_OK, message="record deleted successfully")
+    
+
+@method_decorator(name='list', decorator=swagger_auto_schema(tags=['Roles'], operation_description= "List API.", operation_summary="API to get list of records."))
+@method_decorator(name='create', decorator=swagger_auto_schema(tags=['Roles'], operation_description= "Create API.", operation_summary="API to create new record."))
+@method_decorator(name='retrieve', decorator=swagger_auto_schema(tags=['Roles'], operation_description= "Retrieve API.", operation_summary="API for retrieve single record by id."))
+@method_decorator(name='update', decorator=swagger_auto_schema(tags=['Roles'], auto_schema=None))
+@method_decorator(name='partial_update', decorator=swagger_auto_schema(tags=['Roles'], operation_description= "Partial update API.", operation_summary="API for partial update record."))
+@method_decorator(name='destroy', decorator=swagger_auto_schema(tags=['Roles'], operation_description= "Delete API.", operation_summary="API to delete single record by id."))
+class RoleViewSet(viewsets.ModelViewSet):
+    queryset = Role.objects.all()
+    serializer_class = RoleSerializer
+    permission_classes = [CustomIsAdminUser]
+    filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
+    search_fields = ['name', 'tool_access', 'target_access', 'client_name_access', 'scan_result_access', 'updated_at']
+    filterset_fields = ['name']
+    ordering_fields = ['name', 'tool_access', 'target_access', 'client_name_access', 'scan_result_access', 'updated_at', 'is_verified']
+
+    @swagger_auto_schema(
+        method = 'get',
+        operation_description= "Get all the roles without pagination",
+        operation_summary="API to get all roles.",
+        request_body=None,
+        tags=['Roles']
+
+    )
+    @action(methods=['GET'], detail=False, url_path="all")
+    def get_all(self, request, *args, **kwargs):
+        serializer = self.get_serializer(self.get_queryset(), many=True)
+        return response(data=serializer.data, status_code=status.HTTP_200_OK, message="record found successfully")
+
+    def list(self, request, *args, **kwargs):
+        serializer = super().list(request, *args, **kwargs)
+        return response(data=serializer.data, status_code=status.HTTP_200_OK, message="record found successfully")
+
+    def retrieve(self, request, *args, **kwargs):
+        serializer = super().retrieve(request, *args, **kwargs)
+        return response(data=serializer.data, status_code=status.HTTP_200_OK, message="record found successfully")
+    
+    def create(self, request, *args, **kwargs):
+        serializer = super().create(request, *args, **kwargs)
+        return response(data=serializer.data, status_code=status.HTTP_200_OK, message="record successfully added in database.")
+    
+    def partial_update(self, request, *args, **kwargs):
+        serializer = super().partial_update(request, *args, **kwargs)
+        return response(data=serializer.data, status_code=status.HTTP_200_OK, message="record successfully updated in database.")
+    
+    def destroy(self, request, *args, **kwargs):
+        super().destroy(request, *args, **kwargs)
+        return response(data={}, status_code=status.HTTP_200_OK, message="record deleted successfully")
+    

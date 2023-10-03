@@ -16,6 +16,7 @@ from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 from rest_framework.permissions import IsAdminUser
 from .permissions import ScannerRetrievePremission, IsAdminUserOrList, IsAuthenticated, UserHasPermission
+from user.permissions import CustomIsAdminUser
 from django.utils.decorators import method_decorator
 # from utils.pdf import PDF
 from utils.pdf_final_report import PDF
@@ -381,6 +382,7 @@ class ToolViewSet(viewsets.ModelViewSet, Common):
         :param request: The request object
         :return: The response is being returned.
         """
+        self.serializer_class = ToolPayloadSerializer
         serializer = super().list(request, *args, **kwargs)
         return response(data=serializer.data, status_code=status.HTTP_200_OK, message="record found successfully")
 
@@ -691,3 +693,53 @@ class OrderViewSet(viewsets.ModelViewSet, Common):
             'file_path':file_url
         }
         return response(data=data, status_code=status.HTTP_200_OK, message="PDF generated successfully")
+
+
+@method_decorator(name='list', decorator=swagger_auto_schema(tags=['Subscriptions'], operation_description= "List API.", operation_summary="API to get list of records."))
+@method_decorator(name='create', decorator=swagger_auto_schema(tags=['Subscriptions'], operation_description= "Create API.", operation_summary="API to create new record."))
+@method_decorator(name='retrieve', decorator=swagger_auto_schema(tags=['Subscriptions'], operation_description= "Retrieve API.", operation_summary="API for retrieve single record by id."))
+@method_decorator(name='update', decorator=swagger_auto_schema(tags=['Subscriptions'], auto_schema=None))
+@method_decorator(name='partial_update', decorator=swagger_auto_schema(tags=['Subscriptions'], operation_description= "Partial update API.", operation_summary="API for partial update record."))
+@method_decorator(name='destroy', decorator=swagger_auto_schema(tags=['Subscriptions'], operation_description= "Delete API.", operation_summary="API to delete single record by id."))
+class SubscriptionViewSet(viewsets.ModelViewSet):
+    queryset = Subscription.objects.all()
+    serializer_class = SubscriptionSerializer
+    permission_classes = [CustomIsAdminUser]
+    filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
+    search_fields = ['plan_type']
+    filterset_fields = ['plan_type']
+    ordering_fields = ['plan_type']
+
+    @swagger_auto_schema(
+        method = 'get',
+        operation_description= "Get all the subscriptions without pagination",
+        operation_summary="API to get all subscriptions.",
+        request_body=None,
+        tags=['Subscriptions']
+
+    )
+    @action(methods=['GET'], detail=False, url_path="all")
+    def get_all(self, request, *args, **kwargs):
+        serializer = self.get_serializer(self.get_queryset(), many=True)
+        return response(data=serializer.data, status_code=status.HTTP_200_OK, message="record found successfully")
+
+    def list(self, request, *args, **kwargs):
+        serializer = super().list(request, *args, **kwargs)
+        return response(data=serializer.data, status_code=status.HTTP_200_OK, message="record found successfully")
+
+    def retrieve(self, request, *args, **kwargs):
+        serializer = super().retrieve(request, *args, **kwargs)
+        return response(data=serializer.data, status_code=status.HTTP_200_OK, message="record found successfully")
+    
+    def create(self, request, *args, **kwargs):
+        serializer = super().create(request, *args, **kwargs)
+        return response(data=serializer.data, status_code=status.HTTP_200_OK, message="record successfully added in database.")
+    
+    def partial_update(self, request, *args, **kwargs):
+        serializer = super().partial_update(request, *args, **kwargs)
+        return response(data=serializer.data, status_code=status.HTTP_200_OK, message="record successfully updated in database.")
+    
+    def destroy(self, request, *args, **kwargs):
+        self.get_object().soft_delete()
+        return response(data={}, status_code=status.HTTP_200_OK, message="record deleted successfully")
+    

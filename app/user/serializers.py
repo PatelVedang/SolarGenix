@@ -25,7 +25,7 @@ class RoleSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Role
-        fields = ['id', 'name', 'tool_access', 'target_access', 'client_name_access', 'scan_result_access']
+        fields = ['id', 'name', 'tool_access', 'target_access', 'client_name_access', 'scan_result_access', 'updated_at']
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -36,6 +36,12 @@ class UserSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         logger.info(f'serialize_data: {json.dumps(attrs)}')
         return super().validate(attrs)
+    
+
+class UserResponseSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['id', 'last_login', 'email', 'is_deleted', 'first_name', 'last_name', 'is_staff', 'is_superuser', 'is_verified', 'mobile_number', 'country_code', 'role', 'subscription', 'updated_at']
 
 
 class RegisterSerializer(serializers.ModelSerializer):
@@ -387,3 +393,10 @@ class VerifyUserTokenSerializer(serializers.Serializer):
         user.is_verified = True
         user.save()
         return user
+    
+
+class EndUserSerializer(serializers.ModelSerializer):
+    
+    class Meta:
+        model = User
+        fields = "__all__"

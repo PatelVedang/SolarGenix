@@ -147,6 +147,7 @@ env/
 .vscode/
 venv/
 ENV/
+logs/
 env.bak/
 venv.bak/
 
