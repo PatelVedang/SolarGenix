@@ -79,7 +79,7 @@ class RefreshTokenView(TokenObtainPairView):
             return response(data=serializer.validated_data, status_code=status.HTTP_200_OK, message="user login successfully.")
 
 class VerifyTokenView(TokenObtainPairView):
-    serializer_class = TokenVerifySerializer
+    serializer_class = CustomTokenVerifySerializer
     permission_classes = [AllowAny]
 
     @swagger_auto_schema(
@@ -95,7 +95,7 @@ class VerifyTokenView(TokenObtainPairView):
         """
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid(raise_exception=True):
-            return response(data={}, status_code=status.HTTP_200_OK, message="token verified successfully.")
+            return response(data=serializer.validated_data, status_code=status.HTTP_200_OK, message="token verified successfully.")
 
 class ForgotPasswordView(generics.CreateAPIView):
     serializer_class = ForgotPasswordSerializer

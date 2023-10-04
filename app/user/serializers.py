@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from .models import *
 from django.contrib.auth.hashers import make_password
-from rest_framework_simplejwt.serializers import TokenObtainPairSerializer, TokenRefreshSerializer
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer, TokenRefreshSerializer, TokenVerifySerializer
 from rest_framework_simplejwt.state import token_backend
 from django.contrib.auth import authenticate
 from django.utils import timezone
@@ -17,6 +17,7 @@ import json
 from django.contrib.auth.hashers import check_password
 import threading
 import uuid
+from rest_framework_simplejwt.tokens import Token
 
 
 # The RoleSerializer class is a serializer for the Role model, specifying the fields to be included in
@@ -187,6 +188,23 @@ class CustomTokenRefreshSerializer(TokenRefreshSerializer):
         decoded_payload = token_backend.decode(data['access'], verify=True)
         User.objects.filter(email=decoded_payload.get('user').get('email')).update(last_login=timezone.now())
         return data
+
+from rest_framework_simplejwt.serializers import TokenVerifySerializer
+from rest_framework_simplejwt.tokens import AccessToken
+class CustomTokenVerifySerializer(TokenVerifySerializer):
+    def validate(self, attrs):
+        res =super().validate(attrs)
+        token_payload = AccessToken(attrs['token'])
+        user = token_payload['user']
+        user = User.objects.get(id=user['id'])
+        res = {
+            'id': user.id, 
+            'email': user.email, 
+            'role': user.role.id
+        }
+
+        return res
+    
 
 class ForgotPasswordSerializer(serializers.Serializer):
     email = serializers.EmailField()

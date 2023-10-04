@@ -18,6 +18,8 @@ class Role(models.Model):
 
     def __str__(self):
         return self.name
+    class Meta:
+        ordering = ('-created_at',)
 
 class User(AbstractBaseUser, PermissionsMixin):
     username = None
@@ -53,4 +55,7 @@ class User(AbstractBaseUser, PermissionsMixin):
         self.last_name = self.last_name.lower()
         self.email = self.email.lower()
         return super(User, self).save(*args, **kwargs)
+    
+    class Meta:
+        ordering = ('-created_at',)
     
