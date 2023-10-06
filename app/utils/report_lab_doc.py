@@ -73,7 +73,7 @@ class MyDocTemplate(BaseDocTemplate):
             canvas.drawString(4.39 * cm, 8.70 * inch, "Produced by IsaiX Cyber Services")
             canvas.setFont('Helvetica', 9)
             canvas.setFillColor(colors.black)
-            canvas.drawRightString(19.8 * cm, 1 * inch, f'Production Date: {self.scan_date}')
+            canvas.drawRightString(19.8 * cm, 1 * inch, f'Scan Date: {self.scan_date}')
             # story.append(Paragraph(f'Production Date: {scan_date}', PS(name='Custom', fontSize=9, alignment=TA_RIGHT)))
             canvas.restoreState()
 
@@ -321,6 +321,7 @@ def generate_doc(role, cname, scan_date, vulnerabilities, user_name, user_compan
     story.append(Paragraph("a) Internal networks;", bullet_style))
     story.append(Paragraph("b) VOIP or mobile applications;", bullet_style))
     story.append(Paragraph("c) Operating equipment;", bullet_style))
+    story.append(Paragraph("which have not been scanned by our system or that the configuration of the web assets in the environment could have changed, or that new threats have emerged since the IsaiX scan was conducted.", content))
     intro_sub_section_number = intro_sub_section_number + 1
 
     story.append(Paragraph('<a name="imp"></a><b>{}.{} Distribution of this Report</b>'.format(section_number, intro_sub_section_number), h2))

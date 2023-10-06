@@ -128,7 +128,7 @@ class PDF:
             origin = ".".join(list(extract(ip))).strip(".")
             ip = socket.gethostbyname(origin)
             generate_doc(role, cname='ISAIX',
-                scan_date=datetime.utcnow().strftime("%b %d %Y"),
+                scan_date=order_obj.created_at.strftime("%b %d %Y"),
                 vulnerabilities=alert_objs,
                 user_name = f"{order_obj.client.first_name} {order_obj.client.last_name}".upper(),
                 user_company = order_obj.client.user_company,
