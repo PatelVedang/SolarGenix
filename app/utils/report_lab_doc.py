@@ -283,7 +283,7 @@ def generate_doc(role, cname, scan_date, vulnerabilities, user_name, user_compan
     intro_sub_section_number = intro_sub_section_number + 1
 
     story.append(Paragraph('<a name="goal"></a><b>{}.{} The Vulnerability Scan</b>'.format(section_number, intro_sub_section_number), h2))
-    story.append(Paragraph("With this vulnerability scan, we aim to identify, categorize, and prioritize potential vulnerabilities in your system. Our approach includes a detailed analysis of the network and system components, using the latest tools and techniques in the cybersecurity domain. The subsequent sections will outline our findings, recommendations, and strategies to mitigate the detected vulnerabilities.", content))
+    story.append(Paragraph("This Level 1 assessment was conducted by an automated service that uses a number of commonly recognized open-source cyber security tools and proprietary scans to simulate attacks or exploitations on the target IP addresses assessed by the company.", content))
     intro_sub_section_number = intro_sub_section_number + 1
     if multiple_ip :
         story.append(Paragraph('<a name="goal"></a><b>{}.{} Testing Scope</b>'.format(section_number, intro_sub_section_number), h2))
@@ -316,7 +316,7 @@ def generate_doc(role, cname, scan_date, vulnerabilities, user_name, user_compan
     story.append(Paragraph('<a name="imp"></a><b>{}.{} Disclaimer of Liability and Limitation of the Scan</b>'.format(section_number, intro_sub_section_number), h2))
     story.append(Paragraph("While IsaiX Cyber can discover numerous threat vectors, no system can guarantee the identification of all possible threats. IsaiX Cyber offers no warranties, representations or legal certifications concerning the applications or systems it scans. Nothing in this document is intended to represent or warrant that security testing was complete and without error, nor does this document represent or warrant that the application or systems it scans are suitable to the task, free of other defects than reported, or compliant with any industry standards.", content))
     story.append(Paragraph("This report cannot and does not protect against personal or business loss as the result of use of the applications or systems described.", content))
-    story.append(Paragraph(f'This report contains information on the systems and/or web applications that existed as of “{scan_date}”.', content))
+    story.append(Paragraph(f'This report contains information on the systems and/or web applications that existed as of {scan_date}.', content))
     story.append(Paragraph("IsaiX Cyber’s scanning is a “point in time”, level 1 assessment of external web address (es) only and as such it is possible that vulnerabilities not found by the IsaiX scan exists on:", content))
     story.append(Paragraph("a) Internal networks;", bullet_style))
     story.append(Paragraph("b) VOIP or mobile applications;", bullet_style))
@@ -335,7 +335,7 @@ def generate_doc(role, cname, scan_date, vulnerabilities, user_name, user_compan
     story.append(Paragraph('<a name="exec"></a><b>{}.{} Executive Summary</b>'.format(section_number, summary_section_number), h2))
     story.append(Paragraph("This report presents the results of the external reconnaissance and vulnerability detection conducted by IsaiX. This scan was conducted using non-credentialed access via a black-box testing approach which scans your external-facing assets (ex. web applications, web services, company websites) to reveal vulnerabilities and web server misconfigurations. These assets are most susceptible to attack and their vulnerabilities are frequently the most exploited.", content))
     story.append(Paragraph("This vulnerability assessment may have identified flaws that your company should address diligently in order to prevent their exploitation, in consideration of the nature, severity and context of the risk associated with each vulnerability. The details of the vulnerabilities identified, their severity is presented in this document and references to two cyber security industry standard database resources, the Common Vulnerabilities and Exposures (CVE) and the Common Weakness Enumeration (CWE), are provided for further details.", content))
-
+    summary_section_number+=1
     story.append(Paragraph('<a name="results"></a><b>{}.{} Risk Profile</b>'.format(section_number, summary_section_number), h2))
     story.append(Paragraph("Vulnerabilities identified by the scan are grouped and classified for each target as critical, high, medium, low, and informative. The higher the vulnerability is rated, the greater the likelihood that this vulnerability could be exploited as avenues of attack resulting in, for example only, unauthorized access, data breaches, deletions and theft or system system disruption.", content))
     story.append(Paragraph("The number, type and severity of the identified vulnerabilities, identified in this report may reveal how well your systems are being maintained. To assess the overall risk to your business operations you must consider the context of the vulnerability, value of the asset that could be compromised, the type of data that could be lost or stolen, against the impact of a breach.", content))
@@ -347,9 +347,6 @@ def generate_doc(role, cname, scan_date, vulnerabilities, user_name, user_compan
     med = risk_levels['medium']
     low = risk_levels['low']
     info = risk_levels['informational']
-    story.append(Paragraph("During the comprehensive scan conducted by ISAIX's Cybersecurity Scanning Tool, we identified several critical and high-risk vulnerabilities within the target system. These vulnerabilities expose potential avenues for unauthorized access, data breaches, and system compromise. Our scan results revealed a total of {} vulnerabilities, categorized as critical, high, medium, and low risk based on their potential impact and exploitability. The detailed breakdown of the vulnerabilities is as follows:".format(sum([crit, high, med, low])), content))
-
-    
     
     # Bar Chart
     chart = VerticalBarChart3D()
@@ -413,8 +410,9 @@ def generate_doc(role, cname, scan_date, vulnerabilities, user_name, user_compan
     story.append(drawing)
     story.append(PageBreak())
     section_number = section_number + 1
-    # Risk Evaluation    
-    story.append(Paragraph('{}. Risk Evaluation'.format(section_number), h1))
+
+    # Risk Evaluation
+    story.append(Paragraph('<a name="risk_evaluation"></a><b>{}. Risk Evaluation</b>'.format(section_number), h1))
     story.append(Paragraph("Two well-known industry standard classification systems were applied to assess the severity of vulnerabilities. These were: Common Vulnerability Scoring System (CVSS) versions 3.0 and 2.0. CVSS assigns severity scores to facilitate the prioritization of action plans according to the threat. Scores are calculated based on a formula that depends on several metrics that approximate ease and impact of an exploit. Scores range from 0 to 10, with 10 being the most severe.", content))
 
     table_header_style = PS(name='tableHead',
@@ -471,7 +469,7 @@ def generate_doc(role, cname, scan_date, vulnerabilities, user_name, user_compan
     # Summary of Findings
     section_number = section_number + 1
     summary_find_section_num = 1
-    story.append(Paragraph('{}. Summary of Findings'.format(section_number), h1))
+    story.append(Paragraph('<a name="summary_of_findings"></a><b>{}. Summary of Findings</b>'.format(section_number), h1))
     story.append(Paragraph('In this section, the results of the external scans are represented.', content))
 
     story.append(Paragraph('{}.{} Major Vulnerabilities List'.format(section_number, summary_find_section_num), h2))
@@ -540,10 +538,10 @@ def generate_doc(role, cname, scan_date, vulnerabilities, user_name, user_compan
     story.append(PageBreak())
 
 
-    # Summary Overview
+    # Scan Overview
     if multiple_ip:
         section_number = section_number + 1
-        story.append(Paragraph('{}. Scan Overview'.format(section_number), h1))
+        story.append(Paragraph('<a name="scan_overview"></a><b>{}. Scan Overview</b>'.format(section_number), h1))
         story.append(Paragraph('This section represents the Number of Occurrences for each identified vulnerability per IP / Host along with their risk level. Please note that the Number of Occurrence increases if the same vulnerability is found on another website on the same IP/Host:', content))
 
         style = TableStyle([
@@ -580,7 +578,7 @@ def generate_doc(role, cname, scan_date, vulnerabilities, user_name, user_compan
 
     # Detailed vulernability Analysis
     section_number = section_number + 1
-    story.append(Paragraph('{}. Detailed Vulnerabilities Analysis'.format(section_number), h1))
+    story.append(Paragraph('<a name="detailed_vulernability_analysis"></a><b>{}. Detailed vulernability Analysis</b>'.format(section_number), h1))
 
     for i, alert in enumerate(vulnerabilities.values()):
 
