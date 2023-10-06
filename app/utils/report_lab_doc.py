@@ -9,7 +9,7 @@ from reportlab.platypus.tables import Table, TableStyle
 from reportlab.platypus.frames import Frame
 from reportlab.lib.units import cm, inch
 from reportlab.lib import colors
-from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_JUSTIFY
+from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_JUSTIFY, TA_RIGHT
 from reportlab.graphics.shapes import Rect, String, Drawing
 from reportlab.graphics.charts.barcharts import VerticalBarChart3D
 from reportlab.pdfbase import pdfmetrics
@@ -19,8 +19,9 @@ from django.conf import settings
 from xml.sax.saxutils import escape
 
 class MyDocTemplate(BaseDocTemplate):
-    def __init__(self, filename, **kw):
+    def __init__(self, filename, profile_image, **kw):
         self.allowSplitting = 0
+        self.profile_img = profile_image
         BaseDocTemplate.__init__(self, filename, **kw)
         page_width = 21*cm  # Assuming A4 page width
         page_height = 29.7*cm  # Assuming A4 page height
@@ -46,14 +47,29 @@ class MyDocTemplate(BaseDocTemplate):
         if doc.page > 1:  # Skip applying headers and footers on the first page
             canvas.saveState()
             canvas.setFont('Helvetica', 24)
-            canvas.setFillColor(colors.blue)  # Set the color to blue
-            canvas.drawString(1 * cm, 11 * inch, "ISAIX")  # Adjust the y-coordinate to position the header
+            canvas.drawImage(f'{settings.BASE_DIR}/static/isaix-logo.png', 1 * cm, 11 * inch, width=3.2*cm, height=1*cm)
             canvas.setFont('Helvetica', 9)
-            canvas.drawImage(f'{settings.BASE_DIR}/static/isaix-logo.png', 1*cm, 0.8*cm, width=3.2*cm, height=1*cm)
+            canvas.drawString(1*cm, 0.5 * inch, "CONFIDENTIAL")
             canvas.drawString(18.5 * cm, 0.5 * inch, f"Page {doc.page}")  # Adjust the y-coordinate to position the footer
             canvas.linkURL("https://www.isaix.com", (1*inch, 2*cm, 2*inch, 2*cm), color=colors.black, thickness=0.5, relative=1)
             canvas.setStrokeColor(colors.grey)
             canvas.line(1*cm, 2.5*cm, 1*cm+self.width+3*cm, 2.5*cm)  # Draw a line at the top of the footer
+            canvas.restoreState()
+        else:
+            canvas.saveState()
+            canvas.drawImage(f'{settings.BASE_DIR}/static/report-banner.jpg', 0 * cm, 3.98 * inch, width=21*cm, 
+            height=15.25*cm)
+            try:
+                canvas.drawImage(f"{settings.MEDIA_ROOT}{self.profile_img}", 17.8 * cm, 1.5 * inch, width=2*cm, 
+                height=2*cm)
+            except Exception as e:
+                canvas.drawImage(f'{settings.BASE_DIR}/static/isaix-logo-1.png', 17.8 * cm, 1.5 * inch, width=2*cm, 
+                height=2*cm)
+            canvas.setFont('Helvetica', 18)
+            canvas.setFillColor(colors.white)
+            canvas.drawString(1.5 * cm, 9.15 * inch, "External Vulnerability Assessment")
+            canvas.setFont('Helvetica', 13)
+            canvas.drawString(4.39 * cm, 8.70 * inch, "Produced by IsaiX Cyber Services")
             canvas.restoreState()
 
     # Stores bookmarks for headers to be used in Table of Content
@@ -106,6 +122,29 @@ content = PS(name = 'Content',
     leading = 14,
     alignment=TA_JUSTIFY)
 
+styles = getSampleStyleSheet()
+link_style = PS(
+    'Hyperlink',
+    font='Arial',
+    parent=styles['Normal'],
+    fontSize=12,
+    spaceAfter=15,
+    underline=True,
+    leading = 14,
+    alignment=TA_JUSTIFY
+)
+
+bullet_style = PS(name = 'B&N',
+    parent=styles['Bullet'],
+    font='Arial',
+    fontSize=12,
+    spaceAfter=15,
+    leading = 14,
+    alignment=TA_JUSTIFY,
+    leftIndent=20,
+    bulletIndent = 20
+)
+
 content_layout = PS(
     name = 'ContentLayout',
     font='Arial',
@@ -138,7 +177,7 @@ h2_header = PS(name= 'HeaderSubTitle',
     spaceAfter=10,
     alignment=TA_CENTER)
 
-def generate_doc(role, cname, date, vulnerabilities, risk_levels, output_path, hosts=[[]],  multiple_ip=False):
+def generate_doc(role, cname, date, vulnerabilities, user_name, user_company, user_company_address, profile_image, risk_levels, output_path, hosts=[[]],  multiple_ip=False):
 
     """
     Generates a vulnerability scan report in PDF format.
@@ -175,7 +214,7 @@ def generate_doc(role, cname, date, vulnerabilities, risk_levels, output_path, h
 
     """
     # Build story.
-    doc = MyDocTemplate(output_path)
+    doc = MyDocTemplate(output_path, profile_image)
     section_number = 1
 
     story = []
@@ -184,67 +223,91 @@ def generate_doc(role, cname, date, vulnerabilities, risk_levels, output_path, h
     toc.levelStyles = [h1_toc, h2_toc]
 
     # HEADER
-    story.append(Spacer(1, 2*inch))
-    story.append(Paragraph('ISAIX', h1_header))
-    story.append(Paragraph('Scan Report', h2_header))
-    story.append(Spacer(1, 3*inch))
-
-    # Domain(hosts) table
-    table_header = ["IP Address", "Domain Name"]
-    table_data = [[row[0], row[1]] for row in hosts]
-    table_data.insert(0, table_header)
-    table = Table(table_data, colWidths=7*cm)
-    # Add some style to the table (borders, background colors, fonts, etc.)
-    style = TableStyle([
-        ('BACKGROUND', (0,0), (-1,0), colors.grey),  # Add a grey background color to header row
-        ('TEXTCOLOR', (0,0), (-1,0), colors.whitesmoke),  # Change the header text color to white
-
-        ('ALIGN', (0,0), (-1,-1), 'CENTER'),  # Align all text to center
-        ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),  # Change the font of the header row to Helvetica-Bold
-        ('FONTSIZE', (0,0), (-1,0), 14),  # Change the font size of the header row to 14
-
-        ('BOTTOMPADDING', (0,0), (-1,0), 12),  # Add more space at the bottom of the header row text
-        ('GRID', (0,0), (-1,-1), 1, colors.black)  # Add a black grid around the cells
-    ])
-    story.append(table)
-
-    # Add the style to the table
-    table.setStyle(style)
-    # story.append(Paragraph('Created for: {}'.format(cname), h2_header))
-    story.append(Spacer(1, 2.5*inch))
-    story.append(Paragraph('Created on: {}'.format(date), h2_header))
-    story.append(PageBreak())
+    story.append(Spacer(1, 0.10*inch))
+    story.append(Paragraph('Executive Report', PS(name='Custom', fontSize=14, alignment=TA_CENTER, textColor=colors.HexColor("#395c9a"))))
+    story.append(Spacer(1, 6.37*inch))
+    story.append(Spacer(1, 0.35*inch))
+    story.append(Paragraph('<i>Presented to:</i>', PS(name='Custom', fontSize=12, textColor=colors.HexColor("#395c9a"))))
+    story.append(Spacer(1, 0.20*inch))
+    story.append(Paragraph(f'<i>{user_name}</i>', PS(name='Custom', fontSize=12)))
+    story.append(Spacer(1, 0.10*inch))
+    story.append(Paragraph(f'<i>{user_company}</i>', PS(name='Custom', fontSize=12)))
+    story.append(Spacer(1, 0.10*inch))
+    story.append(Paragraph(f'<i>{user_company_address}</i>', PS(name='Custom', fontSize=12)))
+    story.append(Spacer(1, 1.2*inch))
+    story.append(Paragraph(f'Production Date: {date}', PS(name='Custom', fontSize=9, alignment=TA_RIGHT)))
 
     # TOC
     story.append(toc)
 
     # Intro
     intro_sub_section_number = 1
+    intro_numbering = 1
     story.append(PageBreak())
     story.append(Paragraph('<a name="intro"></a><b>{}. Introduction</b>'.format(section_number), h1))
-
-    story.append(Paragraph('<a name="welcome"></a><b>{}.{} Welcome</b>'.format(section_number, intro_sub_section_number), h2))
-    story.append(Paragraph("Welcome to our comprehensive cybersecurity vulnerability scan report. "
-                                "The purpose of this report is to provide detailed insights into the "
-                                "security posture of your information system.", content))
+    story.append(Paragraph('<a name="welcome"></a><b>{}.{} Purpose</b>'.format(section_number, intro_sub_section_number), h2))
+    story.append(Paragraph('Welcome to the IsaiX Cyber Level 1 vulnerability scan report generated through our web-hosted portal and automated scanning tools at <a href="https://scanner.isaix.com/">https://scanner.isaix.com/</a>. The purpose of this report is twofold:', link_style))
+    story.append(Paragraph(f"{intro_numbering}. For business leaders: to provide an understanding of the technical vulnerabilities of your web assets and offer a new line of sight to support the governance of your cyber resilience and assess your cyber business risk.", bullet_style))
+    intro_numbering +=1
+    story.append(Paragraph(f"{intro_numbering}. For IT support resources: to provide detailed insights into the vulnerabilities of your web assets and the references for the remediation of the vulnerabilities.", bullet_style))
     intro_sub_section_number = intro_sub_section_number + 1
     
-    story.append(Paragraph('<a name="imp"></a><b>{}.{} Why This Scan Is Important</b>'.format(section_number, intro_sub_section_number), h2))
+    story.append(Paragraph('<a name="imp"></a><b>{}.{} Managing your Cyber Risk</b>'.format(section_number, intro_sub_section_number), h2))
+    story.append(Paragraph("In today's threat landscape, cyber criminals are developing new vulnerabilities daily to attack your infrastructure and exploit your business. Exploitation of any vulnerability in your cyber security may create financial, operational and legal exposure and risks. Some of these risks include:", content))
+    story.append(Paragraph("<bullet>&bull;</bullet>Theft or loss of information through unauthorized and malicious access", bullet_style))
+    story.append(Paragraph("<bullet>&bull;</bullet>Disruption of service caused by compromised systems", bullet_style))
+    story.append(Paragraph("<bullet>&bull;</bullet>Reputation damage resulting from leaks or a loss of control and mis-direction of your web assets", bullet_style))
+    story.append(Paragraph("<bullet>&bull;</bullet>Ransom or blackmail resulting from theft", bullet_style))
+    story.append(Paragraph("<bullet>&bull;</bullet>Physical threats to property or personnel through intrusion and control of equipment", bullet_style))
+    story.append(Paragraph("<bullet>&bull;</bullet>Regulatory breaches and fines", bullet_style))
+    story.append(Paragraph("To assess the business risk associated with a particular vulnerability, the vulnerability must beviewed in the context of the system in which it is found, the likelihood that the vulnerability could be used by malicious actors and the potential impact to the business if it were exploited.", content))
+    story.append(Paragraph("Routine, 3rd party assessment of your vulnerabilities and diligent ongoing maintenance of your cyber security systems and the regular training of employees and partners are essential functions of governance.", content))
+    story.append(Paragraph("", content))
     intro_sub_section_number = intro_sub_section_number + 1
-    story.append(Paragraph("In today's digital era, the threat landscape is constantly evolving, with new vulnerabilities emerging regularly. These vulnerabilities, if left undetected, could lead to serious breaches, causing loss of data, financial losses, and damage to your organization's reputation.", content))
 
-    story.append(Paragraph('<a name="goal"></a><b>{}.{} Our Goal</b>'.format(section_number, intro_sub_section_number), h2))
+    story.append(Paragraph('<a name="goal"></a><b>{}.{} The Vulnerability Scan</b>'.format(section_number, intro_sub_section_number), h2))
     story.append(Paragraph("With this vulnerability scan, we aim to identify, categorize, and prioritize potential vulnerabilities in your system. Our approach includes a detailed analysis of the network and system components, using the latest tools and techniques in the cybersecurity domain. The subsequent sections will outline our findings, recommendations, and strategies to mitigate the detected vulnerabilities.", content))
     intro_sub_section_number = intro_sub_section_number + 1
-
-    story.append(Paragraph("We encourage you to review this report thoroughly and consider the recommended steps to enhance the security posture of your organization.", content))
     if multiple_ip :
         story.append(Paragraph('<a name="goal"></a><b>{}.{} Testing Scope</b>'.format(section_number, intro_sub_section_number), h2))
         intro_sub_section_number = intro_sub_section_number + 1
-        story.append(Paragraph("Per {}'s request 3 public IP addresses which are hosting 10 domains that must be penetration tested by 3rd party. Here is the list:".format(cname)))
+        story.append(Paragraph("IsaiX Cyber processed target IP addresses entered through its platform. These were:"))
         story.append(Spacer(1, 1*inch))
         
+        # Domain(hosts) table
+        table_header = ["IP Address", "Domain Name"]
+        table_data = [[row[0], row[1]] for row in hosts]
+        table_data.insert(0, table_header)
+        table = Table(table_data, colWidths=7*cm)
+        # Add some style to the table (borders, background colors, fonts, etc.)
+        style = TableStyle([
+            ('BACKGROUND', (0,0), (-1,0), colors.grey),  # Add a grey background color to header row
+            ('TEXTCOLOR', (0,0), (-1,0), colors.whitesmoke),  # Change the header text color to white
+
+            ('ALIGN', (0,0), (-1,-1), 'CENTER'),  # Align all text to center
+            ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),  # Change the font of the header row to Helvetica-Bold
+            ('FONTSIZE', (0,0), (-1,0), 14),  # Change the font size of the header row to 14
+
+            ('BOTTOMPADDING', (0,0), (-1,0), 12),  # Add more space at the bottom of the header row text
+            ('GRID', (0,0), (-1,-1), 1, colors.black)  # Add a black grid around the cells
+        ])
         story.append(table)
+        story.append(Spacer(1, 1*inch))
+        # Add the style to the table
+        table.setStyle(style)
+
+    story.append(Paragraph('<a name="imp"></a><b>{}.{} Disclaimer of Liability and Limitation of the Scan</b>'.format(section_number, intro_sub_section_number), h2))
+    story.append(Paragraph("While IsaiX Cyber can discover numerous threat vectors, no system can guarantee the identification of all possible threats. IsaiX Cyber offers no warranties, representations or legal certifications concerning the applications or systems it scans. Nothing in this document is intended to represent or warrant that security testing was complete and without error, nor does this document represent or warrant that the application or systems it scans are suitable to the task, free of other defects than reported, or compliant with any industry standards.", content))
+    story.append(Paragraph("This report cannot and does not protect against personal or business loss as the result of use of the applications or systems described.", content))
+    story.append(Paragraph(f'This report contains information on the systems and/or web applications that existed as of “{date}”.', content))
+    story.append(Paragraph("IsaiX Cyber’s scanning is a “point in time”, level 1 assessment of external web address (es) only and as such it is possible that vulnerabilities not found by the IsaiX scan exists on:", content))
+    story.append(Paragraph("a) Internal networks;", bullet_style))
+    story.append(Paragraph("b) VOIP or mobile applications;", bullet_style))
+    story.append(Paragraph("c) Operating equipment;", bullet_style))
+    intro_sub_section_number = intro_sub_section_number + 1
+
+    story.append(Paragraph('<a name="imp"></a><b>{}.{} Distribution of this Report</b>'.format(section_number, intro_sub_section_number), h2))
+    story.append(Paragraph("IsaiX recommends that this report be maintained and circulated in a secure environment only. By accepting delivery of this report, the company holds IsaiX harmless of any damages resulting from its distribution.The offers no guarantees that this PDF file has not been edited by the receiving party to include or omit any information not present on the original output of this Executive Report.", content))
     section_number = section_number + 1
     summary_section_number = 1
 
@@ -253,12 +316,13 @@ def generate_doc(role, cname, date, vulnerabilities, risk_levels, output_path, h
     story.append(Paragraph('<a name="summary"></a><b>{}. Summary</b>'.format(section_number), h1))
 
     story.append(Paragraph('<a name="exec"></a><b>{}.{} Executive Summary</b>'.format(section_number, summary_section_number), h2))
-    story.append(Paragraph("The executive summary provides a high-level overview of the cybersecurity scanning tool's findings and key takeaways. It aims to provide a concise and clear understanding of the overall security posture of the system being scanned.", content))
+    story.append(Paragraph("This report presents the results of the external reconnaissance and vulnerability detection conducted by IsaiX. This scan was conducted using non-credentialed access via a black-box testing approach which scans your external-facing assets (ex. web applications, web services, company websites) to reveal vulnerabilities and web server misconfigurations. These assets are most susceptible to attack and their vulnerabilities are frequently the most exploited.", content))
+    story.append(Paragraph("This vulnerability assessment may have identified flaws that your company should address diligently in order to prevent their exploitation, in consideration of the nature, severity and context of the risk associated with each vulnerability. The details of the vulnerabilities identified, their severity is presented in this document and references to two cyber security industry standard database resources, the Common Vulnerabilities and Exposures (CVE) and the Common Weakness Enumeration (CWE), are provided for further details.", content))
 
-    story.append(Paragraph("ISAIX's Cybersecurity Scanning Tool Report has successfully assessed the security vulnerabilities and risks within the targeted system. By analyzing the scan results and findings, we have identified potential areas of concern that demand immediate attention. This executive summary presents an overview of the scan results, our key findings, and a comprehensive risk assessment to facilitate informed decision-making regarding the system's security.", content))
-
-    story.append(Paragraph('<a name="results"></a><b>{}.{} Scan Results</b>'.format(section_number, summary_section_number), h2))
-    story.append(Paragraph("The scan results section delves into the specific vulnerabilities and weaknesses uncovered during the cybersecurity scanning process. It provides a detailed account of the security issues discovered and presents relevant metrics and statistics to quantify the severity and prevalence of each vulnerability.", content))
+    story.append(Paragraph('<a name="results"></a><b>{}.{} Risk Profile</b>'.format(section_number, summary_section_number), h2))
+    story.append(Paragraph("Vulnerabilities identified by the scan are grouped and classified for each target as critical, high, medium, low, and informative. The higher the vulnerability is rated, the greater the likelihood that this vulnerability could be exploited as avenues of attack resulting in, for example only, unauthorized access, data breaches, deletions and theft or system system disruption.", content))
+    story.append(Paragraph("The number, type and severity of the identified vulnerabilities, identified in this report may reveal how well your systems are being maintained. To assess the overall risk to your business operations you must consider the context of the vulnerability, value of the asset that could be compromised, the type of data that could be lost or stolen, against the impact of a breach.", content))
+    story.append(Paragraph("The bar graph breakdown of the vulnerabilities are as follows:", content))
 
     # Count number of each severity category
     crit = risk_levels['critical']
@@ -334,7 +398,7 @@ def generate_doc(role, cname, date, vulnerabilities, risk_levels, output_path, h
     section_number = section_number + 1
     # Risk Evaluation    
     story.append(Paragraph('{}. Risk Evaluation'.format(section_number), h1))
-    story.append(Paragraph("We used CVSS [ Common Vulnerability Scoring System (CVSS) ] in this project. It's an open industry standard for assessing the severity of computer system security vulnerabilities. CVSS attempts to assign severity scores to vulnerabilities, allowing responders to prioritize responses and resources according to threat. Scores are calculated based on a formula that depends on several metrics that approximate ease and impact of an exploit. Scores range from 0 to 10, with 10 being the most severe. While many utilize only the CVSS Base score for determining severity, temporal and environmental scores also exist, to factor in availability of mitigations and how widespread vulnerable systems are within an organization, respectively.", content))
+    story.append(Paragraph("Two well-known industry standard classification systems were applied to assess the severity of vulnerabilities. These were: Common Vulnerability Scoring System (CVSS) versions 3.0 and 2.0. CVSS assigns severity scores to facilitate the prioritization of action plans according to the threat. Scores are calculated based on a formula that depends on several metrics that approximate ease and impact of an exploit. Scores range from 0 to 10, with 10 being the most severe.", content))
 
     table_header_style = PS(name='tableHead',
                     textColor= colors.white,
@@ -391,7 +455,7 @@ def generate_doc(role, cname, date, vulnerabilities, risk_levels, output_path, h
     section_number = section_number + 1
     summary_find_section_num = 1
     story.append(Paragraph('{}. Summary of Findings'.format(section_number), h1))
-    story.append(Paragraph('In this section, the results of the external reconnaissance, vulnerability detection and penetration tests are represented.', content))
+    story.append(Paragraph('In this section, the results of the external scans are represented.', content))
 
     story.append(Paragraph('{}.{} Major Vulnerabilities List'.format(section_number, summary_find_section_num), h2))
 
@@ -463,7 +527,7 @@ def generate_doc(role, cname, date, vulnerabilities, risk_levels, output_path, h
     if multiple_ip:
         section_number = section_number + 1
         story.append(Paragraph('{}. Scan Overview'.format(section_number), h1))
-        story.append(Paragraph('This section represents the Number of Occurrences for each identified vulnerability per IP / Host along with their Risk Levels. Please note that the Number of Occurrence corresponds increases if the same vulnerability is found on another web site on the same IP/Host:', content))
+        story.append(Paragraph('This section represents the Number of Occurrences for each identified vulnerability per IP / Host along with their risk level. Please note that the Number of Occurrence increases if the same vulnerability is found on another website on the same IP/Host:', content))
 
         style = TableStyle([
             ('BACKGROUND', (0, 0), (0, 0), colors.purple),  # color for header cell in column 1

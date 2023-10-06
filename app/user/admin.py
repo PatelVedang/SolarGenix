@@ -15,7 +15,7 @@ class UserAdmin(admin.ModelAdmin):
             'fields': ('otp', 'otp_expires'),
         }),
     )
-    fields = ('last_login', 'email', 'first_name', 'last_name', 'is_deleted', 'is_staff', 'is_superuser', 'otp', 'subscription', 'role', 'is_verified')
+    fields = ('last_login', 'email', 'first_name', 'last_name', 'is_deleted', 'is_staff', 'is_superuser', 'otp', 'subscription', 'role', 'is_verified', 'user_company', 'user_address', 'profile_image')
     readonly_fields = ('id','otp')
     search_fields = ('first_name', 'last_name', 'email','subscription__plan_type', 'role__name')
     list_display = [

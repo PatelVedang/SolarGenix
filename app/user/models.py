@@ -22,6 +22,8 @@ class Role(models.Model):
         ordering = ('-created_at',)
 
 class User(AbstractBaseUser, PermissionsMixin):
+    def upload_profile_to(instance, filename):
+        return f'profiles/{instance.id}/{filename}'
     username = None
     email = models.EmailField(_('email address'), unique=True, blank=False, null=False)
     # is_active = models.BooleanField(default=True)
@@ -41,6 +43,9 @@ class User(AbstractBaseUser, PermissionsMixin):
     token_expiration = models.DateTimeField(null=True, blank=True)
     mobile_number = models.CharField(max_length=13, null=True, blank=True) 
     country_code = models.CharField(max_length=13, null=True, blank=True) 
+    profile_image = models.ImageField(upload_to=upload_profile_to, null=True, blank=True)
+    user_company = models.CharField(max_length=1000, blank=True)
+    user_address = models.TextField(blank=True)
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = []
