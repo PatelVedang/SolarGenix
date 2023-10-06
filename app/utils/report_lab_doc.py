@@ -19,9 +19,10 @@ from django.conf import settings
 from xml.sax.saxutils import escape
 
 class MyDocTemplate(BaseDocTemplate):
-    def __init__(self, filename, profile_image, **kw):
+    def __init__(self, filename, profile_image, scan_date, **kw):
         self.allowSplitting = 0
         self.profile_img = profile_image
+        self.scan_date = scan_date
         BaseDocTemplate.__init__(self, filename, **kw)
         page_width = 21*cm  # Assuming A4 page width
         page_height = 29.7*cm  # Assuming A4 page height
@@ -60,16 +61,20 @@ class MyDocTemplate(BaseDocTemplate):
             canvas.drawImage(f'{settings.BASE_DIR}/static/report-banner.jpg', 0 * cm, 3.98 * inch, width=21*cm, 
             height=15.25*cm)
             try:
-                canvas.drawImage(f"{settings.MEDIA_ROOT}{self.profile_img}", 17.8 * cm, 1.5 * inch, width=2*cm, 
+                canvas.drawImage(f"{settings.MEDIA_ROOT}{self.profile_img}", 17.8 * cm, 1.25 * inch, width=2*cm, 
                 height=2*cm)
             except Exception as e:
-                canvas.drawImage(f'{settings.BASE_DIR}/static/isaix-logo-1.png', 17.8 * cm, 1.5 * inch, width=2*cm, 
+                canvas.drawImage(f'{settings.BASE_DIR}/static/isaix-logo-1.png', 17.8 * cm, 1.25 * inch, width=2*cm, 
                 height=2*cm)
             canvas.setFont('Helvetica', 18)
             canvas.setFillColor(colors.white)
             canvas.drawString(1.5 * cm, 9.15 * inch, "External Vulnerability Assessment")
             canvas.setFont('Helvetica', 13)
             canvas.drawString(4.39 * cm, 8.70 * inch, "Produced by IsaiX Cyber Services")
+            canvas.setFont('Helvetica', 9)
+            canvas.setFillColor(colors.black)
+            canvas.drawRightString(19.8 * cm, 1 * inch, f'Production Date: {self.scan_date}')
+            # story.append(Paragraph(f'Production Date: {scan_date}', PS(name='Custom', fontSize=9, alignment=TA_RIGHT)))
             canvas.restoreState()
 
     # Stores bookmarks for headers to be used in Table of Content
@@ -177,13 +182,13 @@ h2_header = PS(name= 'HeaderSubTitle',
     spaceAfter=10,
     alignment=TA_CENTER)
 
-def generate_doc(role, cname, date, vulnerabilities, user_name, user_company, user_company_address, profile_image, risk_levels, output_path, hosts=[[]],  multiple_ip=False):
+def generate_doc(role, cname, scan_date, vulnerabilities, user_name, user_company, user_company_address, profile_image, risk_levels, output_path, hosts=[[]],  multiple_ip=False):
 
     """
     Generates a vulnerability scan report in PDF format.
 
     :param cname: The name of the company for which the report is generated.
-    :param date: The date of scan completion.
+    :param scan_date: The date of scan completion.
     :param vulnerabilities: The vulnerability data.
     vulnerabilities must be in the following format:
         {"alerts":
@@ -214,7 +219,7 @@ def generate_doc(role, cname, date, vulnerabilities, user_name, user_company, us
 
     """
     # Build story.
-    doc = MyDocTemplate(output_path, profile_image)
+    doc = MyDocTemplate(output_path, profile_image, scan_date)
     section_number = 1
 
     story = []
@@ -227,17 +232,29 @@ def generate_doc(role, cname, date, vulnerabilities, user_name, user_company, us
     story.append(Paragraph('Executive Report', PS(name='Custom', fontSize=14, alignment=TA_CENTER, textColor=colors.HexColor("#395c9a"))))
     story.append(Spacer(1, 6.37*inch))
     story.append(Spacer(1, 0.35*inch))
-    story.append(Paragraph('<i>Presented to:</i>', PS(name='Custom', fontSize=12, textColor=colors.HexColor("#395c9a"))))
+    story.append(Paragraph('<i>Presented to:</i>', PS(name='Custom', fontSize=12, textColor=colors.HexColor("#395c9a"), leftIndent=8)))
     story.append(Spacer(1, 0.20*inch))
-    story.append(Paragraph(f'<i>{user_name}</i>', PS(name='Custom', fontSize=12)))
-    story.append(Spacer(1, 0.10*inch))
-    story.append(Paragraph(f'<i>{user_company}</i>', PS(name='Custom', fontSize=12)))
-    story.append(Spacer(1, 0.10*inch))
-    story.append(Paragraph(f'<i>{user_company_address}</i>', PS(name='Custom', fontSize=12)))
-    story.append(Spacer(1, 1.2*inch))
-    story.append(Paragraph(f'Production Date: {date}', PS(name='Custom', fontSize=9, alignment=TA_RIGHT)))
-
+    
+    user_table = Table(
+    [
+        [
+            Paragraph(f'<i>{user_name}</i>', PS(name='Custom', fontSize=12))   
+        ],[
+            Paragraph(f'<i>{user_company if user_company else ""}</i>', PS(name='Custom', fontSize=12))
+        ],[
+            Paragraph(f'<i>{user_company_address if user_company_address else ""}</i>', PS(name='Custom', fontSize=12))
+        ]
+    ], colWidths=10*cm, hAlign='LEFT')
+    style = TableStyle([
+        ('ALIGN', (0,0), (-1,-1), 'LEFT'),
+        ('FONTNAME', (0,0), (-1,0), 'Helvetica'),
+        # ('GRID', (0,0), (-1,-1), 1, colors.black)  # Add a black grid around the cells
+    ])
+    story.append(user_table)
+    user_table.setStyle(style)
+    # story.append(Paragraph(f'<i>{user_company_address if user_company_address else ""}</i>', PS(name='Custom', fontSize=12)))
     # TOC
+    story.append(PageBreak())
     story.append(toc)
 
     # Intro
@@ -246,7 +263,7 @@ def generate_doc(role, cname, date, vulnerabilities, user_name, user_company, us
     story.append(PageBreak())
     story.append(Paragraph('<a name="intro"></a><b>{}. Introduction</b>'.format(section_number), h1))
     story.append(Paragraph('<a name="welcome"></a><b>{}.{} Purpose</b>'.format(section_number, intro_sub_section_number), h2))
-    story.append(Paragraph('Welcome to the IsaiX Cyber Level 1 vulnerability scan report generated through our web-hosted portal and automated scanning tools at <a href="https://scanner.isaix.com/">https://scanner.isaix.com/</a>. The purpose of this report is twofold:', link_style))
+    story.append(Paragraph('Welcome to the IsaiX Cyber Level 1 vulnerability scan report generated through our web-hosted portal and automated scanning tools at <a href="https://scanner.isaix.com/"><font color=blue>https://scanner.isaix.com/</font></a>. The purpose of this report is twofold:', link_style))
     story.append(Paragraph(f"{intro_numbering}. For business leaders: to provide an understanding of the technical vulnerabilities of your web assets and offer a new line of sight to support the governance of your cyber resilience and assess your cyber business risk.", bullet_style))
     intro_numbering +=1
     story.append(Paragraph(f"{intro_numbering}. For IT support resources: to provide detailed insights into the vulnerabilities of your web assets and the references for the remediation of the vulnerabilities.", bullet_style))
@@ -299,7 +316,7 @@ def generate_doc(role, cname, date, vulnerabilities, user_name, user_company, us
     story.append(Paragraph('<a name="imp"></a><b>{}.{} Disclaimer of Liability and Limitation of the Scan</b>'.format(section_number, intro_sub_section_number), h2))
     story.append(Paragraph("While IsaiX Cyber can discover numerous threat vectors, no system can guarantee the identification of all possible threats. IsaiX Cyber offers no warranties, representations or legal certifications concerning the applications or systems it scans. Nothing in this document is intended to represent or warrant that security testing was complete and without error, nor does this document represent or warrant that the application or systems it scans are suitable to the task, free of other defects than reported, or compliant with any industry standards.", content))
     story.append(Paragraph("This report cannot and does not protect against personal or business loss as the result of use of the applications or systems described.", content))
-    story.append(Paragraph(f'This report contains information on the systems and/or web applications that existed as of “{date}”.', content))
+    story.append(Paragraph(f'This report contains information on the systems and/or web applications that existed as of “{scan_date}”.', content))
     story.append(Paragraph("IsaiX Cyber’s scanning is a “point in time”, level 1 assessment of external web address (es) only and as such it is possible that vulnerabilities not found by the IsaiX scan exists on:", content))
     story.append(Paragraph("a) Internal networks;", bullet_style))
     story.append(Paragraph("b) VOIP or mobile applications;", bullet_style))
