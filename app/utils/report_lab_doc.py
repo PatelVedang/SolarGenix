@@ -289,7 +289,7 @@ def generate_doc(role, cname, scan_date, vulnerabilities, user_name, user_compan
         story.append(Paragraph('<a name="goal"></a><b>{}.{} Testing Scope</b>'.format(section_number, intro_sub_section_number), h2))
         intro_sub_section_number = intro_sub_section_number + 1
         story.append(Paragraph("IsaiX Cyber processed target IP addresses entered through its platform. These were:"))
-        story.append(Spacer(1, 1*inch))
+        story.append(Spacer(1, 0.8*inch))
         
         # Domain(hosts) table
         table_header = ["IP Address", "Domain Name"]
@@ -309,7 +309,7 @@ def generate_doc(role, cname, scan_date, vulnerabilities, user_name, user_compan
             ('GRID', (0,0), (-1,-1), 1, colors.black)  # Add a black grid around the cells
         ])
         story.append(table)
-        story.append(Spacer(1, 1*inch))
+        story.append(Spacer(1, 0.8*inch))
         # Add the style to the table
         table.setStyle(style)
 
