@@ -6,4 +6,4 @@ class UserConfig(AppConfig):
     name = "user"
 
     def ready(self):
-        from .signals import user_verify_signal
+        from .signals import user_verify_signal, create_profile_image

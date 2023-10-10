@@ -23,12 +23,14 @@ class Role(models.Model):
 
 class User(AbstractBaseUser, PermissionsMixin):
     def upload_profile_to(instance, filename):
+        print(instance.profile_image,"=>>>>")
+        print(instance,"=>>>>")
         return f'profiles/{instance.id}/{filename}'
     username = None
     email = models.EmailField(_('email address'), unique=True, blank=False, null=False)
     # is_active = models.BooleanField(default=True)
     is_deleted = models.BooleanField(default=False)
-    first_name = models.CharField(max_length=50) 
+    first_name = models.CharField(max_length=50)
     last_name = models.CharField(max_length=50)
     role = models.ForeignKey("Role", on_delete=models.SET_NULL, null=True, blank=True)
     is_staff = models.BooleanField(default=False)

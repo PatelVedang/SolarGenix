@@ -173,11 +173,10 @@ class ResetPasswordView(generics.GenericAPIView):
 @method_decorator(name='patch', decorator=swagger_auto_schema(
     tags=['Users'],
     operation_description="The update profile API can be used to update a profile’s information in a given database.",
-    operation_summary="Update user profile API."
+    operation_summary="Update user profile API.",
 ))
 class ProfileView(generics.RetrieveUpdateAPIView):
     serializer_class = UpdateProfileSerializer
-    # queryset = User.objects.all()
     permission_classes = [IsAuthenticated]
 
     def retrieve(self, request, *args, **kwargs):
@@ -201,6 +200,9 @@ class ProfileView(generics.RetrieveUpdateAPIView):
         serializer = self.get_serializer(instance, data=request.data, partial=partial)
         if serializer.is_valid(raise_exception=True):
             serializer.save()
+            if 'files' in request.FILES:
+                instance.profile_image = request.FILES['files']
+                instance.save()
             return response(data=serializer.data, status_code=status.HTTP_200_OK, message="profile updated successfully.")
 
 class ChangePasswordView(generics.CreateAPIView):    

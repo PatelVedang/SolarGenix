@@ -52,7 +52,7 @@ class RegisterSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = User
-        fields = ['id', 'first_name', 'last_name', 'email', 'password', 'mobile_number', 'country_code', 'confirm_password']
+        fields = ['id', 'first_name', 'last_name', 'email', 'password', 'mobile_number', 'country_code', 'confirm_password', 'user_company', 'user_address']
 
     def validate(self, attrs):
         if (not re.search(settings.PASSWORD_VALIDATE_REGEX, attrs['password'])) or (not re.search(settings.PASSWORD_VALIDATE_REGEX, attrs['confirm_password'])):
@@ -200,7 +200,10 @@ class CustomTokenVerifySerializer(TokenVerifySerializer):
         res = {
             'id': user.id, 
             'email': user.email, 
-            'role': user.role.id
+            'role': user.role.id,
+            'first_name': user.first_name,
+            'last_name': user.last_name,
+            'profile_image':f'{settings.PDF_DOWNLOAD_ORIGIN}/media/{str(user.profile_image)}'
         }
 
         return res
@@ -306,10 +309,10 @@ class ResetPasswordSerializer(serializers.Serializer):
 # The `UpdateProfileSerializer` class is a serializer in Python that updates user profiles and
 # includes a nested serializer for the user's role.
 class UpdateProfileSerializer(serializers.ModelSerializer):
-    role = RoleSerializer()
+    role = RoleSerializer(read_only=True)
     class Meta:
         model = User
-        fields = ['id', 'first_name', 'last_name', 'role']
+        fields = ['id', 'first_name', 'last_name', 'role', 'profile_image']
 
     def validate(self, attrs):
         logger.info(f'serialize_data: {json.dumps(attrs)}')
