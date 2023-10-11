@@ -314,7 +314,7 @@ class UpdateProfileSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(read_only=True)
     class Meta:
         model = User
-        fields = ['id', 'first_name', 'last_name', 'role', 'profile_image', 'email']
+        fields = ['id', 'first_name', 'last_name', 'role', 'profile_image', 'email', 'user_company', 'user_address']
 
     def validate(self, attrs):
         logger.info(f'serialize_data: {json.dumps(attrs)}')
