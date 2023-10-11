@@ -310,9 +310,11 @@ class ResetPasswordSerializer(serializers.Serializer):
 # includes a nested serializer for the user's role.
 class UpdateProfileSerializer(serializers.ModelSerializer):
     role = RoleSerializer(read_only=True)
+    profile_image = serializers.ImageField(read_only=True)
+    email = serializers.EmailField(read_only=True)
     class Meta:
         model = User
-        fields = ['id', 'first_name', 'last_name', 'role', 'profile_image']
+        fields = ['id', 'first_name', 'last_name', 'role', 'profile_image', 'email']
 
     def validate(self, attrs):
         logger.info(f'serialize_data: {json.dumps(attrs)}')
