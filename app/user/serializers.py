@@ -199,12 +199,16 @@ class CustomTokenVerifySerializer(TokenVerifySerializer):
         user = User.objects.get(id=user['id'])
         res = {
             'id': user.id, 
-            'email': user.email, 
+            'email': user.email,
             'role': user.role.id,
             'first_name': user.first_name,
             'last_name': user.last_name,
             'profile_image':f'{settings.PDF_DOWNLOAD_ORIGIN}/media/{str(user.profile_image)}'
         }
+        if not user.is_verified:
+            raise serializers.ValidationError(
+                'Your account is not activated please contact to admin for further instructions!!'
+            )
 
         return res
     
@@ -318,6 +322,10 @@ class UpdateProfileSerializer(serializers.ModelSerializer):
 
     def validate(self, attrs):
         logger.info(f'serialize_data: {json.dumps(attrs)}')
+        if not self.context['request'].user.is_verified:
+            raise serializers.ValidationError(
+                'Your account is not activated please contact to admin for further instructions!!'
+            )
         return super().validate(attrs)
 
 class ChangePasswordSerializer(serializers.Serializer):
