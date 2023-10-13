@@ -421,7 +421,12 @@ class OWASP(Common):
         alerts = pd.DataFrame(data=[*zap.alert.alerts(baseurl=self.http_url), *zap.alert.alerts(baseurl=self.https_url)])
 
         # Spider scan alerts ids
-        spider_alerts_ids = alerts[alerts['messageId'].isin(spider_msg_ids)]['id'].tolist()
+        print(alerts,"=>>>Alerts")
+        print(spider_msg_ids,"=>>>Spider Msg IDS")
+        if not alerts.empty:
+            spider_alerts_ids = alerts[alerts['messageId'].isin(spider_msg_ids)]['id'].tolist()
+        else:
+            spider_alerts_ids = []
 
         alerts_objs = {}
         if len(spider_requests) and len(spider_alerts_ids):
@@ -479,7 +484,12 @@ class OWASP(Common):
         alerts = pd.DataFrame(data=[*zap.alert.alerts(baseurl=self.http_url), *zap.alert.alerts(baseurl=self.https_url)])
 
         # Spider scan alerts ids
-        spider_alerts_ids = alerts[alerts['messageId'].isin(spider_msg_ids)]['id'].tolist()
+        print(alerts,"=>>>Alerts")
+        print(spider_msg_ids,"=>>>Spider Msg IDS")
+        if not alerts.empty:
+            spider_alerts_ids = alerts[alerts['messageId'].isin(spider_msg_ids)]['id'].tolist()
+        else:
+            spider_alerts_ids = []
 
         # Active scan's alerts ids 
         active_alerts_ids = zap.ascan.alerts_ids(scanid=active_scan_id)
