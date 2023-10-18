@@ -5,7 +5,8 @@
       "fields": {
         "day_limit": 0,
         "price": 0.00,
-        "plan_type" : "FREE"
+        "plan_type" : "FREE",
+        "mail_scan_result":false
       }
     },
     {
@@ -14,7 +15,8 @@
       "fields": {
         "day_limit": 0,
         "price": 0.00,
-        "plan_type" : "STAFF"
+        "plan_type" : "STAFF",
+        "mail_scan_result":true
       }
     }
     

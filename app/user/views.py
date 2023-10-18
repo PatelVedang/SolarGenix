@@ -187,6 +187,7 @@ class ProfileView(generics.RetrieveUpdateAPIView):
         """
         instance = self.request.user
         serializer = self.get_serializer(instance)
+        # context={"request": request}
         return response(data=serializer.data, status_code=status.HTTP_200_OK, message="profile found successfully.")
 
     def patch(self, request, *args, **kwargs):
@@ -197,7 +198,7 @@ class ProfileView(generics.RetrieveUpdateAPIView):
         """
         partial = kwargs.pop('partial', False)
         instance = self.request.user
-        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer = self.get_serializer(instance, data=request.data, partial=partial, context={"request": request})
         if serializer.is_valid(raise_exception=True):
             serializer.save()
             if 'files' in request.FILES:

@@ -74,10 +74,8 @@ def user_verify_signal(sender, instance, **kwargs):
                                             'body':email_body,
                                             'sender':settings.BUSINESS_EMAIL,
                                             'recipients':[new_user.email],
-                                            'fail_silently':False,
-                                            'account_activation': True,
-                                            'allow_html':True,
-                                            'user_name':user_name
+                                            'user_name':user_name,
+                                            'html_template':'account-activation.html'
                                         })
                 thread.start()
 

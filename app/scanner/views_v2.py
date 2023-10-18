@@ -31,7 +31,8 @@ logger = logging.getLogger('django')
 import json
 from django.core.cache import cache
 from utils.cache_helper import Cache
-
+from utils.email import send_email
+pdf= PDF()
 
 class Common:
 
@@ -281,7 +282,6 @@ class ScanViewSet(viewsets.ModelViewSet, Common):
         """
         self.serializer_class = ScannerResponseSerializer
         serializer = super().retrieve(request, *args, **kwargs)
-        pdf= PDF()
         pdf_path, pdf_name, file_url = pdf.generate(request.user.role, request.user.id, serializer.data.get('order'), [serializer.data.get('id')])
         
         data = {
@@ -309,7 +309,6 @@ class ScanViewSet(viewsets.ModelViewSet, Common):
         """
         self.serializer_class = ScannerResponseSerializer
         serializer = super().retrieve(request, *args, **kwargs)
-        pdf= PDF()
         pdf_path, pdf_name, file_url = pdf.generate(request.user.role, request.user.id, serializer.data.get('order'), [serializer.data.get('id')])
         FilePointer = open(pdf_path,"rb")
         response = HttpResponse(FilePointer,content_type='application/pdf')
@@ -334,7 +333,6 @@ class ScanViewSet(viewsets.ModelViewSet, Common):
         """
         self.serializer_class = ScannerResponseSerializer
         serializer = super().retrieve(request, *args, **kwargs)
-        pdf= PDF()
         
         html_data = pdf.generate(request.user.role, request.user.id, serializer.data.get('order'), [serializer.data.get('id')], generate_pdf=False)
 
@@ -497,7 +495,6 @@ class SendMessageView(generics.GenericAPIView, Common):
                         response.append(record_obj)                    
                     
                     order_update = super().order_update_in_cache(order, response)
-                    print(order_update,"=>>>>>>order_update")
                     # If order status is updated
                     if order_update:
                         fresh_order = Cache.get(f'order_{order_id}')
@@ -507,6 +504,31 @@ class SendMessageView(generics.GenericAPIView, Common):
                     
                     send([str(order['client']['id']), str(request.user.id)],{'order': order_obj, 'targets': response})
                     if order_update:
+
+                        print(request.user.subscription.mail_scan_result,"=>>>>>>>>Mail Scan  result")
+                        if request.user.subscription.mail_scan_result:
+                            # sending mail on scan complete of batch of targets
+                            targets_ids = [target.get('id') for target in order['targets']]
+                            pdf_path, pdf_name, file_url = pdf.generate(request.user.role, request.user.id, order_id, targets_ids)
+                            user_name = f"{order['client']['first_name']} {order['client']['last_name']}".upper()
+                            email_body =  f'''Dear {user_name},\n\nI hope this email finds you well. I am writing to inform you about the successful completion of the recent security scan conducted on {order['target_ip']}. The attached PDF file contains the detailed scan results, outlining the findings and security status of the website.\n\nPlease find the attached PDF document named "output.pdf." In case you have any questions or need further clarification regarding the findings, feel free to reach out to us.
+                            '''
+                            print(f'scan_result_{datetime.strptime(order["created_at"],"%Y-%m-%dT%H:%M:%S.%fZ").strftime("%b_%d_%Y")}_{order["target_ip"]}.pdf',"=>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
+                            send_email(**{
+                                'subject':f'Successful Security Scan Results for {order["target_ip"]}',
+                                'body':email_body,
+                                'sender':settings.BUSINESS_EMAIL,
+                                'recipients': list(set([request.user.email, order['client']['email']])),
+                                'bcc': settings.SUPPORT_EMAILS,
+                                'attachments': [
+                                    {
+                                        'name': f'scan_result_{datetime.strptime(order["created_at"],"%Y-%m-%dT%H:%M:%S.%fZ").strftime("%b_%d_%Y")}_{order["target_ip"]}.pdf',
+                                        'path': pdf_path,
+                                        'mime-type': 'application/pdf'
+                                    }
+                                ]
+                            })
+
                         break
                     time.sleep(round(float(settings.WEB_SOCKET_INTERVAL),2))
                 # after order is complete we need to remove all the data related to that order from cache
@@ -549,6 +571,29 @@ class SendMessageView(generics.GenericAPIView, Common):
                             # When more than one targets present with status<=2
                             record_obj['target_percent'] = 100
                             send([str(record_obj['scan_by']['id']), str(request.user.id)],record_obj)
+                        
+                        print(request.user.subscription.mail_scan_result,"=>>>>>>>>Mail Scan  result")
+                        if request.user.subscription.mail_scan_result:
+                            # sending mail on scan complete of single target
+                            pdf_path, pdf_name, file_url = pdf.generate(request.user.role, request.user.id, order_id, [record_obj["id"]])
+                            user_name = f"{order['client']['first_name']} {order['client']['last_name']}".upper()
+                            email_body =  f'''Dear {user_name},\n\nI hope this email finds you well. I am writing to inform you about the successful completion of the recent security scan conducted on {record_obj['ip']}. The attached PDF file contains the detailed scan results, outlining the findings and security status of the website.\n\nPlease find the attached PDF document named "output.pdf." In case you have any questions or need further clarification regarding the findings, feel free to reach out to us.
+                            '''
+                            print(f'scan_result_{datetime.strptime(record_obj["created_at"],"%Y-%m-%dT%H:%M:%S.%fZ").strftime("%b_%d_%Y")}_{record_obj["ip"]}.pdf',"=>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
+                            send_email(**{
+                                'subject':f'Successful Security Scan Results for {record_obj["ip"]}',
+                                'body':email_body,
+                                'sender':settings.BUSINESS_EMAIL,
+                                'recipients': list(set([request.user.email, order['client']['email']])),
+                                'bcc': settings.SUPPORT_EMAILS,
+                                'attachments': [
+                                    {
+                                        'name': f'scan_result_{datetime.strptime(record_obj["created_at"],"%Y-%m-%dT%H:%M:%S.%fZ").strftime("%b_%d_%Y")}_{record_obj["ip"]}.pdf',
+                                        'path': pdf_path,
+                                        'mime-type': 'application/pdf'
+                                    }
+                                ]
+                            })
                         break
                     time.sleep(round(float(settings.WEB_SOCKET_INTERVAL),2))
 
@@ -686,7 +731,6 @@ class OrderViewSet(viewsets.ModelViewSet, Common):
         """
         self.serializer_class = OrderResponseSerailizer
         serializer = super().retrieve(request, *args, **kwargs)
-        pdf= PDF()
         targets = [target.get('id') for target in (list(Target.objects.filter(order_id= serializer.data.get('id')).values('id')))]
         pdf_path, pdf_name, file_url = pdf.generate(request.user.role, request.user.id, serializer.data.get('id'), targets_ids=targets, generate_order_pdf=True)
         data = {

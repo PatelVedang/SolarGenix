@@ -231,9 +231,15 @@ class TargetLogsAdmin(admin.ModelAdmin):
         return obj.target.id
     get_target_id.short_description = 'Target ID'
 
+class SubscriptionAdmin(BulkSelect):
+    list_display = [
+        'id','plan_type', 'mail_scan_result'
+    ]
+    search_fields = ('id','plan_type')
+
 admin.site.register(Target, TargetAdmin)
 admin.site.register(Tool, ToolAdmin)
-admin.site.register(Subscription)
+admin.site.register(Subscription, SubscriptionAdmin)
 admin.site.register(SubscriptionHistory, SubscriptionHistoryAdmin)
 admin.site.register(TargetLog, TargetLogsAdmin)
 admin.site.register(Order, OrderAdmin)

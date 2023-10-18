@@ -23,8 +23,6 @@ class Role(models.Model):
 
 class User(AbstractBaseUser, PermissionsMixin):
     def upload_profile_to(instance, filename):
-        print(instance.profile_image,"=>>>>")
-        print(instance,"=>>>>")
         return f'profiles/{instance.id}/{filename}'
     username = None
     email = models.EmailField(_('email address'), unique=True, blank=False, null=False)

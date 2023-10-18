@@ -14,7 +14,7 @@ def send_email(**kwargs):
     bcc=kwargs.get('bcc', [])
     attachments=kwargs.get('attachments', [])
     html_template=kwargs.get('html_template', '')
-    print(recipients,"=>>>>>>>Recepients")
+
     
     logger.info(f"***************** SEND MAIL  *****************")
     logger.info(f"Recipients: {recipients}")
@@ -30,15 +30,12 @@ def send_email(**kwargs):
         if html_template:
             html_message = render_to_string(html_template, kwargs)
             email.content_subtype = "html"
-            email.body = html_message
 
         # Send the email
         email.send()
         
-        # logger.info(f"response {email}")
-        # logger.info(f"Please check your inbox.")
-        print(f"response {email}")
-        print(f"Please check your inbox.")
+        logger.info(f"response {email}")
+        logger.info(f"Please check your inbox.")
     except Exception as e:
         print(e,"=>>>>>>>>>>>>Error")
         traceback.print_exc()

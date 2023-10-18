@@ -98,9 +98,7 @@ class RegisterSerializer(serializers.ModelSerializer):
                                     'body':email_body,
                                     'sender':settings.BUSINESS_EMAIL,
                                     'recipients':[validated_data.get("email")],
-                                    'fail_silently':False,
-                                    'end_user_confimartion': True,
-                                    'allow_html':True,
+                                    'html_template':'user-confirmation.html',
                                     'user_name':user_name
                                 })
         thread.start()
@@ -116,15 +114,15 @@ class RegisterSerializer(serializers.ModelSerializer):
         Email: {user_email}
         Registartion Date: {user_created_at}
         '''
+        from django.utils.html import strip_tags
+        print(strip_tags(email_body),"=>>>>>>>>>>Email body")    
         thread= threading.Thread(target=send_email,
                                 kwargs={
                                     'subject': f'New User Registration: {user_name}',
                                     'body':email_body,
                                     'sender':settings.BUSINESS_EMAIL,
                                     'recipients':[admin.email],
-                                    'fail_silently':False,
-                                    'admin_user_confimartion': True,
-                                    'allow_html':True,
+                                    'html_template':'admin-confirmation.html',
                                     'user_name':user_name,
                                     'user_email':user_email,
                                     'user_created_at':user_created_at,
@@ -239,9 +237,8 @@ class ForgotPasswordSerializer(serializers.Serializer):
                                     'body':email_body,
                                     'sender':settings.BUSINESS_EMAIL,
                                     'recipients':[validated_data.get("email")],
-                                    'fail_silently':False,
                                     'otp':otp,
-                                    'allow_html':True
+                                    'html_template':'reset-password.html'
                                 })
         thread.start()
         return user
@@ -385,10 +382,9 @@ class ResendUserTokenSerializer(serializers.Serializer):
                                     'body':email_body,
                                     'sender':settings.BUSINESS_EMAIL,
                                     'recipients':[validated_data.get("email")],
-                                    'fail_silently':False,
                                     'link':link,
                                     'email':email,
-                                    'allow_html':True
+                                    'html_template':'verify-user.html'
                                 })
         thread.start()
         return user
