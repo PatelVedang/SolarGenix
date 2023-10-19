@@ -315,9 +315,9 @@ class RoleViewSet(viewsets.ModelViewSet):
     serializer_class = RoleSerializer
     permission_classes = [CustomIsAdminUser]
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
-    search_fields = ['name', 'tool_access', 'target_access', 'client_name_access', 'scan_result_access', 'updated_at']
+    search_fields = ['name', 'tool_access', 'target_access', 'client_name_access', 'scan_result_access', 'cover_content_access', 'updated_at']
     filterset_fields = ['name']
-    ordering_fields = ['name', 'tool_access', 'target_access', 'client_name_access', 'scan_result_access', 'updated_at', 'is_verified']
+    ordering_fields = ['name', 'tool_access', 'target_access', 'client_name_access', 'scan_result_access', 'cover_content_access', 'updated_at', 'is_verified']
 
     @swagger_auto_schema(
         method = 'get',

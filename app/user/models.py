@@ -12,6 +12,7 @@ class Role(models.Model):
     target_access = models.BooleanField(default=False)
     client_name_access = models.BooleanField(default=True)
     scan_result_access = models.BooleanField(default=False)
+    cover_content_access = models.BooleanField(default=False)
     is_deleted = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True, null=True)
     updated_at = models.DateTimeField(auto_now=True, null=True)

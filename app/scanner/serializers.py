@@ -132,7 +132,8 @@ class ScannerResponseSerializer(serializers.ModelSerializer):
                 'tool_access': requested_user.role.tool_access,
                 'target_access':requested_user.role.target_access,
                 'client_name_access':requested_user.role.client_name_access,
-                'scan_result_access':requested_user.role.scan_result_access
+                'scan_result_access':requested_user.role.scan_result_access,
+                'cover_content_access':requested_user.role.cover_content_access
             },
             "subscription_id": requested_user.subscription_id
         }
@@ -195,7 +196,8 @@ class OrderResponseSerailizer(serializers.ModelSerializer):
                 'tool_access': requested_user.role.tool_access,
                 'target_access':requested_user.role.target_access,
                 'client_name_access':requested_user.role.client_name_access,
-                'scan_result_access':requested_user.role.scan_result_access
+                'scan_result_access':requested_user.role.scan_result_access,
+                'cover_content_access':requested_user.role.cover_content_access
             },
             "subscription_id": requested_user.subscription_id
         }
@@ -236,7 +238,8 @@ class OrderWithoutTargetsResponseSerailizer(serializers.ModelSerializer):
                 'tool_access': requested_user.role.tool_access,
                 'target_access':requested_user.role.target_access,
                 'client_name_access':requested_user.role.client_name_access,
-                'scan_result_access':requested_user.role.scan_result_access
+                'scan_result_access':requested_user.role.scan_result_access,
+                'cover_content_access':requested_user.role.cover_content_access
             },
             "subscription_id": requested_user.subscription_id
         }
@@ -334,7 +337,8 @@ class WithoutRequestUserTargetSerializer(serializers.ModelSerializer):
                 'tool_access': requested_by.role.tool_access,
                 'target_access':requested_by.role.target_access,
                 'client_name_access':requested_by.role.client_name_access,
-                'scan_result_access':requested_by.role.scan_result_access
+                'scan_result_access':requested_by.role.scan_result_access,
+                'cover_content_access':requested_by.role.cover_content_access
             },
             "subscription_id": requested_by.subscription_id
         }
@@ -385,7 +389,8 @@ class WithoutRequestUserOrderSerializer(serializers.ModelSerializer):
                 'tool_access': requested_by.role.tool_access,
                 'target_access':requested_by.role.target_access,
                 'client_name_access':requested_by.role.client_name_access,
-                'scan_result_access':requested_by.role.scan_result_access
+                'scan_result_access':requested_by.role.scan_result_access,
+                'cover_content_access':requested_by.role.cover_content_access
             },
             "subscription_id": requested_by.subscription_id
         }

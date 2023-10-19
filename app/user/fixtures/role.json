@@ -7,7 +7,8 @@
         "tool_access": true,
         "target_access": true,
         "client_name_access": true,
-        "scan_result_access": true
+        "scan_result_access": true,
+        "cover_content_access": false
       }
     },
     {
@@ -18,7 +19,8 @@
         "tool_access": true,
         "target_access": true,
         "client_name_access": true,
-        "scan_result_access": false
+        "scan_result_access": false,
+        "cover_content_access": false
       }
     },
     {
@@ -29,7 +31,8 @@
         "tool_access": false,
         "target_access": false,
         "client_name_access": false,
-        "scan_result_access": false
+        "scan_result_access": false,
+        "cover_content_access": false
       }
     }
     

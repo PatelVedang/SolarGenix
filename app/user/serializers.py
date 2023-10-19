@@ -26,7 +26,7 @@ class RoleSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Role
-        fields = ['id', 'name', 'tool_access', 'target_access', 'client_name_access', 'scan_result_access', 'updated_at']
+        fields = ['id', 'name', 'tool_access', 'target_access', 'client_name_access', 'scan_result_access', 'cover_content_access', 'updated_at']
 
 
 class UserSerializer(serializers.ModelSerializer):

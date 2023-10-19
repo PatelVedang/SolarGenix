@@ -19,10 +19,11 @@ from django.conf import settings
 from xml.sax.saxutils import escape
 
 class MyDocTemplate(BaseDocTemplate):
-    def __init__(self, filename, profile_image, scan_date, **kw):
+    def __init__(self, filename, profile_image, role, scan_date, **kw):
         self.allowSplitting = 0
         self.profile_img = profile_image
         self.scan_date = scan_date
+        self.role = role
         BaseDocTemplate.__init__(self, filename, **kw)
         page_width = 21*cm  # Assuming A4 page width
         page_height = 29.7*cm  # Assuming A4 page height
@@ -60,12 +61,13 @@ class MyDocTemplate(BaseDocTemplate):
             canvas.saveState()
             canvas.drawImage(f'{settings.BASE_DIR}/static/report-banner.jpg', 0 * cm, 3.98 * inch, width=21*cm, 
             height=15.25*cm)
-            # try:
-            #     canvas.drawImage(f"{settings.MEDIA_ROOT}{self.profile_img}", 17.8 * cm, 1.25 * inch, width=2*cm, 
-            #     height=2*cm)
-            # except Exception as e:
-            #     canvas.drawImage(f'{settings.BASE_DIR}/static/isaix-logo-1.png', 17.8 * cm, 1.25 * inch, width=2*cm, 
-            #     height=2*cm)
+            if self.role.cover_content_access:
+                try:
+                    canvas.drawImage(f"{settings.MEDIA_ROOT}{self.profile_img}", 17.8 * cm, 1.25 * inch, width=2*cm, 
+                    height=2*cm)
+                except Exception as e:
+                    canvas.drawImage(f'{settings.BASE_DIR}/static/isaix-logo-1.png', 17.8 * cm, 1.25 * inch, width=2*cm, 
+                    height=2*cm)
             canvas.setFont('Helvetica', 18)
             canvas.setFillColor(colors.white)
             canvas.drawString(1.5 * cm, 9.15 * inch, "External Vulnerability Assessment")
@@ -219,7 +221,7 @@ def generate_doc(role, cname, scan_date, vulnerabilities, user_name, user_compan
 
     """
     # Build story.
-    doc = MyDocTemplate(output_path, profile_image, scan_date)
+    doc = MyDocTemplate(output_path, profile_image, role, scan_date)
     section_number = 1
 
     story = []
@@ -228,30 +230,33 @@ def generate_doc(role, cname, scan_date, vulnerabilities, user_name, user_compan
     toc.levelStyles = [h1_toc, h2_toc]
 
     # HEADER
-    # story.append(Spacer(1, 0.10*inch))
-    # story.append(Paragraph('Executive Report', PS(name='Custom', fontSize=14, alignment=TA_CENTER, textColor=colors.HexColor("#395c9a"))))
-    # story.append(Spacer(1, 6.37*inch))
-    # story.append(Spacer(1, 0.35*inch))
-    # story.append(Paragraph('<i>Presented to:</i>', PS(name='Custom', fontSize=12, textColor=colors.HexColor("#395c9a"), leftIndent=8)))
-    # story.append(Spacer(1, 0.20*inch))
+    story.append(Spacer(1, 0.10*inch))
+    story.append(Paragraph('Executive Report', PS(name='Custom', fontSize=14, alignment=TA_CENTER, textColor=colors.HexColor("#395c9a"))))
     
-    # user_table = Table(
-    # [
-    #     [
-    #         Paragraph(f'<i>{user_name}</i>', PS(name='Custom', fontSize=12))   
-    #     ],[
-    #         Paragraph(f'<i>{user_company if user_company else ""}</i>', PS(name='Custom', fontSize=12))
-    #     ],[
-    #         Paragraph(f'<i>{user_company_address if user_company_address else ""}</i>', PS(name='Custom', fontSize=12))
-    #     ]
-    # ], colWidths=10*cm, hAlign='LEFT')
-    # style = TableStyle([
-    #     ('ALIGN', (0,0), (-1,-1), 'LEFT'),
-    #     ('FONTNAME', (0,0), (-1,0), 'Helvetica'),
-    #     # ('GRID', (0,0), (-1,-1), 1, colors.black)  # Add a black grid around the cells
-    # ])
-    # story.append(user_table)
-    # user_table.setStyle(style)
+    # Add content only if role has access of it
+    if role.cover_content_access:
+        story.append(Spacer(1, 6.37*inch))
+        story.append(Spacer(1, 0.35*inch))
+        story.append(Paragraph('<i>Presented to:</i>', PS(name='Custom', fontSize=12, textColor=colors.HexColor("#395c9a"), leftIndent=8)))
+        story.append(Spacer(1, 0.20*inch))
+        
+        user_table = Table(
+        [
+            [
+                Paragraph(f'<i>{user_name}</i>', PS(name='Custom', fontSize=12))   
+            ],[
+                Paragraph(f'<i>{user_company if user_company else ""}</i>', PS(name='Custom', fontSize=12))
+            ],[
+                Paragraph(f'<i>{user_company_address if user_company_address else ""}</i>', PS(name='Custom', fontSize=12))
+            ]
+        ], colWidths=10*cm, hAlign='LEFT')
+        style = TableStyle([
+            ('ALIGN', (0,0), (-1,-1), 'LEFT'),
+            ('FONTNAME', (0,0), (-1,0), 'Helvetica'),
+            # ('GRID', (0,0), (-1,-1), 1, colors.black)  # Add a black grid around the cells
+        ])
+        story.append(user_table)
+        user_table.setStyle(style)
 
 
 
