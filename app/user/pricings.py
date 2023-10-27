@@ -24,10 +24,10 @@ items=[
             'credit': 1000,
             'ip_limit': 20
         },
-        1000,
+        10000,
         'cad',
         {
-            'interval': 'month'
+            'interval': 'year'
         }
     ],
     [
@@ -52,10 +52,10 @@ items=[
             'credit': 2000,
             'ip_limit': 50
         },
-        2000,
+        20000,
         'cad',
         {
-            'interval': 'month'
+            'interval': 'year'
         }
     ],
     [
@@ -80,10 +80,10 @@ items=[
             'credit': 5000,
             'ip_limit': 100
         },
-        5000,
+        50000,
         'cad',
         {
-            'interval': 'month'
+            'interval': 'year'
         }
     ],
     

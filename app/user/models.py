@@ -47,6 +47,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     profile_image = models.ImageField(upload_to=upload_profile_to, null=True, blank=True)
     user_company = models.CharField(max_length=1000, blank=True)
     user_address = models.TextField(blank=True)
+    stripe_customer_id = models.CharField(max_length=255, null=True)
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = []

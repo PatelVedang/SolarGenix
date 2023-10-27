@@ -1,5 +1,6 @@
 from django.shortcuts import render
 from .models import Target, Tool, TargetLog, Order
+from payments.models import PaymentHistory
 from user.models import User
 from django.http import HttpResponse, JsonResponse
 from rest_framework.decorators import api_view
@@ -631,6 +632,21 @@ class OrderViewSet(viewsets.ModelViewSet, Common):
         
         :param request: The request object
         """
+
+        today = datetime.utcnow()
+        current_sub = PaymentHistory.objects.filter(status=1, current_period_start__lte=today, current_period_end__gte=today, user=request.user.id)
+        if request.user.role.id!=1:
+            if current_sub.exists():
+                ip_limit = current_sub[0].ip_limit
+                orders = Order.objects.filter(client_id=request.user.id, created_at__gte=current_sub[0].current_period_start, created_at__lte=current_sub[0].current_period_end)
+                if orders.count()>=ip_limit:
+                    return response(data={}, status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, message="You have reached your IP limit. Please upgrade your account!!")
+            else:
+                ip_limit = 1
+                orders = Order.objects.filter(client_id=request.user.id)
+                if orders.count()>=ip_limit:
+                    return response(data={}, status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, message="You have reached your IP limit. Please upgrade your account!!")
+
         self.serializer_class = OrderSerailizer
         serializer = self.serializer_class(data=request.data)
         if serializer.is_valid(raise_exception=True):

@@ -60,3 +60,4 @@ channels-redis==4.1.0
 django-redis==5.3.0
 redis==4.6.0
 Pillow==9.5.0
+stripe==7.0.0

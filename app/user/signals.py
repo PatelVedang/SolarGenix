@@ -7,6 +7,8 @@ from django.conf import settings
 from PIL import Image, ImageDraw, ImageFont
 import uuid
 import os
+import stripe
+stripe.api_key = settings.STRIPE_SECRET_KEY
 
 def create_letter_image(initials, image_path):
 
@@ -36,12 +38,12 @@ def create_letter_image(initials, image_path):
     image.save(image_path)
 
 def make_path(target_path):
-        sub_path = target_path.replace(str(settings.BASE_DIR), '')
-        sub_path_content = sub_path.split("/")
-        for index in range(len(sub_path_content)):
-            path = f'{settings.BASE_DIR}{"/".join(sub_path_content[:index+1])}'
-            if not os.path.exists(path):
-                os.mkdir(path)
+    sub_path = target_path.replace(str(settings.BASE_DIR), '')
+    sub_path_content = sub_path.split("/")
+    for index in range(len(sub_path_content)):
+        path = f'{settings.BASE_DIR}{"/".join(sub_path_content[:index+1])}'
+        if not os.path.exists(path):
+            os.mkdir(path)
 
 @receiver(pre_save, sender=User)
 def user_verify_signal(sender, instance, **kwargs):
@@ -100,6 +102,19 @@ def create_profile_image(sender, instance, created, **kwargs):
         make_path(profile_folder_path)
         create_letter_image(initials, f'{profile_folder_path}/{file_name}')
         instance.profile_image = f'{relative_profile_folder_path}/{file_name}'
+        instance.save()
+    
+    print(instance)
+    
+    if not instance.stripe_customer_id:
+
+        customer = stripe.Customer.create(
+            email=instance.email,
+            phone=instance.mobile_number,
+            name=f"{instance.first_name} {instance.last_name}"
+        )
+        # Save the Stripe customer ID to your user model
+        instance.stripe_customer_id = customer.id
         instance.save()
 
             

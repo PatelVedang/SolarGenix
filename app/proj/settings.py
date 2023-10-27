@@ -54,6 +54,8 @@ INSTALLED_APPS = [
     'scanner',
     'celery',
     'corsheaders',
+    'payments',
+    # 'payments.apps.PaymentsConfig',
     # 'web_socket'
     ]
 
@@ -331,3 +333,8 @@ CACHES = {
         }
     }
 }
+
+
+#Stripe
+STRIPE_PUBLISHABLE_KEY=os.environ.get('STRIPE_PUBLISHABLE_KEY', env('STRIPE_PUBLISHABLE_KEY'))
+STRIPE_SECRET_KEY=os.environ.get('STRIPE_SECRET_KEY', env('STRIPE_SECRET_KEY'))
