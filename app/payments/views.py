@@ -15,6 +15,11 @@ from rest_framework.permissions import IsAuthenticated
 from .serializers import *
 from rest_framework.decorators import action
 from user.models import User
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_POST
+import logging
+logger = logging.getLogger('django')
+from django.http import HttpResponse
 
 @method_decorator(name='list', decorator=swagger_auto_schema(tags=['Pricings'], operation_description= "List API.", operation_summary="API to get list of records."))
 @method_decorator(name='retrieve', decorator=swagger_auto_schema(tags=['Pricings'], operation_description= "Retrieve API.", operation_summary="API for retrieve single record by id."))
@@ -110,19 +115,19 @@ class CheckoutView(viewsets.ViewSet):
             if not price:
                 return response(data={}, status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, message="something went wrong")
 
-            intent = stripe.PaymentIntent.create(
-                description="Software development services",
-                amount=price['unit_amount_decimal'],
-                currency="cad",
-                payment_method_types=["card"],
-                metadata={
-                    'customer': request.user.stripe_customer_id,
-                    'price': price['id']
-                }
+            subscription = stripe.Subscription.create(
+                customer=request.user.stripe_customer_id,
+                items=[{
+                    'price': price['id'],
+                }],
+                payment_behavior='default_incomplete',
+                expand=['latest_invoice.payment_intent'],
             )
+            
             data = {
                 'publishable_key': publishable_key,
-                'client_secret': intent.client_secret
+                # 'client_secret': intent.client_secret
+                'client_secret': subscription.latest_invoice.payment_intent.client_secret
             }
             return response(data=data, status_code=status.HTTP_200_OK, message="Intent created.")
 
@@ -192,8 +197,88 @@ class CreateSubscriptionView(generics.CreateAPIView):
                     payment_behavior='default_incomplete',
                     expand=['latest_invoice.payment_intent'],
                 )
-                print(subscription, "=>>>Subscription CReated")
                 return response(data={}, status_code=status.HTTP_200_OK, message="subscription created successfully.")
             except Exception as e:
                 return response(data={}, status_code=status.HTTP_400_BAD_REQUEST, message=str(e))
 
+@method_decorator(csrf_exempt, name='dispatch')
+class StripeWebHooks(generics.GenericAPIView):
+    def post(self, request, *args, **kwargs):
+        stripe.api_key = settings.STRIPE_SECRET_KEY
+        webhook_secret = settings.STRIPE_WEBHOOK_SECRET
+        payload = request.body
+        sig_header = request.META['HTTP_STRIPE_SIGNATURE']
+        event = None
+
+        try:
+            event = stripe.Webhook.construct_event(
+                payload, sig_header, webhook_secret
+            )
+        except ValueError as e:
+            # Invalid payload
+            return HttpResponse(status=400)
+        except stripe.error.SignatureVerificationError as e:
+            # Invalid signature
+            return HttpResponse(status=400)
+        
+        try:
+            # Handle the payment_intent.succeeded event
+            if event['type'] == 'payment_intent.succeeded':
+                # Getting customer from stripe invoice
+                cust_id = event['data']['object']['customer']
+                
+                # Checking same user present in our db
+                user = User.objects.filter(stripe_customer_id=cust_id)
+                if user.exists():
+                    # if user prent in our db
+                    invoice_id = event['data']['object']['invoice']
+                    # getting invoice record
+                    invoice = stripe.Invoice.retrieve(
+                        invoice_id
+                    )
+                    # if record not found
+                    if not invoice:
+                        return response(data={}, status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, message="something went wrong")
+                    # set all necessary deatils
+                    product_id = invoice['lines']['data'][0]['price']['product']
+                    price_id = invoice['lines']['data'][0]['price']['id']
+                    subscription_id = invoice['subscription']
+                    
+                    # getting product record
+                    product = stripe.Product.retrieve(product_id)
+
+                    # if product doesn't exist 
+                    if not product:
+                        return response(data={}, status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, message="something went wrong")
+
+                    # getting subscription record
+                    subscription = stripe.Subscription.retrieve(subscription_id)
+
+                    # if subscription doesn't exist 
+                    if not subscription:
+                        return response(data={}, status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, message="something went wrong")
+
+                    # getting product metadata
+                    prod_metadata = product.get('metadata', {})
+                    
+                    # if product metadat is empty
+                    if not prod_metadata:
+                        return response(data={}, status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, message="something went wrong")
+
+                    # Creating subscription object in our db
+                    PaymentHistory.objects.create(
+                        user=user[0],
+                        stripe_subscription_id=subscription_id,
+                        price_id=price_id,
+                        status = 1,
+                        current_period_start = datetime.utcfromtimestamp(subscription['current_period_start']).replace(tzinfo=timezone.utc),
+                        current_period_end = datetime.utcfromtimestamp(subscription['current_period_end']).replace(tzinfo=timezone.utc),
+                        ip_limit = int(prod_metadata.get('ip_limit','1'))
+                    )
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            logger.error(str(e))
+            return HttpResponse(status=400)
+        
+        return HttpResponse(status=200)

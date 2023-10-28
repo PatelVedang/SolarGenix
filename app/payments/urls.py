@@ -12,7 +12,5 @@ router.register('plan', views.PaymentHistoryView, basename='plan')
 urlpatterns = [
     path('', include(router.urls)),
     path('payment/create-subscription', views.CreateSubscriptionView.as_view(), name='create-subscription'),
-    # path('test-payment/', views.test_payment, name='test-payment'),
-    # path('save-stripe-info/', views.save_stripe_info, name='test-payment')
-    # url(r'^confirm-payment-intent/$', views.confirm_payment_intent),
+    path('payment/webhook', views.StripeWebHooks.as_view(), name='webhook')
 ]
