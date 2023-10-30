@@ -634,7 +634,7 @@ class OrderViewSet(viewsets.ModelViewSet, Common):
         """
 
         today = datetime.utcnow()
-        current_sub = PaymentHistory.objects.filter(status=1, current_period_start__lte=today, current_period_end__gte=today, user=request.user.id)
+        current_sub = PaymentHistory.objects.filter(status=1,user=request.user.id).order_by('-created_at').filter(current_period_start__lte=today, current_period_end__gte=today)
         if request.user.role.id!=1:
             if current_sub.exists():
                 ip_limit = current_sub[0].ip_limit

@@ -35,7 +35,7 @@ class PricingView(viewsets.ViewSet):
         prices['data'] = prices['data'][::-1]
         prices['publishable_key']=publishable_key
         today = datetime.utcnow()
-        active_subscriptions = PaymentHistory.objects.filter(status=1, current_period_start__lte=today, current_period_end__gte=today, user=request.user.id)
+        active_subscriptions = PaymentHistory.objects.filter(status=1,user=request.user.id).order_by('-created_at').filter(current_period_start__lte=today, current_period_end__gte=today)
         serializer = PaymentHistorySerializer(active_subscriptions, many=True)
         prices['active_subscription'] = serializer.data
         return response(data=prices, status_code=status.HTTP_200_OK, message="Pricing found.")
@@ -264,6 +264,10 @@ class StripeWebHooks(generics.GenericAPIView):
                     # if product metadat is empty
                     if not prod_metadata:
                         return response(data={}, status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, message="something went wrong")
+
+                    
+                    # Expire all active subscription of current user
+                    PaymentHistory.objects.filter(status=1,user=user[0].id).update(status=2)
 
                     # Creating subscription object in our db
                     PaymentHistory.objects.create(
