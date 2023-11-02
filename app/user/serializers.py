@@ -18,6 +18,8 @@ from django.contrib.auth.hashers import check_password
 import threading
 import uuid
 from rest_framework_simplejwt.tokens import Token
+from rest_framework_simplejwt.serializers import TokenVerifySerializer
+from rest_framework_simplejwt.tokens import AccessToken
 
 
 # The RoleSerializer class is a serializer for the Role model, specifying the fields to be included in
@@ -68,91 +70,75 @@ class RegisterSerializer(serializers.ModelSerializer):
         logger.info(f'serialize_data: {json.dumps(attrs)}')
         del attrs['confirm_password']
         attrs['password'] = make_password(attrs['password'])
+        attrs['is_verified'] = True
+        role_id = Role.objects.filter(name='user')[0].id
+        attrs['role_id'] = role_id
         return super().validate(attrs)
 
-    def create(self, validated_data):
-        user = super().create(validated_data)
-        admin = User.objects.get(id=1)
+    # def create(self, validated_data):
+    #     user = super().create(validated_data)
+    #     admin = User.objects.get(id=1)
 
-        role_id = Role.objects.filter(name='user')[0].id
-        verification_token = str(uuid.uuid4())
-        token_expiration = datetime.utcnow() + timedelta(hours=1)
-        link="https://google.com"
-        user_name = f"{user.first_name} {user.last_name}".upper()
-        user_email = user.email
-        user_created_at = user.created_at
-        admin_name = f"{admin.first_name} {admin.last_name}".upper()
+    #     role_id = Role.objects.filter(name='user')[0].id
+    #     verification_token = str(uuid.uuid4())
+    #     token_expiration = datetime.utcnow() + timedelta(hours=1)
+    #     link="https://google.com"
+    #     user_name = f"{user.first_name} {user.last_name}".upper()
+    #     user_email = user.email
+    #     user_created_at = user.created_at
+    #     admin_name = f"{admin.first_name} {admin.last_name}".upper()
         
 
-        # End-user mail confirmation
-        email_body =  f'''
-        Dear {user_name},
+    #     # End-user mail confirmation
+    #     email_body =  f'''
+    #     Dear {user_name},
 
-        Thank you for registering on Cyber Appliance. We're delighted to have you as a part of our community!
+    #     Thank you for registering on Cyber Appliance. We're delighted to have you as a part of our community!
 
-        Your account has been created, but it is currently pending activation by our admin team. Please allow us some time to review your account information.
-        '''
-        thread= threading.Thread(target=send_email,
-                                kwargs={
-                                    'subject':'Welcome to Cyber Appliance',
-                                    'body':email_body,
-                                    'sender':settings.BUSINESS_EMAIL,
-                                    'recipients':[validated_data.get("email")],
-                                    'html_template':'user-confirmation.html',
-                                    'user_name':user_name
-                                })
-        thread.start()
+    #     Your account has been created, but it is currently pending activation by our admin team. Please allow us some time to review your account information.
+    #     '''
+    #     thread= threading.Thread(target=send_email,
+    #                             kwargs={
+    #                                 'subject':'Welcome to Cyber Appliance',
+    #                                 'body':email_body,
+    #                                 'sender':settings.BUSINESS_EMAIL,
+    #                                 'recipients':[validated_data.get("email")],
+    #                                 'html_template':'user-confirmation.html',
+    #                                 'user_name':user_name
+    #                             })
+    #     thread.start()
 
-        # Admin mail confirmation
-        email_body =  f'''
-        Hello {admin_name},
+    #     # Admin mail confirmation
+    #     email_body =  f'''
+    #     Hello {admin_name},
 
-        A new user has registered on Cyber Appliance. Please review the user's information and consider activating their account. Here are the details:
+    #     A new user has registered on Cyber Appliance. Please review the user's information and consider activating their account. Here are the details:
 
-        User Details:
-        Name : {user_name}
-        Email: {user_email}
-        Registartion Date: {user_created_at}
-        '''
-        from django.utils.html import strip_tags
-        print(strip_tags(email_body),"=>>>>>>>>>>Email body")    
-        thread= threading.Thread(target=send_email,
-                                kwargs={
-                                    'subject': f'New User Registration: {user_name}',
-                                    'body':email_body,
-                                    'sender':settings.BUSINESS_EMAIL,
-                                    'recipients':[admin.email],
-                                    'html_template':'admin-confirmation.html',
-                                    'user_name':user_name,
-                                    'user_email':user_email,
-                                    'user_created_at':user_created_at,
-                                    'admin_name':admin_name
-                                })
-        thread.start()
+    #     User Details:
+    #     Name : {user_name}
+    #     Email: {user_email}
+    #     Registartion Date: {user_created_at}
+    #     '''
+    #     from django.utils.html import strip_tags
+    #     print(strip_tags(email_body),"=>>>>>>>>>>Email body") 
+    #     thread= threading.Thread(target=send_email,
+    #                             kwargs={
+    #                                 'subject': f'New User Registration: {user_name}',
+    #                                 'body':email_body,
+    #                                 'sender':settings.BUSINESS_EMAIL,
+    #                                 'recipients':[admin.email],
+    #                                 'html_template':'admin-confirmation.html',
+    #                                 'user_name':user_name,
+    #                                 'user_email':user_email,
+    #                                 'user_created_at':user_created_at,
+    #                                 'admin_name':admin_name
+    #                             })
+    #     thread.start()
 
+    #     user.role_id = role_id
+    #     user.save()
 
-
-        # email = validated_data.get("email")
-        # link = f"{settings.PDF_DOWNLOAD_ORIGIN}/api/auth/verifyUserToken/{verification_token}"
-        # email_body =  f'Please confirm that {email} is your email address by use this link {link} within 1 hour.'
-        user.role_id = role_id
-        # user.verification_token = verification_token
-        # user.token_expiration = token_expiration
-        user.save()
-        
-        # thread= threading.Thread(target=send_email,
-        #                          kwargs={
-        #                             'subject':'Verify User',
-        #                             'body':email_body,
-        #                             'sender':settings.BUSINESS_EMAIL,
-        #                             'recipients':[validated_data.get("email")],
-        #                             'fail_silently':False,
-        #                             'link':link,
-        #                             'email':email,
-        #                             'allow_html':True
-        #                         })
-        # thread.start()
-        return user
+    #     return user
 
 
 class LoginSerializer(TokenObtainPairSerializer):
@@ -187,8 +173,6 @@ class CustomTokenRefreshSerializer(TokenRefreshSerializer):
         User.objects.filter(email=decoded_payload.get('user').get('email')).update(last_login=timezone.now())
         return data
 
-from rest_framework_simplejwt.serializers import TokenVerifySerializer
-from rest_framework_simplejwt.tokens import AccessToken
 class CustomTokenVerifySerializer(TokenVerifySerializer):
     def validate(self, attrs):
         res =super().validate(attrs)

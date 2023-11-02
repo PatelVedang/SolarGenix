@@ -104,8 +104,6 @@ def create_profile_image(sender, instance, created, **kwargs):
         instance.profile_image = f'{relative_profile_folder_path}/{file_name}'
         instance.save()
     
-    print(instance)
-    
     if not instance.stripe_customer_id:
 
         customer = stripe.Customer.create(

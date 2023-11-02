@@ -25,7 +25,7 @@ from django.shortcuts import get_object_or_404
 from utils.message import send
 from web_socket.serializers import SendMessageSerializer
 import time
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from django.conf import settings
 import logging
 logger = logging.getLogger('django')
@@ -34,6 +34,8 @@ from django.core.cache import cache
 from utils.cache_helper import Cache
 from utils.email import send_email
 pdf= PDF()
+from django.db.models import Q
+from dateutil.relativedelta import relativedelta
 
 class Common:
 
@@ -86,6 +88,18 @@ class Common:
                 Cache.update(key=f'order_{order.get("id")}',**{'status': 2})
 
         return order_scan_finish
+
+    def get_active_plan(self, user):
+
+        today = datetime.utcnow()
+        return PaymentHistory.objects.filter(
+            Q(status=1) &
+            Q(user=user) &
+            Q(current_period_start__lte=today) &
+            Q(current_period_end__isnull=True) |
+            Q(current_period_end__gte=today)
+        ).order_by('-created_at')
+
 
     def delete_order_targets_cache(self, order_id):
         """
@@ -283,7 +297,9 @@ class ScanViewSet(viewsets.ModelViewSet, Common):
         """
         self.serializer_class = ScannerResponseSerializer
         serializer = super().retrieve(request, *args, **kwargs)
-        pdf_path, pdf_name, file_url = pdf.generate(request.user.role, request.user.id, serializer.data.get('order'), [serializer.data.get('id')])
+        today = datetime.utcnow()
+        active_plan = super().get_active_plan(request.user).exists()
+        pdf_path, pdf_name, file_url = pdf.generate(request.user.role, request.user.id, serializer.data.get('order'), active_plan, [serializer.data.get('id')])
         
         data = {
             'file_path':file_url
@@ -310,7 +326,9 @@ class ScanViewSet(viewsets.ModelViewSet, Common):
         """
         self.serializer_class = ScannerResponseSerializer
         serializer = super().retrieve(request, *args, **kwargs)
-        pdf_path, pdf_name, file_url = pdf.generate(request.user.role, request.user.id, serializer.data.get('order'), [serializer.data.get('id')])
+        today = datetime.utcnow()
+        active_plan = super().get_active_plan(request.user).exists()
+        pdf_path, pdf_name, file_url = pdf.generate(request.user.role, request.user.id, serializer.data.get('order'), active_plan, [serializer.data.get('id')])
         FilePointer = open(pdf_path,"rb")
         response = HttpResponse(FilePointer,content_type='application/pdf')
         response['Content-Disposition'] = f'attachment; filename={pdf_name}'
@@ -334,8 +352,9 @@ class ScanViewSet(viewsets.ModelViewSet, Common):
         """
         self.serializer_class = ScannerResponseSerializer
         serializer = super().retrieve(request, *args, **kwargs)
-        
-        html_data = pdf.generate(request.user.role, request.user.id, serializer.data.get('order'), [serializer.data.get('id')], generate_pdf=False)
+        today = datetime.utcnow()
+        active_plan = super().get_active_plan(request.user).exists()
+        html_data = pdf.generate(request.user.role, request.user.id, serializer.data.get('order'), active_plan, [serializer.data.get('id')], generate_pdf=False)
 
         data = {
             'html_content':html_data
@@ -510,7 +529,9 @@ class SendMessageView(generics.GenericAPIView, Common):
                         if request.user.subscription.mail_scan_result:
                             # sending mail on scan complete of batch of targets
                             targets_ids = [target.get('id') for target in order['targets']]
-                            pdf_path, pdf_name, file_url = pdf.generate(request.user.role, request.user.id, order_id, targets_ids)
+                            today = datetime.utcnow()
+                            active_plan = super().get_active_plan(request.user).exists()
+                            pdf_path, pdf_name, file_url = pdf.generate(request.user.role, request.user.id, order_id, active_plan, targets_ids)
                             user_name = f"{order['client']['first_name']} {order['client']['last_name']}".upper()
                             email_body =  f'''Dear {user_name},\n\nI hope this email finds you well. I am writing to inform you about the successful completion of the recent security scan conducted on {order['target_ip']}. The attached PDF file contains the detailed scan results, outlining the findings and security status of the website.\n\nPlease find the attached PDF document named "output.pdf." In case you have any questions or need further clarification regarding the findings, feel free to reach out to us.
                             '''
@@ -576,7 +597,9 @@ class SendMessageView(generics.GenericAPIView, Common):
                         print(request.user.subscription.mail_scan_result,"=>>>>>>>>Mail Scan  result")
                         if request.user.subscription.mail_scan_result:
                             # sending mail on scan complete of single target
-                            pdf_path, pdf_name, file_url = pdf.generate(request.user.role, request.user.id, order_id, [record_obj["id"]])
+                            today = datetime.utcnow()
+                            active_plan = super().get_active_plan(request.user).exists()
+                            pdf_path, pdf_name, file_url = pdf.generate(request.user.role, request.user.id, order_id, active_plan, [record_obj["id"]])
                             user_name = f"{order['client']['first_name']} {order['client']['last_name']}".upper()
                             email_body =  f'''Dear {user_name},\n\nI hope this email finds you well. I am writing to inform you about the successful completion of the recent security scan conducted on {record_obj['ip']}. The attached PDF file contains the detailed scan results, outlining the findings and security status of the website.\n\nPlease find the attached PDF document named "output.pdf." In case you have any questions or need further clarification regarding the findings, feel free to reach out to us.
                             '''
@@ -632,28 +655,69 @@ class OrderViewSet(viewsets.ModelViewSet, Common):
         
         :param request: The request object
         """
-
-        today = datetime.utcnow()
-        current_sub = PaymentHistory.objects.filter(status=1,user=request.user.id).order_by('-created_at').filter(current_period_start__lte=today, current_period_end__gte=today)
-        if request.user.role.id!=1:
-            if current_sub.exists():
-                ip_limit = current_sub[0].ip_limit
-                orders = Order.objects.filter(client_id=request.user.id, created_at__gte=current_sub[0].current_period_start, created_at__lte=current_sub[0].current_period_end)
-                if orders.count()>=ip_limit:
-                    return response(data={}, status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, message="You have reached your IP limit. Please upgrade your account!!")
-            else:
-                ip_limit = 1
-                orders = Order.objects.filter(client_id=request.user.id)
-                if orders.count()>=ip_limit:
-                    return response(data={}, status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, message="You have reached your IP limit. Please upgrade your account!!")
-
         self.serializer_class = OrderSerailizer
         serializer = self.serializer_class(data=request.data)
         if serializer.is_valid(raise_exception=True):
             target_ip= serializer.data.get('target_ip')
-            order = Order.objects.create(client_id=request.user.id, subscrib_id=request.user.subscription_id, target_ip=target_ip)
-            custom_response = OrderResponseSerailizer(order, context={"request": request})
-            return response(data=custom_response.data, status_code=status.HTTP_200_OK, message="order successfully added in database")
+
+
+            today = datetime.utcnow()
+            current_sub = super().get_active_plan(request.user)
+            if request.user.role.id!=1:
+                # If user have any running subscription
+                if current_sub.exists():
+                    # Getting IP limit
+                    ip_limit = current_sub[0].ip_limit
+                    # Getting plan type (1, 'Recurring') (2, 'One Time')
+                    plan_type = current_sub[0].price_type
+                    if plan_type in [1,2]:
+                        # If plan is recurring
+                        orders = Order.default.filter(client_id=request.user.id, created_at__gte=current_sub[0].current_period_start, created_at__lte=current_sub[0].current_period_end)
+                        if orders.count()>=ip_limit:
+                            return response(data={}, status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, message="You have reached your IP limit. Please upgrade your account!!")
+                        
+                        one_month_ago = datetime.utcfromtimestamp(int((today - relativedelta(months=1)).timestamp())).replace(tzinfo=timezone.utc)
+                        if one_month_ago < current_sub[0].current_period_start:
+                            start = current_sub[0].current_period_start
+                            end = (current_sub[0].current_period_end if plan_type==1 else (today + relativedelta(months=1)))
+                        else:
+                            start = one_month_ago
+                            end = today
+                        
+                        # interval_orders = orders.filter(created_at__gte=start, created_at__lte=end)
+
+                        # if interval_orders.count()>=1:
+                        #     return response(data={}, status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, message="Oops! It seems you've hit the limit for IP usage this month.")
+                        
+                        same_ip_orders = orders.filter(created_at__gte=start, created_at__lte=end,target_ip=target_ip)
+
+                        if same_ip_orders.count()>=1:
+                            return response(data={}, status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, message="Oops! It seems like this IP address has already been scanned this month.")
+
+                    elif plan_type == 3:
+                        # If plan is only for one time
+                        orders = Order.default.filter(client_id=request.user.id, created_at__gte=current_sub[0].current_period_start, created_at__lte=today)
+
+                        if orders.count()>=ip_limit:
+                            return response(data={}, status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, message="You have reached your IP limit. Please upgrade your account!!")
+
+                        same_ip_orders = orders.filter(target_ip=target_ip)
+
+                        if same_ip_orders.count()>=1:
+                            return response(data={}, status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, message="Oops! It seems like you've already scanned this domain once. So please try another domain!")
+                else:
+                    # If user has free subscription
+                    ip_limit = 1
+                    start_date = today - timedelta(days=15)
+                    
+                    orders = Order.default.filter(client_id=request.user.id, created_at__gte=start_date, created_at__lte=today)
+                    if orders.count()>=ip_limit:
+                        return response(data={}, status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, message="You have reached your IP limit. Please upgrade your account!!")
+                    
+                    
+                order = Order.objects.create(client_id=request.user.id, subscrib_id=request.user.subscription_id, target_ip=target_ip)
+                custom_response = OrderResponseSerailizer(order, context={"request": request})
+                return response(data=custom_response.data, status_code=status.HTTP_200_OK, message="order successfully added in database")
         
     def list(self, request, *args, **kwargs):
         """
@@ -748,7 +812,9 @@ class OrderViewSet(viewsets.ModelViewSet, Common):
         self.serializer_class = OrderResponseSerailizer
         serializer = super().retrieve(request, *args, **kwargs)
         targets = [target.get('id') for target in (list(Target.objects.filter(order_id= serializer.data.get('id')).values('id')))]
-        pdf_path, pdf_name, file_url = pdf.generate(request.user.role, request.user.id, serializer.data.get('id'), targets_ids=targets, generate_order_pdf=True)
+        today = datetime.utcnow()
+        active_plan = super().get_active_plan(request.user).exists()
+        pdf_path, pdf_name, file_url = pdf.generate(request.user.role, request.user.id, serializer.data.get('id'), active_plan, targets_ids=targets, generate_order_pdf=True)
         data = {
             'file_path':file_url
         }

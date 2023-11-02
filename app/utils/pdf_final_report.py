@@ -62,7 +62,7 @@ class PDF:
         if os.path.exists(f'{file_path}'):
             os.remove(f'{file_path}')
 
-    def generate(self, role, user_id, order_id, targets_ids=[], generate_pdf=True, generate_order_pdf=False, re_generate = False):
+    def generate(self, role, user_id, order_id, active_plan, targets_ids=[], generate_pdf=True, generate_order_pdf=False, re_generate = False):
         order_obj = Order.objects.get(id=order_id)
         target_obj = None
         alert_objs = {}
@@ -127,7 +127,7 @@ class PDF:
       
             origin = ".".join(list(extract(ip))).strip(".")
             ip = socket.gethostbyname(origin)
-            generate_doc(role, cname='ISAIX',
+            generate_doc(role, active_plan, cname='ISAIX',
                 scan_date=order_obj.created_at.strftime("%b %d %Y"),
                 vulnerabilities=alert_objs,
                 user_name = f"{order_obj.client.first_name} {order_obj.client.last_name}".upper(),

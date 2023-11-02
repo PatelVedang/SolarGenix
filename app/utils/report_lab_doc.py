@@ -184,7 +184,7 @@ h2_header = PS(name= 'HeaderSubTitle',
     spaceAfter=10,
     alignment=TA_CENTER)
 
-def generate_doc(role, cname, scan_date, vulnerabilities, user_name, user_company, user_company_address, profile_image, risk_levels, output_path, hosts=[[]],  multiple_ip=False):
+def generate_doc(role, active_plan, cname, scan_date, vulnerabilities, user_name, user_company, user_company_address, profile_image, risk_levels, output_path, hosts=[[]],  multiple_ip=False):
 
     """
     Generates a vulnerability scan report in PDF format.
@@ -340,10 +340,12 @@ def generate_doc(role, cname, scan_date, vulnerabilities, user_name, user_compan
     story.append(PageBreak())
     story.append(Paragraph('<a name="summary"></a><b>{}. Summary</b>'.format(section_number), h1))
 
-    story.append(Paragraph('<a name="exec"></a><b>{}.{} Executive Summary</b>'.format(section_number, summary_section_number), h2))
-    story.append(Paragraph("This report presents the results of the external reconnaissance and vulnerability detection conducted by IsaiX. This scan was conducted using non-credentialed access via a black-box testing approach which scans your external-facing assets (ex. web applications, web services, company websites) to reveal vulnerabilities and web server misconfigurations. These assets are most susceptible to attack and their vulnerabilities are frequently the most exploited.", content))
-    story.append(Paragraph("This vulnerability assessment may have identified flaws that your company should address diligently in order to prevent their exploitation, in consideration of the nature, severity and context of the risk associated with each vulnerability. The details of the vulnerabilities identified, their severity is presented in this document and references to two cyber security industry standard database resources, the Common Vulnerabilities and Exposures (CVE) and the Common Weakness Enumeration (CWE), are provided for further details.", content))
-    summary_section_number+=1
+    if active_plan or role.id==1:
+        story.append(Paragraph('<a name="exec"></a><b>{}.{} Executive Summary</b>'.format(section_number, summary_section_number), h2))
+        story.append(Paragraph("This report presents the results of the external reconnaissance and vulnerability detection conducted by IsaiX. This scan was conducted using non-credentialed access via a black-box testing approach which scans your external-facing assets (ex. web applications, web services, company websites) to reveal vulnerabilities and web server misconfigurations. These assets are most susceptible to attack and their vulnerabilities are frequently the most exploited.", content))
+        story.append(Paragraph("This vulnerability assessment may have identified flaws that your company should address diligently in order to prevent their exploitation, in consideration of the nature, severity and context of the risk associated with each vulnerability. The details of the vulnerabilities identified, their severity is presented in this document and references to two cyber security industry standard database resources, the Common Vulnerabilities and Exposures (CVE) and the Common Weakness Enumeration (CWE), are provided for further details.", content))
+        summary_section_number+=1
+    
     story.append(Paragraph('<a name="results"></a><b>{}.{} Risk Profile</b>'.format(section_number, summary_section_number), h2))
     story.append(Paragraph("Vulnerabilities identified by the scan are grouped and classified for each target as critical, high, medium, low, and informative. The higher the vulnerability is rated, the greater the likelihood that this vulnerability could be exploited as avenues of attack resulting in, for example only, unauthorized access, data breaches, deletions and theft or system system disruption.", content))
     story.append(Paragraph("The number, type and severity of the identified vulnerabilities, identified in this report may reveal how well your systems are being maintained. To assess the overall risk to your business operations you must consider the context of the vulnerability, value of the asset that could be compromised, the type of data that could be lost or stolen, against the impact of a breach.", content))
@@ -419,246 +421,247 @@ def generate_doc(role, cname, scan_date, vulnerabilities, user_name, user_compan
     story.append(PageBreak())
     section_number = section_number + 1
 
-    # Risk Evaluation
-    story.append(Paragraph('<a name="risk_evaluation"></a><b>{}. Risk Evaluation</b>'.format(section_number), h1))
-    story.append(Paragraph("Two well-known industry standard classification systems were applied to assess the severity of vulnerabilities. These were: Common Vulnerability Scoring System (CVSS) versions 3.0 and 2.0. CVSS assigns severity scores to facilitate the prioritization of action plans according to the threat. Scores are calculated based on a formula that depends on several metrics that approximate ease and impact of an exploit. Scores range from 0 to 10, with 10 being the most severe.", content))
+    if active_plan or role.id==1:
+        # Risk Evaluation
+        story.append(Paragraph('<a name="risk_evaluation"></a><b>{}. Risk Evaluation</b>'.format(section_number), h1))
+        story.append(Paragraph("Two well-known industry standard classification systems were applied to assess the severity of vulnerabilities. These were: Common Vulnerability Scoring System (CVSS) versions 3.0 and 2.0. CVSS assigns severity scores to facilitate the prioritization of action plans according to the threat. Scores are calculated based on a formula that depends on several metrics that approximate ease and impact of an exploit. Scores range from 0 to 10, with 10 being the most severe.", content))
 
-    table_header_style = PS(name='tableHead',
-                    textColor= colors.white,
-                    alignment = TA_CENTER,
-                    fontSize = 11,
-                    leading = 10
-                    )
-
-
-    # Define your data for the table
-    risk_eval_table_data = [
-        [Paragraph('Severity', table_header_style), Paragraph('CVSS v3.0', table_header_style), Paragraph('CVSS v2.0', table_header_style), Paragraph('Definition', table_header_style)],
-        ['Critical', '9.0-10.0', 'Not supporting',Paragraph('The presence of a flaw is confirmed and is currently exploited or easily exploited by attackers on the Internet. Without immediate attention, the reputation and operations of the company will be compromised.')],
-        ['High', '7.0-8.9', '7.0-10.0',Paragraph('The presence of a fault is confirmed. Exploitation of this vulnerability does not require very high technical and / or material capacities.')],
-        ['Medium', '4.0-6.9', '4.0-6.9',Paragraph('The presence of a fault is to be confirmed. The configuration is not optimal and should be improved, however, this has no immediate impact on the security of the system. More difficult vulnerabilities to exploit that can lead to a denial of service and possibly loss of confidentiality')],
-        ['Low', '0.1-3.9', '0.0-3.9',Paragraph('The presence of a fault could not be determined with certainty, however, there are several signs that the system is vulnerable, and that further exploration is needed to confirm the existence of this flaw. These vulnerabilities can lead to loss of confidentiality')],
-    ]
-
-    # Get the sample style sheet
-    styles = getSampleStyleSheet()
+        table_header_style = PS(name='tableHead',
+                        textColor= colors.white,
+                        alignment = TA_CENTER,
+                        fontSize = 11,
+                        leading = 10
+                        )
 
 
-    # Create the table with the data
-    risk_table = Table(risk_eval_table_data, colWidths=[2*cm, 3*cm, 3*cm, 10.5*cm])  # Adjust the column widths here
+        # Define your data for the table
+        risk_eval_table_data = [
+            [Paragraph('Severity', table_header_style), Paragraph('CVSS v3.0', table_header_style), Paragraph('CVSS v2.0', table_header_style), Paragraph('Definition', table_header_style)],
+            ['Critical', '9.0-10.0', 'Not supporting',Paragraph('The presence of a flaw is confirmed and is currently exploited or easily exploited by attackers on the Internet. Without immediate attention, the reputation and operations of the company will be compromised.')],
+            ['High', '7.0-8.9', '7.0-10.0',Paragraph('The presence of a fault is confirmed. Exploitation of this vulnerability does not require very high technical and / or material capacities.')],
+            ['Medium', '4.0-6.9', '4.0-6.9',Paragraph('The presence of a fault is to be confirmed. The configuration is not optimal and should be improved, however, this has no immediate impact on the security of the system. More difficult vulnerabilities to exploit that can lead to a denial of service and possibly loss of confidentiality')],
+            ['Low', '0.1-3.9', '0.0-3.9',Paragraph('The presence of a fault could not be determined with certainty, however, there are several signs that the system is vulnerable, and that further exploration is needed to confirm the existence of this flaw. These vulnerabilities can lead to loss of confidentiality')],
+        ]
 
-    # Add some style to the table (borders, background colors, fonts, etc.)
-    style = TableStyle([
-        ('BACKGROUND', (0,0), (-1,0), colors.grey),  # Grey background color for header row
-        ('TEXTCOLOR', (0,0), (-1,0), colors.whitesmoke),  # Change the header text color to white
-        ('ALIGN', (0,0), (2,-1), 'CENTER'),  # Center align the header and the first 2 columns of data
-        ('VALIGN', (0,0), (2,-1), 'MIDDLE'),  # Center justify the header and the first 2 columns of data
-        ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),  # Change the font of the header row to Helvetica-Bold
-        ('FONTSIZE', (0,0), (-1,0), 10),  # Change the font size of the header row to 10
-        ('BOTTOMPADDING', (0,0), (-1,0), 12),  # Add more space at the bottom of the header row text
-        ('BACKGROUND', (0,1), (0,1), colors.purple),  # Add purple background color to first row, first cell
-        ('BACKGROUND', (0,2), (0,2), colors.red),  # Add red background color to second row, first cell
-        ('BACKGROUND', (0,3), (0,3), colors.orange),  # Add orange background color to third row, first cell
-        ('BACKGROUND', (0,4), (0,4), colors.yellow),  # Add yellow background color to fourth row, first cell
-        ('GRID', (0,0), (-1,-1), 1, colors.black),  # Add a black grid around the cells
-        ('TEXTCOLOR', (0,1), (0, -1), colors.white), # Make font color white for all severity
-        ('TEXTCOLOR', (0,4), (0, 4), colors.black), # Make font color black for Low severity
-    ])
+        # Get the sample style sheet
+        styles = getSampleStyleSheet()
 
 
-    # Add the style to the table
-    risk_table.setStyle(style)
+        # Create the table with the data
+        risk_table = Table(risk_eval_table_data, colWidths=[2*cm, 3*cm, 3*cm, 10.5*cm])  # Adjust the column widths here
 
-    # Append the table to the story
-    story.append(risk_table)
-
-    story.append(PageBreak())
-
-    # Summary of Findings
-    section_number = section_number + 1
-    summary_find_section_num = 1
-    story.append(Paragraph('<a name="summary_of_findings"></a><b>{}. Summary of Findings</b>'.format(section_number), h1))
-    story.append(Paragraph('In this section, the results of the external scans are represented.', content))
-
-    story.append(Paragraph('{}.{} Major Vulnerabilities List'.format(section_number, summary_find_section_num), h2))
-
-    if role.tool_access:
-        table_header = [Paragraph('Vulnerability', table_header_style), Paragraph('System', table_header_style), Paragraph('Risk Level', table_header_style), Paragraph('No. of Instances', table_header_style), Paragraph('Alert Detection Tool', table_header_style)]
-    else:
-        table_header = [Paragraph('Vulnerability', table_header_style), Paragraph('System', table_header_style), Paragraph('Risk Level', table_header_style), Paragraph('No. of Instances', table_header_style)]
-    top_vulns = []
-
-    # Only get alerts with high enough risk
-    for i, obj in enumerate(vulnerabilities.values()):
-        if obj.get('complexity') in ['Critical', 'High', 'Medium', 'Low', 'Informational']:
-            alert_ref = obj['alert_ref']
-            error = obj['error']
-            extracted_data = [
-                Paragraph('<a href="#{}" color="blue">{}</a>'.format(alert_ref,error), style=styles["Normal"]),
-                cname,
-                obj['complexity'],
-                obj['instances'],
-                Paragraph(obj['tool'], style=styles["Normal"])
-            ]
-            if not role.tool_access:
-                del extracted_data[4]
-
-            top_vulns.append(extracted_data)
- 
-    top_vulns.insert(0, table_header)
-
-    color_dict = {
-        'Critical': {'bg_color': colors.purple, 'font_color': colors.white},
-        'High': {'bg_color': colors.red, 'font_color': colors.white},
-        'Medium': {'bg_color': colors.orange, 'font_color': colors.white},
-        'Low': {'bg_color': colors.yellow, 'font_color': colors.black},
-        'Informational': {'bg_color': colors.blue, 'font_color': colors.white},
-    }
-
-    style = TableStyle([
-        ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
-        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-        ('ALIGN', (0, 0), (-1, 0), 'CENTER'),
-        ('VALIGN', (0,0), (-1,0), 'MIDDLE'),
-        ('BOTTOMPADDING', (0,0), (-1,0), 12),
-        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-        ('FONTSIZE', (0, 0), (-1, 0), 14),
-        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-        ('GRID', (0, 0), (-1, -1), 1, colors.black),
-        ('ALIGN', (1, 1), (-1, -1), 'CENTER'),
-        ('VALIGN', (1, 1), (-1, -1), 'MIDDLE'),
-    ])
-
-    for index, row in enumerate(top_vulns):
-        if index > 0:  # Skip header row
-            level = row[2]
-            if level in color_dict:
-                style.add('BACKGROUND', (2, index), (2, index), color_dict[level]['bg_color'])
-                style.add('TEXTCOLOR', (2, index), (2, index), color_dict[level]['font_color'])
-
-    if role.tool_access:
-        majorVulnTable = Table(top_vulns,  colWidths=[9.9*cm, 1.8*cm, 2.4*cm, 2.1*cm, 2.5*cm])
-    else:
-        majorVulnTable = Table(top_vulns,  colWidths=[9.9*cm, 1.8*cm, 3.5*cm, 3.5*cm])
-    majorVulnTable.setStyle(style)
-    story.append(majorVulnTable)
-
-    story.append(PageBreak())
-
-
-    # Scan Overview
-    if multiple_ip:
-        section_number = section_number + 1
-        story.append(Paragraph('<a name="scan_overview"></a><b>{}. Scan Overview</b>'.format(section_number), h1))
-        story.append(Paragraph('This section represents the Number of Occurrences for each identified vulnerability per IP / Host along with their risk level. Please note that the Number of Occurrence increases if the same vulnerability is found on another website on the same IP/Host:', content))
-
+        # Add some style to the table (borders, background colors, fonts, etc.)
         style = TableStyle([
-            ('BACKGROUND', (0, 0), (0, 0), colors.purple),  # color for header cell in column 1
-            ('BACKGROUND', (1, 0), (1, 0), colors.red),  # color for header cell in column 2
-            ('BACKGROUND', (2, 0), (2, 0), colors.orange),  # color for header cell in column 3
-            ('BACKGROUND', (3, 0), (3, 0), colors.yellow),  # color for header cell in column 4
-            ('BACKGROUND', (4, 0), (4, 0), colors.blue),  # color for header cell in column 5
+            ('BACKGROUND', (0,0), (-1,0), colors.grey),  # Grey background color for header row
             ('TEXTCOLOR', (0,0), (-1,0), colors.whitesmoke),  # Change the header text color to white
-            ('TEXTCOLOR', (3, 0), (3, 0), colors.black),
-            ('ALIGN', (0,0), (-1,-1), 'CENTER'),  # Align all text to center
+            ('ALIGN', (0,0), (2,-1), 'CENTER'),  # Center align the header and the first 2 columns of data
+            ('VALIGN', (0,0), (2,-1), 'MIDDLE'),  # Center justify the header and the first 2 columns of data
             ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),  # Change the font of the header row to Helvetica-Bold
-            ('FONTSIZE', (0,0), (-1,0), 14),  # Change the font size of the header row to 14
+            ('FONTSIZE', (0,0), (-1,0), 10),  # Change the font size of the header row to 10
             ('BOTTOMPADDING', (0,0), (-1,0), 12),  # Add more space at the bottom of the header row text
+            ('BACKGROUND', (0,1), (0,1), colors.purple),  # Add purple background color to first row, first cell
+            ('BACKGROUND', (0,2), (0,2), colors.red),  # Add red background color to second row, first cell
+            ('BACKGROUND', (0,3), (0,3), colors.orange),  # Add orange background color to third row, first cell
+            ('BACKGROUND', (0,4), (0,4), colors.yellow),  # Add yellow background color to fourth row, first cell
             ('GRID', (0,0), (-1,-1), 1, colors.black),  # Add a black grid around the cells
-            # ('TEXTCOLOR', (0,1), (0, -1), colors.white), # Make font color of Severity to white
-            # ('TEXTCOLOR', (0,4), (0, 4), colors.black), # Make black color for severity Low
+            ('TEXTCOLOR', (0,1), (0, -1), colors.white), # Make font color white for all severity
+            ('TEXTCOLOR', (0,4), (0, 4), colors.black), # Make font color black for Low severity
         ])
-        # Scan overview for multi-host
-        for host in hosts:
-            story.append(Paragraph(text="Host: {}".format(host[0]), style=h2))
-            host_info = [
-                host[2],
-                ['Critical', 'High', 'Medium', 'Low', 'Info']
-            ]
-            host_info_table = Table(host_info, colWidths=(3.65*cm,3.65*cm,3.65*cm,3.65*cm,3.65*cm))
-            
-            host_info_table.setStyle(style)
-            story.append(host_info_table)
-            story.append(Spacer(1, 1*cm))
 
+
+        # Add the style to the table
+        risk_table.setStyle(style)
+
+        # Append the table to the story
+        story.append(risk_table)
 
         story.append(PageBreak())
 
-    # Detailed vulernability Analysis
-    section_number = section_number + 1
-    story.append(Paragraph('<a name="detailed_vulernability_analysis"></a><b>{}. Detailed vulernability Analysis</b>'.format(section_number), h1))
+        # Summary of Findings
+        section_number = section_number + 1
+        summary_find_section_num = 1
+        story.append(Paragraph('<a name="summary_of_findings"></a><b>{}. Summary of Findings</b>'.format(section_number), h1))
+        story.append(Paragraph('In this section, the results of the external scans are represented.', content))
 
-    for i, alert in enumerate(vulnerabilities.values()):
+        story.append(Paragraph('{}.{} Major Vulnerabilities List'.format(section_number, summary_find_section_num), h2))
 
-            extracted_data = [
-                alert['error'],
-                cname,
-                alert['complexity']
-            ]
-            alert_info = [['Risk Factor: {}'.format(alert['complexity']), 'Occurences: {}'.format(alert['instances'])]]
-            styles = getSampleStyleSheet()
-            cell_style = styles["BodyText"]
+        if role.tool_access:
+            table_header = [Paragraph('Vulnerability', table_header_style), Paragraph('System', table_header_style), Paragraph('Risk Level', table_header_style), Paragraph('No. of Instances', table_header_style), Paragraph('Alert Detection Tool', table_header_style)]
+        else:
+            table_header = [Paragraph('Vulnerability', table_header_style), Paragraph('System', table_header_style), Paragraph('Risk Level', table_header_style), Paragraph('No. of Instances', table_header_style)]
+        top_vulns = []
 
-            
-
-            table = Table(alert_info, colWidths=(9.3*cm))
-            style = TableStyle([
-                ('BACKGROUND', (0, 0), (-1, -1), colors.white),
-                ('TEXTCOLOR', (0, 0), (-1, -1), colors.white),
-                ('FONTNAME', (0, 0), (-1, -1), 'Helvetica-Bold'),
-                ('FONTSIZE', (0, 0), (-1, -1), 12),
-                ('ALIGN', (0, 0), (0, 0), 'LEFT'),  # First row first column alignment
-                ('ALIGN', (1, 0), (1, 0), 'RIGHT'),  # First row second column alignment
-                ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),  # Vertically align to the middle
-                ('WORDWRAP', (0, 0), (-1, -1), 1),
-                ('TOPPADDING', (0, 0), (-1, -1), 5),
-                ('BOTTOMPADDING', (0, 0), (-1, -1), 8.5),
-            ])
-
-            if alert['complexity'] == 'Critical':
-                style.add('BACKGROUND', (0, 0), (-1, 0), colors.purple)
-            elif alert['complexity'] == 'High':
-                style.add('BACKGROUND', (0, 0), (-1, 0), colors.red)
-            elif alert['complexity'] == 'Medium':
-                style.add('BACKGROUND', (0, 0), (-1, 0), colors.orange)
-            elif alert['complexity'] == 'Low':
-                style.add('BACKGROUND', (0, 0), (-1, 0), colors.yellow)
-                style.add('TEXTCOLOR', (0, 0), (-1, -1), colors.black)
-            else:
-                style.add('BACKGROUND', (0, 0), (-1, 0), colors.blue)
-
-
-            table.setStyle(style)
-            # This is where we render the vulnerability information
-            cvvs3 = "N/A"
-            cvvs2 = "N/A"
-            if alert['alert_json'].get('cvvs3'):
-                cvvs3 = alert['alert_json']['cvvs3']['base_score']
-            if alert['alert_json'].get('cvvs2'):
-                cvvs2 = alert['alert_json']['cvvs2']['base_score']
-
-            
-            vul_detail = [
-                Paragraph('<b><a name="{}"/>{}.{} {}</b>'.format(alert['alert_ref'],section_number, i+1, alert['error']), h2 if 'error' in alert else 'N/A'),
-                table, 
-                Spacer(1, 5),  
-                Paragraph('<b>Description:</b> {}'.format(escape(alert['alert_json']['description'])), content), 
-                Paragraph('<b>Solution: </b> {}'.format(alert['alert_json']['solution'] if 'solution' in alert['alert_json'] else 'N/A'), content),
-                Paragraph('<b>CVSS 3: </b> {}'.format(cvvs3), content),
-                Paragraph('<b>CVSS 2: </b> {}'.format(cvvs2), content),
-                Paragraph('<b>Tool: </b> {}'.format(alert['tool']), content),
-                Paragraph('<b>CWE: </b> {}'.format(alert.get('cwe_ids','N/A')), content),
-                Paragraph('<b>Evidence: </b>', content),
-                Paragraph(escape(alert.get('evidence','N/A')).replace("&amp;","&").replace("&lt;br/&gt;","<br/>"), content_layout)
+        # Only get alerts with high enough risk
+        for i, obj in enumerate(vulnerabilities.values()):
+            if obj.get('complexity') in ['Critical', 'High', 'Medium', 'Low', 'Informational']:
+                alert_ref = obj['alert_ref']
+                error = obj['error']
+                extracted_data = [
+                    Paragraph('<a href="#{}" color="blue">{}</a>'.format(alert_ref,error), style=styles["Normal"]),
+                    cname,
+                    obj['complexity'],
+                    obj['instances'],
+                    Paragraph(obj['tool'], style=styles["Normal"])
                 ]
-            
-            if not role.tool_access:
-                del vul_detail[7]
-            
-            table = KeepTogether(vul_detail)
+                if not role.tool_access:
+                    del extracted_data[4]
 
-            story.append(table)
-            story.append(Spacer(1, 1*cm))
+                top_vulns.append(extracted_data)
+    
+        top_vulns.insert(0, table_header)
+
+        color_dict = {
+            'Critical': {'bg_color': colors.purple, 'font_color': colors.white},
+            'High': {'bg_color': colors.red, 'font_color': colors.white},
+            'Medium': {'bg_color': colors.orange, 'font_color': colors.white},
+            'Low': {'bg_color': colors.yellow, 'font_color': colors.black},
+            'Informational': {'bg_color': colors.blue, 'font_color': colors.white},
+        }
+
+        style = TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+            ('ALIGN', (0, 0), (-1, 0), 'CENTER'),
+            ('VALIGN', (0,0), (-1,0), 'MIDDLE'),
+            ('BOTTOMPADDING', (0,0), (-1,0), 12),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, 0), 14),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+            ('GRID', (0, 0), (-1, -1), 1, colors.black),
+            ('ALIGN', (1, 1), (-1, -1), 'CENTER'),
+            ('VALIGN', (1, 1), (-1, -1), 'MIDDLE'),
+        ])
+
+        for index, row in enumerate(top_vulns):
+            if index > 0:  # Skip header row
+                level = row[2]
+                if level in color_dict:
+                    style.add('BACKGROUND', (2, index), (2, index), color_dict[level]['bg_color'])
+                    style.add('TEXTCOLOR', (2, index), (2, index), color_dict[level]['font_color'])
+
+        if role.tool_access:
+            majorVulnTable = Table(top_vulns,  colWidths=[9.9*cm, 1.8*cm, 2.4*cm, 2.1*cm, 2.5*cm])
+        else:
+            majorVulnTable = Table(top_vulns,  colWidths=[9.9*cm, 1.8*cm, 3.5*cm, 3.5*cm])
+        majorVulnTable.setStyle(style)
+        story.append(majorVulnTable)
+
+        story.append(PageBreak())
+
+
+        # Scan Overview
+        if multiple_ip:
+            section_number = section_number + 1
+            story.append(Paragraph('<a name="scan_overview"></a><b>{}. Scan Overview</b>'.format(section_number), h1))
+            story.append(Paragraph('This section represents the Number of Occurrences for each identified vulnerability per IP / Host along with their risk level. Please note that the Number of Occurrence increases if the same vulnerability is found on another website on the same IP/Host:', content))
+
+            style = TableStyle([
+                ('BACKGROUND', (0, 0), (0, 0), colors.purple),  # color for header cell in column 1
+                ('BACKGROUND', (1, 0), (1, 0), colors.red),  # color for header cell in column 2
+                ('BACKGROUND', (2, 0), (2, 0), colors.orange),  # color for header cell in column 3
+                ('BACKGROUND', (3, 0), (3, 0), colors.yellow),  # color for header cell in column 4
+                ('BACKGROUND', (4, 0), (4, 0), colors.blue),  # color for header cell in column 5
+                ('TEXTCOLOR', (0,0), (-1,0), colors.whitesmoke),  # Change the header text color to white
+                ('TEXTCOLOR', (3, 0), (3, 0), colors.black),
+                ('ALIGN', (0,0), (-1,-1), 'CENTER'),  # Align all text to center
+                ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),  # Change the font of the header row to Helvetica-Bold
+                ('FONTSIZE', (0,0), (-1,0), 14),  # Change the font size of the header row to 14
+                ('BOTTOMPADDING', (0,0), (-1,0), 12),  # Add more space at the bottom of the header row text
+                ('GRID', (0,0), (-1,-1), 1, colors.black),  # Add a black grid around the cells
+                # ('TEXTCOLOR', (0,1), (0, -1), colors.white), # Make font color of Severity to white
+                # ('TEXTCOLOR', (0,4), (0, 4), colors.black), # Make black color for severity Low
+            ])
+            # Scan overview for multi-host
+            for host in hosts:
+                story.append(Paragraph(text="Host: {}".format(host[0]), style=h2))
+                host_info = [
+                    host[2],
+                    ['Critical', 'High', 'Medium', 'Low', 'Info']
+                ]
+                host_info_table = Table(host_info, colWidths=(3.65*cm,3.65*cm,3.65*cm,3.65*cm,3.65*cm))
+                
+                host_info_table.setStyle(style)
+                story.append(host_info_table)
+                story.append(Spacer(1, 1*cm))
+
+
+            story.append(PageBreak())
+
+        # Detailed vulernability Analysis
+        section_number = section_number + 1
+        story.append(Paragraph('<a name="detailed_vulernability_analysis"></a><b>{}. Detailed vulernability Analysis</b>'.format(section_number), h1))
+
+        for i, alert in enumerate(vulnerabilities.values()):
+
+                extracted_data = [
+                    alert['error'],
+                    cname,
+                    alert['complexity']
+                ]
+                alert_info = [['Risk Factor: {}'.format(alert['complexity']), 'Occurences: {}'.format(alert['instances'])]]
+                styles = getSampleStyleSheet()
+                cell_style = styles["BodyText"]
+
+                
+
+                table = Table(alert_info, colWidths=(9.3*cm))
+                style = TableStyle([
+                    ('BACKGROUND', (0, 0), (-1, -1), colors.white),
+                    ('TEXTCOLOR', (0, 0), (-1, -1), colors.white),
+                    ('FONTNAME', (0, 0), (-1, -1), 'Helvetica-Bold'),
+                    ('FONTSIZE', (0, 0), (-1, -1), 12),
+                    ('ALIGN', (0, 0), (0, 0), 'LEFT'),  # First row first column alignment
+                    ('ALIGN', (1, 0), (1, 0), 'RIGHT'),  # First row second column alignment
+                    ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),  # Vertically align to the middle
+                    ('WORDWRAP', (0, 0), (-1, -1), 1),
+                    ('TOPPADDING', (0, 0), (-1, -1), 5),
+                    ('BOTTOMPADDING', (0, 0), (-1, -1), 8.5),
+                ])
+
+                if alert['complexity'] == 'Critical':
+                    style.add('BACKGROUND', (0, 0), (-1, 0), colors.purple)
+                elif alert['complexity'] == 'High':
+                    style.add('BACKGROUND', (0, 0), (-1, 0), colors.red)
+                elif alert['complexity'] == 'Medium':
+                    style.add('BACKGROUND', (0, 0), (-1, 0), colors.orange)
+                elif alert['complexity'] == 'Low':
+                    style.add('BACKGROUND', (0, 0), (-1, 0), colors.yellow)
+                    style.add('TEXTCOLOR', (0, 0), (-1, -1), colors.black)
+                else:
+                    style.add('BACKGROUND', (0, 0), (-1, 0), colors.blue)
+
+
+                table.setStyle(style)
+                # This is where we render the vulnerability information
+                cvvs3 = "N/A"
+                cvvs2 = "N/A"
+                if alert['alert_json'].get('cvvs3'):
+                    cvvs3 = alert['alert_json']['cvvs3']['base_score']
+                if alert['alert_json'].get('cvvs2'):
+                    cvvs2 = alert['alert_json']['cvvs2']['base_score']
+
+                
+                vul_detail = [
+                    Paragraph('<b><a name="{}"/>{}.{} {}</b>'.format(alert['alert_ref'],section_number, i+1, alert['error']), h2 if 'error' in alert else 'N/A'),
+                    table, 
+                    Spacer(1, 5),  
+                    Paragraph('<b>Description:</b> {}'.format(escape(alert['alert_json']['description'])), content), 
+                    Paragraph('<b>Solution: </b> {}'.format(alert['alert_json']['solution'] if 'solution' in alert['alert_json'] else 'N/A'), content),
+                    Paragraph('<b>CVSS 3: </b> {}'.format(cvvs3), content),
+                    Paragraph('<b>CVSS 2: </b> {}'.format(cvvs2), content),
+                    Paragraph('<b>Tool: </b> {}'.format(alert['tool']), content),
+                    Paragraph('<b>CWE: </b> {}'.format(alert.get('cwe_ids','N/A')), content),
+                    Paragraph('<b>Evidence: </b>', content),
+                    Paragraph(escape(alert.get('evidence','N/A')).replace("&amp;","&").replace("&lt;br/&gt;","<br/>"), content_layout)
+                    ]
+                
+                if not role.tool_access:
+                    del vul_detail[7]
+                
+                table = KeepTogether(vul_detail)
+
+                story.append(table)
+                story.append(Spacer(1, 1*cm))
         
 
     doc.multiBuild(story)
