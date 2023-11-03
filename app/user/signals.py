@@ -55,31 +55,31 @@ def user_verify_signal(sender, instance, **kwargs):
         # Getting updated record
         new_user = instance
 
-        old_is_verified = old_user.is_verified
-        new_is_verified = new_user.is_verified
-        if old_is_verified != new_is_verified:
-            # If the status of is_verified is change to True from False
-            if new_is_verified:
+        # old_is_verified = old_user.is_verified
+        # new_is_verified = new_user.is_verified
+        # if old_is_verified != new_is_verified:
+        #     # If the status of is_verified is change to True from False
+        #     if new_is_verified:
 
-                # Sending the user account activation mail to end_user
-                user_name = f"{new_user.first_name} {new_user.last_name}".upper()
-                email_body =  f'''
-                Dear {user_name},
+        #         # Sending the user account activation mail to end_user
+        #         user_name = f"{new_user.first_name} {new_user.last_name}".upper()
+        #         email_body =  f'''
+        #         Dear {user_name},
 
-                We're excited to inform you that your account on [Your Website Name] has been activated! You can now enjoy all the features and benefits of our platform.
+        #         We're excited to inform you that your account on Cyber Appliance has been activated! You can now enjoy all the features and benefits of our platform.
 
-                Thank you for choosing Cyber Appliance. We look forward to having you as an active member of our community.
-                '''
-                thread= threading.Thread(target=send_email,
-                                        kwargs={
-                                            'subject':'Your account with Cyber Appliance is now active!',
-                                            'body':email_body,
-                                            'sender':settings.BUSINESS_EMAIL,
-                                            'recipients':[new_user.email],
-                                            'user_name':user_name,
-                                            'html_template':'account-activation.html'
-                                        })
-                thread.start()
+        #         Thank you for choosing Cyber Appliance. We look forward to having you as an active member of our community.
+        #         '''
+        #         thread= threading.Thread(target=send_email,
+        #                                 kwargs={
+        #                                     'subject':'Your account with Cyber Appliance is now active!',
+        #                                     'body':email_body,
+        #                                     'sender':settings.BUSINESS_EMAIL,
+        #                                     'recipients':[new_user.email],
+        #                                     'user_name':user_name,
+        #                                     'html_template':'account-activation.html'
+        #                                 })
+        #         thread.start()
 
         if old_user.profile_image and new_user.profile_image and old_user.profile_image != new_user.profile_image:
             profile_path= f'{settings.MEDIA_ROOT}{str(old_user.profile_image)}'

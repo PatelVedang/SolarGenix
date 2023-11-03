@@ -141,6 +141,32 @@ class RegisterSerializer(serializers.ModelSerializer):
     #     return user
 
 
+    def create(self, validated_data):
+        user = super().create(validated_data)
+
+        user_name = f"{user.first_name} {user.last_name}".upper()
+        email_body =  f'''
+        Dear {user_name},
+
+        We're excited to inform you that your account on Cyber Appliance has been activated! You can now enjoy all the features and benefits of our platform.
+
+        Thank you for choosing Cyber Appliance. We look forward to having you as an active member of our community.
+        '''
+        thread= threading.Thread(
+            target=send_email,
+            kwargs={
+                'subject':'Your account with Cyber Appliance is now active!',
+                'body':email_body,
+                'sender':settings.BUSINESS_EMAIL,
+                'recipients':[user.email],
+                'user_name':user_name,
+                'html_template':'account-activation.html'
+        })
+        thread.start()
+
+        return user
+
+
 class LoginSerializer(TokenObtainPairSerializer):
 
     @classmethod

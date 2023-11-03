@@ -250,110 +250,110 @@ class StripeWebHooks(generics.GenericAPIView):
             # Handle the payment_intent.succeeded event
             if event['type'] == 'payment_intent.succeeded':
                 
-                # if the mode is testing
-                if not event['livemode']:
+                # # Check mode is live or not according to .env variable STRIPE_MODE
+                # if event['livemode'] == (True if settings.STRIPE_MODE=="live" else False):
                 
-                    # Getting customer from stripe invoice
-                    cust_id = event['data']['object']['customer']
-                    
-                    # Checking same user present in our db
-                    user = User.objects.filter(stripe_customer_id=cust_id)
-                    if user.exists():
-                        # if user prent in our db
-                        invoice_id = event['data']['object']['invoice']
+                # Getting customer from stripe invoice
+                cust_id = event['data']['object']['customer']
+                
+                # Checking same user present in our db
+                user = User.objects.filter(stripe_customer_id=cust_id)
+                if user.exists():
+                    # if user prent in our db
+                    invoice_id = event['data']['object']['invoice']
 
-                        if invoice_id:
-                            # getting invoice record
-                            invoice = stripe.Invoice.retrieve(
-                                invoice_id
-                            )
-                            # if record not found
-                            if not invoice:
-                                return response(data={}, status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, message="something went wrong")
-                            # set all necessary deatils
-                            product_id = invoice['lines']['data'][0]['price']['product']
-                            price_id = invoice['lines']['data'][0]['price']['id']
-                            subscription_id = invoice['subscription']
-                            
-                            # getting product record
-                            product = stripe.Product.retrieve(product_id)
+                    if invoice_id:
+                        # getting invoice record
+                        invoice = stripe.Invoice.retrieve(
+                            invoice_id
+                        )
+                        # if record not found
+                        if not invoice:
+                            return response(data={}, status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, message="something went wrong")
+                        # set all necessary deatils
+                        product_id = invoice['lines']['data'][0]['price']['product']
+                        price_id = invoice['lines']['data'][0]['price']['id']
+                        subscription_id = invoice['subscription']
+                        
+                        # getting product record
+                        product = stripe.Product.retrieve(product_id)
 
-                            # if product doesn't exist 
-                            if not product:
-                                return response(data={}, status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, message="something went wrong")
-                            
-                            # getting price record
-                            price = stripe.Price.retrieve(price_id)
+                        # if product doesn't exist 
+                        if not product:
+                            return response(data={}, status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, message="something went wrong")
+                        
+                        # getting price record
+                        price = stripe.Price.retrieve(price_id)
 
-                            # if price doesn't exist 
-                            if not price:
-                                return response(data={}, status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, message="something went wrong")
+                        # if price doesn't exist 
+                        if not price:
+                            return response(data={}, status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, message="something went wrong")
 
-                            # getting subscription record
-                            subscription = stripe.Subscription.retrieve(subscription_id)
+                        # getting subscription record
+                        subscription = stripe.Subscription.retrieve(subscription_id)
 
-                            # if subscription doesn't exist 
-                            if not subscription:
-                                return response(data={}, status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, message="something went wrong")
+                        # if subscription doesn't exist 
+                        if not subscription:
+                            return response(data={}, status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, message="something went wrong")
 
-                            # getting product metadata
-                            prod_metadata = product.get('metadata', {})
-                            
-                            # if product metadata is empty
-                            if not prod_metadata:
-                                return response(data={}, status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, message="something went wrong")
+                        # getting product metadata
+                        prod_metadata = product.get('metadata', {})
+                        
+                        # if product metadata is empty
+                        if not prod_metadata:
+                            return response(data={}, status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, message="something went wrong")
 
-                            # Expire all active subscription of current user
-                            PaymentHistory.objects.filter(status=1,user=user[0].id).update(status=2)
+                        # Expire all active subscription of current user
+                        PaymentHistory.objects.filter(status=1,user=user[0].id).update(status=2)
 
-                            # Creating subscription object in our db
-                            PaymentHistory.objects.create(
-                                user=user[0],
-                                stripe_subscription_id=subscription_id,
-                                price_id=price_id,
-                                status = 1,
-                                current_period_start = datetime.utcfromtimestamp(subscription['current_period_start']).replace(tzinfo=timezone.utc),
-                                current_period_end = datetime.utcfromtimestamp(subscription['current_period_end']).replace(tzinfo=timezone.utc),
-                                ip_limit = int(prod_metadata.get('ip_limit','1')),
-                                price_type=(1 if price.recurring.interval=="month" else 2)
-                            )
-                        else:
-                            # getting intent metadata
-                            intent_metadata = event['data']['object'].get('metadata', {})
+                        # Creating subscription object in our db
+                        PaymentHistory.objects.create(
+                            user=user[0],
+                            stripe_subscription_id=subscription_id,
+                            price_id=price_id,
+                            status = 1,
+                            current_period_start = datetime.utcfromtimestamp(subscription['current_period_start']).replace(tzinfo=timezone.utc),
+                            current_period_end = datetime.utcfromtimestamp(subscription['current_period_end']).replace(tzinfo=timezone.utc),
+                            ip_limit = int(prod_metadata.get('ip_limit','1')),
+                            price_type=(1 if price.recurring.interval=="month" else 2)
+                        )
+                    else:
+                        # getting intent metadata
+                        intent_metadata = event['data']['object'].get('metadata', {})
 
-                            # if intent metadata is empty
-                            if not intent_metadata:
-                                return response(data={}, status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, message="something went wrong")
+                        # if intent metadata is empty
+                        if not intent_metadata:
+                            return response(data={}, status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, message="something went wrong")
 
-                            price_id = intent_metadata['price']
-                            
-                            # getting product record
-                            product = stripe.Product.retrieve(intent_metadata['product'])
+                        price_id = intent_metadata['price']
+                        
+                        # getting product record
+                        product = stripe.Product.retrieve(intent_metadata['product'])
 
-                            # getting product metadata
-                            prod_metadata = product.get('metadata', {})
-                            
-                            # if product metadata is empty
-                            if not prod_metadata:
-                                return response(data={}, status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, message="something went wrong")
+                        # getting product metadata
+                        prod_metadata = product.get('metadata', {})
+                        
+                        # if product metadata is empty
+                        if not prod_metadata:
+                            return response(data={}, status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, message="something went wrong")
 
-                            # if product doesn't exist 
-                            if not product:
-                                return response(data={}, status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, message="something went wrong")
+                        # if product doesn't exist 
+                        if not product:
+                            return response(data={}, status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, message="something went wrong")
 
-                            # Expire all active subscription of current user
-                            PaymentHistory.objects.filter(status=1,user=user[0].id).update(status=2)
+                        # Expire all active subscription of current user
+                        PaymentHistory.objects.filter(status=1,user=user[0].id).update(status=2)
 
-                            # Creating subscription object in our db
-                            PaymentHistory.objects.create(
-                                user=user[0],
-                                price_id=price_id,
-                                status = 1,
-                                current_period_start = datetime.utcfromtimestamp(int(datetime.utcnow().timestamp())).replace(tzinfo=timezone.utc),
-                                ip_limit = int(prod_metadata.get('ip_limit','1')),
-                                price_type=3
-                            )
-                            
+                        # Creating subscription object in our db
+                        PaymentHistory.objects.create(
+                            user=user[0],
+                            price_id=price_id,
+                            status = 1,
+                            current_period_start = datetime.utcfromtimestamp(int(datetime.utcnow().timestamp())).replace(tzinfo=timezone.utc),
+                            ip_limit = int(prod_metadata.get('ip_limit','1')),
+                            price_type=3
+                        )
+                        
                         
 
         except Exception as e:
