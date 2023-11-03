@@ -715,9 +715,9 @@ class OrderViewSet(viewsets.ModelViewSet, Common):
                         return response(data={}, status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, message="You have reached your IP limit. Please upgrade your account!!")
                     
                     
-                order = Order.objects.create(client_id=request.user.id, subscrib_id=request.user.subscription_id, target_ip=target_ip)
-                custom_response = OrderResponseSerailizer(order, context={"request": request})
-                return response(data=custom_response.data, status_code=status.HTTP_200_OK, message="order successfully added in database")
+            order = Order.objects.create(client_id=request.user.id, subscrib_id=request.user.subscription_id, target_ip=target_ip)
+            custom_response = OrderResponseSerailizer(order, context={"request": request})
+            return response(data=custom_response.data, status_code=status.HTTP_200_OK, message="order successfully added in database")
         
     def list(self, request, *args, **kwargs):
         """
