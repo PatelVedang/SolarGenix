@@ -17,6 +17,8 @@ import json
 from datetime import datetime
 from django.conf import settings
 from xml.sax.saxutils import escape
+from reportlab.pdfbase.ttfonts import TTFont
+pdfmetrics.registerFont(TTFont('Arial', f'{settings.FONTS_PATH}Arial.ttf'))
 
 class MyDocTemplate(BaseDocTemplate):
     def __init__(self, filename, profile_image, role, scan_date, **kw):
@@ -48,9 +50,9 @@ class MyDocTemplate(BaseDocTemplate):
     def onPage(self, canvas, doc):
         if doc.page > 1:  # Skip applying headers and footers on the first page
             canvas.saveState()
-            canvas.setFont('Helvetica', 24)
+            canvas.setFont('Arial', 24)
             canvas.drawImage(f'{settings.BASE_DIR}/static/isaix-logo.png', 1 * cm, 11 * inch, width=3.2*cm, height=1*cm)
-            canvas.setFont('Helvetica', 9)
+            canvas.setFont('Arial', 9)
             canvas.drawString(1*cm, 0.5 * inch, "CONFIDENTIAL")
             canvas.drawString(18.5 * cm, 0.5 * inch, f"Page {doc.page}")  # Adjust the y-coordinate to position the footer
             canvas.linkURL("https://www.isaix.com", (1*inch, 2*cm, 2*inch, 2*cm), color=colors.black, thickness=0.5, relative=1)
@@ -58,22 +60,25 @@ class MyDocTemplate(BaseDocTemplate):
             canvas.line(1*cm, 2.5*cm, 1*cm+self.width+3*cm, 2.5*cm)  # Draw a line at the top of the footer
             canvas.restoreState()
         else:
+            for font in canvas.getAvailableFonts():
+                print(font)
             canvas.saveState()
             canvas.drawImage(f'{settings.BASE_DIR}/static/report-banner.jpg', 0 * cm, 3.98 * inch, width=21*cm, 
             height=15.25*cm)
             if self.role.cover_content_access:
                 try:
-                    canvas.drawImage(f"{settings.MEDIA_ROOT}{self.profile_img}", 17.8 * cm, 1.25 * inch, width=2*cm, 
+                    canvas.drawImage(f"{settings.MEDIA_ROOT}{self.profile_img}", 15.2 * cm, 1.25 * inch, width=2*cm, 
                     height=2*cm)
                 except Exception as e:
-                    canvas.drawImage(f'{settings.BASE_DIR}/static/isaix-logo-1.png', 17.8 * cm, 1.25 * inch, width=2*cm, 
+                    canvas.drawRight
+                    canvas.drawImage(f'{settings.BASE_DIR}/static/isaix-logo-1.png', 15.2 * cm, 1.25 * inch, width=2*cm, 
                     height=2*cm)
-            canvas.setFont('Helvetica', 18)
+            canvas.setFont('Arial', 18)
             canvas.setFillColor(colors.white)
             canvas.drawString(1.5 * cm, 9.15 * inch, "External Vulnerability Assessment")
-            canvas.setFont('Helvetica', 13)
-            canvas.drawString(4.39 * cm, 8.70 * inch, "Produced by IsaiX Cyber Services")
-            canvas.setFont('Helvetica', 9)
+            canvas.setFont('Arial', 14)
+            canvas.drawString(1.5 * cm, 8.70 * inch, "Produced by IsaiX Cyber Services")
+            canvas.setFont('Arial', 12)
             canvas.setFillColor(colors.black)
             canvas.drawRightString(19.8 * cm, 1 * inch, f'Scan Date: {self.scan_date}')
             # story.append(Paragraph(f'Production Date: {scan_date}', PS(name='Custom', fontSize=9, alignment=TA_RIGHT)))
@@ -231,23 +236,23 @@ def generate_doc(role, active_plan, cname, scan_date, vulnerabilities, user_name
 
     # HEADER
     story.append(Spacer(1, 0.10*inch))
-    story.append(Paragraph('Executive Report', PS(name='Custom', fontSize=14, alignment=TA_CENTER, textColor=colors.HexColor("#395c9a"))))
+    story.append(Paragraph('Executive Report', PS(name='Custom', fontSize=18, alignment=TA_CENTER, textColor=colors.HexColor("#395c9a"), font='Arial')))
     
     # Add content only if role has access of it
     if role.cover_content_access:
         story.append(Spacer(1, 6.37*inch))
         story.append(Spacer(1, 0.35*inch))
-        story.append(Paragraph('<i>Presented to:</i>', PS(name='Custom', fontSize=12, textColor=colors.HexColor("#395c9a"), leftIndent=8)))
+        story.append(Paragraph('Presented to:', PS(name='Custom', fontSize=12, textColor=colors.HexColor("#395c9a"), leftIndent=8, font='Arial')))
         story.append(Spacer(1, 0.20*inch))
         
         user_table = Table(
         [
             [
-                Paragraph(f'<i>{user_name}</i>', PS(name='Custom', fontSize=12))   
+                Paragraph(f'{user_name}', PS(name='Custom', fontSize=12, font='Arial'))   
             ],[
-                Paragraph(f'<i>{user_company if user_company else ""}</i>', PS(name='Custom', fontSize=12))
+                Paragraph(f'{user_company if user_company else ""}', PS(name='Custom', fontSize=12, font='Arial'))
             ],[
-                Paragraph(f'<i>{user_company_address if user_company_address else ""}</i>', PS(name='Custom', fontSize=12))
+                Paragraph(f'{user_company_address if user_company_address else ""}', PS(name='Custom', fontSize=12, font='Arial'))
             ]
         ], colWidths=10*cm, hAlign='LEFT')
         style = TableStyle([
