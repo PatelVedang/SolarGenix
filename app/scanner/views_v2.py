@@ -96,8 +96,8 @@ class Common:
             Q(status=1) &
             Q(user=user) &
             Q(current_period_start__lte=today) &
-            Q(current_period_end__isnull=True) |
-            Q(current_period_end__gte=today)
+            (Q(current_period_end__isnull=True) |
+            Q(current_period_end__gte=today))
         ).order_by('-created_at')
 
 
@@ -633,7 +633,7 @@ class SendMessageView(generics.GenericAPIView, Common):
 @method_decorator(name='create', decorator=swagger_auto_schema(tags=['Orders'], operation_description= "Create API.", operation_summary="API to create new record."))
 @method_decorator(name='retrieve', decorator=swagger_auto_schema(tags=['Orders'], operation_description= "Retrieve API.", operation_summary="API for retrieve single record by id."))
 @method_decorator(name='update', decorator=swagger_auto_schema(tags=['Orders'], auto_schema=None))
-@method_decorator(name='partial_update', decorator=swagger_auto_schema(tags=['Orders'], operation_description= "Partial update API.", operation_summary="API for partial update record."))
+@method_decorator(name='partial_update', decorator=swagger_auto_schema(tags=['Orders'], operation_description= "Partial update API.", operation_summary="API for partial update record.", request_body=OrderUpdateSerailizer))
 @method_decorator(name='destroy', decorator=swagger_auto_schema(tags=['Orders'], operation_description= "Delete API.", operation_summary="API to delete single record by id."))
 class OrderViewSet(viewsets.ModelViewSet, Common):
     queryset = Order.objects.all()
@@ -659,8 +659,6 @@ class OrderViewSet(viewsets.ModelViewSet, Common):
         serializer = self.serializer_class(data=request.data)
         if serializer.is_valid(raise_exception=True):
             target_ip= serializer.data.get('target_ip')
-
-
             today = datetime.utcnow()
             current_sub = super().get_active_plan(request.user)
             if request.user.role.id!=1:
@@ -716,8 +714,28 @@ class OrderViewSet(viewsets.ModelViewSet, Common):
                     
                     
             order = Order.objects.create(client_id=request.user.id, subscrib_id=request.user.subscription_id, target_ip=target_ip)
+            
+            if 'files' in request.FILES:
+                order.company_logo = request.FILES['files']
+                order.company_name = serializer.data.get('company_name','')
+                order.company_address = serializer.data.get('company_address','')
+                order.is_client = serializer.data.get('is_client',False)
+                order.client_name = serializer.data.get('client_name','')
+                order.save()
+
             custom_response = OrderResponseSerailizer(order, context={"request": request})
             return response(data=custom_response.data, status_code=status.HTTP_200_OK, message="order successfully added in database")
+    
+    def partial_update(self, request, *args, **kwargs):
+        if request.user.role.id==4:
+            self.serializer_class = OrderUpdateSerailizer
+            request.data['company_logo'] = request.FILES['files']
+            serializer = super().partial_update(request, *args, **kwargs)
+            order = Order.objects.get(id=kwargs.get('pk'))
+            custom_response = OrderResponseSerailizer(order, context={"request": request})
+            return response(data=custom_response.data, status_code=status.HTTP_200_OK, message="record successfully updated in database.")
+        else:
+            return response(data={}, status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, message="Oops! something went wrong!")
         
     def list(self, request, *args, **kwargs):
         """

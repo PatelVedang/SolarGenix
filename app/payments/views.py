@@ -41,8 +41,8 @@ class PricingView(viewsets.ViewSet):
             Q(status=1) &
             Q(user=request.user.id) &
             Q(current_period_start__lte=today) &
-            Q(current_period_end__isnull=True) |
-            Q(current_period_end__gte=today)
+            (Q(current_period_end__isnull=True) |
+            Q(current_period_end__gte=today))
         ).order_by('-created_at')
         serializer = PaymentHistorySerializer(active_subscriptions, many=True)
         prices['active_subscription'] = serializer.data

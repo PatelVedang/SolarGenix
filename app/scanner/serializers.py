@@ -10,6 +10,7 @@ from django.core.exceptions import ValidationError
 import socket
 import ipaddress
 from tldextract import extract
+from django.conf import settings
 
    
 def validate_ipv4_address(value):
@@ -148,9 +149,32 @@ class ScannerResponseSerializer(serializers.ModelSerializer):
 # field that is a `serializers.CharField` with a `validate_ipv4_address` validator
 class OrderSerailizer(serializers.ModelSerializer):
     target_ip = serializers.CharField(validators=[validate_ipv4_address])
+    company_name = serializers.CharField(required=False, max_length=100)
+    company_address = serializers.CharField(required=False)
+    is_client = serializers.BooleanField(required=False)
+    client_name = serializers.CharField(required=False, max_length=100)
+
     class Meta:
         model = Order
-        fields = ['target_ip']
+        fields = ['target_ip', 'company_name', 'company_address', 'is_client', 'client_name']
+
+    
+    def save(self, **kwargs):
+        return super().save(**kwargs)
+
+
+# The `OrderSerializer` class is a subclass of `serializers.ModelSerializer` and it has a `target_ip`
+# field that is a `serializers.CharField` with a `validate_ipv4_address` validator
+class OrderUpdateSerailizer(serializers.ModelSerializer):
+    company_name = serializers.CharField(required=False, max_length=100)
+    company_address = serializers.CharField(required=False)
+    is_client = serializers.BooleanField(required=False)
+    client_name = serializers.CharField(required=False, max_length=100)
+    company_logo = serializers.ImageField()
+
+    class Meta:
+        model = Order
+        fields = ['company_name', 'company_address', 'is_client', 'client_name', 'company_logo']
 
     
     def save(self, **kwargs):
@@ -201,6 +225,7 @@ class OrderResponseSerailizer(serializers.ModelSerializer):
             },
             "subscription_id": requested_user.subscription_id
         }
+        data['company_logo'] = (f'{settings.PDF_DOWNLOAD_ORIGIN}/media/{str(instance.company_logo)}' if instance.company_logo else "")
         return data
 
 

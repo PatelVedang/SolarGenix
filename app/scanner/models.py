@@ -3,6 +3,8 @@ from datetime import datetime
 from django.contrib.auth.models import User
 from user.models import User
 import socket
+import uuid
+import os
 
 TARGET_STATUS_CHOICES = [
     (0, "Created"),
@@ -129,6 +131,10 @@ class TargetLog(models.Model):
 
 
 class Order(SoftDelete):
+    def upload_logo_to(instance, filename):
+        file_extension = os.path.splitext(filename)[1]
+        return f'logo/{instance.id}/{str(uuid.uuid4())}{file_extension}'
+    
     client = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
     subscrib = models.ForeignKey(Subscription, on_delete=models.SET_NULL, null=True, blank=True)
     target_ip = models.CharField(max_length=100,null=False)
@@ -139,3 +145,8 @@ class Order(SoftDelete):
     scan_time = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     created_at = models.DateTimeField(auto_now_add=True, null=True)
     updated_at = models.DateTimeField(auto_now=True, null=True)
+    company_logo = models.ImageField(upload_to=upload_logo_to, null=True, blank=True)
+    company_name = models.CharField(max_length=1000, blank=True)
+    company_address = models.TextField(blank=True)
+    is_client = models.BooleanField(default=False)
+    client_name = models.CharField(blank=True, max_length=100)

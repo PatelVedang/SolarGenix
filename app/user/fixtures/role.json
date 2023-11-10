@@ -34,6 +34,18 @@
         "scan_result_access": false,
         "cover_content_access": false
       }
+    },
+    {
+      "model": "user.role",
+      "pk": 4,
+      "fields": {
+        "name": "reseller",
+        "tool_access": true,
+        "target_access": true,
+        "client_name_access": true,
+        "scan_result_access": true,
+        "cover_content_access": true
+      }
     }
     
 ]

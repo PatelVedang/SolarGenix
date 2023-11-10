@@ -21,10 +21,11 @@ from reportlab.pdfbase.ttfonts import TTFont
 pdfmetrics.registerFont(TTFont('Arial', f'{settings.FONTS_PATH}Arial.ttf'))
 
 class MyDocTemplate(BaseDocTemplate):
-    def __init__(self, filename, profile_image, role, scan_date, **kw):
+    def __init__(self, filename, logo, role, is_client, scan_date, **kw):
         self.allowSplitting = 0
-        self.profile_img = profile_image
+        self.logo = logo
         self.scan_date = scan_date
+        self.is_client = is_client
         self.role = role
         BaseDocTemplate.__init__(self, filename, **kw)
         page_width = 21*cm  # Assuming A4 page width
@@ -60,14 +61,12 @@ class MyDocTemplate(BaseDocTemplate):
             canvas.line(1*cm, 2.5*cm, 1*cm+self.width+3*cm, 2.5*cm)  # Draw a line at the top of the footer
             canvas.restoreState()
         else:
-            for font in canvas.getAvailableFonts():
-                print(font)
             canvas.saveState()
             canvas.drawImage(f'{settings.BASE_DIR}/static/report-banner.jpg', 0 * cm, 3.98 * inch, width=21*cm, 
             height=15.25*cm)
-            if self.role.cover_content_access:
+            if self.role.cover_content_access or (self.is_client and self.role.id==4):
                 try:
-                    canvas.drawImage(f"{settings.MEDIA_ROOT}{self.profile_img}", 15.2 * cm, 1.25 * inch, width=2*cm, 
+                    canvas.drawImage(f"{settings.MEDIA_ROOT}{self.logo}", 15.2 * cm, 1.25 * inch, width=2*cm, 
                     height=2*cm)
                 except Exception as e:
                     canvas.drawRight
@@ -189,7 +188,7 @@ h2_header = PS(name= 'HeaderSubTitle',
     spaceAfter=10,
     alignment=TA_CENTER)
 
-def generate_doc(role, active_plan, cname, scan_date, vulnerabilities, user_name, user_company, user_company_address, profile_image, risk_levels, output_path, hosts=[[]],  multiple_ip=False):
+def generate_doc(role, active_plan, cname, scan_date, vulnerabilities, user_name, order, risk_levels, output_path, hosts=[[]],  multiple_ip=False):
 
     """
     Generates a vulnerability scan report in PDF format.
@@ -226,7 +225,7 @@ def generate_doc(role, active_plan, cname, scan_date, vulnerabilities, user_name
 
     """
     # Build story.
-    doc = MyDocTemplate(output_path, profile_image, role, scan_date)
+    doc = MyDocTemplate(output_path, order.company_logo, role, order.is_client, scan_date)
     section_number = 1
 
     story = []
@@ -239,20 +238,20 @@ def generate_doc(role, active_plan, cname, scan_date, vulnerabilities, user_name
     story.append(Paragraph('Executive Report', PS(name='Custom', fontSize=18, alignment=TA_CENTER, textColor=colors.HexColor("#395c9a"), font='Arial')))
     
     # Add content only if role has access of it
-    if role.cover_content_access:
+    if role.cover_content_access or (order.is_client and role.id==4):
         story.append(Spacer(1, 6.37*inch))
         story.append(Spacer(1, 0.35*inch))
         story.append(Paragraph('Presented to:', PS(name='Custom', fontSize=12, textColor=colors.HexColor("#395c9a"), leftIndent=8, font='Arial')))
         story.append(Spacer(1, 0.20*inch))
-        
+        user_name = (order.client_name.upper() if order.is_client and role.id==4 else user_name)
         user_table = Table(
         [
             [
-                Paragraph(f'{user_name}', PS(name='Custom', fontSize=12, font='Arial'))   
+                Paragraph(f'{user_name.upper()}', PS(name='Custom', fontSize=12, font='Arial'))   
             ],[
-                Paragraph(f'{user_company if user_company else ""}', PS(name='Custom', fontSize=12, font='Arial'))
+                Paragraph(f'{order.company_name if order.company_name else ""}', PS(name='Custom', fontSize=12, font='Arial'))
             ],[
-                Paragraph(f'{user_company_address if user_company_address else ""}', PS(name='Custom', fontSize=12, font='Arial'))
+                Paragraph(f'{order.company_address if order.company_address else ""}', PS(name='Custom', fontSize=12, font='Arial'))
             ]
         ], colWidths=10*cm, hAlign='LEFT')
         style = TableStyle([
