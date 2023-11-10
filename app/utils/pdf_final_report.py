@@ -130,7 +130,7 @@ class PDF:
             generate_doc(role, active_plan, cname='ISAIX',
                 scan_date=order_obj.created_at.strftime("%b %d %Y"),
                 vulnerabilities=alert_objs,
-                user_name = f"{order_obj.client.first_name} {order_obj.client.last_name}".upper(),
+                user_name = f"{order_obj.client.first_name} {order_obj.client.last_name}",
                 order = order_obj,
                 risk_levels=risk_levels,
                 output_path=file_path,

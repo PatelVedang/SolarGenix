@@ -243,11 +243,11 @@ def generate_doc(role, active_plan, cname, scan_date, vulnerabilities, user_name
         story.append(Spacer(1, 0.35*inch))
         story.append(Paragraph('Presented to:', PS(name='Custom', fontSize=12, textColor=colors.HexColor("#395c9a"), leftIndent=8, font='Arial')))
         story.append(Spacer(1, 0.20*inch))
-        user_name = (order.client_name.upper() if order.is_client and role.id==4 else user_name)
+        user_name = (order.client_name if order.is_client and role.id==4 else user_name)
         user_table = Table(
         [
             [
-                Paragraph(f'{user_name.upper()}', PS(name='Custom', fontSize=12, font='Arial'))   
+                Paragraph(f'{user_name}', PS(name='Custom', fontSize=12, font='Arial'))   
             ],[
                 Paragraph(f'{order.company_name if order.company_name else ""}', PS(name='Custom', fontSize=12, font='Arial'))
             ],[
