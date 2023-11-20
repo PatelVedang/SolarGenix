@@ -138,6 +138,14 @@ class ScannerResponseSerializer(serializers.ModelSerializer):
             },
             "subscription_id": requested_user.subscription_id
         }
+        data['order']={
+            "id":instance.order.id,
+            "company_logo":(f'{settings.PDF_DOWNLOAD_ORIGIN}/media/{str(instance.order.company_logo)}' if instance.order.company_logo else ""),
+            "company_name":instance.order.company_name,
+            "company_address":instance.order.company_address,
+            "is_client":instance.order.is_client,
+            "client_name":instance.order.client_name
+        }
         return data
     
     def validate(self, attrs):
