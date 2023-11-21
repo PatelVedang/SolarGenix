@@ -17,6 +17,8 @@ from django.db.models import Q
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter, OrderingFilter
 logger = logging.getLogger('django')
+import stripe 
+stripe.api_key = settings.STRIPE_SECRET_KEY
 
 class RegisterView(generics.CreateAPIView):
     queryset = User.objects.all()
@@ -187,8 +189,18 @@ class ProfileView(generics.RetrieveUpdateAPIView):
         """
         instance = self.request.user
         serializer = self.get_serializer(instance)
-        # context={"request": request}
-        return response(data=serializer.data, status_code=status.HTTP_200_OK, message="profile found successfully.")
+        response_data = {**serializer.data,**{}}
+        try:
+            subscription = instance.get_active_plan()
+            if subscription.exists():
+                price = stripe.Price.retrieve(id=subscription[0].price_id)
+                product = stripe.Product.retrieve(id=price['product'])
+                response_data = {**response_data, **{'plan':{**price, **{'product':product}}}}
+            else:
+                response_data = {**response_data, **{'plan':{}}}
+        except Exception as e:
+            return response(data={}, status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, message="Oops! something went wrong!")
+        return response(data=response_data, status_code=status.HTTP_200_OK, message="profile found successfully.")
 
     def patch(self, request, *args, **kwargs):
         """

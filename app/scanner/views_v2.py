@@ -90,8 +90,8 @@ class Common:
         return order_scan_finish
 
     def get_active_plan(self, user):
-
         today = datetime.utcnow()
+
         return PaymentHistory.objects.filter(
             Q(status=1) &
             Q(user=user) &
@@ -379,7 +379,7 @@ class ScanViewSet(viewsets.ModelViewSet, Common):
         return response(data={}, status_code=status.HTTP_200_OK, message="record deleted successfully")
 
 @method_decorator(name='list', decorator=swagger_auto_schema(tags=['Tool'], operation_description= "List API.", operation_summary="API to get list of records."))
-@method_decorator(name='create', decorator=swagger_auto_schema(tags=['Tool'], operation_description= "Create API.", operation_summary="API to create new record."))
+@method_decorator(name='create', decorator=swagger_auto_schema(tags=['Tool'], operation_description= "Create API.", operation_summary="API to create new record.", request_body=ToolPayloadSerializer))
 @method_decorator(name='retrieve', decorator=swagger_auto_schema(tags=['Tool'], operation_description= "Retrieve API.", operation_summary="API for retrieve single record by id."))
 @method_decorator(name='update', decorator=swagger_auto_schema(tags=['Tool'], auto_schema=None))
 @method_decorator(name='partial_update', decorator=swagger_auto_schema(tags=['Tool'], operation_description= "Partial update API.", operation_summary="API for partial update record."))

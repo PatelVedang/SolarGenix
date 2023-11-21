@@ -68,18 +68,32 @@ class ScannerSerializer(serializers.ModelSerializer):
         return super().validate(attrs)
 
 
+class SubscriptionSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Subscription
+        fields = ['id', 'plan_type', 'updated_at']
+
+
 # The ToolPayloadSerializer class is a subclass of the ModelSerializer class. It has a Meta class that
 # specifies the model to be serialized and the fields to be serialized. It also has a validate method
 # that logs the serialized data
 class ToolPayloadSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField(read_only=True)
+    subscription_id = serializers.IntegerField(write_only=True)
+
     class Meta:
         model = Tool
         exlude = ['is_deleted']
-        fields = ['id','tool_name','tool_cmd', 'time_limit']
+        fields = ['id','tool_name','tool_cmd', 'time_limit', 'subscription_id']
 
     def validate(self, attrs):
         logger.info(f'serialize_data: {json.dumps(attrs)}')
+        try:
+            sub_id = attrs['subscription_id']
+            Subscription.objects.get(id=sub_id)
+        except Exception as e:
+            raise serializers.DjangoValidationError(f"Subscription does not exist with id {0}")
         return super().validate(attrs)
 
 
@@ -428,9 +442,3 @@ class WithoutRequestUserOrderSerializer(serializers.ModelSerializer):
             "subscription_id": requested_by.subscription_id
         }
         return data
-
-class SubscriptionSerializer(serializers.ModelSerializer):
-
-    class Meta:
-        model = Subscription
-        fields = ['id', 'plan_type', 'updated_at']

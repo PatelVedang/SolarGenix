@@ -1,5 +1,4 @@
 from django.db import models
-from user.models import User
 
 # Create your models here.
 class PaymentHistory(models.Model):
@@ -13,7 +12,7 @@ class PaymentHistory(models.Model):
         (2, 'Recurring Annualy'),
         (3, 'One Time')
     )
-    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+    user = models.ForeignKey('user.User', on_delete=models.SET_NULL, null=True)
     stripe_subscription_id = models.CharField(max_length=255, null=True)
     price_id = models.CharField(max_length=255)
     status = models.IntegerField(choices=STATUS_CHOICES, default=1)

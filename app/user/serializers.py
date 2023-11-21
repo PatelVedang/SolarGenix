@@ -325,7 +325,7 @@ class UpdateProfileSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(read_only=True)
     class Meta:
         model = User
-        fields = ['id', 'first_name', 'last_name', 'role', 'profile_image', 'email', 'user_company', 'user_address']
+        fields = ['id', 'first_name', 'last_name', 'role', 'profile_image', 'email', 'user_company', 'user_address', 'report_language']
 
     def validate(self, attrs):
         logger.info(f'serialize_data: {json.dumps(attrs)}')
@@ -334,6 +334,11 @@ class UpdateProfileSerializer(serializers.ModelSerializer):
                 'Your account is not activated please contact to admin for further instructions!!'
             )
         return super().validate(attrs)
+    
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        data['language_choices'] = dict(instance.LANGUAGE_CHOICE)
+        return data
 
 class ChangePasswordSerializer(serializers.Serializer):
     old_password = serializers.CharField(max_length=255, style={'input-type':'password'},write_only=True)

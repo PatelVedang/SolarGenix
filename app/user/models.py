@@ -4,6 +4,9 @@ from django.contrib.auth.models import PermissionsMixin
 from .managers import UserManager
 from django.utils.translation import gettext_lazy as _
 from datetime import datetime
+from django.db.models import Q
+from datetime import datetime
+from payments.models import PaymentHistory
 
 # Create your models here.
 class Role(models.Model):
@@ -23,6 +26,12 @@ class Role(models.Model):
         ordering = ('-created_at',)
 
 class User(AbstractBaseUser, PermissionsMixin):
+    LANGUAGE_CHOICE = (
+        ('EN', 'EN'),
+        ('FR', 'FR')
+    )
+
+
     def upload_profile_to(instance, filename):
         return f'profiles/{instance.id}/{filename}'
     username = None
@@ -48,6 +57,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     user_company = models.CharField(max_length=1000, blank=True)
     user_address = models.TextField(blank=True)
     stripe_customer_id = models.CharField(max_length=255, null=True)
+    report_language = models.CharField(max_length=10, choices=LANGUAGE_CHOICE,default='EN')
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = []
@@ -62,6 +72,16 @@ class User(AbstractBaseUser, PermissionsMixin):
         self.last_name = self.last_name.lower()
         self.email = self.email.lower()
         return super(User, self).save(*args, **kwargs)
+    
+    def get_active_plan(self):
+        today = datetime.utcnow()
+        return PaymentHistory.objects.filter(
+            Q(status=1) &
+            Q(user=self) &
+            Q(current_period_start__lte=today) &
+            (Q(current_period_end__isnull=True) |
+            Q(current_period_end__gte=today))
+        ).order_by('-created_at')
     
     class Meta:
         ordering = ('-created_at',)

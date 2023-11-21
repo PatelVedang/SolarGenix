@@ -54,7 +54,7 @@ class MyDocTemplate(BaseDocTemplate):
             canvas.setFont('Arial', 24)
             canvas.drawImage(f'{settings.BASE_DIR}/static/isaix-logo.png', 1 * cm, 11 * inch, width=3.2*cm, height=1*cm)
             canvas.setFont('Arial', 9)
-            canvas.drawString(1*cm, 0.5 * inch, "CONFIDENTIAL")
+            canvas.drawString(1*cm, 0.5 * inch, "CONFIDENTIEL")
             canvas.drawString(18.5 * cm, 0.5 * inch, f"Page {doc.page}")  # Adjust the y-coordinate to position the footer
             canvas.linkURL("https://www.isaix.com", (1*inch, 2*cm, 2*inch, 2*cm), color=colors.black, thickness=0.5, relative=1)
             canvas.setStrokeColor(colors.grey)
@@ -66,20 +66,20 @@ class MyDocTemplate(BaseDocTemplate):
             height=15.25*cm)
             if self.role.cover_content_access or (self.is_client and self.role.id==4):
                 try:
-                    canvas.drawImage(f"{settings.MEDIA_ROOT}{self.logo}", 15.2 * cm, 1.25 * inch, width=2*cm, 
+                    canvas.drawImage(f"{settings.MEDIA_ROOT}{self.logo}", 14.2 * cm, 1.25 * inch, width=2*cm, 
                     height=2*cm)
                 except Exception as e:
                     canvas.drawRight
-                    canvas.drawImage(f'{settings.BASE_DIR}/static/isaix-logo-1.png', 15.2 * cm, 1.25 * inch, width=2*cm, 
+                    canvas.drawImage(f'{settings.BASE_DIR}/static/isaix-logo-1.png', 14.2 * cm, 1.25 * inch, width=2*cm, 
                     height=2*cm)
             canvas.setFont('Arial', 18)
             canvas.setFillColor(colors.white)
-            canvas.drawString(1.5 * cm, 9.15 * inch, "External Vulnerability Assessment")
+            canvas.drawString(1.5 * cm, 9.15 * inch, "Évaluation de la vulnérabilité externe")
             canvas.setFont('Arial', 14)
-            canvas.drawString(1.5 * cm, 8.70 * inch, "Produced by IsaiX Cyber Services")
+            canvas.drawString(1.5 * cm, 8.70 * inch, "Produit par les services IsaiX Cyber")
             canvas.setFont('Arial', 12)
             canvas.setFillColor(colors.black)
-            canvas.drawRightString(19.8 * cm, 1 * inch, f'Scan Date: {self.scan_date}')
+            canvas.drawRightString(19.8 * cm, 1 * inch, f"Date d'analyse : {self.scan_date}")
             # story.append(Paragraph(f'Production Date: {scan_date}', PS(name='Custom', fontSize=9, alignment=TA_RIGHT)))
             canvas.restoreState()
 
@@ -184,7 +184,7 @@ h1_header = PS(name = "HeaderTitle",
 
 h2_header = PS(name= 'HeaderSubTitle',
     font='Arial',
-    fontSize=12,
+    fontSize=12, 
     spaceAfter=10,
     alignment=TA_CENTER)
 
@@ -233,15 +233,24 @@ def generate_doc(role, active_plan, cname, scan_date, vulnerabilities, user_name
 
     toc.levelStyles = [h1_toc, h2_toc]
 
+    complexities = {
+        'critical':'Critique',
+        'high':'Élevée',
+        'medium':'Moyenne',
+        'low':'Faible',
+        'info':'Info',
+        'informational':'Informative'
+    }
+
     # HEADER
     story.append(Spacer(1, 0.10*inch))
-    story.append(Paragraph('Executive Report', PS(name='Custom', fontSize=18, alignment=TA_CENTER, textColor=colors.HexColor("#395c9a"), font='Arial')))
+    story.append(Paragraph('Rapport exécutif', PS(name='Custom', fontSize=18, alignment=TA_CENTER, textColor=colors.HexColor("#395c9a"), font='Arial')))
     
     # Add content only if role has access of it
     if role.cover_content_access or (order.is_client and role.id==4):
         story.append(Spacer(1, 6.37*inch))
         story.append(Spacer(1, 0.35*inch))
-        story.append(Paragraph('Presented to:', PS(name='Custom', fontSize=12, textColor=colors.HexColor("#395c9a"), leftIndent=8, font='Arial')))
+        story.append(Paragraph('Présenté à :', PS(name='Custom', fontSize=12, textColor=colors.HexColor("#395c9a"), leftIndent=8, font='Arial')))
         story.append(Spacer(1, 0.20*inch))
         user_name = (order.client_name if order.is_client and role.id==4 else user_name)
         user_table = Table(
@@ -273,39 +282,40 @@ def generate_doc(role, active_plan, cname, scan_date, vulnerabilities, user_name
     intro_numbering = 1
     story.append(PageBreak())
     story.append(Paragraph('<a name="intro"></a><b>{}. Introduction</b>'.format(section_number), h1))
-    story.append(Paragraph('<a name="welcome"></a><b>{}.{} Purpose</b>'.format(section_number, intro_sub_section_number), h2))
-    story.append(Paragraph('Welcome to the IsaiX Cyber Level 1 vulnerability scan report generated through our web-hosted portal and automated scanning tools at <a href="https://scanner.isaix.com/"><font color=blue>https://scanner.isaix.com/</font></a>. The purpose of this report is twofold:', link_style))
-    story.append(Paragraph(f"{intro_numbering}. For business leaders: to provide an understanding of the technical vulnerabilities of your web assets and offer a new line of sight to support the governance of your cyber resilience and assess your cyber business risk.", bullet_style))
+    story.append(Paragraph('<a name="welcome"></a><b>{}.{} Objectif</b>'.format(section_number, intro_sub_section_number), h2))
+    story.append(Paragraph("Bienvenue dans le rapport d'analyse de vulnérabilité IsaiX Cyber de niveau 1 généré par notre portail hébergé sur le web et nos outils d'analyse automatisés à l'adresse <a href='https://scanner.isaix.com/'><font color=blue>https://scanner.isaix.com/</font></a>. L'objectif de ce rapport est double :", link_style))
+    story.append(Paragraph(f"{intro_numbering}. Pour les chefs d'entreprise : fournir une compréhension des vulnérabilités techniques de vos actifs web pour offrir une nouvelle ligne de vue de la gouvernance de votre cyber-résilience et évaluer votre cyber-risque commercial.", bullet_style))
     intro_numbering +=1
-    story.append(Paragraph(f"{intro_numbering}. For IT support resources: to provide detailed insights into the vulnerabilities of your web assets and the references for the remediation of the vulnerabilities.", bullet_style))
+    story.append(Paragraph(f"{intro_numbering}. Pour les ressources informatiques : fournir des informations détaillées sur les vulnérabilités de vos actifs web et les références pour remédier ces vulnérabilités.", bullet_style))
     intro_sub_section_number = intro_sub_section_number + 1
     
-    story.append(Paragraph('<a name="imp"></a><b>{}.{} Managing your Cyber Risk</b>'.format(section_number, intro_sub_section_number), h2))
-    story.append(Paragraph("In today's threat landscape, cyber criminals are developing new vulnerabilities daily to attack your infrastructure and exploit your business. Exploitation of any vulnerability in your cyber security may create financial, operational and legal exposure and risks. Some of these risks include:", content))
-    story.append(Paragraph("<bullet>&bull;</bullet>Theft or loss of information through unauthorized and malicious access", bullet_style))
-    story.append(Paragraph("<bullet>&bull;</bullet>Disruption of service caused by compromised systems", bullet_style))
-    story.append(Paragraph("<bullet>&bull;</bullet>Reputation damage resulting from leaks or a loss of control and mis-direction of your web assets", bullet_style))
-    story.append(Paragraph("<bullet>&bull;</bullet>Ransom or blackmail resulting from theft", bullet_style))
-    story.append(Paragraph("<bullet>&bull;</bullet>Physical threats to property or personnel through intrusion and control of equipment", bullet_style))
-    story.append(Paragraph("<bullet>&bull;</bullet>Regulatory breaches and fines", bullet_style))
-    story.append(Paragraph("To assess the business risk associated with a particular vulnerability, the vulnerability must beviewed in the context of the system in which it is found, the likelihood that the vulnerability could be used by malicious actors and the potential impact to the business if it were exploited.", content))
-    story.append(Paragraph("Routine, 3rd party assessment of your vulnerabilities and diligent ongoing maintenance of your cyber security systems and the regular training of employees and partners are essential functions of governance.", content))
+    story.append(Paragraph("<a name='imp'></a><b>{}.{} Gérer le risque cyber</b>".format(section_number, intro_sub_section_number), h2))
+    story.append(Paragraph("Dans le paysage actuel des menaces, les cybercriminels développent chaque jour de nouvelles vulnérabilités pour attaquer votre infrastructure et exploiter votre entreprise. L'exploitation de toute vulnérabilité dans votre cybersécurité peut entraîner des risques financiers, opérationnels et juridiques. Parmi ces risques, citons :", content))
+    story.append(Paragraph("<bullet>&bull;</bullet>Le vol ou la perte d'informations par un accès non autorisé et malveillant", bullet_style))
+    story.append(Paragraph("<bullet>&bull;</bullet>Interruption de service causée par des systèmes compromis", bullet_style))
+    story.append(Paragraph("<bullet>&bull;</bullet>Atteinte à la réputation résultant de fuites ou d'une perte de contrôle et d'une mauvaise orientation de vos actifs web", bullet_style))
+    story.append(Paragraph("<bullet>&bull;</bullet>Rançon ou chantage résultant d'un vol", bullet_style))
+    story.append(Paragraph("<bullet>&bull;</bullet>Menaces physiques sur les biens ou le personnel par l'intrusion et le contrôle des équipements", bullet_style))
+    story.append(Paragraph("<bullet>&bull;</bullet>Infractions à la réglementation et amendes", bullet_style))
+    story.append(Paragraph("Pour évaluer le risque commercial associé à une vulnérabilité particulière, celle-ci doit être considérée dans le contexte du système dans lequel elle se trouve, la probabilité que la vulnérabilité soit utilisée par des acteurs malveillants et l'impact potentiel sur l'entreprise si elle était exploitée.", content))
+    story.append(Paragraph("L'évaluation régulière de vos vulnérabilités par des tierces parties, la maintenance permanente et diligente de vos systèmes de cybersécurité et la formation régulière de vos employés et partenaires sont des fonctions essentielles de la gouvernance.", content))
     story.append(Paragraph("", content))
     intro_sub_section_number = intro_sub_section_number + 1
 
-    story.append(Paragraph('<a name="goal"></a><b>{}.{} The Vulnerability Scan</b>'.format(section_number, intro_sub_section_number), h2))
-    story.append(Paragraph("This Level 1 assessment was conducted by an automated service that uses a number of commonly recognized open-source cyber security tools and proprietary scans to simulate attacks or exploitations on the target IP addresses assessed by the company.", content))
+    story.append(PageBreak())
+    story.append(Paragraph("<a name='goal'></a><b>{}.{}  L'analyse du scan vulnérabilité</b>".format(section_number, intro_sub_section_number), h2))
+    story.append(Paragraph("Cette évaluation de niveau 1 a été réalisée par un service automatisé qui utilise un certain nombre d'outils de cybersécurité de source ouverte communément reconnus et des analyses propriétaires pour simuler des attaques ou des exploitations sur les adresses IP cibles évaluées par l'entreprise.", content))
     intro_sub_section_number = intro_sub_section_number + 1
     if multiple_ip :
-        story.append(Paragraph('<a name="goal"></a><b>{}.{} Testing Scope</b>'.format(section_number, intro_sub_section_number), h2))
+        story.append(Paragraph('<a name="goal"></a><b>{}.{} Portée des tests</b>'.format(section_number, intro_sub_section_number), h2))
         intro_sub_section_number = intro_sub_section_number + 1
-        story.append(Paragraph("IsaiX Cyber processed target IP addresses entered through its platform. These were:"))
+        story.append(Paragraph("IsaiX Cyber a traité les adresses IP cibles saisies par l'intermédiaire de sa plateforme. Il s'agit des adresses suivantes"))
         story.append(Spacer(1, 0.4*inch))
-        story.append(Paragraph('<b>IPs / Domains / Hosts :</b>', h2_header))
+        story.append(Paragraph('<b>IPs / Domains / Hôtes :</b>', h2_header))
         story.append(Spacer(1, 0.2*inch))
         
         # Domain(hosts) table
-        table_header = ["IP Address", "Domain Name"]
+        table_header = ["Domaine IP", "Nom de domaine"]
         table_data = [[row[0], row[1]] for row in hosts]
         table_data.insert(0, table_header)
         table = Table(table_data, colWidths=7*cm)
@@ -326,36 +336,36 @@ def generate_doc(role, active_plan, cname, scan_date, vulnerabilities, user_name
         # Add the style to the table
         table.setStyle(style)
 
-    story.append(Paragraph('<a name="imp"></a><b>{}.{} Disclaimer of Liability and Limitation of the Scan</b>'.format(section_number, intro_sub_section_number), h2))
-    story.append(Paragraph("While IsaiX Cyber can discover numerous threat vectors, no system can guarantee the identification of all possible threats. IsaiX Cyber offers no warranties, representations or legal certifications concerning the applications or systems it scans. Nothing in this document is intended to represent or warrant that security testing was complete and without error, nor does this document represent or warrant that the application or systems it scans are suitable to the task, free of other defects than reported, or compliant with any industry standards.", content))
-    story.append(Paragraph("This report cannot and does not protect against personal or business loss as the result of use of the applications or systems described.", content))
-    story.append(Paragraph(f'This report contains information on the systems and/or web applications that existed as of {scan_date}.', content))
-    story.append(Paragraph("IsaiX Cyber’s scanning is a “point in time”, level 1 assessment of external web address (es) only and as such it is possible that vulnerabilities not found by the IsaiX scan exists on:", content))
-    story.append(Paragraph("a) Internal networks;", bullet_style))
-    story.append(Paragraph("b) VOIP or mobile applications;", bullet_style))
-    story.append(Paragraph("c) Operating equipment;", bullet_style))
-    story.append(Paragraph("which have not been scanned by our system or that the configuration of the web assets in the environment could have changed, or that new threats have emerged since the IsaiX scan was conducted.", content))
+    story.append(Paragraph("<a name='imp'></a><b>{}.{} Exclusion de responsabilité et limitation de l'analyse</b>".format(section_number, intro_sub_section_number), h2))
+    story.append(Paragraph("Bien qu'IsaiX Cyber puisse découvrir de nombreux vecteurs de menaces, aucun système ne peut garantir l'identification de toutes les menaces possibles. IsaiX Cyber n'offre aucune garantie, représentation ou certification légale concernant les applications ou les systèmes qu'il analyse. Rien dans ce document n'est destiné à représenter ou à garantir que les tests de sécurité ont été complets et sans erreur, ni à représenter ou à garantir que l'application ou les systèmes qu'il analyse sont adaptés à la tâche, exempts d'autres défauts que ceux signalés, ou conformes aux normes de l'industrie.", content))
+    story.append(Paragraph("Ce rapport ne peut pas et ne protège pas contre les pertes personnelles ou professionnelles résultant de l'utilisation des applications ou des systèmes décrits.", content))
+    story.append(Paragraph(f"Ce rapport contient des informations sur les systèmes et/ou les applications web qui existaient à la {scan_date}.", content))
+    story.append(Paragraph("L'analyse d'IsaiX Cyber est une évaluation « moment donné » de niveau 1, d'une adresse web externe uniquement et il est donc possible que des vulnérabilités non détectées par l'analyse d'IsaiX existent sur les :", content))
+    story.append(Paragraph("a) Réseaux internes;", bullet_style))
+    story.append(Paragraph("b) Applications VOIP ou mobiles;", bullet_style))
+    story.append(Paragraph("c) Équipements opérationnels;", bullet_style))
+    story.append(Paragraph("qui n'ont pas été analysés par notre système, que la configuration des ressources web dans l'environnement a pu changer ou que de nouvelles menaces sont apparues depuis l'analyse d'IsaiX.", content))
     intro_sub_section_number = intro_sub_section_number + 1
 
-    story.append(Paragraph('<a name="imp"></a><b>{}.{} Distribution of this Report</b>'.format(section_number, intro_sub_section_number), h2))
-    story.append(Paragraph("IsaiX recommends that this report be maintained and circulated in a secure environment only. By accepting delivery of this report, the company holds IsaiX harmless of any damages resulting from its distribution.The offers no guarantees that this PDF file has not been edited by the receiving party to include or omit any information not present on the original output of this Executive Report.", content))
+    story.append(Paragraph("<a name='imp'></a><b>{}.{} Distribution du présent rapport</b>".format(section_number, intro_sub_section_number), h2))
+    story.append(Paragraph("IsaiX recommande que ce rapport soit conservé et diffusé uniquement dans un environnement sécurisé. En acceptant la livraison de ce rapport, l'entreprise dégage IsaiX de toute responsabilité en cas de dommages résultant de sa distribution. IsaiX n'offre aucune garantie que ce fichier PDF n'a pas été modifié par la partie destinataire pour inclure ou omettre des informations qui ne figurent pas dans la version originale de ce rapport exécutif.", content))
     section_number = section_number + 1
     summary_section_number = 1
 
     # Summary Page
     story.append(PageBreak())
-    story.append(Paragraph('<a name="summary"></a><b>{}. Summary</b>'.format(section_number), h1))
+    story.append(Paragraph('<a name="summary"></a><b>{}. Résumé</b>'.format(section_number), h1))
 
     if active_plan or role.id==1:
-        story.append(Paragraph('<a name="exec"></a><b>{}.{} Executive Summary</b>'.format(section_number, summary_section_number), h2))
-        story.append(Paragraph("This report presents the results of the external reconnaissance and vulnerability detection conducted by IsaiX. This scan was conducted using non-credentialed access via a black-box testing approach which scans your external-facing assets (ex. web applications, web services, company websites) to reveal vulnerabilities and web server misconfigurations. These assets are most susceptible to attack and their vulnerabilities are frequently the most exploited.", content))
-        story.append(Paragraph("This vulnerability assessment may have identified flaws that your company should address diligently in order to prevent their exploitation, in consideration of the nature, severity and context of the risk associated with each vulnerability. The details of the vulnerabilities identified, their severity is presented in this document and references to two cyber security industry standard database resources, the Common Vulnerabilities and Exposures (CVE) and the Common Weakness Enumeration (CWE), are provided for further details.", content))
+        story.append(Paragraph('<a name="exec"></a><b>{}.{} Résumé</b>'.format(section_number, summary_section_number), h2))
+        story.append(Paragraph("Ce rapport présente les résultats de la reconnaissance externe et de la détection des vulnérabilités effectuées par IsaiX. Cette analyse a été réalisée en utilisant un accès non accrédité via une approche de test « blackbox » qui analyse vos actifs en contact avec l'extérieur (ex. applications web, services web, sites web de l'entreprise) pour révéler les vulnérabilités et les mauvaises configurations du serveur web. Ces actifs sont les plus susceptibles d'être attaqués et leurs vulnérabilités sont souvent les plus exploitées.", content))
+        story.append(Paragraph("Cette évaluation des vulnérabilités peut avoir identifié des failles que votre entreprise devrait traiter avec diligence afin d'empêcher leur exploitation, en tenant compte de la nature, de la gravité et du contexte du risque associé à chaque vulnérabilité. Les détails des vulnérabilités identifiées et leur gravité sont présentés dans ce document et des références à deux bases de données standard de l'industrie de la cybersécurité, le Common Vulnerabilities and Exposures (CVE) et le Common Weakness Enumeration (CWE), sont fournies pour plus de détails.", content))
         summary_section_number+=1
     
-    story.append(Paragraph('<a name="results"></a><b>{}.{} Risk Profile</b>'.format(section_number, summary_section_number), h2))
-    story.append(Paragraph("Vulnerabilities identified by the scan are grouped and classified for each target as critical, high, medium, low, and informative. The higher the vulnerability is rated, the greater the likelihood that this vulnerability could be exploited as avenues of attack resulting in, for example only, unauthorized access, data breaches, deletions and theft or system system disruption.", content))
-    story.append(Paragraph("The number, type and severity of the identified vulnerabilities, identified in this report may reveal how well your systems are being maintained. To assess the overall risk to your business operations you must consider the context of the vulnerability, value of the asset that could be compromised, the type of data that could be lost or stolen, against the impact of a breach.", content))
-    story.append(Paragraph("The bar graph breakdown of the vulnerabilities are as follows:", content))
+    story.append(Paragraph('<a name="results"></a><b>{}.{} Profil de risque</b>'.format(section_number, summary_section_number), h2))
+    story.append(Paragraph("Les vulnérabilités identifiées par l'analyse sont regroupées et classées pour chaque cible dans les catégories suivantes : critique, élevée, moyenne, faible et informative. Plus la vulnérabilité est évaluée à un niveau élevé, plus il est probable qu'elle soit exploitée comme moyen d'attaque entraînant, par exemple seulement ; un accès non autorisé, des violations de données, des suppressions et des vols ou une perturbation du système.", content))
+    story.append(Paragraph("Le nombre, le type et la gravité des vulnérabilités identifiées dans ce rapport peuvent révéler la qualité de la maintenance de vos systèmes. Pour évaluer le risque global pour les activités de votre entreprise, vous devez tenir compte du contexte de la vulnérabilité, de la valeur de l'actif qui pourrait être compromise, du type de données qui pourraient être perdues ou volées, ainsi que de l'impact d'une violation.", content))
+    story.append(Paragraph("La répartition des vulnérabilités sous forme de diagramme à barres est la suivante :", content))
 
     # Count number of each severity category
     crit = risk_levels['critical']
@@ -381,12 +391,13 @@ def generate_doc(role, active_plan, cname, scan_date, vulnerabilities, user_name
     chart.categoryAxis.labels.dx = 8
     chart.categoryAxis.labels.dy = -2
     chart.categoryAxis.labels.angle = 30
-    chart.categoryAxis.categoryNames = ['Critical', 'High', 'Medium', 'Low', 'Info']
+    chart.categoryAxis.categoryNames = [complexities.get('critical'), complexities.get('high'), complexities.get('medium'), complexities.get('low'), complexities.get('info')]
     chart.bars[(0,0)].fillColor = colors.maroon
     chart.bars[(0,1)].fillColor = colors.red
     chart.bars[(0,2)].fillColor = colors.orange
     chart.bars[(0,3)].fillColor = colors.green
     chart.bars[(0,4)].fillColor = colors.blue
+
 
     # add values in each bar
     bar_labels = []
@@ -411,7 +422,7 @@ def generate_doc(role, active_plan, cname, scan_date, vulnerabilities, user_name
     # add bar labels to drawing
     for bar_label in bar_labels:
         drawing.add(bar_label)
-    header_text = "Vulnerabilities Found"
+    header_text = "Vulnérabilités trouvées"
     header_style = getSampleStyleSheet()["Heading2"]
     header_style.fontName = "Helvetica-Bold"  # Set the font name to Helvetica-Bold
     header_style.fontSize = 16  # Set the font size to 16
@@ -429,8 +440,8 @@ def generate_doc(role, active_plan, cname, scan_date, vulnerabilities, user_name
 
     if active_plan or role.id==1:
         # Risk Evaluation
-        story.append(Paragraph('<a name="risk_evaluation"></a><b>{}. Risk Evaluation</b>'.format(section_number), h1))
-        story.append(Paragraph("Two well-known industry standard classification systems were applied to assess the severity of vulnerabilities. These were: Common Vulnerability Scoring System (CVSS) versions 3.0 and 2.0. CVSS assigns severity scores to facilitate the prioritization of action plans according to the threat. Scores are calculated based on a formula that depends on several metrics that approximate ease and impact of an exploit. Scores range from 0 to 10, with 10 being the most severe.", content))
+        story.append(Paragraph('<a name="risk_evaluation"></a><b>{}. Évaluation des risques</b>'.format(section_number), h1))
+        story.append(Paragraph("Deux systèmes de classification standard bien connus de l'industrie ont été appliqués pour évaluer la gravité des vulnérabilités. Il s'agit des versions 3.0 et 2.0 du Common Vulnerability Scoring System (CVSS) : Common Vulnerability Scoring System (CVSS) versions 3.0 et 2.0. CVSS attribue des scores de gravité pour faciliter la hiérarchisation des plans d'action en fonction de la menace. Les notes sont calculées sur la base d'une formule qui dépend de plusieurs paramètres permettant d'évaluer la facilité et l'impact d'un exploit. Les notes vont de 0 à 10, 10 étant la note la plus élevée.", content))
 
         table_header_style = PS(name='tableHead',
                         textColor= colors.white,
@@ -442,11 +453,11 @@ def generate_doc(role, active_plan, cname, scan_date, vulnerabilities, user_name
 
         # Define your data for the table
         risk_eval_table_data = [
-            [Paragraph('Severity', table_header_style), Paragraph('CVSS v3.0', table_header_style), Paragraph('CVSS v2.0', table_header_style), Paragraph('Definition', table_header_style)],
-            ['Critical', '9.0-10.0', 'Not supporting',Paragraph('The presence of a flaw is confirmed and is currently exploited or easily exploited by attackers on the Internet. Without immediate attention, the reputation and operations of the company will be compromised.')],
-            ['High', '7.0-8.9', '7.0-10.0',Paragraph('The presence of a fault is confirmed. Exploitation of this vulnerability does not require very high technical and / or material capacities.')],
-            ['Medium', '4.0-6.9', '4.0-6.9',Paragraph('The presence of a fault is to be confirmed. The configuration is not optimal and should be improved, however, this has no immediate impact on the security of the system. More difficult vulnerabilities to exploit that can lead to a denial of service and possibly loss of confidentiality')],
-            ['Low', '0.1-3.9', '0.0-3.9',Paragraph('The presence of a fault could not be determined with certainty, however, there are several signs that the system is vulnerable, and that further exploration is needed to confirm the existence of this flaw. These vulnerabilities can lead to loss of confidentiality')],
+            [Paragraph('Sévérité', table_header_style), Paragraph('CVSS v3.0', table_header_style), Paragraph('CVSS v2.0', table_header_style), Paragraph('Définition', table_header_style)],
+            [complexities.get('critical'), '9.0-10.0', 'Pas de support',Paragraph("La présence d'une faille est confirmée et elle est actuellement exploitée ou facilement exploitable par des attaquants sur l'internet. Sans attention immédiate, la réputation et les activités de l'entreprise seront compromises.")],
+            [complexities.get('high'), '7.0-8.9', '7.0-10.0',Paragraph("La présence d'un défaut est confirmée. L'exploitation de cette vulnérabilité ne nécessite pas de très grandes capacités techniques et/ou matérielles très élevées.")],
+            [complexities.get('medium'), '4.0-6.9', '4.0-6.9',Paragraph("La présence d'un défaut doit être confirmée. La configuration n'est pas optimale et doit être améliorée, mais cela n'a pas d'impact immédiat sur la sécurité du système. Les vulnérabilités sont plus difficiles à exploiter et peuvent conduire à un déni de service et à une perte de confidentialité.")],
+            [complexities.get('low'), '0.1-3.9', '0.0-3.9',Paragraph("La présence d'un défaut n'a pas pu être déterminée avec certitude, cependant, plusieurs signes indiquent que le système est vulnérable, et qu'une exploration plus poussée est nécessaire pour confirmer l'existence de cette faille. Ces vulnérabilités peuvent entraîner une perte de confidentialité.")],
         ]
 
         # Get the sample style sheet
@@ -486,15 +497,15 @@ def generate_doc(role, active_plan, cname, scan_date, vulnerabilities, user_name
         # Summary of Findings
         section_number = section_number + 1
         summary_find_section_num = 1
-        story.append(Paragraph('<a name="summary_of_findings"></a><b>{}. Summary of Findings</b>'.format(section_number), h1))
-        story.append(Paragraph('In this section, the results of the external scans are represented.', content))
+        story.append(Paragraph('<a name="summary_of_findings"></a><b>{}. Résumé des résultats</b>'.format(section_number), h1))
+        story.append(Paragraph("Cette section présente les résultats des analyses externes.", content))
 
-        story.append(Paragraph('{}.{} Major Vulnerabilities List'.format(section_number, summary_find_section_num), h2))
+        story.append(Paragraph('{}.{} Liste des principales vulnérabilités'.format(section_number, summary_find_section_num), h2))
 
         if role.tool_access:
-            table_header = [Paragraph('Vulnerability', table_header_style), Paragraph('System', table_header_style), Paragraph('Risk Level', table_header_style), Paragraph('No. of Instances', table_header_style), Paragraph('Alert Detection Tool', table_header_style)]
+            table_header = [Paragraph('Vulnérabilité', table_header_style), Paragraph('Système', table_header_style), Paragraph("Niveau de risque", table_header_style), Paragraph("Nombre d'instances", table_header_style), Paragraph("Outil de détection d'alerte", table_header_style)]
         else:
-            table_header = [Paragraph('Vulnerability', table_header_style), Paragraph('System', table_header_style), Paragraph('Risk Level', table_header_style), Paragraph('No. of Instances', table_header_style)]
+            table_header = [Paragraph('Vulnérabilité', table_header_style), Paragraph('Système', table_header_style), Paragraph("Niveau de risque", table_header_style), Paragraph("Nombre d'instances", table_header_style)]
         top_vulns = []
 
         # Only get alerts with high enough risk
@@ -544,11 +555,12 @@ def generate_doc(role, active_plan, cname, scan_date, vulnerabilities, user_name
                 if level in color_dict:
                     style.add('BACKGROUND', (2, index), (2, index), color_dict[level]['bg_color'])
                     style.add('TEXTCOLOR', (2, index), (2, index), color_dict[level]['font_color'])
+                    row[2]=complexities[row[2].lower()]
 
         if role.tool_access:
-            majorVulnTable = Table(top_vulns,  colWidths=[9.9*cm, 1.8*cm, 2.4*cm, 2.1*cm, 2.5*cm])
+            majorVulnTable = Table(top_vulns,  colWidths=[9.5*cm, 2.2*cm, 2.4*cm, 2.1*cm, 2.5*cm])
         else:
-            majorVulnTable = Table(top_vulns,  colWidths=[9.9*cm, 1.8*cm, 3.5*cm, 3.5*cm])
+            majorVulnTable = Table(top_vulns,  colWidths=[9.5*cm, 2.2*cm, 3.5*cm, 3.5*cm])
         majorVulnTable.setStyle(style)
         story.append(majorVulnTable)
 
@@ -558,8 +570,8 @@ def generate_doc(role, active_plan, cname, scan_date, vulnerabilities, user_name
         # Scan Overview
         if multiple_ip:
             section_number = section_number + 1
-            story.append(Paragraph('<a name="scan_overview"></a><b>{}. Scan Overview</b>'.format(section_number), h1))
-            story.append(Paragraph('This section represents the Number of Occurrences for each identified vulnerability per IP / Host along with their risk level. Please note that the Number of Occurrence increases if the same vulnerability is found on another website on the same IP/Host:', content))
+            story.append(Paragraph('<a name="scan_overview"></a><b>{}. Aperçu du scan</b>'.format(section_number), h1))
+            story.append(Paragraph("Cette section indique le nombre d'occurrences de chaque vulnérabilité identifiée par IP/hôte, ainsi que leur niveau de risque. Veuillez noter que le nombre d'occurrences augmente si la même vulnérabilité est détectée sur un autre site web de la même IP/hôte :", content))
 
             style = TableStyle([
                 ('BACKGROUND', (0, 0), (0, 0), colors.purple),  # color for header cell in column 1
@@ -582,7 +594,7 @@ def generate_doc(role, active_plan, cname, scan_date, vulnerabilities, user_name
                 story.append(Paragraph(text="Host: {}".format(host[0]), style=h2))
                 host_info = [
                     host[2],
-                    ['Critical', 'High', 'Medium', 'Low', 'Info']
+                    [complexities.get('critical'), complexities.get('high'), complexities.get('medium'), complexities.get('low'), complexities.get('info')]
                 ]
                 host_info_table = Table(host_info, colWidths=(3.65*cm,3.65*cm,3.65*cm,3.65*cm,3.65*cm))
                 
@@ -595,7 +607,7 @@ def generate_doc(role, active_plan, cname, scan_date, vulnerabilities, user_name
 
         # Detailed vulernability Analysis
         section_number = section_number + 1
-        story.append(Paragraph('<a name="detailed_vulernability_analysis"></a><b>{}. Detailed vulernability Analysis</b>'.format(section_number), h1))
+        story.append(Paragraph('<a name="detailed_vulernability_analysis"></a><b>{}. Analyse détaillée des vulnérabilités</b>'.format(section_number), h1))
 
         for i, alert in enumerate(vulnerabilities.values()):
 
@@ -604,7 +616,7 @@ def generate_doc(role, active_plan, cname, scan_date, vulnerabilities, user_name
                     cname,
                     alert['complexity']
                 ]
-                alert_info = [['Risk Factor: {}'.format(alert['complexity']), 'Occurences: {}'.format(alert['instances'])]]
+                alert_info = [['Facteur de risque: {}'.format(complexities[alert['complexity'].lower()]), 'Occurrences: {}'.format(alert['instances'])]]
                 styles = getSampleStyleSheet()
                 cell_style = styles["BodyText"]
 
@@ -655,9 +667,9 @@ def generate_doc(role, active_plan, cname, scan_date, vulnerabilities, user_name
                     Paragraph('<b>Solution: </b> {}'.format(alert['alert_json']['solution'] if 'solution' in alert['alert_json'] else 'N/A'), content),
                     Paragraph('<b>CVSS 3: </b> {}'.format(cvvs3), content),
                     Paragraph('<b>CVSS 2: </b> {}'.format(cvvs2), content),
-                    Paragraph('<b>Tool: </b> {}'.format(alert['tool']), content),
+                    Paragraph('<b>Outil: </b> {}'.format(alert['tool']), content),
                     Paragraph('<b>CWE: </b> {}'.format(alert.get('cwe_ids','N/A')), content),
-                    Paragraph('<b>Evidence: </b>', content),
+                    Paragraph('<b>Preuve: </b>', content),
                     Paragraph(escape(alert.get('evidence','N/A')).replace("&amp;","&").replace("&lt;br/&gt;","<br/>"), content_layout)
                     ]
                 

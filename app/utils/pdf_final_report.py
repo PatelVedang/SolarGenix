@@ -6,7 +6,8 @@ import logging
 from datetime import datetime
 from tldextract import extract
 import socket
-from .report_lab_doc import generate_doc
+from .report_lab_doc import generate_doc as generate_eng_doc
+from .report_lab_doc_french import generate_doc as generate_french_doc
 logger = logging.getLogger('django')
 from .handlers.nmap_handler import NMAP
 nmap = NMAP()
@@ -37,6 +38,12 @@ class PDF:
         'active_owasp': owasp.main,
         'default': default.default_handler
     }
+
+    doc_generators = {
+        'EN':generate_eng_doc,
+        'FR':generate_french_doc
+    }
+    
 
     def make_path(self, target_path):
         """
@@ -127,7 +134,7 @@ class PDF:
       
             origin = ".".join(list(extract(ip))).strip(".")
             ip = socket.gethostbyname(origin)
-            generate_doc(role, active_plan, cname='ISAIX',
+            self.doc_generators[order_obj.client.report_language](role, active_plan, cname='ISAIX',
                 scan_date=order_obj.created_at.strftime("%b %d %Y"),
                 vulnerabilities=alert_objs,
                 user_name = f"{order_obj.client.first_name} {order_obj.client.last_name}",

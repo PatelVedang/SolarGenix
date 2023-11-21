@@ -54,7 +54,8 @@ class PricingView(viewsets.ViewSet):
         )
         prices['publishable_key']=publishable_key
         return response(data=prices, status_code=status.HTTP_200_OK, message="Pricing found.")
-    
+
+@method_decorator(name='list', decorator=swagger_auto_schema(tags=['Payment'], operation_description= "Stripe Config API.", operation_summary="API to get stripe config."))
 class ConfigView(viewsets.ViewSet):
     permission_classes = [IsAuthenticated]
     
@@ -226,8 +227,40 @@ class CreateSubscriptionView(generics.CreateAPIView):
             except Exception as e:
                 return response(data={}, status_code=status.HTTP_400_BAD_REQUEST, message=str(e))
 
+
+class CancelSubscription(generics.RetrieveAPIView):
+    permission_classes = [IsAuthenticated]
+
+
+    @swagger_auto_schema(
+        tags=['Payment'],
+        operation_description= "API to cancel stripe subscription",
+        operation_summary="API to cancel stripe subscription"
+    )
+    def get(self, request, *args, **kwargs):
+        
+        active_plans = request.user.get_active_plan()
+        if active_plans.count():
+            current_subscription = active_plans[0]
+            current_subscription.status=2
+            current_subscription.save()
+            try:
+                if current_subscription.price_type != 3:
+                    stripe.Subscription.cancel(current_subscription.stripe_subscription_id)
+            except Exception as e:
+                print("Error in cancelling subscription : ", str(e))
+                return response(data={}, status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, message="something went wrong")
+        else:
+            pass
+        return response(data={}, status_code=status.HTTP_200_OK, message="Subscription successfully cancelled.")
+
 @method_decorator(csrf_exempt, name='dispatch')
 class StripeWebHooks(generics.GenericAPIView):
+
+    @swagger_auto_schema(
+        tags=['Payment'],
+        auto_schema=None
+    )    
     def post(self, request, *args, **kwargs):
         stripe.api_key = settings.STRIPE_SECRET_KEY
         webhook_secret = settings.STRIPE_WEBHOOK_SECRET
