@@ -140,7 +140,9 @@ class OrderAdmin(BulkSelect):
         :return: a string that concatenates the first name and last name of the object's `scan_by`
         attribute, separated by a space.
         """
-        return f'{obj.client.first_name} {obj.client.last_name}'
+        if obj.client:
+            return f'{obj.client.first_name} {obj.client.last_name}'
+        return None
     get_full_name.short_description = 'Client'
     
     def get_targets_count(self, obj):

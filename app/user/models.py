@@ -7,6 +7,7 @@ from datetime import datetime
 from django.db.models import Q
 from datetime import datetime
 from payments.models import PaymentHistory
+from django.utils import timezone
 
 # Create your models here.
 class Role(models.Model):
@@ -74,7 +75,8 @@ class User(AbstractBaseUser, PermissionsMixin):
         return super(User, self).save(*args, **kwargs)
     
     def get_active_plan(self):
-        today = datetime.utcnow()
+        today = timezone.make_aware(datetime.utcnow(), timezone=timezone.utc)
+        # today = datetime.utcnow()
         return PaymentHistory.objects.filter(
             Q(status=1) &
             Q(user=self) &

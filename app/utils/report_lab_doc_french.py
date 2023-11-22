@@ -34,7 +34,7 @@ class MyDocTemplate(BaseDocTemplate):
         left_margin = 1*cm
         right_margin = 1*cm
         top_margin = 2.5*cm
-        bottom_margin = 2.5*cm
+        bottom_margin = 3*cm
         
         x1 = left_margin
         y1 = bottom_margin
@@ -69,7 +69,6 @@ class MyDocTemplate(BaseDocTemplate):
                     canvas.drawImage(f"{settings.MEDIA_ROOT}{self.logo}", 14.2 * cm, 1.25 * inch, width=2*cm, 
                     height=2*cm)
                 except Exception as e:
-                    canvas.drawRight
                     canvas.drawImage(f'{settings.BASE_DIR}/static/isaix-logo-1.png', 14.2 * cm, 1.25 * inch, width=2*cm, 
                     height=2*cm)
             canvas.setFont('Arial', 18)
@@ -607,7 +606,7 @@ def generate_doc(role, active_plan, cname, scan_date, vulnerabilities, user_name
 
         # Detailed vulernability Analysis
         section_number = section_number + 1
-        story.append(Paragraph('<a name="detailed_vulernability_analysis"></a><b>{}. Analyse détaillée des vulnérabilités</b>'.format(section_number), h1))
+        # story.append(Paragraph('<a name="detailed_vulernability_analysis"></a><b>{}. Analyse détaillée des vulnérabilités</b>'.format(section_number), h1))
 
         for i, alert in enumerate(vulnerabilities.values()):
 
@@ -660,6 +659,7 @@ def generate_doc(role, active_plan, cname, scan_date, vulnerabilities, user_name
 
                 
                 vul_detail = [
+                    Paragraph('<a name="detailed_vulernability_analysis"></a><b>{}. Analyse détaillée des vulnérabilités</b>'.format(section_number), h1),
                     Paragraph('<b><a name="{}"/>{}.{} {}</b>'.format(alert['alert_ref'],section_number, i+1, alert['error']), h2 if 'error' in alert else 'N/A'),
                     table, 
                     Spacer(1, 5),  
@@ -673,6 +673,9 @@ def generate_doc(role, active_plan, cname, scan_date, vulnerabilities, user_name
                     Paragraph(escape(alert.get('evidence','N/A')).replace("&amp;","&").replace("&lt;br/&gt;","<br/>"), content_layout)
                     ]
                 
+                if i!=0:
+                    del vul_detail[0]
+
                 if not role.tool_access:
                     del vul_detail[7]
                 

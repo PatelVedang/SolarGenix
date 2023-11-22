@@ -89,17 +89,6 @@ class Common:
 
         return order_scan_finish
 
-    def get_active_plan(self, user):
-        today = datetime.utcnow()
-
-        return PaymentHistory.objects.filter(
-            Q(status=1) &
-            Q(user=user) &
-            Q(current_period_start__lte=today) &
-            (Q(current_period_end__isnull=True) |
-            Q(current_period_end__gte=today))
-        ).order_by('-created_at')
-
 
     def delete_order_targets_cache(self, order_id):
         """
@@ -297,8 +286,7 @@ class ScanViewSet(viewsets.ModelViewSet, Common):
         """
         self.serializer_class = ScannerResponseSerializer
         serializer = super().retrieve(request, *args, **kwargs)
-        today = datetime.utcnow()
-        active_plan = super().get_active_plan(request.user).exists()
+        active_plan = request.user.get_active_plan().exists()
         pdf_path, pdf_name, file_url = pdf.generate(request.user.role, request.user.id, serializer.data.get('order'), active_plan, [serializer.data.get('id')])
         
         data = {
@@ -326,8 +314,7 @@ class ScanViewSet(viewsets.ModelViewSet, Common):
         """
         self.serializer_class = ScannerResponseSerializer
         serializer = super().retrieve(request, *args, **kwargs)
-        today = datetime.utcnow()
-        active_plan = super().get_active_plan(request.user).exists()
+        active_plan = request.user.get_active_plan().exists()
         pdf_path, pdf_name, file_url = pdf.generate(request.user.role, request.user.id, serializer.data.get('order'), active_plan, [serializer.data.get('id')])
         FilePointer = open(pdf_path,"rb")
         response = HttpResponse(FilePointer,content_type='application/pdf')
@@ -352,8 +339,7 @@ class ScanViewSet(viewsets.ModelViewSet, Common):
         """
         self.serializer_class = ScannerResponseSerializer
         serializer = super().retrieve(request, *args, **kwargs)
-        today = datetime.utcnow()
-        active_plan = super().get_active_plan(request.user).exists()
+        active_plan = request.user.get_active_plan().exists()
         html_data = pdf.generate(request.user.role, request.user.id, serializer.data.get('order'), active_plan, [serializer.data.get('id')], generate_pdf=False)
 
         data = {
@@ -529,8 +515,7 @@ class SendMessageView(generics.GenericAPIView, Common):
                         if request.user.subscription.mail_scan_result:
                             # sending mail on scan complete of batch of targets
                             targets_ids = [target.get('id') for target in order['targets']]
-                            today = datetime.utcnow()
-                            active_plan = super().get_active_plan(request.user).exists()
+                            active_plan = request.user.get_active_plan().exists()
                             pdf_path, pdf_name, file_url = pdf.generate(request.user.role, request.user.id, order_id, active_plan, targets_ids)
                             user_name = f"{order['client']['first_name']} {order['client']['last_name']}".upper()
                             email_body =  f'''Dear {user_name},\n\nI hope this email finds you well. I am writing to inform you about the successful completion of the recent security scan conducted on {order['target_ip']}. The attached PDF file contains the detailed scan results, outlining the findings and security status of the website.\n\nPlease find the attached PDF document named "output.pdf." In case you have any questions or need further clarification regarding the findings, feel free to reach out to us.
@@ -597,8 +582,7 @@ class SendMessageView(generics.GenericAPIView, Common):
                         print(request.user.subscription.mail_scan_result,"=>>>>>>>>Mail Scan  result")
                         if request.user.subscription.mail_scan_result:
                             # sending mail on scan complete of single target
-                            today = datetime.utcnow()
-                            active_plan = super().get_active_plan(request.user).exists()
+                            active_plan = request.user.get_active_plan().exists()
                             pdf_path, pdf_name, file_url = pdf.generate(request.user.role, request.user.id, order_id, active_plan, [record_obj["id"]])
                             user_name = f"{order['client']['first_name']} {order['client']['last_name']}".upper()
                             email_body =  f'''Dear {user_name},\n\nI hope this email finds you well. I am writing to inform you about the successful completion of the recent security scan conducted on {record_obj['ip']}. The attached PDF file contains the detailed scan results, outlining the findings and security status of the website.\n\nPlease find the attached PDF document named "output.pdf." In case you have any questions or need further clarification regarding the findings, feel free to reach out to us.
@@ -660,7 +644,7 @@ class OrderViewSet(viewsets.ModelViewSet, Common):
         if serializer.is_valid(raise_exception=True):
             target_ip= serializer.data.get('target_ip')
             today = datetime.utcnow()
-            current_sub = super().get_active_plan(request.user)
+            current_sub = request.user.get_active_plan()
             if request.user.role.id!=1:
                 # If user have any running subscription
                 if current_sub.exists():
@@ -830,8 +814,7 @@ class OrderViewSet(viewsets.ModelViewSet, Common):
         self.serializer_class = OrderResponseSerailizer
         serializer = super().retrieve(request, *args, **kwargs)
         targets = [target.get('id') for target in (list(Target.objects.filter(order_id= serializer.data.get('id')).values('id')))]
-        today = datetime.utcnow()
-        active_plan = super().get_active_plan(request.user).exists()
+        active_plan = request.user.get_active_plan().exists()
         pdf_path, pdf_name, file_url = pdf.generate(request.user.role, request.user.id, serializer.data.get('id'), active_plan, targets_ids=targets, generate_order_pdf=True)
         data = {
             'file_path':file_url
