@@ -58,7 +58,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     user_company = models.CharField(max_length=1000, blank=True)
     user_address = models.TextField(blank=True)
     stripe_customer_id = models.CharField(max_length=255, null=True)
-    report_language = models.CharField(max_length=10, choices=LANGUAGE_CHOICE,default='EN')
+    language = models.CharField(max_length=10, choices=LANGUAGE_CHOICE,default='EN')
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = []

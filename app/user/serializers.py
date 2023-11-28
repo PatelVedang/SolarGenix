@@ -211,7 +211,8 @@ class CustomTokenVerifySerializer(TokenVerifySerializer):
             'role': user.role.id,
             'first_name': user.first_name,
             'last_name': user.last_name,
-            'profile_image':f'{settings.PDF_DOWNLOAD_ORIGIN}/media/{str(user.profile_image)}'
+            'profile_image':f'{settings.PDF_DOWNLOAD_ORIGIN}/media/{str(user.profile_image)}',
+            'language':user.language
         }
         if not user.is_verified:
             raise serializers.ValidationError(
@@ -325,7 +326,7 @@ class UpdateProfileSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(read_only=True)
     class Meta:
         model = User
-        fields = ['id', 'first_name', 'last_name', 'role', 'profile_image', 'email', 'user_company', 'user_address', 'report_language']
+        fields = ['id', 'first_name', 'last_name', 'role', 'profile_image', 'email', 'user_company', 'user_address', 'language']
 
     def validate(self, attrs):
         logger.info(f'serialize_data: {json.dumps(attrs)}')

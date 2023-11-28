@@ -126,7 +126,7 @@ class ScanViewSet(viewsets.ModelViewSet, Common):
         request_body=AddInQueueByIdsSerializer,
         operation_description= "Set targets in queue ids.",
         operation_summary="API to add targets in queue for scanning by ids.",
-        tags=['Targets']
+        tags=['Targets'],
 
     )
     @action(methods=['POST'], detail=False, url_path="addByIds")
