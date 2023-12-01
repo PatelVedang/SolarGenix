@@ -287,11 +287,14 @@ class ScanViewSet(viewsets.ModelViewSet, Common):
         self.serializer_class = ScannerResponseSerializer
         serializer = super().retrieve(request, *args, **kwargs)
         active_plan = request.user.get_active_plan().exists()
-        pdf_path, pdf_name, file_url = pdf.generate(request.user.role, request.user.id, serializer.data.get('order'), active_plan, [serializer.data.get('id')])
-        
-        data = {
-            'file_path':file_url
-        }
+        try:
+            pdf_path, pdf_name, file_url = pdf.generate(request.user.role, request.user.id, serializer.data.get('order').get('id'), active_plan, [serializer.data.get('id')])
+            
+            data = {
+                'file_path':file_url
+            }
+        except Exception as e:
+            return response(data={}, status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, message="Oops! something went wrong!")
         TargetLog.objects.create(target=Target(serializer.data.get('id')), action=6)
         return response(data=data, status_code=status.HTTP_200_OK, message="PDF generated successfully")
     
@@ -315,8 +318,12 @@ class ScanViewSet(viewsets.ModelViewSet, Common):
         self.serializer_class = ScannerResponseSerializer
         serializer = super().retrieve(request, *args, **kwargs)
         active_plan = request.user.get_active_plan().exists()
-        pdf_path, pdf_name, file_url = pdf.generate(request.user.role, request.user.id, serializer.data.get('order'), active_plan, [serializer.data.get('id')])
-        FilePointer = open(pdf_path,"rb")
+        try:
+            pdf_path, pdf_name, file_url = pdf.generate(request.user.role, request.user.id, serializer.data.get('order').get('id'), active_plan, [serializer.data.get('id')])
+            FilePointer = open(pdf_path,"rb")
+            
+        except Exception as e:
+            return response(data={}, status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, message="Oops! something went wrong!")
         response = HttpResponse(FilePointer,content_type='application/pdf')
         response['Content-Disposition'] = f'attachment; filename={pdf_name}'
         return response
@@ -340,7 +347,10 @@ class ScanViewSet(viewsets.ModelViewSet, Common):
         self.serializer_class = ScannerResponseSerializer
         serializer = super().retrieve(request, *args, **kwargs)
         active_plan = request.user.get_active_plan().exists()
-        html_data = pdf.generate(request.user.role, request.user.id, serializer.data.get('order'), active_plan, [serializer.data.get('id')], generate_pdf=False)
+        try:
+            html_data = pdf.generate(request.user.role, request.user.id, serializer.data.get('order').get('id'), active_plan, [serializer.data.get('id')], generate_pdf=False)
+        except Exception as e:
+            return response(data={}, status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, message="Oops! something went wrong!")
 
         data = {
             'html_content':html_data
@@ -815,7 +825,10 @@ class OrderViewSet(viewsets.ModelViewSet, Common):
         serializer = super().retrieve(request, *args, **kwargs)
         targets = [target.get('id') for target in (list(Target.objects.filter(order_id= serializer.data.get('id')).values('id')))]
         active_plan = request.user.get_active_plan().exists()
-        pdf_path, pdf_name, file_url = pdf.generate(request.user.role, request.user.id, serializer.data.get('id'), active_plan, targets_ids=targets, generate_order_pdf=True)
+        try:
+            pdf_path, pdf_name, file_url = pdf.generate(request.user.role, request.user.id, serializer.data.get('id'), active_plan, targets_ids=targets, generate_order_pdf=True)
+        except Exception as e:
+            return response(data={}, status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, message="Oops! something went wrong!")
         data = {
             'file_path':file_url
         }
