@@ -8,6 +8,8 @@ from django.db.models import Q
 from datetime import datetime
 from payments.models import PaymentHistory
 from django.utils import timezone
+import os
+import uuid
 
 # Create your models here.
 class Role(models.Model):
@@ -34,7 +36,9 @@ class User(AbstractBaseUser, PermissionsMixin):
 
 
     def upload_profile_to(instance, filename):
-        return f'profiles/{instance.id}/{filename}'
+        file_extension = os.path.splitext(filename)[1]
+        return f'profiles/{instance.id}/{str(uuid.uuid4())}{file_extension}'
+    
     username = None
     email = models.EmailField(_('email address'), unique=True, blank=False, null=False)
     # is_active = models.BooleanField(default=True)

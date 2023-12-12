@@ -1,4 +1,6 @@
+from typing import Optional, Type
 from django.contrib import admin
+from django.contrib.admin.sites import AdminSite
 from .models import Target, Tool, Subscription, SubscriptionHistory, TargetLog, Order
 
 # This is a Django admin class that adds bulk actions to soft delete and recover selected items.
@@ -122,6 +124,12 @@ class TargetAdmin(BulkSelect):
         return f'{obj.scan_by.first_name} {obj.scan_by.last_name}'
     get_full_name.short_description = 'Scan By'
 
+
+    def get_raw_result(self, obj):
+        return obj.get_raw_result()
+    get_raw_result.short_description = 'Raw Result'
+    
+
 class OrderAdmin(BulkSelect):
     readonly_fields = ('id','retry')
     search_fields = ('target_ip','id', 'client__first_name', 'client__last_name')
@@ -164,7 +172,30 @@ class ToolAdmin(BulkSelect):
     readonly_fields = ('id',)
     list_display = ['id','tool_name', 'tool_cmd', 'is_deleted', 'subscription', 'py_tool']
     actions = ['make_it_as_staff_tool'] + BulkSelect.actions
-    search_fields = ('id', 'subscription__plan_type', 'tool_name', 'tool_cmd')
+    # search_fields = ('id', 'subscription__plan_type', 'tool_name', 'tool_cmd')
+    # actions = list(admin.ModelAdmin.actions)
+
+    # def __init__(self,*args, **kwargs):
+    #     subscription_types = Subscription.objects.values_list('plan_type', flat=True).distinct()
+
+    #     # super(ToolAdmin, self).__init__(model, admin_site)
+    #     # Dynamically create make_it_as_ methods for each subscription type
+    #     for plan_type in subscription_types:
+    #         plan_type_lower = plan_type.lower()
+    #         method_name = 'make_it_as_{plan_type}_tool'.format(plan_type=plan_type_lower)
+            
+    #         def make_it_as_tool_wrapper(self, request, queryset, plan_type=plan_type_lower):
+    #             return self.make_it_as_tool(request, queryset, plan_type)
+            
+    #         setattr(self, method_name, make_it_as_tool_wrapper)
+    #         self.actions.append(method_name)
+
+    # def make_it_as_tool(self, request, queryset, plan_type):
+    #     """
+    #     This generic function updates the subscription field of the selected query set to the specified subscription type.
+    #     """
+    #     subscription = Subscription.objects.get(plan_type=plan_type)
+    #     queryset.update(subscription=subscription.pk)
 
     def make_it_as_staff_tool(self, request, queryset):
         """
@@ -193,7 +224,7 @@ class ToolAdmin(BulkSelect):
         return f"{obj.subscription.plan_type}"
     
     get_subscription.short_description = 'Subscription'
-    make_it_as_staff_tool.short_description = 'Make selected %(verbose_name_plural)s as staff only'
+    # make_it_as_staff_tool.short_description = 'Make selected %(verbose_name_plural)s as staff only'
 
 class SubscriptionHistoryAdmin(admin.ModelAdmin):
      list_display = [

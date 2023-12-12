@@ -119,8 +119,7 @@ class NIKTO:
         :return: the value of the "result" variable, which is either an empty string or a string
         containing a vulnerability message.
         """
-        
-        if re.search(self.anti_clickjacking_regex, target.raw_result, re.IGNORECASE):
+        if re.search(self.anti_clickjacking_regex, target.get_raw_result(), re.IGNORECASE):
             error = "Missing Anti-clickjacking Header"
             vul_data = await alert_response(cve="CVE-2018-17192", error=error, tool=target.tool.tool_name, alert_type=1, evidence=self.anti_clickjacking_regex)
             self.result = {**self.result, **vul_data}
@@ -203,7 +202,7 @@ class NIKTO:
         :param regenerate: The `regenerate` parameter is a boolean value that indicates whether the
         target should be regenerated or not. It is not used in the code snippet provided
         """
-        search_result = re.search(self.asp_version_regex, target.raw_result, re.IGNORECASE)
+        search_result = re.search(self.asp_version_regex, target.get_raw_result(), re.IGNORECASE)
         if search_result:
             if search_result.groupdict().get('version'):
                 asp_version = search_result.groupdict().get('version')
@@ -223,7 +222,7 @@ class NIKTO:
         :param regenerate: The "regenerate" parameter is not used in the given code snippet. It is not
         defined or referenced anywhere in the function
         """
-        search_result = re.search(self.cookie_regex, target.raw_result, re.IGNORECASE)
+        search_result = re.search(self.cookie_regex, target.get_raw_result(), re.IGNORECASE)
         if search_result:
             error = "Sensitive Cookie Without 'HttpOnly' Flag"
             vul_data = await alert_response(cve="CVE-2021-27764", error=error, tool=target.tool.tool_name, alert_type=1, evidence=search_result.group())
@@ -240,7 +239,7 @@ class NIKTO:
         :param regenerate: The `regenerate` parameter is not used in the `put_del_handler` method. It is
         not defined in the method signature and is not referenced within the method body
         """
-        if re.search(self.update_method_regex, target.raw_result, re.IGNORECASE) and re.search(self.update_method_regex, target.raw_result, re.IGNORECASE):
+        if re.search(self.update_method_regex, target.get_raw_result(), re.IGNORECASE) and re.search(self.update_method_regex, target.get_raw_result(), re.IGNORECASE):
             error = "Insecurely HTTP PUT and DELETE methods are allowed in web server"
             vul_data = await alert_response(cve="CVE-2021-35243", error=error, tool=target.tool.tool_name, alert_type=1, evidence=f"{self.update_method_regex}\n{self.delete_method_regex}")
             self.result = {**self.result, **vul_data}
@@ -256,7 +255,7 @@ class NIKTO:
         :param regenerate: The "regenerate" parameter is not used in the given code snippet. It is not
         defined or referenced anywhere in the function
         """
-        search_result = re.search(self.XSS_regex, target.raw_result, re.IGNORECASE)
+        search_result = re.search(self.XSS_regex, target.get_raw_result(), re.IGNORECASE)
         if search_result:
             error = "A cross-site scripting (XSS) in JavaScript or HTML"
             vul_data = await alert_response(cve="CVE-2022-39195", error=error, tool=target.tool.tool_name, alert_type=1, evidence=search_result.group())
@@ -273,9 +272,9 @@ class NIKTO:
         :param regenerate: The "regenerate" parameter is not used in the given code snippet. It is not
         defined or referenced anywhere in the function
         """
-        if re.search(self.subdomain_regex, target.raw_result, re.IGNORECASE):
+        if re.search(self.subdomain_regex, target.get_raw_result(), re.IGNORECASE):
             root_domain = ".".join(list(extract(target.ip)[1:])).strip()
-            subdomains = [f"{subdomain.groupdict().get('subdomain')}.{root_domain}" for subdomain in re.finditer(self.subdomain_regex, target.raw_result)]
+            subdomains = [f"{subdomain.groupdict().get('subdomain')}.{root_domain}" for subdomain in re.finditer(self.subdomain_regex, target.get_raw_result())]
             error = "Possible subdomain leak"
             data = cve.get_cve_details_by_id_v2("CVE-2018-7844")
             vul_data = await alert_response(**{**data, **{'location':subdomains, 'error': error, 'tool': target.tool.tool_name, 'alert_type':3, 'evidence':"\n".join(subdomains)}})
@@ -291,7 +290,7 @@ class NIKTO:
         :param regenerate: The "regenerate" parameter is not used in the code snippet provided. It is
         not defined or referenced anywhere in the function
         """
-        if re.search(self.cgi_regex, target.raw_result, re.IGNORECASE):
+        if re.search(self.cgi_regex, target.get_raw_result(), re.IGNORECASE):
             error = "HTTP Methods Allowed (per directory)"
             vul_data = await alert_response(cve="CVE-2022-27615", error=error, tool=target.tool.tool_name, alert_type=1, evidence="N/A")
             self.result = {**self.result, **vul_data}
@@ -307,8 +306,8 @@ class NIKTO:
         :param regenerate: The `regenerate` parameter is not used in the given code snippet. It is not
         defined or referenced anywhere in the function
         """
-        if re.search(self.outdated_regex, target.raw_result, re.IGNORECASE):
-            evidence = ",".join(list(map(lambda i: i.group().strip("\n"), re.finditer(self.outdated_regex,target.raw_result, re.IGNORECASE))))
+        if re.search(self.outdated_regex, target.get_raw_result(), re.IGNORECASE):
+            evidence = ",".join(list(map(lambda i: i.group().strip("\n"), re.finditer(self.outdated_regex,target.get_raw_result(), re.IGNORECASE))))
             error = "Outdated resources found"
             vul_data = await alert_response(cve="CVE-2022-27615", error=error, tool=target.tool.tool_name, alert_type=1, evidence=evidence)
             self.result = {**self.result, **vul_data}
@@ -324,10 +323,10 @@ class NIKTO:
         :param regenerate: It is a boolean parameter that determines whether the target should be
         regenerated or not. It is not used in the given code snippet
         """
-        if re.search(self.shellshock_regex, target.raw_result, re.IGNORECASE):
-            if re.search(self.shellshock_regex, target.raw_result, re.IGNORECASE).groupdict().get('cve'):
-                evidence = "\n".join(list(map(lambda i: i.group().strip("\n"), re.finditer(self.shellshock_regex,target.raw_result, re.IGNORECASE))))
-                cve = re.search(self.shellshock_regex, target.raw_result, re.IGNORECASE).groupdict().get('cve')
+        if re.search(self.shellshock_regex, target.get_raw_result(), re.IGNORECASE):
+            if re.search(self.shellshock_regex, target.get_raw_result(), re.IGNORECASE).groupdict().get('cve'):
+                evidence = "\n".join(list(map(lambda i: i.group().strip("\n"), re.finditer(self.shellshock_regex,target.get_raw_result(), re.IGNORECASE))))
+                cve = re.search(self.shellshock_regex, target.get_raw_result(), re.IGNORECASE).groupdict().get('cve')
                 error = "shellshock present in server"
                 vul_data = await alert_response(cve=cve, error=error, tool=target.tool.tool_name, alert_type=1, evidence=evidence)
                 self.result = {**self.result, **vul_data}
@@ -342,7 +341,7 @@ class NIKTO:
         :param regenerate: The "regenerate" parameter is not used in the code snippet provided. It is
         not defined or referenced anywhere in the function
         """
-        search_result = re.search(self.httpoptions_regex, target.raw_result, re.IGNORECASE)
+        search_result = re.search(self.httpoptions_regex, target.get_raw_result(), re.IGNORECASE)
         if search_result:
             error = "Insecure HTTP methods in Apache"
             vul_data = await alert_response(cve="CVE-2017-7685", error=error, tool=target.tool.tool_name, alert_type=1, evidence=search_result.group())
@@ -358,8 +357,8 @@ class NIKTO:
         :param regenerate: The "regenerate" parameter is not used in the given code snippet. It is not
         defined or referenced anywhere in the function
         """
-        if re.search(self.sitefiles_regex, target.raw_result, re.IGNORECASE):
-            files = [file.groupdict().get('file') for file in re.finditer(self.sitefiles_regex, target.raw_result)]
+        if re.search(self.sitefiles_regex, target.get_raw_result(), re.IGNORECASE):
+            files = [file.groupdict().get('file') for file in re.finditer(self.sitefiles_regex, target.get_raw_result())]
             error = "Site files disclosure"
             data = {
                 'cve_id': 'N/A',
@@ -407,7 +406,7 @@ class NIKTO:
         report should be regenerated or not. If `regenerate` is `True`, it means that the report needs
         to be regenerated. If `regenerate` is `False`, it means that the existing report can be used
         """
-        soup = BeautifulSoup(target.raw_result, "html.parser")
+        soup = BeautifulSoup(target.get_raw_result(), "html.parser")
         tables = soup.find_all('table',{'class':'dataTable'})
         result = {}
         jobs = []

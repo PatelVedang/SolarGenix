@@ -14,17 +14,6 @@
     "model": "scanner.tool",
     "pk": 2,
     "fields": {
-      "tool_name": "nmap-vulners",
-      "tool_cmd": "nmap -Pn -sV --script vuln,vulners --script-args mincvvs=5.0",
-      "time_limit": 200,
-      "subscription_id": 1,
-      "is_deleted":true
-    }
-  },
-  {
-    "model": "scanner.tool",
-    "pk": 3,
-    "fields": {
       "tool_name": "nmap-vuln",
       "tool_cmd": "nmap -Pn -sV -sT",
       "time_limit": 200,
@@ -33,13 +22,22 @@
   },
   {
     "model": "scanner.tool",
+    "pk": 3,
+    "fields": {
+      "tool_name": "nikto",
+      "tool_cmd": "nikto -host",
+      "time_limit": 1000,
+      "subscription_id": 1
+    }
+  },
+  {
+    "model": "scanner.tool",
     "pk": 4,
     "fields": {
-      "tool_name": "nmap-poodle",
-      "tool_cmd": "nmap -p443 --script ssl-poodle -Pn",
-      "time_limit": 30,
-      "subscription_id": 1,
-      "is_deleted":true
+      "tool_name": "nikto with report",
+      "tool_cmd": "nikto -Format htm -output - -h",
+      "time_limit": 900,
+      "subscription_id": 1
     }
   },
   {
@@ -51,6 +49,182 @@
       "time_limit": 300,
       "subscription_id": 1
     }
+  },
+  {
+    "model": "scanner.tool",
+    "pk": 6,
+    "fields": {
+      "tool_name": "sslscan",
+      "tool_cmd": "sslscan",
+      "time_limit": 600,
+      "subscription_id": 1,
+      "is_deleted":true
+    }
+  },
+  {
+    "model": "scanner.tool",
+    "pk": 7,
+    "fields": {
+      "tool_name": "curl",
+      "tool_cmd": "curl -I",
+      "time_limit": 300,
+      "subscription_id": 1
+    }
+  },
+  {
+    "model": "scanner.tool",
+    "pk": 8,
+    "fields": {
+      "tool_name": "spider owasp",
+      "tool_cmd": "owasp_zap",
+      "time_limit": 3600,
+      "py_tool": true,
+      "subscription_id": 1
+    }
+  },
+  {
+    "model": "scanner.tool",
+    "pk": 9,
+    "fields": {
+      "tool_name": "active owasp",
+      "tool_cmd": "active_owasp",
+      "time_limit": 7200,
+      "py_tool": true,
+      "subscription_id": 1,
+      "is_deleted":true
+    }
+  },
+  {
+    "model": "scanner.tool",
+    "pk": 10,
+    "fields": {
+      "tool_name": "isaix owasp",
+      "tool_cmd": "isaix_owasp",
+      "time_limit": 3600,
+      "py_tool": true,
+      "subscription_id": 1
+    }
+  },
+  {
+    "model": "scanner.tool",
+    "pk": 11,
+    "fields": {
+      "tool_name": "theHarvester",
+      "tool_cmd": "theHarvester -l 200 -b bing -d isaix.com",
+      "time_limit": 120,
+      "subscription_id": 1,
+      "is_deleted":true
+    }
+  },
+  {
+    "model": "scanner.tool",
+    "pk": 12,
+    "fields": {
+      "tool_name": "dnsenum",
+      "tool_cmd": "dnsenum",
+      "time_limit": 120,
+      "subscription_id": 1,
+      "is_deleted":true
+    }
+  },
+  {
+    "model": "scanner.tool",
+    "pk": 13,
+    "fields": {
+      "tool_name": "dmitry",
+      "tool_cmd": "dmitry -s",
+      "time_limit": 900,
+      "subscription_id": 1,
+      "is_deleted":true
+    }
+  },
+  {
+    "model": "scanner.tool",
+    "pk": 14,
+    "fields": {
+      "tool_name": "amass",
+      "tool_cmd": "amass enum -ip -d",
+      "time_limit": 500,
+      "subscription_id": 1,
+      "is_deleted":true
+    }
+  },
+  {
+    "model": "scanner.tool",
+    "pk": 15,
+    "fields": {
+      "tool_name": "lbd",
+      "tool_cmd": "lbd",
+      "time_limit": 60,
+      "subscription_id": 1,
+      "is_deleted":true
+    }
+  },
+  {
+    "model": "scanner.tool",
+    "pk": 16,
+    "fields": {
+      "tool_name": "dirb",
+      "tool_cmd": "dirb http://<ip> -fiSl",
+      "time_limit": 300,
+      "subscription_id": 1,
+      "is_deleted":true
+    }
+  },
+  {
+    "model": "scanner.tool",
+    "pk": 17,
+    "fields": {
+      "tool_name": "host",
+      "tool_cmd": "host",
+      "time_limit": 60,
+      "subscription_id": 1,
+      "is_deleted":true
+    }
+  },
+  {
+    "model": "scanner.tool",
+    "pk": 18,
+    "fields": {
+      "tool_name": "fierce",
+      "tool_cmd": "fierce --domain <domain>",
+      "time_limit": 1000,
+      "subscription_id": 1,
+      "is_deleted":true
+    }
+  },
+  {
+    "model": "scanner.tool",
+    "pk": 19,
+    "fields": {
+      "tool_name": "Davtest",
+      "tool_cmd": "davtest -url https://",
+      "time_limit": 300,
+      "subscription_id": 1,
+      "is_deleted":true
+    }
+  },
+  {
+    "model": "scanner.tool",
+    "pk": 20,
+    "fields": {
+      "tool_name": "wapiti",
+      "tool_cmd": "wapiti -u https://",
+      "time_limit": 300,
+      "subscription_id": 1,
+      "is_deleted":true
+    }
+  },
+  {
+    "model": "scanner.tool",
+    "pk": 21,
+    "fields": {
+      "tool_name": "uniscan-w",
+      "tool_cmd": "uniscan -w -u",
+      "time_limit": 300,
+      "subscription_id": 1,
+      "is_deleted":true,
+      "sudo_access": true
+    }
   }
-  
 ]

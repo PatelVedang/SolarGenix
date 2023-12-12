@@ -11,6 +11,7 @@ import socket
 import ipaddress
 from tldextract import extract
 from django.conf import settings
+import zlib
 
    
 def validate_ipv4_address(value):
@@ -120,6 +121,8 @@ class ScannerResponseSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         data = super().to_representation(instance)
         requested_user = self.context['request'].user
+        compressed_data = instance.raw_result.tobytes()
+        data['raw_result'] = zlib.decompress(compressed_data)
         if not requested_user.role.tool_access:
             data['tool']= instance.tool.id
             data['raw_result'] = ""

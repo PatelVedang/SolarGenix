@@ -24,7 +24,7 @@ from datetime import datetime
 from decimal import Decimal
 from .serializers import *
 from utils.cache_helper import Cache
-
+import zlib
 from zapv2 import ZAPv2
 zap = ZAPv2()
 
@@ -41,7 +41,7 @@ def update_target_and_add_log(**kwargs):
         target_id = kwargs.get('id')
 
         if kwargs.get('output'):
-            kwargs.get('target').update(raw_result=kwargs.get('output'), status=kwargs.get('status'), scan_time=target_scan_time_new)
+            kwargs.get('target').update(raw_result=zlib.compress(kwargs.get('output').encode("utf-8")), status=kwargs.get('status'), scan_time=target_scan_time_new)
             Cache.update(key=f'target_{target_id}', **{'raw_result':kwargs.get('output'), 'status':kwargs.get('status'), 'scan_time':target_scan_time_new})
         else:
             kwargs.get('target').update(status=kwargs.get('status'), scan_time=target_scan_time_new)
