@@ -14,6 +14,7 @@ def send_email(**kwargs):
     bcc=kwargs.get('bcc', [])
     attachments=kwargs.get('attachments', [])
     html_template=kwargs.get('html_template', '')
+    html_string=kwargs.get('html_string', '')
     print(recipients,"=>>>>>>>Recepients")
     
     logger.info(f"***************** SEND MAIL  *****************")
@@ -29,6 +30,11 @@ def send_email(**kwargs):
         # # HTML content in the body
         if html_template:
             html_message = render_to_string(html_template, kwargs)
+            email.content_subtype = "html"
+            email.body = html_message
+        
+        if html_string:
+            html_message = html_string
             email.content_subtype = "html"
             email.body = html_message
 

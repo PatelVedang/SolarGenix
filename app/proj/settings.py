@@ -342,3 +342,23 @@ STRIPE_SECRET_KEY=os.environ.get('STRIPE_SECRET_KEY', env('STRIPE_SECRET_KEY')).
 STRIPE_MODE = ("live" if "pk_live" in STRIPE_PUBLISHABLE_KEY and "sk_live" in STRIPE_SECRET_KEY else "test")
 
 FONTS_PATH=f'{BASE_DIR}/fonts/'
+SCAN_DELIVERY_MAIL_HTML ={
+    'EN':'''
+        <div style="color:black;">
+        <b><i>{}</i></b>,<br><br>
+        Please find your external vulnerability scan results on the target <b><i>{}</i></b> on <b><i>{}</i></b> in the attached by IsaiX Cyber Services.<br>
+        The PDF file provided "output.pdf" is in an Executive Report format and can be distributed to your company's management if required.<br>
+        Kindly reach out to us at support@isaix.com if you have any questions regarding your scan.<br><br>
+        The IsaiX Cyber Team
+        </div>
+        ''',
+    'FR': '''
+    <div style="color:black;">
+    <b><i>{}</i></b>,<br><br>
+    Veuillez trouver ci-joint les résultats du scan de vulnérabilité externe effectuée par les services IsaiX Cyber sur la cible <b><i>{}</i></b> le <b><i>{}</i></b>.<br>
+    Le fichier PDF fourni "output.pdf" est dans un format de rapport exécutif et peut être distribué à la direction de votre entreprise si nécessaire.<br>
+    N'hésitez pas à nous contacter à l'adresse support@isaix.com si vous avez des questions concernant votre scan.<br><br>
+    L'équipe IsaiX Cyber
+    </div>
+    '''
+}

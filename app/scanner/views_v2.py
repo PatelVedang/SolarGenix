@@ -528,9 +528,7 @@ class SendMessageView(generics.GenericAPIView, Common):
                             active_plan = request.user.get_active_plan().exists()
                             pdf_path, pdf_name, file_url = pdf.generate(request.user.role, request.user.id, order_id, active_plan, targets_ids)
                             user_name = f"{order['client']['first_name']} {order['client']['last_name']}".upper()
-                            email_body =  f'''Dear {user_name},\n\nI hope this email finds you well. I am writing to inform you about the successful completion of the recent security scan conducted on {order['target_ip']}. The attached PDF file contains the detailed scan results, outlining the findings and security status of the website.\n\nPlease find the attached PDF document named "output.pdf." In case you have any questions or need further clarification regarding the findings, feel free to reach out to us.
-                            '''
-                            print(f'scan_result_{datetime.strptime(order["created_at"],"%Y-%m-%dT%H:%M:%S.%fZ").strftime("%b_%d_%Y")}_{order["target_ip"]}.pdf',"=>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
+                            email_body = settings.SCAN_DELIVERY_MAIL_HTML.get(request.user.language).format(user_name,order['target_ip'],datetime.strptime(order["created_at"],"%Y-%m-%dT%H:%M:%S.%fZ").strftime("%b %d %Y"))
                             send_email(**{
                                 'subject':f'Successful Security Scan Results for {order["target_ip"]}',
                                 'body':email_body,
@@ -543,7 +541,8 @@ class SendMessageView(generics.GenericAPIView, Common):
                                         'path': pdf_path,
                                         'mime-type': 'application/pdf'
                                     }
-                                ]
+                                ],
+                                'html_string': email_body
                             })
 
                         break
@@ -595,9 +594,7 @@ class SendMessageView(generics.GenericAPIView, Common):
                             active_plan = request.user.get_active_plan().exists()
                             pdf_path, pdf_name, file_url = pdf.generate(request.user.role, request.user.id, order_id, active_plan, [record_obj["id"]])
                             user_name = f"{order['client']['first_name']} {order['client']['last_name']}".upper()
-                            email_body =  f'''Dear {user_name},\n\nI hope this email finds you well. I am writing to inform you about the successful completion of the recent security scan conducted on {record_obj['ip']}. The attached PDF file contains the detailed scan results, outlining the findings and security status of the website.\n\nPlease find the attached PDF document named "output.pdf." In case you have any questions or need further clarification regarding the findings, feel free to reach out to us.
-                            '''
-                            print(f'scan_result_{datetime.strptime(record_obj["created_at"],"%Y-%m-%dT%H:%M:%S.%fZ").strftime("%b_%d_%Y")}_{record_obj["ip"]}.pdf',"=>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
+                            email_body = settings.SCAN_DELIVERY_MAIL_HTML.get(request.user.language).format(user_name,record_obj["ip"],datetime.strptime(record_obj["created_at"],"%Y-%m-%dT%H:%M:%S.%fZ").strftime("%b_%d_%Y"))
                             send_email(**{
                                 'subject':f'Successful Security Scan Results for {record_obj["ip"]}',
                                 'body':email_body,
@@ -610,7 +607,8 @@ class SendMessageView(generics.GenericAPIView, Common):
                                         'path': pdf_path,
                                         'mime-type': 'application/pdf'
                                     }
-                                ]
+                                ],
+                                'html_string': email_body
                             })
                         break
                     time.sleep(round(float(settings.WEB_SOCKET_INTERVAL),2))
