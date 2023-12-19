@@ -85,7 +85,8 @@ class Target(SoftDelete):
     scan_time = models.DecimalField(max_digits=10, decimal_places=2, default=0)
 
     def save(self, *args, **kwargs):
-        self.raw_result = zlib.compress(self.raw_result.encode('utf-8'))
+        if isinstance(self.raw_result, str):
+            self.raw_result = zlib.compress(self.raw_result.encode('utf-8'))
         return super(Target, self).save(*args, **kwargs)
 
     def get_raw_result(self):
