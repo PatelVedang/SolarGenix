@@ -666,23 +666,23 @@ class OrderViewSet(viewsets.ModelViewSet, Common):
                         if orders.count()>=ip_limit:
                             return response(data={}, status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, message="You have reached your IP limit. Please upgrade your account!!")
                         
-                        one_month_ago = datetime.utcfromtimestamp(int((today - relativedelta(months=1)).timestamp())).replace(tzinfo=timezone.utc)
-                        if one_month_ago < current_sub[0].current_period_start:
-                            start = current_sub[0].current_period_start
-                            end = (current_sub[0].current_period_end if plan_type==1 else (today + relativedelta(months=1)))
-                        else:
-                            start = one_month_ago
-                            end = today
+                        # one_month_ago = datetime.utcfromtimestamp(int((today - relativedelta(months=1)).timestamp())).replace(tzinfo=timezone.utc)
+                        # if one_month_ago < current_sub[0].current_period_start:
+                        #     start = current_sub[0].current_period_start
+                        #     end = (current_sub[0].current_period_end if plan_type==1 else (today + relativedelta(months=1)))
+                        # else:
+                        #     start = one_month_ago
+                        #     end = today
                         
-                        # interval_orders = orders.filter(created_at__gte=start, created_at__lte=end)
+                        # # interval_orders = orders.filter(created_at__gte=start, created_at__lte=end)
 
-                        # if interval_orders.count()>=1:
-                        #     return response(data={}, status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, message="Oops! It seems you've hit the limit for IP usage this month.")
+                        # # if interval_orders.count()>=1:
+                        # #     return response(data={}, status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, message="Oops! It seems you've hit the limit for IP usage this month.")
                         
-                        same_ip_orders = orders.filter(created_at__gte=start, created_at__lte=end,target_ip=target_ip)
+                        # same_ip_orders = orders.filter(created_at__gte=start, created_at__lte=end,target_ip=target_ip)
 
-                        if same_ip_orders.count()>=1:
-                            return response(data={}, status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, message="Oops! It seems like this IP address has already been scanned this month.")
+                        # if same_ip_orders.count()>=1:
+                        #     return response(data={}, status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, message="Oops! It seems like this IP address has already been scanned this month.")
 
                     elif plan_type == 3:
                         # If plan is only for one time
@@ -691,10 +691,10 @@ class OrderViewSet(viewsets.ModelViewSet, Common):
                         if orders.count()>=ip_limit:
                             return response(data={}, status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, message="You have reached your IP limit. Please upgrade your account!!")
 
-                        same_ip_orders = orders.filter(target_ip=target_ip)
+                        # same_ip_orders = orders.filter(target_ip=target_ip)
 
-                        if same_ip_orders.count()>=1:
-                            return response(data={}, status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, message="Oops! It seems like you've already scanned this domain once. So please try another domain!")
+                        # if same_ip_orders.count()>=1:
+                        #     return response(data={}, status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, message="Oops! It seems like you've already scanned this domain once. So please try another domain!")
                 else:
                     # If user has free subscription
                     ip_limit = 1
