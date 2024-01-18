@@ -226,5 +226,16 @@
       "is_deleted":true,
       "sudo_access": true
     }
+  },
+  {
+    "model": "scanner.tool",
+    "pk": 43,
+    "fields": {
+      "tool_name": "openvas",
+      "tool_cmd": "openvas",
+      "time_limit": 7200,
+      "py_tool": true,
+      "subscription_id": 1
+    }
   }
 ]

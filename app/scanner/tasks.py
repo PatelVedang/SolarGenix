@@ -27,6 +27,7 @@ from utils.cache_helper import Cache
 import zlib
 from zapv2 import ZAPv2
 zap = ZAPv2()
+from utils.openvas.scan import openVAS
 
 def update_target_and_add_log(**kwargs):
     """
@@ -95,7 +96,8 @@ def scan(id, time_limit, token, order_id, requested_by_id, client_id, batch_scan
     py_tools={
         'owasp_zap':OWASP_ZAP_spider_scan_v3,
         'isaix_owasp': custom_OWASP_ZAP_scan,
-        'active_owasp': OWASP_ZAP_active_scan_v1
+        'active_owasp': OWASP_ZAP_active_scan_v1,
+        'openvas': openVAS_scan
     }
 
     ip = ".".join(list(extract(target[0].ip))).strip(".")
@@ -512,6 +514,13 @@ def custom_OWASP_ZAP_scan(url, order_id, requested_by_id, time_limit):
         url = http_url
     # try:
     return owasp.process_data(url, order_id, requested_by_id, time_limit)
+    # except Exception as e:
+    #     pass
+
+def openVAS_scan(url, order_id, requested_by_id, time_limit):
+    domain = ".".join(list(extract(url))).strip(".")
+    gvm = openVAS(domain, time_limit)
+    return gvm.main()
     # except Exception as e:
     #     pass
 
