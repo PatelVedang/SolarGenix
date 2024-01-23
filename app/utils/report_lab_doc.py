@@ -107,7 +107,7 @@ class MyDocTemplate(BaseDocTemplate):
     # Sanitize unclosed tags
     def fix_html(self, html_content):
         soup = BeautifulSoup(html_content, 'html.parser')
-        fixed_html = str(soup)
+        fixed_html = str(soup).replace("<br/>","\n")
         return fixed_html
 
 h1 = PS(name = 'Heading1',

@@ -345,8 +345,18 @@ class openVAS:
         report available for the given task, it raises an exception. If there is an error in the
         response, it raises an exception with the error message.
         """
+        
         res = self.get_task(task_id)
         data = self.get_res_data(res)
+        for i in range(round(round(float(settings.OPENVAS_REPORT_GEN_TIMEOUT))/round(float(settings.OPENVAS_REPORT_GEN_DELAY)))):
+            if data['data']['report_count']['finished'] == "1" and data['data']['status']=="Done":
+                break
+            else:
+                time.sleep(round(float(settings.OPENVAS_REPORT_GEN_DELAY)))
+                res = self.get_task(task_id)
+                data = self.get_res_data(res)
+                continue
+
         if self.is_200(res):
             if data['data']['report_count']['finished'] == "1" and data['data']['status']=="Done":
                 report_id = data['data']['last_report']['report']['id']

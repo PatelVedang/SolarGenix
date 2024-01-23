@@ -23,6 +23,8 @@ from .handlers.owasp_zap_handler import OWASP
 owasp = OWASP()
 from .handlers.common_handler import Templates
 t = Templates()
+from .handlers.openvas_handler import OpenVAS
+openvas = OpenVAS()
 
 
 class PDF:
@@ -36,6 +38,7 @@ class PDF:
         'owasp_zap': owasp.main,
         'isaix_owasp': owasp.main,
         'active_owasp': owasp.main,
+        'openvas': openvas.main,
         'default': default.default_handler
     }
 
