@@ -29,7 +29,7 @@ itypes==1.2.0
 Jinja2==3.1.2
 kombu==5.2.4
 MarkupSafe==2.1.1
-mysqlclient==2.1.1
+# mysqlclient==2.1.1
 packaging==21.3
 pdfkit==1.0.0
 prompt-toolkit==3.0.33

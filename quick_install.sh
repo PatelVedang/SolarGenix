@@ -62,15 +62,15 @@ fi
 echo "----------------------------------------------------"
 printf "wkhtmltopdf Installed 😎 \n\n\n"
 
-echo "Installing MySQL Server"
-echo "----------------------------------------------------"
-if ! is_command_available mysql; then
-    sudo apt-get install mysql-server -y || ( echo "Failed to install MySQL Server" && exit 1 )
-else
-    echo "MySQL Server is already installed. Skipping installation."
-fi
-echo "----------------------------------------------------"
-printf "MySQL Server Installed 😎 \n\n\n"
+# echo "Installing MySQL Server"
+# echo "----------------------------------------------------"
+# if ! is_command_available mysql; then
+#     sudo apt-get install mysql-server -y || ( echo "Failed to install MySQL Server" && exit 1 )
+# else
+#     echo "MySQL Server is already installed. Skipping installation."
+# fi
+# echo "----------------------------------------------------"
+# printf "MySQL Server Installed 😎 \n\n\n"
 
 # # Prompt the user to enter test database and test user names
 # read -p "Enter the database name for this server: " db
