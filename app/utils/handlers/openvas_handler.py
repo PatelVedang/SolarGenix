@@ -106,18 +106,18 @@ class OpenVAS:
         reference=reference_search.groupdict().get('reference', '') if reference_search else ''
 
         vul_data = await alert_response(
-            complexity=complexity,
-            error=title,
-            description=description,
-            solution=solution,
+            complexity=complexity.strip(),
+            error=title.strip(),
+            description=description.strip(),
+            solution=solution.strip(),
             tool=target.tool.tool_name,
             alert_type=4,
-            evidence=evidence.replace('<br/>', '\n'),
+            evidence=evidence.replace('<br/>', '\n').strip(),
             cvvs3={
-                'base_score': cvvs3_0,
-                'error_type': complexity
+                'base_score': cvvs3_0.strip(),
+                'error_type': complexity.strip()
             },
-            reference = reference 
+            reference = reference.strip()
         )
         self.result = {**self.result, **vul_data}
 

@@ -97,7 +97,7 @@ unit_test.bat
 #
 #
 #
-# Run Live server without docker
+# Run Live server without docker(Manually process)
 ### Step 1 (Get latest code)
 ##### Clone the repo: https://isaix.visualstudio.com/CyberApp/_git/CyberApp
 ### Step 2(Set .env in proj folder)
@@ -148,7 +148,7 @@ sudo rm ZAP_2_12_0_unix.sh
 ```
 curl https://raw.githubusercontent.com/creationix/nvm/master/install.sh | bash
 source ~/.bashrc
-nvm install latest
+nvm install --lts
 npm install pm2 -g
 ```
 #### For Windows
@@ -227,6 +227,36 @@ bash server.sh
 server.bat
 ```
 ### Step 9(View server logs)
+```
+pm2 logs
+```
+# Run Live server without docker with automated process(Only for linux)
+### Step 1 (Get latest code)
+##### Clone the repo: https://isaix.visualstudio.com/CyberApp/_git/CyberApp
+### Step 2(Run shell file to install all required dependencies)
+```
+cd CyberApp/app/proj
+bash quick_install.sh
+```
+### Step 2(Set .env in proj folder)
+```
+cd CyberApp/app/proj
+nano .env
+```
+##### Note: Use .env variables(content) from .env_example file
+### Step 3(Apply latest migrations & fixtures)
+##### We have to run below command, when we have new database migrations changes.
+#
+```
+bash apply_migrations.sh
+```
+### Step 4(Run server with worker)
+##### Run below command to start, stop, restart and delete a server process with worker.
+#
+```
+bash server.sh
+```
+### Step 5(View server logs)
 ```
 pm2 logs
 ```
