@@ -216,7 +216,7 @@ if ! is_command_available pm2; then
     curl https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.4/install.sh | bash
     source ~/.bashrc
     nvm install --lts
-    npm install pm2 -g
+    npm i -g concurrently pm2 yarn
 else
     echo "PM2 with NVM is already installed. Skipping installation."
 fi

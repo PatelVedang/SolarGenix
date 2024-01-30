@@ -149,7 +149,7 @@ sudo rm ZAP_2_12_0_unix.sh
 curl https://raw.githubusercontent.com/creationix/nvm/master/install.sh | bash
 source ~/.bashrc
 nvm install --lts
-npm install pm2 -g
+npm i -g concurrently pm2 yarn
 ```
 #### For Windows
 ##### Install nmap using below link
@@ -175,7 +175,7 @@ https://github.com/coreybutler/nvm-windows/releases/download/1.1.10/nvm-setup.ex
 ```
 ```
 nvm install latest
-npm i -g concurrently pm2
+npm i -g concurrently pm2 yarn
 ```
 ### Step 4(Make virtual environment)
 ```
