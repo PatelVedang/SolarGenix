@@ -215,7 +215,7 @@ if ! is_command_available pm2; then
     sudo apt-get install curl -y
     curl https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.4/install.sh | bash
     source ~/.bashrc
-    nvm install latest
+    nvm install --lts
     npm install pm2 -g
 else
     echo "PM2 with NVM is already installed. Skipping installation."
