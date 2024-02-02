@@ -27,3 +27,15 @@ class AllowAnyWithoutLog(permissions.BasePermission):
             logger.info(f'params: {request.data}')
         return True
         
+class CustomIsAdminUser(permissions.BasePermission):
+    def has_permission(self, request, view):
+        if request.user.role.id==1:
+            return True
+        else:
+            return False
+        
+    def has_object_permission(self, request, view, obj):
+        if request.user.role.id==1:
+            return True
+        else:
+            return False

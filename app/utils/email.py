@@ -1,63 +1,52 @@
 from django.conf import settings
-from django.core.mail import send_mail
+from django.core.mail import EmailMessage
 from django.template.loader import render_to_string
+from django.utils.html import strip_tags
 import traceback
 import logging
 logger = logging.getLogger('django')
 
-# def send_email(subject, body, sender, recipients, fail_silently, otp = ""):
 def send_email(**kwargs):
-    subject=kwargs.get('subject')
-    body=kwargs.get('body')
+    subject=kwargs.get('subject', '')
+    body=kwargs.get('body', '')
     sender=kwargs.get('sender')
-    recipients=kwargs.get('recipients')
-    fail_silently=kwargs.get('fail_silently')
-    otp=kwargs.get('otp')
-    link=kwargs.get('link')
-    email=kwargs.get('email')
-    allow_html=kwargs.get('allow_html')
-
+    recipients=kwargs.get('recipients', [])
+    bcc=kwargs.get('bcc', [])
+    attachments=kwargs.get('attachments', [])
+    html_template=kwargs.get('html_template', '')
+    html_string=kwargs.get('html_string', '')
+    print(recipients,"=>>>>>>>Recepients")
     
     logger.info(f"***************** SEND MAIL  *****************")
     logger.info(f"Recipients: {recipients}")
     try:
-        # Send email with html content
-        if allow_html:    
-            if otp:
-                html_message = render_to_string('reset-password.html', {'otp': otp})
-            elif link:
-                html_message = render_to_string('verify-user.html', kwargs)
-            elif kwargs.get('admin_user_confimartion'):
-                print(settings.SUPPORT_EMAILS)
-                if settings.SUPPORT_EMAILS:
-                    recipients = [*recipients, *settings.SUPPORT_EMAILS.split()]
-                print(recipients)
-                html_message = render_to_string('admin-confirmation.html', kwargs)
-            elif kwargs.get('end_user_confimartion'):
-                html_message = render_to_string('user-confirmation.html', kwargs)
-            elif kwargs.get('account_activation'):
-                html_message = render_to_string('account-activation.html', kwargs)
+        email = EmailMessage(subject, strip_tags(body), sender, recipients, bcc=bcc)
+         # Attachments
+        if attachments:
+            for attachment in attachments:
+                with open(attachment['path'], 'rb') as file:
+                    email.attach(attachment['name'], file.read(), attachment['mime-type'])    # HTML content in the body
 
-            sent = send_mail(
-                subject=subject,
-                message=body,
-                from_email=sender,
-                recipient_list=recipients,
-                fail_silently=fail_silently,
-                html_message=html_message
-            )
-        else:
-            # Send plain email
-            sent = send_mail(
-                subject=subject,
-                message=body,
-                from_email=sender,
-                recipient_list=recipients,
-                fail_silently=fail_silently
-            )
-        logger.info(f"response {sent}")
-        logger.info(f"Please check your inbox.")
+        # # HTML content in the body
+        if html_template:
+            html_message = render_to_string(html_template, kwargs)
+            email.content_subtype = "html"
+            email.body = html_message
+        
+        if html_string:
+            html_message = html_string
+            email.content_subtype = "html"
+            email.body = html_message
+
+        # Send the email
+        email.send()
+        
+        # logger.info(f"response {email}")
+        # logger.info(f"Please check your inbox.")
+        print(f"response {email}")
+        print(f"Please check your inbox.")
     except Exception as e:
+        print(e,"=>>>>>>>>>>>>Error")
         traceback.print_exc()
         logger.error(str(e))
     

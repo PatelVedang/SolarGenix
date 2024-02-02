@@ -10,6 +10,8 @@ from django.core.exceptions import ValidationError
 import socket
 import ipaddress
 from tldextract import extract
+from django.conf import settings
+import zlib
 
    
 def validate_ipv4_address(value):
@@ -67,18 +69,32 @@ class ScannerSerializer(serializers.ModelSerializer):
         return super().validate(attrs)
 
 
+class SubscriptionSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Subscription
+        fields = ['id', 'plan_type', 'updated_at']
+
+
 # The ToolPayloadSerializer class is a subclass of the ModelSerializer class. It has a Meta class that
 # specifies the model to be serialized and the fields to be serialized. It also has a validate method
 # that logs the serialized data
 class ToolPayloadSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField(read_only=True)
+    subscription_id = serializers.IntegerField(write_only=True)
+
     class Meta:
         model = Tool
         exlude = ['is_deleted']
-        fields = ['id','tool_name','tool_cmd', 'time_limit']
+        fields = ['id','tool_name','tool_cmd', 'time_limit', 'subscription_id']
 
     def validate(self, attrs):
         logger.info(f'serialize_data: {json.dumps(attrs)}')
+        try:
+            sub_id = attrs['subscription_id']
+            Subscription.objects.get(id=sub_id)
+        except Exception as e:
+            raise serializers.DjangoValidationError(f"Subscription does not exist with id {0}")
         return super().validate(attrs)
 
 
@@ -105,6 +121,8 @@ class ScannerResponseSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         data = super().to_representation(instance)
         requested_user = self.context['request'].user
+        compressed_data = instance.raw_result.tobytes()
+        data['raw_result'] = zlib.decompress(compressed_data)
         if not requested_user.role.tool_access:
             data['tool']= instance.tool.id
             data['raw_result'] = ""
@@ -130,9 +148,20 @@ class ScannerResponseSerializer(serializers.ModelSerializer):
                 'id': requested_user.role.id,
                 'name': requested_user.role.name,
                 'tool_access': requested_user.role.tool_access,
-                'target_access':requested_user.role.target_access
+                'target_access':requested_user.role.target_access,
+                'client_name_access':requested_user.role.client_name_access,
+                'scan_result_access':requested_user.role.scan_result_access,
+                'cover_content_access':requested_user.role.cover_content_access
             },
             "subscription_id": requested_user.subscription_id
+        }
+        data['order']={
+            "id":instance.order.id,
+            "company_logo":(f'{settings.PDF_DOWNLOAD_ORIGIN}/media/{str(instance.order.company_logo)}' if instance.order.company_logo else ""),
+            "company_name":instance.order.company_name,
+            "company_address":instance.order.company_address,
+            "is_client":instance.order.is_client,
+            "client_name":instance.order.client_name
         }
         return data
     
@@ -145,9 +174,32 @@ class ScannerResponseSerializer(serializers.ModelSerializer):
 # field that is a `serializers.CharField` with a `validate_ipv4_address` validator
 class OrderSerailizer(serializers.ModelSerializer):
     target_ip = serializers.CharField(validators=[validate_ipv4_address])
+    company_name = serializers.CharField(required=False, max_length=100)
+    company_address = serializers.CharField(required=False)
+    is_client = serializers.BooleanField(required=False)
+    client_name = serializers.CharField(required=False, max_length=100)
+
     class Meta:
         model = Order
-        fields = ['target_ip']
+        fields = ['target_ip', 'company_name', 'company_address', 'is_client', 'client_name']
+
+    
+    def save(self, **kwargs):
+        return super().save(**kwargs)
+
+
+# The `OrderSerializer` class is a subclass of `serializers.ModelSerializer` and it has a `target_ip`
+# field that is a `serializers.CharField` with a `validate_ipv4_address` validator
+class OrderUpdateSerailizer(serializers.ModelSerializer):
+    company_name = serializers.CharField(required=False, max_length=100)
+    company_address = serializers.CharField(required=False)
+    is_client = serializers.BooleanField(required=False)
+    client_name = serializers.CharField(required=False, max_length=100)
+    company_logo = serializers.ImageField()
+
+    class Meta:
+        model = Order
+        fields = ['company_name', 'company_address', 'is_client', 'client_name', 'company_logo']
 
     
     def save(self, **kwargs):
@@ -169,6 +221,7 @@ class OrderResponseSerailizer(serializers.ModelSerializer):
     def to_representation(self, instance):
         requested_user = self.context['request'].user
         data = super().to_representation(instance)
+
         data['client']= {
             "id": instance.client.id,
             "email": instance.client.email,
@@ -190,10 +243,14 @@ class OrderResponseSerailizer(serializers.ModelSerializer):
                 'id': requested_user.role.id,
                 'name': requested_user.role.name,
                 'tool_access': requested_user.role.tool_access,
-                'target_access':requested_user.role.target_access
+                'target_access':requested_user.role.target_access,
+                'client_name_access':requested_user.role.client_name_access,
+                'scan_result_access':requested_user.role.scan_result_access,
+                'cover_content_access':requested_user.role.cover_content_access
             },
             "subscription_id": requested_user.subscription_id
         }
+        data['company_logo'] = (f'{settings.PDF_DOWNLOAD_ORIGIN}/media/{str(instance.company_logo)}' if instance.company_logo else "")
         return data
 
 
@@ -229,7 +286,10 @@ class OrderWithoutTargetsResponseSerailizer(serializers.ModelSerializer):
                 'id': requested_user.role.id,
                 'name': requested_user.role.name,
                 'tool_access': requested_user.role.tool_access,
-                'target_access':requested_user.role.target_access
+                'target_access':requested_user.role.target_access,
+                'client_name_access':requested_user.role.client_name_access,
+                'scan_result_access':requested_user.role.scan_result_access,
+                'cover_content_access':requested_user.role.cover_content_access
             },
             "subscription_id": requested_user.subscription_id
         }
@@ -325,7 +385,10 @@ class WithoutRequestUserTargetSerializer(serializers.ModelSerializer):
                 'id': requested_by.role.id,
                 'name': requested_by.role.name,
                 'tool_access': requested_by.role.tool_access,
-                'target_access':requested_by.role.target_access
+                'target_access':requested_by.role.target_access,
+                'client_name_access':requested_by.role.client_name_access,
+                'scan_result_access':requested_by.role.scan_result_access,
+                'cover_content_access':requested_by.role.cover_content_access
             },
             "subscription_id": requested_by.subscription_id
         }
@@ -374,7 +437,10 @@ class WithoutRequestUserOrderSerializer(serializers.ModelSerializer):
                 'id': requested_by.role.id,
                 'name': requested_by.role.name,
                 'tool_access': requested_by.role.tool_access,
-                'target_access':requested_by.role.target_access
+                'target_access':requested_by.role.target_access,
+                'client_name_access':requested_by.role.client_name_access,
+                'scan_result_access':requested_by.role.scan_result_access,
+                'cover_content_access':requested_by.role.cover_content_access
             },
             "subscription_id": requested_by.subscription_id
         }

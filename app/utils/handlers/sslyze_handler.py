@@ -54,14 +54,14 @@ class SSLYSE:
             if regenerate or not target.compose_result:
                 self.result = {}
                 self.services_objects = {}
-                services = list(re.finditer(self.service_regex, target.raw_result))
+                services = list(re.finditer(self.service_regex, target.get_raw_result()))
                 for service_obj in services:
                     index = services.index(service_obj)
                     if index != len(services)-1:
                         regex = f"(?s){service_obj.group()}(?P<content>.*?){services[index+1].group()}"
                         regex = regex.replace("\n","\\n").replace("\r","\\r").replace("\\n *", "\\n \*")
                         key = services[index].group().replace("\r\n","").replace("*","").strip()
-                        value = re.search(regex, target.raw_result).groupdict().get('content')
+                        value = re.search(regex, target.get_raw_result()).groupdict().get('content')
                         self.services_objects = {**self.services_objects, **{key:value}}
                 self.result = {}
 
@@ -89,7 +89,7 @@ class SSLYSE:
         :param regenerate: The `regenerate` parameter is not used in the given code snippet. It is not
         passed as an argument to any function or method. Therefore, its purpose is unknown
         """
-        cert = re.search(self.cert_regex, target.raw_result)
+        cert = re.search(self.cert_regex, target.get_raw_result())
         if cert:
             if cert.groupdict().get('cert_expire_on'):
                 cert_expire_on = datetime.strptime(cert.groupdict().get('cert_expire_on'), '%Y-%m-%d')

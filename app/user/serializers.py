@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from .models import *
 from django.contrib.auth.hashers import make_password
-from rest_framework_simplejwt.serializers import TokenObtainPairSerializer, TokenRefreshSerializer
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer, TokenRefreshSerializer, TokenVerifySerializer
 from rest_framework_simplejwt.state import token_backend
 from django.contrib.auth import authenticate
 from django.utils import timezone
@@ -17,6 +17,9 @@ import json
 from django.contrib.auth.hashers import check_password
 import threading
 import uuid
+from rest_framework_simplejwt.tokens import Token
+from rest_framework_simplejwt.serializers import TokenVerifySerializer
+from rest_framework_simplejwt.tokens import AccessToken
 
 
 # The RoleSerializer class is a serializer for the Role model, specifying the fields to be included in
@@ -25,7 +28,7 @@ class RoleSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Role
-        fields = ['id', 'name', 'tool_access', 'target_access']
+        fields = ['id', 'name', 'tool_access', 'target_access', 'client_name_access', 'scan_result_access', 'cover_content_access', 'updated_at']
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -36,111 +39,131 @@ class UserSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         logger.info(f'serialize_data: {json.dumps(attrs)}')
         return super().validate(attrs)
+    
+
+class UserResponseSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['id', 'last_login', 'email', 'is_deleted', 'first_name', 'last_name', 'is_staff', 'is_superuser', 'is_verified', 'mobile_number', 'country_code', 'role', 'subscription', 'updated_at']
 
 
 class RegisterSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField(read_only=True)
     password = serializers.CharField(max_length=255, style={'input-type':'password'},write_only=True)
+    confirm_password = serializers.CharField(max_length=255, style={'input_type': 'password'}, write_only=True)
     
     class Meta:
         model = User
-        fields = ['id', 'first_name', 'last_name', 'email', 'password']
+        fields = ['id', 'first_name', 'last_name', 'email', 'password', 'mobile_number', 'country_code', 'confirm_password', 'user_company', 'user_address']
 
     def validate(self, attrs):
-        logger.info(f'serialize_data: {json.dumps(attrs)}')
-        return super().validate(attrs)
-    
-    def validate_password(self, value):
-        if not re.search(settings.PASSWORD_VALIDATE_REGEX, value):
+        if (not re.search(settings.PASSWORD_VALIDATE_REGEX, attrs['password'])) or (not re.search(settings.PASSWORD_VALIDATE_REGEX, attrs['confirm_password'])):
             raise serializers.ValidationError(
                 settings.PASSWORD_VALIDATE_STRING
             )
-        return make_password(value)
+        if (not re.search(settings.MOBILE_NUMBER_REGEX, attrs['mobile_number'])) or (not re.search(settings.COUNTRY_CODE_REGEX, attrs['country_code'])):
+            raise serializers.ValidationError(
+                settings.MOBILE_NUM_VALIDATE_STRING
+            )
+        if attrs['password'] != attrs['confirm_password']:
+            raise serializers.ValidationError({"password": "Password fields didn't match."})
+        logger.info(f'serialize_data: {json.dumps(attrs)}')
+        del attrs['confirm_password']
+        attrs['password'] = make_password(attrs['password'])
+        attrs['is_verified'] = True
+        role_id = Role.objects.filter(name='user')[0].id
+        attrs['role_id'] = role_id
+        return super().validate(attrs)
+
+    # def create(self, validated_data):
+    #     user = super().create(validated_data)
+    #     admin = User.objects.get(id=1)
+
+    #     role_id = Role.objects.filter(name='user')[0].id
+    #     verification_token = str(uuid.uuid4())
+    #     token_expiration = datetime.utcnow() + timedelta(hours=1)
+    #     link="https://google.com"
+    #     user_name = f"{user.first_name} {user.last_name}".upper()
+    #     user_email = user.email
+    #     user_created_at = user.created_at
+    #     admin_name = f"{admin.first_name} {admin.last_name}".upper()
+        
+
+    #     # End-user mail confirmation
+    #     email_body =  f'''
+    #     Dear {user_name},
+
+    #     Thank you for registering on Cyber Appliance. We're delighted to have you as a part of our community!
+
+    #     Your account has been created, but it is currently pending activation by our admin team. Please allow us some time to review your account information.
+    #     '''
+    #     thread= threading.Thread(target=send_email,
+    #                             kwargs={
+    #                                 'subject':'Welcome to Cyber Appliance',
+    #                                 'body':email_body,
+    #                                 'sender':settings.BUSINESS_EMAIL,
+    #                                 'recipients':[validated_data.get("email")],
+    #                                 'html_template':'user-confirmation.html',
+    #                                 'user_name':user_name
+    #                             })
+    #     thread.start()
+
+    #     # Admin mail confirmation
+    #     email_body =  f'''
+    #     Hello {admin_name},
+
+    #     A new user has registered on Cyber Appliance. Please review the user's information and consider activating their account. Here are the details:
+
+    #     User Details:
+    #     Name : {user_name}
+    #     Email: {user_email}
+    #     Registartion Date: {user_created_at}
+    #     '''
+    #     from django.utils.html import strip_tags
+    #     print(strip_tags(email_body),"=>>>>>>>>>>Email body") 
+    #     thread= threading.Thread(target=send_email,
+    #                             kwargs={
+    #                                 'subject': f'New User Registration: {user_name}',
+    #                                 'body':email_body,
+    #                                 'sender':settings.BUSINESS_EMAIL,
+    #                                 'recipients':[admin.email],
+    #                                 'html_template':'admin-confirmation.html',
+    #                                 'user_name':user_name,
+    #                                 'user_email':user_email,
+    #                                 'user_created_at':user_created_at,
+    #                                 'admin_name':admin_name
+    #                             })
+    #     thread.start()
+
+    #     user.role_id = role_id
+    #     user.save()
+
+    #     return user
+
 
     def create(self, validated_data):
         user = super().create(validated_data)
-        admin = User.objects.get(id=1)
 
-        role_id = Role.objects.filter(name='user')[0].id
-        verification_token = str(uuid.uuid4())
-        token_expiration = datetime.utcnow() + timedelta(hours=1)
-        link="https://google.com"
         user_name = f"{user.first_name} {user.last_name}".upper()
-        user_email = user.email
-        user_created_at = user.created_at
-        admin_name = f"{admin.first_name} {admin.last_name}".upper()
-        
-
-        # End-user mail confirmation
         email_body =  f'''
         Dear {user_name},
 
-        Thank you for registering on Cyber Appliance. We're delighted to have you as a part of our community!
+        We're excited to inform you that your account on Cyber Appliance has been activated! You can now enjoy all the features and benefits of our platform.
 
-        Your account has been created, but it is currently pending activation by our admin team. Please allow us some time to review your account information.
+        Thank you for choosing Cyber Appliance. We look forward to having you as an active member of our community.
         '''
-        thread= threading.Thread(target=send_email,
-                                kwargs={
-                                    'subject':'Welcome to Cyber Appliance',
-                                    'body':email_body,
-                                    'sender':settings.BUSINESS_EMAIL,
-                                    'recipients':[validated_data.get("email")],
-                                    'fail_silently':False,
-                                    'end_user_confimartion': True,
-                                    'allow_html':True,
-                                    'user_name':user_name
-                                })
+        thread= threading.Thread(
+            target=send_email,
+            kwargs={
+                'subject':'Your account with Cyber Appliance is now active!',
+                'body':email_body,
+                'sender':settings.BUSINESS_EMAIL,
+                'recipients':[user.email],
+                'user_name':user_name,
+                'html_template':'account-activation.html'
+        })
         thread.start()
 
-        # Admin mail confirmation
-        email_body =  f'''
-        Hello {admin_name},
-
-        A new user has registered on Cyber Appliance. Please review the user's information and consider activating their account. Here are the details:
-
-        User Details:
-        Name : {user_name}
-        Email: {user_email}
-        Registartion Date: {user_created_at}
-        '''
-        thread= threading.Thread(target=send_email,
-                                kwargs={
-                                    'subject': f'New User Registration: {user_name}',
-                                    'body':email_body,
-                                    'sender':settings.BUSINESS_EMAIL,
-                                    'recipients':[admin.email],
-                                    'fail_silently':False,
-                                    'admin_user_confimartion': True,
-                                    'allow_html':True,
-                                    'user_name':user_name,
-                                    'user_email':user_email,
-                                    'user_created_at':user_created_at,
-                                    'admin_name':admin_name
-                                })
-        thread.start()
-
-
-
-        # email = validated_data.get("email")
-        # link = f"{settings.PDF_DOWNLOAD_ORIGIN}/api/auth/verifyUserToken/{verification_token}"
-        # email_body =  f'Please confirm that {email} is your email address by use this link {link} within 1 hour.'
-        user.role_id = role_id
-        # user.verification_token = verification_token
-        # user.token_expiration = token_expiration
-        user.save()
-        
-        # thread= threading.Thread(target=send_email,
-        #                          kwargs={
-        #                             'subject':'Verify User',
-        #                             'body':email_body,
-        #                             'sender':settings.BUSINESS_EMAIL,
-        #                             'recipients':[validated_data.get("email")],
-        #                             'fail_silently':False,
-        #                             'link':link,
-        #                             'email':email,
-        #                             'allow_html':True
-        #                         })
-        # thread.start()
         return user
 
 
@@ -176,6 +199,29 @@ class CustomTokenRefreshSerializer(TokenRefreshSerializer):
         User.objects.filter(email=decoded_payload.get('user').get('email')).update(last_login=timezone.now())
         return data
 
+class CustomTokenVerifySerializer(TokenVerifySerializer):
+    def validate(self, attrs):
+        res =super().validate(attrs)
+        token_payload = AccessToken(attrs['token'])
+        user = token_payload['user']
+        user = User.objects.get(id=user['id'])
+        res = {
+            'id': user.id, 
+            'email': user.email,
+            'role': user.role.id,
+            'first_name': user.first_name,
+            'last_name': user.last_name,
+            'profile_image':f'{settings.PDF_DOWNLOAD_ORIGIN}/media/{str(user.profile_image)}',
+            'language':user.language
+        }
+        if not user.is_verified:
+            raise serializers.ValidationError(
+                'Your account is not activated please contact to admin for further instructions!!'
+            )
+
+        return res
+    
+
 class ForgotPasswordSerializer(serializers.Serializer):
     email = serializers.EmailField()
     class Meta:
@@ -202,9 +248,8 @@ class ForgotPasswordSerializer(serializers.Serializer):
                                     'body':email_body,
                                     'sender':settings.BUSINESS_EMAIL,
                                     'recipients':[validated_data.get("email")],
-                                    'fail_silently':False,
                                     'otp':otp,
-                                    'allow_html':True
+                                    'html_template':'reset-password.html'
                                 })
         thread.start()
         return user
@@ -235,7 +280,7 @@ class ResetPasswordSerializer(serializers.Serializer):
     email = serializers.EmailField()
     otp = serializers.CharField()
     password = serializers.CharField(max_length=255, style={'input_type': 'password'}, write_only=True)
-    confirm_password = serializers.CharField(max_length=255, style={'input_type': 'password'}, write_only=True)    
+    confirm_password = serializers.CharField(max_length=255, style={'input_type': 'password'}, write_only=True)
     class Meta:
         model = User
         fields = ["email", "otp", "password", "confirm_password"]
@@ -276,14 +321,25 @@ class ResetPasswordSerializer(serializers.Serializer):
 # The `UpdateProfileSerializer` class is a serializer in Python that updates user profiles and
 # includes a nested serializer for the user's role.
 class UpdateProfileSerializer(serializers.ModelSerializer):
-    role = RoleSerializer()
+    role = RoleSerializer(read_only=True)
+    profile_image = serializers.ImageField(read_only=True)
+    email = serializers.EmailField(read_only=True)
     class Meta:
         model = User
-        fields = ['id', 'first_name', 'last_name', 'role']
+        fields = ['id', 'first_name', 'last_name', 'role', 'profile_image', 'email', 'user_company', 'user_address', 'language']
 
     def validate(self, attrs):
         logger.info(f'serialize_data: {json.dumps(attrs)}')
+        if not self.context['request'].user.is_verified:
+            raise serializers.ValidationError(
+                'Your account is not activated please contact to admin for further instructions!!'
+            )
         return super().validate(attrs)
+    
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        data['language_choices'] = dict(instance.LANGUAGE_CHOICE)
+        return data
 
 class ChangePasswordSerializer(serializers.Serializer):
     old_password = serializers.CharField(max_length=255, style={'input-type':'password'},write_only=True)
@@ -342,10 +398,9 @@ class ResendUserTokenSerializer(serializers.Serializer):
                                     'body':email_body,
                                     'sender':settings.BUSINESS_EMAIL,
                                     'recipients':[validated_data.get("email")],
-                                    'fail_silently':False,
                                     'link':link,
                                     'email':email,
-                                    'allow_html':True
+                                    'html_template':'verify-user.html'
                                 })
         thread.start()
         return user
@@ -381,3 +436,10 @@ class VerifyUserTokenSerializer(serializers.Serializer):
         user.is_verified = True
         user.save()
         return user
+    
+
+class EndUserSerializer(serializers.ModelSerializer):
+    
+    class Meta:
+        model = User
+        fields = "__all__"

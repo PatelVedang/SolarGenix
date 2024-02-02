@@ -54,6 +54,8 @@ INSTALLED_APPS = [
     'scanner',
     'celery',
     'corsheaders',
+    'payments',
+    # 'payments.apps.PaymentsConfig',
     # 'web_socket'
     ]
 
@@ -108,7 +110,7 @@ DATABASES = {
         'PASSWORD': os.environ.get('MYSQL_PASSWORD', env('MYSQL_PASSWORD')),
         'HOST': os.environ.get('MYSQL_DATABASE_HOST', env('MYSQL_DATABASE_HOST')),
         'PORT': os.environ.get('MYSQL_DATABASE_PORT', env('MYSQL_DATABASE_PORT')),
-        'CONN_MAX_AGE': 3600,
+        'CONN_MAX_AGE': 60,
         # 'OPTIONS': {
         #     # "init_command": f"SET GLOBAL max_connections = 100000",
         #     'MAX_AGE': 600
@@ -177,7 +179,7 @@ SWAGGER_SETTINGS = {
 
 CSRF_TRUSTED_ORIGINS=os.environ.get('CSRF_TRUSTED_ORIGINS', env('CSRF_TRUSTED_ORIGINS')).split()
 CORS_ORIGIN_WHITELIST=os.environ.get('CORS_ORIGIN_WHITELIST', env('CORS_ORIGIN_WHITELIST')).split()
-    
+PDF_DOWNLOAD_ORIGIN=os.environ.get('PDF_DOWNLOAD_ORIGIN', env('PDF_DOWNLOAD_ORIGIN')).split()
 
 # CORS_ORIGIN_ALLOW_ALL = True
 
@@ -222,12 +224,17 @@ EMAIL_HOST_USER=os.environ.get('EMAIL_HOST_USER', env('EMAIL_HOST_USER'))
 EMAIL_HOST_PASSWORD=os.environ.get('EMAIL_HOST_PASSWORD', env('EMAIL_HOST_PASSWORD'))
 EMAIL_USE_TLS=os.environ.get('EMAIL_USE_TLS', env('EMAIL_USE_TLS'))
 BUSINESS_EMAIL=os.environ.get('BUSINESS_EMAIL', env('BUSINESS_EMAIL'))
-SUPPORT_EMAILS=os.environ.get('SUPPORT_EMAILS', env('SUPPORT_EMAILS'))
+SUPPORT_EMAILS=os.environ.get('SUPPORT_EMAILS', env('SUPPORT_EMAILS')).split(" ")
 
 
 #PASSWORD validation
 PASSWORD_VALIDATE_STRING =  "A minimum 8 characters and maximum 30 character password contains a combination of uppercase and lowercase letter, special symbol and number are required."
 PASSWORD_VALIDATE_REGEX = "^(?=\S*[a-z])(?=\S*[A-Z])(?=\S*\d)(?=\S*[^\w\s])\S{8,30}$"
+
+# mobile number validation
+MOBILE_NUM_VALIDATE_STRING =  "Invalid mobile number"
+MOBILE_NUMBER_REGEX = "^([0-9]{10})$"
+COUNTRY_CODE_REGEX = "^(\+[0-9]{1,3})$"
 
 #PDF
 PDF_DOWNLOAD_ORIGIN=os.environ.get('PDF_DOWNLOAD_ORIGIN', env('PDF_DOWNLOAD_ORIGIN'))
@@ -326,3 +333,40 @@ CACHES = {
         }
     }
 }
+
+
+#Stripe
+STRIPE_WEBHOOK_SECRET=os.environ.get('STRIPE_WEBHOOK_SECRET', env('STRIPE_WEBHOOK_SECRET'))
+STRIPE_PUBLISHABLE_KEY=os.environ.get('STRIPE_PUBLISHABLE_KEY', env('STRIPE_PUBLISHABLE_KEY')).strip()
+STRIPE_SECRET_KEY=os.environ.get('STRIPE_SECRET_KEY', env('STRIPE_SECRET_KEY')).strip()
+STRIPE_MODE = ("live" if "pk_live" in STRIPE_PUBLISHABLE_KEY and "sk_live" in STRIPE_SECRET_KEY else "test")
+
+FONTS_PATH=f'{BASE_DIR}/fonts/'
+SCAN_DELIVERY_MAIL_HTML ={
+    'EN':'''
+        <div style="color:black;">
+        <b><i>{}</i></b>,<br><br>
+        Please find your external vulnerability scan results on the target <b><i>{}</i></b> on <b><i>{}</i></b> in the attached by IsaiX Cyber Services.<br>
+        The PDF file provided "output.pdf" is in an Executive Report format and can be distributed to your company's management if required.<br>
+        Kindly reach out to us at support@isaix.com if you have any questions regarding your scan.<br><br>
+        The IsaiX Cyber Team
+        </div>
+        ''',
+    'FR': '''
+    <div style="color:black;">
+    <b><i>{}</i></b>,<br><br>
+    Veuillez trouver ci-joint les résultats du scan de vulnérabilité externe effectuée par les services IsaiX Cyber sur la cible <b><i>{}</i></b> le <b><i>{}</i></b>.<br>
+    Le fichier PDF fourni "output.pdf" est dans un format de rapport exécutif et peut être distribué à la direction de votre entreprise si nécessaire.<br>
+    N'hésitez pas à nous contacter à l'adresse support@isaix.com si vous avez des questions concernant votre scan.<br><br>
+    L'équipe IsaiX Cyber
+    </div>
+    '''
+}
+
+#OpenVAS
+OPENVAS_API_SERVER=os.environ.get('OPENVAS_API_SERVER',env('OPENVAS_API_SERVER'))
+OPENVAS_ROOT_USER=os.environ.get('OPENVAS_ROOT_USER',env('OPENVAS_ROOT_USER'))
+OPENVAS_ROOT_USER_PASSWORD=os.environ.get('OPENVAS_ROOT_USER_PASSWORD',env('OPENVAS_ROOT_USER_PASSWORD'))
+OPENVAS_STATUS_CHECK_DELAY=os.environ.get('OPENVAS_STATUS_CHECK_DELAY',env('OPENVAS_STATUS_CHECK_DELAY'))
+OPENVAS_REPORT_GEN_TIMEOUT=os.environ.get('OPENVAS_REPORT_GEN_TIMEOUT',env('OPENVAS_REPORT_GEN_TIMEOUT'))
+OPENVAS_REPORT_GEN_DELAY=os.environ.get('OPENVAS_REPORT_GEN_DELAY',env('OPENVAS_REPORT_GEN_DELAY'))

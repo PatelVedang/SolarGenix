@@ -35,6 +35,12 @@ urlpatterns = [
     path('',include([
         path('api/',include('scanner.urls')),
         path('api/',include('user.urls')),
+        path('api/', include('payments.urls')),
         path('swagger',schema_view.with_ui('swagger', cache_timeout=0), name='swagger-schema')
     ])),
 ]+static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+
+
+admin.site.site_header = "ISAIX"
+admin.site.site_title = "ISAIX Admin Portal"
+admin.site.index_title = "Welcome to ISAIX Portal"

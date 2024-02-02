@@ -6,7 +6,8 @@ import logging
 from datetime import datetime
 from tldextract import extract
 import socket
-from .report_lab_doc import generate_doc
+from .report_lab_doc import generate_doc as generate_eng_doc
+from .report_lab_doc_french import generate_doc as generate_french_doc
 logger = logging.getLogger('django')
 from .handlers.nmap_handler import NMAP
 nmap = NMAP()
@@ -22,6 +23,8 @@ from .handlers.owasp_zap_handler import OWASP
 owasp = OWASP()
 from .handlers.common_handler import Templates
 t = Templates()
+from .handlers.openvas_handler import OpenVAS
+openvas = OpenVAS()
 
 
 class PDF:
@@ -35,8 +38,15 @@ class PDF:
         'owasp_zap': owasp.main,
         'isaix_owasp': owasp.main,
         'active_owasp': owasp.main,
+        'openvas': openvas.main,
         'default': default.default_handler
     }
+
+    doc_generators = {
+        'EN':generate_eng_doc,
+        'FR':generate_french_doc
+    }
+    
 
     def make_path(self, target_path):
         """
@@ -62,7 +72,7 @@ class PDF:
         if os.path.exists(f'{file_path}'):
             os.remove(f'{file_path}')
 
-    def generate(self, role, user_id, order_id, targets_ids=[], generate_pdf=True, generate_order_pdf=False, re_generate = False):
+    def generate(self, role, user_id, order_id, active_plan, targets_ids=[], generate_pdf=True, generate_order_pdf=False, re_generate = False):
         order_obj = Order.objects.get(id=order_id)
         target_obj = None
         alert_objs = {}
@@ -127,9 +137,11 @@ class PDF:
       
             origin = ".".join(list(extract(ip))).strip(".")
             ip = socket.gethostbyname(origin)
-            generate_doc(role, cname='ISAIX',
-                date=datetime.utcnow().strftime("%b %d %Y"),
+            self.doc_generators[order_obj.client.language](role, active_plan, cname='ISAIX',
+                scan_date=order_obj.created_at.strftime("%b %d %Y"),
                 vulnerabilities=alert_objs,
+                user_name = f"{order_obj.client.first_name} {order_obj.client.last_name}",
+                order = order_obj,
                 risk_levels=risk_levels,
                 output_path=file_path,
                 multiple_ip=True,

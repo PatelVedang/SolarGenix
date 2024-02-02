@@ -24,9 +24,10 @@ from datetime import datetime
 from decimal import Decimal
 from .serializers import *
 from utils.cache_helper import Cache
-
+import zlib
 from zapv2 import ZAPv2
 zap = ZAPv2()
+from utils.openvas.scan import openVAS
 
 def update_target_and_add_log(**kwargs):
     """
@@ -41,7 +42,7 @@ def update_target_and_add_log(**kwargs):
         target_id = kwargs.get('id')
 
         if kwargs.get('output'):
-            kwargs.get('target').update(raw_result=kwargs.get('output'), status=kwargs.get('status'), scan_time=target_scan_time_new)
+            kwargs.get('target').update(raw_result=zlib.compress(kwargs.get('output').encode("utf-8")), status=kwargs.get('status'), scan_time=target_scan_time_new)
             Cache.update(key=f'target_{target_id}', **{'raw_result':kwargs.get('output'), 'status':kwargs.get('status'), 'scan_time':target_scan_time_new})
         else:
             kwargs.get('target').update(status=kwargs.get('status'), scan_time=target_scan_time_new)
@@ -49,9 +50,11 @@ def update_target_and_add_log(**kwargs):
 
         TargetLog.objects.create(target=Target(kwargs.get('id')), action=kwargs.get('action'))
         order_id = kwargs.get('order')[0].id
-        order_scan_time = (kwargs.get('order')[0].scan_time - target_scan_time_current) + target_scan_time_new
-        kwargs.get('order').update(scan_time=order_scan_time)
-        Cache.update(key=f'order_{order_id}', **{'scan_time':order_scan_time})
+        if kwargs.get('order')[0].scan_time < target_scan_time_new:
+            order_scan_time = target_scan_time_new
+            kwargs.get('order').update(scan_time=order_scan_time)
+            Cache.update(key=f'order_{order_id}', **{'scan_time':order_scan_time})
+            
     except Exception as e:
         import traceback
         traceback.print_exc()
@@ -93,7 +96,8 @@ def scan(id, time_limit, token, order_id, requested_by_id, client_id, batch_scan
     py_tools={
         'owasp_zap':OWASP_ZAP_spider_scan_v3,
         'isaix_owasp': custom_OWASP_ZAP_scan,
-        'active_owasp': OWASP_ZAP_active_scan_v1
+        'active_owasp': OWASP_ZAP_active_scan_v1,
+        'openvas': openVAS_scan
     }
 
     ip = ".".join(list(extract(target[0].ip))).strip(".")
@@ -419,7 +423,10 @@ def OWASP_ZAP_spider_scan_v3(url, order_id, requested_by_id, time_limit):
     alerts = pd.DataFrame(data=[*zap.alert.alerts(baseurl=http_url), *zap.alert.alerts(baseurl=https_url)])
 
     # Spider scan alerts ids
-    spider_alerts_ids = alerts[alerts['messageId'].isin(spider_msg_ids)]['id'].tolist()
+    if not alerts.empty:
+        spider_alerts_ids = alerts[alerts['messageId'].isin(spider_msg_ids)]['id'].tolist()
+    else:
+        spider_alerts_ids = []
 
     alerts_objs = {}
     if len(spider_requests) and len(spider_alerts_ids):
@@ -480,7 +487,10 @@ def OWASP_ZAP_active_scan_v1(url, order_id, requested_by_id, time_limit):
     alerts = pd.DataFrame(data=[*zap.alert.alerts(baseurl=http_url), *zap.alert.alerts(baseurl=https_url)])
 
     # Spider scan alerts ids
-    spider_alerts_ids = alerts[alerts['messageId'].isin(spider_msg_ids)]['id'].tolist()
+    if not alerts.empty:
+            spider_alerts_ids = alerts[alerts['messageId'].isin(spider_msg_ids)]['id'].tolist()
+    else:
+        spider_alerts_ids = []
 
     # Active scan's alerts ids 
     active_alerts_ids = zap.ascan.alerts_ids(scanid=active_scan_id)
@@ -504,6 +514,13 @@ def custom_OWASP_ZAP_scan(url, order_id, requested_by_id, time_limit):
         url = http_url
     # try:
     return owasp.process_data(url, order_id, requested_by_id, time_limit)
+    # except Exception as e:
+    #     pass
+
+def openVAS_scan(url, order_id, requested_by_id, time_limit):
+    domain = ".".join(list(extract(url))).strip(".")
+    gvm = openVAS(domain, time_limit)
+    return gvm.main()
     # except Exception as e:
     #     pass
 

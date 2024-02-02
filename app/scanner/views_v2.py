@@ -1,5 +1,6 @@
 from django.shortcuts import render
 from .models import Target, Tool, TargetLog, Order
+from payments.models import PaymentHistory
 from user.models import User
 from django.http import HttpResponse, JsonResponse
 from rest_framework.decorators import api_view
@@ -7,7 +8,6 @@ from .tasks import scan, send_message
 from .serializers import *
 from rest_framework.response import Response
 from rest_framework import viewsets, status, generics
-from rest_framework.filters import SearchFilter 
 from rest_framework.decorators import action
 from utils.make_response import response
 from django_filters.rest_framework import DjangoFilterBackend
@@ -16,6 +16,7 @@ from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 from rest_framework.permissions import IsAdminUser
 from .permissions import ScannerRetrievePremission, IsAdminUserOrList, IsAuthenticated, UserHasPermission
+from user.permissions import CustomIsAdminUser
 from django.utils.decorators import method_decorator
 # from utils.pdf import PDF
 from utils.pdf_final_report import PDF
@@ -23,14 +24,17 @@ from django.shortcuts import get_object_or_404
 from utils.message import send
 from web_socket.serializers import SendMessageSerializer
 import time
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from django.conf import settings
 import logging
 logger = logging.getLogger('django')
 import json
 from django.core.cache import cache
 from utils.cache_helper import Cache
-
+from utils.email import send_email
+pdf= PDF()
+from django.db.models import Q
+from dateutil.relativedelta import relativedelta
 
 class Common:
 
@@ -84,6 +88,7 @@ class Common:
 
         return order_scan_finish
 
+
     def delete_order_targets_cache(self, order_id):
         """
         The function `delete_order_targets_cache` deletes the cache entries for a specific order and its
@@ -120,7 +125,7 @@ class ScanViewSet(viewsets.ModelViewSet, Common):
         request_body=AddInQueueByIdsSerializer,
         operation_description= "Set targets in queue ids.",
         operation_summary="API to add targets in queue for scanning by ids.",
-        tags=['Targets']
+        tags=['Targets'],
 
     )
     @action(methods=['POST'], detail=False, url_path="addByIds")
@@ -280,12 +285,15 @@ class ScanViewSet(viewsets.ModelViewSet, Common):
         """
         self.serializer_class = ScannerResponseSerializer
         serializer = super().retrieve(request, *args, **kwargs)
-        pdf= PDF()
-        pdf_path, pdf_name, file_url = pdf.generate(request.user.role, request.user.id, serializer.data.get('order'), [serializer.data.get('id')])
-        
-        data = {
-            'file_path':file_url
-        }
+        active_plan = request.user.get_active_plan().exists()
+        try:
+            pdf_path, pdf_name, file_url = pdf.generate(request.user.role, request.user.id, serializer.data.get('order').get('id'), active_plan, [serializer.data.get('id')])
+            
+            data = {
+                'file_path':file_url
+            }
+        except Exception as e:
+            return response(data={}, status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, message="Oops! something went wrong!")
         TargetLog.objects.create(target=Target(serializer.data.get('id')), action=6)
         return response(data=data, status_code=status.HTTP_200_OK, message="PDF generated successfully")
     
@@ -308,9 +316,13 @@ class ScanViewSet(viewsets.ModelViewSet, Common):
         """
         self.serializer_class = ScannerResponseSerializer
         serializer = super().retrieve(request, *args, **kwargs)
-        pdf= PDF()
-        pdf_path, pdf_name, file_url = pdf.generate(request.user.role, request.user.id, serializer.data.get('order'), [serializer.data.get('id')])
-        FilePointer = open(pdf_path,"rb")
+        active_plan = request.user.get_active_plan().exists()
+        try:
+            pdf_path, pdf_name, file_url = pdf.generate(request.user.role, request.user.id, serializer.data.get('order').get('id'), active_plan, [serializer.data.get('id')])
+            FilePointer = open(pdf_path,"rb")
+            
+        except Exception as e:
+            return response(data={}, status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, message="Oops! something went wrong!")
         response = HttpResponse(FilePointer,content_type='application/pdf')
         response['Content-Disposition'] = f'attachment; filename={pdf_name}'
         return response
@@ -333,9 +345,11 @@ class ScanViewSet(viewsets.ModelViewSet, Common):
         """
         self.serializer_class = ScannerResponseSerializer
         serializer = super().retrieve(request, *args, **kwargs)
-        pdf= PDF()
-        
-        html_data = pdf.generate(request.user.role, request.user.id, serializer.data.get('order'), [serializer.data.get('id')], generate_pdf=False)
+        active_plan = request.user.get_active_plan().exists()
+        try:
+            html_data = pdf.generate(request.user.role, request.user.id, serializer.data.get('order').get('id'), active_plan, [serializer.data.get('id')], generate_pdf=False)
+        except Exception as e:
+            return response(data={}, status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, message="Oops! something went wrong!")
 
         data = {
             'html_content':html_data
@@ -360,7 +374,7 @@ class ScanViewSet(viewsets.ModelViewSet, Common):
         return response(data={}, status_code=status.HTTP_200_OK, message="record deleted successfully")
 
 @method_decorator(name='list', decorator=swagger_auto_schema(tags=['Tool'], operation_description= "List API.", operation_summary="API to get list of records."))
-@method_decorator(name='create', decorator=swagger_auto_schema(tags=['Tool'], operation_description= "Create API.", operation_summary="API to create new record."))
+@method_decorator(name='create', decorator=swagger_auto_schema(tags=['Tool'], operation_description= "Create API.", operation_summary="API to create new record.", request_body=ToolPayloadSerializer))
 @method_decorator(name='retrieve', decorator=swagger_auto_schema(tags=['Tool'], operation_description= "Retrieve API.", operation_summary="API for retrieve single record by id."))
 @method_decorator(name='update', decorator=swagger_auto_schema(tags=['Tool'], auto_schema=None))
 @method_decorator(name='partial_update', decorator=swagger_auto_schema(tags=['Tool'], operation_description= "Partial update API.", operation_summary="API for partial update record."))
@@ -381,6 +395,7 @@ class ToolViewSet(viewsets.ModelViewSet, Common):
         :param request: The request object
         :return: The response is being returned.
         """
+        self.serializer_class = ToolPayloadSerializer
         serializer = super().list(request, *args, **kwargs)
         return response(data=serializer.data, status_code=status.HTTP_200_OK, message="record found successfully")
 
@@ -495,7 +510,6 @@ class SendMessageView(generics.GenericAPIView, Common):
                         response.append(record_obj)                    
                     
                     order_update = super().order_update_in_cache(order, response)
-                    print(order_update,"=>>>>>>order_update")
                     # If order status is updated
                     if order_update:
                         fresh_order = Cache.get(f'order_{order_id}')
@@ -505,6 +519,31 @@ class SendMessageView(generics.GenericAPIView, Common):
                     
                     send([str(order['client']['id']), str(request.user.id)],{'order': order_obj, 'targets': response})
                     if order_update:
+
+                        print(request.user.subscription.mail_scan_result,"=>>>>>>>>Mail Scan  result")
+                        if request.user.subscription.mail_scan_result:
+                            # sending mail on scan complete of batch of targets
+                            targets_ids = [target.get('id') for target in order['targets']]
+                            active_plan = request.user.get_active_plan().exists()
+                            pdf_path, pdf_name, file_url = pdf.generate(request.user.role, request.user.id, order_id, active_plan, targets_ids)
+                            user_name = f"{order['client']['first_name']} {order['client']['last_name']}".upper()
+                            email_body = settings.SCAN_DELIVERY_MAIL_HTML.get(request.user.language).format(user_name,order['target_ip'],datetime.strptime(order["created_at"],"%Y-%m-%dT%H:%M:%S.%fZ").strftime("%b %d %Y"))
+                            send_email(**{
+                                'subject':f'Successful Security Scan Results for {order["target_ip"]}',
+                                'body':email_body,
+                                'sender':settings.BUSINESS_EMAIL,
+                                'recipients': list(set([request.user.email, order['client']['email']])),
+                                'bcc': settings.SUPPORT_EMAILS,
+                                'attachments': [
+                                    {
+                                        'name': f'scan_result_{datetime.strptime(order["created_at"],"%Y-%m-%dT%H:%M:%S.%fZ").strftime("%b_%d_%Y")}_{order["target_ip"]}.pdf',
+                                        'path': pdf_path,
+                                        'mime-type': 'application/pdf'
+                                    }
+                                ],
+                                'html_string': email_body
+                            })
+
                         break
                     time.sleep(round(float(settings.WEB_SOCKET_INTERVAL),2))
                 # after order is complete we need to remove all the data related to that order from cache
@@ -547,6 +586,29 @@ class SendMessageView(generics.GenericAPIView, Common):
                             # When more than one targets present with status<=2
                             record_obj['target_percent'] = 100
                             send([str(record_obj['scan_by']['id']), str(request.user.id)],record_obj)
+                        
+                        print(request.user.subscription.mail_scan_result,"=>>>>>>>>Mail Scan  result")
+                        if request.user.subscription.mail_scan_result:
+                            # sending mail on scan complete of single target
+                            active_plan = request.user.get_active_plan().exists()
+                            pdf_path, pdf_name, file_url = pdf.generate(request.user.role, request.user.id, order_id, active_plan, [record_obj["id"]])
+                            user_name = f"{order['client']['first_name']} {order['client']['last_name']}".upper()
+                            email_body = settings.SCAN_DELIVERY_MAIL_HTML.get(request.user.language).format(user_name,record_obj["ip"],datetime.strptime(record_obj["created_at"],"%Y-%m-%dT%H:%M:%S.%fZ").strftime("%b_%d_%Y"))
+                            send_email(**{
+                                'subject':f'Successful Security Scan Results for {record_obj["ip"]}',
+                                'body':email_body,
+                                'sender':settings.BUSINESS_EMAIL,
+                                'recipients': list(set([request.user.email, order['client']['email']])),
+                                'bcc': settings.SUPPORT_EMAILS,
+                                'attachments': [
+                                    {
+                                        'name': f'scan_result_{datetime.strptime(record_obj["created_at"],"%Y-%m-%dT%H:%M:%S.%fZ").strftime("%b_%d_%Y")}_{record_obj["ip"]}.pdf',
+                                        'path': pdf_path,
+                                        'mime-type': 'application/pdf'
+                                    }
+                                ],
+                                'html_string': email_body
+                            })
                         break
                     time.sleep(round(float(settings.WEB_SOCKET_INTERVAL),2))
 
@@ -562,7 +624,7 @@ class SendMessageView(generics.GenericAPIView, Common):
 @method_decorator(name='create', decorator=swagger_auto_schema(tags=['Orders'], operation_description= "Create API.", operation_summary="API to create new record."))
 @method_decorator(name='retrieve', decorator=swagger_auto_schema(tags=['Orders'], operation_description= "Retrieve API.", operation_summary="API for retrieve single record by id."))
 @method_decorator(name='update', decorator=swagger_auto_schema(tags=['Orders'], auto_schema=None))
-@method_decorator(name='partial_update', decorator=swagger_auto_schema(tags=['Orders'], operation_description= "Partial update API.", operation_summary="API for partial update record."))
+@method_decorator(name='partial_update', decorator=swagger_auto_schema(tags=['Orders'], operation_description= "Partial update API.", operation_summary="API for partial update record.", request_body=OrderUpdateSerailizer))
 @method_decorator(name='destroy', decorator=swagger_auto_schema(tags=['Orders'], operation_description= "Delete API.", operation_summary="API to delete single record by id."))
 class OrderViewSet(viewsets.ModelViewSet, Common):
     queryset = Order.objects.all()
@@ -588,9 +650,83 @@ class OrderViewSet(viewsets.ModelViewSet, Common):
         serializer = self.serializer_class(data=request.data)
         if serializer.is_valid(raise_exception=True):
             target_ip= serializer.data.get('target_ip')
+            today = datetime.utcnow()
+            current_sub = request.user.get_active_plan()
+            if request.user.role.id!=1:
+                # If user have any running subscription
+                if current_sub.exists():
+                    # Getting IP limit
+                    ip_limit = current_sub[0].ip_limit
+                    # Getting plan type (1, 'Recurring') (2, 'One Time')
+                    plan_type = current_sub[0].price_type
+                    if plan_type in [1,2]:
+                        # If plan is recurring
+                        orders = Order.default.filter(client_id=request.user.id, created_at__gte=current_sub[0].current_period_start, created_at__lte=current_sub[0].current_period_end)
+                        if orders.count()>=ip_limit:
+                            return response(data={}, status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, message="You have reached your IP limit. Please upgrade your account!!")
+                        
+                        # one_month_ago = datetime.utcfromtimestamp(int((today - relativedelta(months=1)).timestamp())).replace(tzinfo=timezone.utc)
+                        # if one_month_ago < current_sub[0].current_period_start:
+                        #     start = current_sub[0].current_period_start
+                        #     end = (current_sub[0].current_period_end if plan_type==1 else (today + relativedelta(months=1)))
+                        # else:
+                        #     start = one_month_ago
+                        #     end = today
+                        
+                        # # interval_orders = orders.filter(created_at__gte=start, created_at__lte=end)
+
+                        # # if interval_orders.count()>=1:
+                        # #     return response(data={}, status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, message="Oops! It seems you've hit the limit for IP usage this month.")
+                        
+                        # same_ip_orders = orders.filter(created_at__gte=start, created_at__lte=end,target_ip=target_ip)
+
+                        # if same_ip_orders.count()>=1:
+                        #     return response(data={}, status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, message="Oops! It seems like this IP address has already been scanned this month.")
+
+                    elif plan_type == 3:
+                        # If plan is only for one time
+                        orders = Order.default.filter(client_id=request.user.id, created_at__gte=current_sub[0].current_period_start, created_at__lte=today)
+
+                        if orders.count()>=ip_limit:
+                            return response(data={}, status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, message="You have reached your IP limit. Please upgrade your account!!")
+
+                        # same_ip_orders = orders.filter(target_ip=target_ip)
+
+                        # if same_ip_orders.count()>=1:
+                        #     return response(data={}, status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, message="Oops! It seems like you've already scanned this domain once. So please try another domain!")
+                else:
+                    # If user has free subscription
+                    ip_limit = 1
+                    start_date = today - timedelta(days=15)
+                    
+                    orders = Order.default.filter(client_id=request.user.id, created_at__gte=start_date, created_at__lte=today)
+                    if orders.count()>=ip_limit:
+                        return response(data={}, status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, message="You have reached your IP limit. Please upgrade your account!!")
+                    
+                    
             order = Order.objects.create(client_id=request.user.id, subscrib_id=request.user.subscription_id, target_ip=target_ip)
+            
+            if 'files' in request.FILES:
+                order.company_logo = request.FILES['files']
+                order.company_name = serializer.data.get('company_name','')
+                order.company_address = serializer.data.get('company_address','')
+                order.is_client = serializer.data.get('is_client',False)
+                order.client_name = serializer.data.get('client_name','')
+                order.save()
+
             custom_response = OrderResponseSerailizer(order, context={"request": request})
             return response(data=custom_response.data, status_code=status.HTTP_200_OK, message="order successfully added in database")
+    
+    def partial_update(self, request, *args, **kwargs):
+        if request.user.role.id==4:
+            self.serializer_class = OrderUpdateSerailizer
+            request.data['company_logo'] = request.FILES['files']
+            serializer = super().partial_update(request, *args, **kwargs)
+            order = Order.objects.get(id=kwargs.get('pk'))
+            custom_response = OrderResponseSerailizer(order, context={"request": request})
+            return response(data=custom_response.data, status_code=status.HTTP_200_OK, message="record successfully updated in database.")
+        else:
+            return response(data={}, status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, message="Oops! something went wrong!")
         
     def list(self, request, *args, **kwargs):
         """
@@ -664,7 +800,7 @@ class OrderViewSet(viewsets.ModelViewSet, Common):
                     
                     scan.apply_async(args=[], kwargs={'id':targets[index].id, 'time_limit':targets[index].tool.id, 'token':request.headers.get('Authorization'), 'order_id': order_id, 'requested_by_id': requested_by_id, 'client_id': client_id, 'batch_scan': True, 'ws_trigger': ws_trigger}, time_limit=targets[index].tool.time_limit + int(settings.EXTRA_BG_TASK_TIME), ignore_result=True)
         custom_response = OrderResponseSerailizer(Order.objects.filter(id__in=orders_id), many=True, context={"request": request})
-        return response(data=custom_response.data, status_code=status.HTTP_200_OK, message="targets of order is successfully added in queue")
+        return response(data=custom_response.data, status_code=status.HTTP_200_OK, message="Your target has been added to the scan queue.")
 
     @swagger_auto_schema(
         method = 'get',
@@ -684,10 +820,63 @@ class OrderViewSet(viewsets.ModelViewSet, Common):
         """
         self.serializer_class = OrderResponseSerailizer
         serializer = super().retrieve(request, *args, **kwargs)
-        pdf= PDF()
         targets = [target.get('id') for target in (list(Target.objects.filter(order_id= serializer.data.get('id')).values('id')))]
-        pdf_path, pdf_name, file_url = pdf.generate(request.user.role, request.user.id, serializer.data.get('id'), targets_ids=targets, generate_order_pdf=True)
+        active_plan = request.user.get_active_plan().exists()
+        try:
+            pdf_path, pdf_name, file_url = pdf.generate(request.user.role, request.user.id, serializer.data.get('id'), active_plan, targets_ids=targets, generate_order_pdf=True)
+        except Exception as e:
+            return response(data={}, status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, message="Oops! something went wrong!")
         data = {
             'file_path':file_url
         }
         return response(data=data, status_code=status.HTTP_200_OK, message="PDF generated successfully")
+
+
+@method_decorator(name='list', decorator=swagger_auto_schema(tags=['Subscriptions'], operation_description= "List API.", operation_summary="API to get list of records."))
+@method_decorator(name='create', decorator=swagger_auto_schema(tags=['Subscriptions'], operation_description= "Create API.", operation_summary="API to create new record."))
+@method_decorator(name='retrieve', decorator=swagger_auto_schema(tags=['Subscriptions'], operation_description= "Retrieve API.", operation_summary="API for retrieve single record by id."))
+@method_decorator(name='update', decorator=swagger_auto_schema(tags=['Subscriptions'], auto_schema=None))
+@method_decorator(name='partial_update', decorator=swagger_auto_schema(tags=['Subscriptions'], operation_description= "Partial update API.", operation_summary="API for partial update record."))
+@method_decorator(name='destroy', decorator=swagger_auto_schema(tags=['Subscriptions'], operation_description= "Delete API.", operation_summary="API to delete single record by id."))
+class SubscriptionViewSet(viewsets.ModelViewSet):
+    queryset = Subscription.objects.all()
+    serializer_class = SubscriptionSerializer
+    permission_classes = [CustomIsAdminUser]
+    filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
+    search_fields = ['plan_type']
+    filterset_fields = ['plan_type']
+    ordering_fields = ['plan_type']
+
+    @swagger_auto_schema(
+        method = 'get',
+        operation_description= "Get all the subscriptions without pagination",
+        operation_summary="API to get all subscriptions.",
+        request_body=None,
+        tags=['Subscriptions']
+
+    )
+    @action(methods=['GET'], detail=False, url_path="all")
+    def get_all(self, request, *args, **kwargs):
+        serializer = self.get_serializer(self.get_queryset(), many=True)
+        return response(data=serializer.data, status_code=status.HTTP_200_OK, message="record found successfully")
+
+    def list(self, request, *args, **kwargs):
+        serializer = super().list(request, *args, **kwargs)
+        return response(data=serializer.data, status_code=status.HTTP_200_OK, message="record found successfully")
+
+    def retrieve(self, request, *args, **kwargs):
+        serializer = super().retrieve(request, *args, **kwargs)
+        return response(data=serializer.data, status_code=status.HTTP_200_OK, message="record found successfully")
+    
+    def create(self, request, *args, **kwargs):
+        serializer = super().create(request, *args, **kwargs)
+        return response(data=serializer.data, status_code=status.HTTP_200_OK, message="record successfully added in database.")
+    
+    def partial_update(self, request, *args, **kwargs):
+        serializer = super().partial_update(request, *args, **kwargs)
+        return response(data=serializer.data, status_code=status.HTTP_200_OK, message="record successfully updated in database.")
+    
+    def destroy(self, request, *args, **kwargs):
+        self.get_object().soft_delete()
+        return response(data={}, status_code=status.HTTP_200_OK, message="record deleted successfully")
+    

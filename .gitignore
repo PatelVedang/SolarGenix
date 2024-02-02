@@ -74,7 +74,6 @@ cover/
 
 # Django stuff:
 *.eot
-*.ttf
 *.woff
 
 # Flask stuff:
@@ -147,6 +146,7 @@ env/
 .vscode/
 venv/
 ENV/
+logs/
 env.bak/
 venv.bak/
 
