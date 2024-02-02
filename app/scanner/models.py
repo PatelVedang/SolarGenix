@@ -1,3 +1,4 @@
+from typing import Iterable, Optional
 from django.db import models
 from datetime import datetime
 from django.contrib.auth.models import User
@@ -5,6 +6,7 @@ from user.models import User
 import socket
 import uuid
 import os
+import zlib
 
 TARGET_STATUS_CHOICES = [
     (0, "Created"),
@@ -68,7 +70,7 @@ class SoftDelete(models.Model):
 # Create your models here.
 class Target(SoftDelete):
     ip = models.CharField(max_length=100,null=False)
-    raw_result = models.TextField()
+    raw_result = models.BinaryField()
     compose_result = models.JSONField(default=dict)
     status = models.IntegerField(choices=TARGET_STATUS_CHOICES, default=0)
     tool = models.ForeignKey("Tool", on_delete=models.SET_NULL, default=1, null=True)
@@ -82,6 +84,14 @@ class Target(SoftDelete):
     # scan_time store in seconds
     scan_time = models.DecimalField(max_digits=10, decimal_places=2, default=0)
 
+    def save(self, *args, **kwargs):
+        if isinstance(self.raw_result, str):
+            self.raw_result = zlib.compress(self.raw_result.encode('utf-8'))
+        return super(Target, self).save(*args, **kwargs)
+
+    def get_raw_result(self):
+        return zlib.decompress(self.raw_result.tobytes()).decode('utf-8')
+    
     def __str__(self):
         return self.ip
 

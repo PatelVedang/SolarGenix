@@ -3,6 +3,7 @@ from django.dispatch import receiver
 from scanner.models import Target, TargetLog, Order, Tool
 from django.conf import settings
 import os
+import zlib
 
 @receiver(post_save, sender=Target)
 def target_scan_signal(sender, instance, created, **kwargs):
@@ -18,7 +19,7 @@ def create_targets_signal(sender, instance, created, **kwargs):
         tools = Tool.objects.filter(subscription_id=instance.subscrib.id)
         targets= []
         for tool in tools:
-            targets.append(Target(ip=instance.target_ip, raw_result="", tool=tool, order=instance, scan_by = instance.client))
+            targets.append(Target(ip=instance.target_ip, raw_result=zlib.compress("".encode("utf-8")), tool=tool, order=instance, scan_by = instance.client))
         Target.objects.bulk_create(targets)
 
 

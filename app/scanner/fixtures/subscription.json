@@ -18,6 +18,16 @@
         "plan_type" : "STAFF",
         "mail_scan_result":true
       }
+    }, 
+    {
+      "model": "scanner.subscription",
+      "pk": 3,
+      "fields": {
+        "day_limit": 0,
+        "price": 0.00,
+        "plan_type" : "ISAIX",
+        "mail_scan_result":false
+      }
     }
     
   ]

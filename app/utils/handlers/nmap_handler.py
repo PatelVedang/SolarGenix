@@ -92,7 +92,7 @@ class NMAP:
             if regenerate or not target.compose_result:
                 self.result = {}
                 self.ports = []
-                self.ports = list(re.finditer(self.port_search_regex, target.raw_result))
+                self.ports = list(re.finditer(self.port_search_regex, target.get_raw_result()))
                 total_ports = len(self.ports)
                 for port_index in range(total_ports):
                     if self.ports[port_index].groupdict().get('port'):
@@ -103,7 +103,7 @@ class NMAP:
                             # else:
                             #     regex = f"""(?s){self.replace_all_special_char(self.ports[port_index].group())}(?P<content>.*?){self.replace_all_special_char(self.ports[port_index+1].group())}"""
                             # cve_id = ""
-                            # content_search_result = re.search(regex, target.raw_result)
+                            # content_search_result = re.search(regex, target.get_raw_result())
                             # if content_search_result:
                             #     contect = content_search_result.groupdict()['content']
                             #     cve_search_result = re.finditer(self.cve_regex,contect)

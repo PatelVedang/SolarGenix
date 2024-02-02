@@ -83,7 +83,7 @@ class OWASP:
         or if the existing target can be used
         """
         try:
-            vul_data = await alert_response(**{**json.loads(target.raw_result),**{'tool': target.tool.tool_name, 'alert_type':5}})
+            vul_data = await alert_response(**{**json.loads(target.get_raw_result()),**{'tool': target.tool.tool_name, 'alert_type':5}})
             self.result = {**self.result, **vul_data}
         except Exception as e:
             import traceback

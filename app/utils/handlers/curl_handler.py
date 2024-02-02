@@ -85,7 +85,7 @@ class CURL:
         :param regenerate: A boolean variable that indicates whether the target's result should be
         regenerated or not. If it is True, the target's result will be regenerated
         """
-        if not re.search(self.x_content_type_options_regex, target.raw_result, re.IGNORECASE):
+        if not re.search(self.x_content_type_options_regex, target.get_raw_result(), re.IGNORECASE):
             error = "X-Content-Type-Options Header Missing"
             vul_data = await alert_response(cve="CVE-2019-19089", error=error, tool=target.tool.tool_name, alert_type=1, evidence=self.x_content_type_options_regex)
             self.result = {**self.result, **vul_data}
@@ -100,7 +100,7 @@ class CURL:
         :param regenerate: A boolean value indicating whether the target should be regenerated or not
         """
         # https://learn.microsoft.com/en-us/lifecycle/products/internet-information-services-iis reference of IIS 7.5
-        search_result = re.search(self.windows_regex, target.raw_result, re.IGNORECASE)
+        search_result = re.search(self.windows_regex, target.get_raw_result(), re.IGNORECASE)
         if search_result:
             server = search_result.groupdict().get('server').strip(" ").strip("\n") if search_result.groupdict().get('server') else ""
             version = search_result.groupdict().get('version').strip(" ").strip("\n") if search_result.groupdict().get('version') else ""
@@ -162,7 +162,7 @@ class CURL:
         possible that it is defined elsewhere in the code or it is a placeholder for future
         implementation
         """
-        search_result = re.search(self.server_in_header_regex, target.raw_result, re.IGNORECASE)
+        search_result = re.search(self.server_in_header_regex, target.get_raw_result(), re.IGNORECASE)
         if search_result:
             error = '''Server Leaks Version Information via "Server" HTTP Response Header Field'''
             vul_data = await alert_response(cve="CVE-2018-7844", error=error, tool=target.tool.tool_name, alert_type=1, evidence=search_result.group())
@@ -178,7 +178,7 @@ class CURL:
         :param regenerate: The "regenerate" parameter is not used in the code snippet provided. It is
         possible that it is used in other parts of the code that are not shown
         """
-        search_result = re.search(self.x_powered_by_in_header_regex, target.raw_result, re.IGNORECASE)
+        search_result = re.search(self.x_powered_by_in_header_regex, target.get_raw_result(), re.IGNORECASE)
         if search_result:
             error = '''Server Leaks Information via "X-Powered-By" HTTP Response Header Field'''
             vul_data = await alert_response(cve="CVE-2018-7844", error=error, tool=target.tool.tool_name, alert_type=1, evidence=search_result.group())

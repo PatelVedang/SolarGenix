@@ -62,51 +62,51 @@ fi
 echo "----------------------------------------------------"
 printf "wkhtmltopdf Installed 😎 \n\n\n"
 
-echo "Installing MySQL Server"
-echo "----------------------------------------------------"
-if ! is_command_available mysql; then
-    sudo apt-get install mysql-server -y || ( echo "Failed to install MySQL Server" && exit 1 )
-else
-    echo "MySQL Server is already installed. Skipping installation."
-fi
-echo "----------------------------------------------------"
-printf "MySQL Server Installed 😎 \n\n\n"
+# echo "Installing MySQL Server"
+# echo "----------------------------------------------------"
+# if ! is_command_available mysql; then
+#     sudo apt-get install mysql-server -y || ( echo "Failed to install MySQL Server" && exit 1 )
+# else
+#     echo "MySQL Server is already installed. Skipping installation."
+# fi
+# echo "----------------------------------------------------"
+# printf "MySQL Server Installed 😎 \n\n\n"
 
-# Prompt the user to enter test database and test user names
-read -p "Enter the database name for this server: " db
-read -p "Enter the username for databse $db: " db_user
-# Prompt the user to enter the test user password (hiding input for security)
-read -s -p "Enter the password for $db_user user to access $db database: " db_password
-echo ""
+# # Prompt the user to enter test database and test user names
+# read -p "Enter the database name for this server: " db
+# read -p "Enter the username for databse $db: " db_user
+# # Prompt the user to enter the test user password (hiding input for security)
+# read -s -p "Enter the password for $db_user user to access $db database: " db_password
+# echo ""
 
-# Create the test database and test user, and grant full access to the test database for all hosts
-sudo mysql -uroot -e "CREATE DATABASE IF NOT EXISTS $db;"
-sudo mysql -uroot -e "CREATE USER IF NOT EXISTS '$db_user'@'%' IDENTIFIED BY '$db_password';"
-sudo mysql -uroot -e "GRANT ALL PRIVILEGES ON $db.* TO '$db_user'@'%';"
-sudo mysql -uroot -e "FLUSH PRIVILEGES;"
-echo "----------------------------------------------------"
-printf "Test database and user created 😎 \n\n\n"
+# # Create the test database and test user, and grant full access to the test database for all hosts
+# sudo mysql -uroot -e "CREATE DATABASE IF NOT EXISTS $db;"
+# sudo mysql -uroot -e "CREATE USER IF NOT EXISTS '$db_user'@'%' IDENTIFIED BY '$db_password';"
+# sudo mysql -uroot -e "GRANT ALL PRIVILEGES ON $db.* TO '$db_user'@'%';"
+# sudo mysql -uroot -e "FLUSH PRIVILEGES;"
+# echo "----------------------------------------------------"
+# printf "Test database and user created 😎 \n\n\n"
 
 
-echo "Installing MySQL development headers"
-echo "----------------------------------------------------"
-if ! is_package_installed python3-dev; then
-    sudo apt-get install python3-dev -y || ( echo "Failed to install python3-dev in MySQL development headers." && exit 1 )
-else
-    echo "python3-dev is already installed in MySQL development headers. Skipping installation python3-dev."
-fi
-if ! is_package_installed default-libmysqlclient-dev; then
-    sudo apt-get install default-libmysqlclient-dev -y || ( echo "Failed to install default-libmysqlclient-dev in MySQL development headers." && exit 1 )
-else
-    echo "default-libmysqlclient-dev is already installed in MySQL development headers. Skipping installation default-libmysqlclient-dev."
-fi
-if ! is_package_installed build-essential; then
-    sudo apt-get install build-essential -y || ( echo "Failed to install build-essential in MySQL development headers." && exit 1 )
-else
-    echo "build-essential is already installed in MySQL development headers. Skipping installation build-essential."
-fi
-echo "----------------------------------------------------"
-printf "MySQL development headers Installed 😎 \n\n\n"
+# echo "Installing MySQL development headers"
+# echo "----------------------------------------------------"
+# if ! is_package_installed python3-dev; then
+#     sudo apt-get install python3-dev -y || ( echo "Failed to install python3-dev in MySQL development headers." && exit 1 )
+# else
+#     echo "python3-dev is already installed in MySQL development headers. Skipping installation python3-dev."
+# fi
+# if ! is_package_installed default-libmysqlclient-dev; then
+#     sudo apt-get install default-libmysqlclient-dev -y || ( echo "Failed to install default-libmysqlclient-dev in MySQL development headers." && exit 1 )
+# else
+#     echo "default-libmysqlclient-dev is already installed in MySQL development headers. Skipping installation default-libmysqlclient-dev."
+# fi
+# if ! is_package_installed build-essential; then
+#     sudo apt-get install build-essential -y || ( echo "Failed to install build-essential in MySQL development headers." && exit 1 )
+# else
+#     echo "build-essential is already installed in MySQL development headers. Skipping installation build-essential."
+# fi
+# echo "----------------------------------------------------"
+# printf "MySQL development headers Installed 😎 \n\n\n"
 
 # echo "Installing rabbitmq-server"
 # echo "----------------------------------------------------"
@@ -122,6 +122,57 @@ printf "MySQL development headers Installed 😎 \n\n\n"
 # fi
 # echo "----------------------------------------------------"
 # printf "RabbitMQ Installed And Started 😎 \n\n\n"
+
+echo "Installing Postgres Database"
+echo "----------------------------------------------------"
+
+# Install PostgreSQL
+echo "Installing PostgreSQL..."
+sudo apt-get update
+sudo apt-get install -y postgresql postgresql-contrib
+
+# Get username, password, and database name
+read -p "Enter the new user name: " new_user
+echo "New User: $new_user"
+read -s -p "Enter the password for the new user: " new_password
+echo -e " "
+read -p "Enter the database name: " new_db
+echo -e "New Database: $new_db"
+
+
+# Create user with password
+echo "Creating a new PostgreSQL user..."
+sudo -i -u postgres psql -c "CREATE USER $new_user WITH PASSWORD '$new_password';"
+
+# Create new database and assign privileges
+echo "Creating a new database and assigning privileges to the new user..."
+sudo -i -u postgres psql -c "CREATE DATABASE $new_db;"
+sudo -i -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE $new_db TO $new_user;"
+
+# Altering the schema owner
+echo "Altering the schema owner..."
+sudo -i -u postgres psql -d "$new_db" -c "ALTER SCHEMA public OWNER TO $new_user;"
+
+# Find the PostgreSQL version dynamically
+postgres_version=$(ls /etc/postgresql/ | grep -E '^[0-9]+$' | tail -n 1)
+
+# Configuring PostgreSQL for remote access
+if [ -n "$postgres_version" ]; then
+    # Use the specific version in the path
+    echo "listen_addresses = '*'" | sudo tee -a "/etc/postgresql/$postgres_version/main/postgresql.conf"
+    echo "host all all 0.0.0.0/0 md5" | sudo tee -a "/etc/postgresql/$postgres_version/main/pg_hba.conf"
+
+    # Restarting PostgreSQL to apply changes
+    echo "Restarting PostgreSQL..."
+    sudo service postgresql restart
+    echo "Remote access granted for new database ..."
+else
+    echo "Error: Unable to determine PostgreSQL version."
+fi
+
+echo "----------------------------------------------------"
+printf "Postgres installed, new database created and successfully assign the privileges to user for new database 😎 \n\n\n"
+
 
 echo "Installing redis-server"
 echo "----------------------------------------------------"
@@ -164,8 +215,8 @@ if ! is_command_available pm2; then
     sudo apt-get install curl -y
     curl https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.4/install.sh | bash
     source ~/.bashrc
-    nvm install latest
-    npm install pm2 -g
+    nvm install --lts
+    npm i -g concurrently pm2 yarn
 else
     echo "PM2 with NVM is already installed. Skipping installation."
 fi
