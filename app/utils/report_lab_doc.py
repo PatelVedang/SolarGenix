@@ -23,6 +23,7 @@ from bs4 import BeautifulSoup
 import traceback
 import logging
 logger = logging.getLogger('django')
+import re
 
 class MyDocTemplate(BaseDocTemplate):
     def __init__(self, filename, logo, role, is_client, scan_date, **kw):
@@ -233,6 +234,7 @@ def generate_doc(role, active_plan, cname, scan_date, vulnerabilities, user_name
     if multiple_ip = False -> no overview section and no need for hosts input
 
     """
+    cve_regex = "(CVE-[0-9]{4}-[0-9]{4,})"
     try:
 
         # Build story.
@@ -670,6 +672,14 @@ def generate_doc(role, active_plan, cname, scan_date, vulnerabilities, user_name
                         Paragraph('<b>Evidence: </b>', content),
                         Paragraph(escape(doc.fix_html(alert.get('evidence','N/A'))), content_layout)
                         ]
+                    
+                    # Add Extra field called CVE in vulnerability details if tool is openvas
+                    if alert['tool'] == "openvas":
+                        cves = list(re.findall(cve_regex,alert.get('alert_json', {}).get('reference','')))
+                        cves = ", ".join(cves) if cves else "N/A"
+                        vul_detail.insert(10,
+                            Paragraph('<b>CVE: </b> {}'.format(cves), content),
+                        )
                     
                     if i!=0:
                         del vul_detail[0]

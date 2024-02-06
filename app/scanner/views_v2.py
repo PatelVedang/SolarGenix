@@ -461,6 +461,7 @@ class SendMessageView(generics.GenericAPIView, Common):
         :return: The above code is returning the status of the scan.
         """
         try:
+            active_plan = request.user.get_active_plan().exists()
             params = request.query_params
             if params.get('order'):
                 targets_start_time = {}
@@ -520,11 +521,10 @@ class SendMessageView(generics.GenericAPIView, Common):
                     send([str(order['client']['id']), str(request.user.id)],{'order': order_obj, 'targets': response})
                     if order_update:
 
-                        print(request.user.subscription.mail_scan_result,"=>>>>>>>>Mail Scan  result")
                         if request.user.subscription.mail_scan_result:
                             # sending mail on scan complete of batch of targets
                             targets_ids = [target.get('id') for target in order['targets']]
-                            active_plan = request.user.get_active_plan().exists()
+                            # active_plan = request.user.get_active_plan().exists()
                             pdf_path, pdf_name, file_url = pdf.generate(request.user.role, request.user.id, order_id, active_plan, targets_ids)
                             user_name = f"{order['client']['first_name']} {order['client']['last_name']}".upper()
                             email_body = settings.SCAN_DELIVERY_MAIL_HTML.get(request.user.language).format(user_name,order['target_ip'],datetime.strptime(order["created_at"],"%Y-%m-%dT%H:%M:%S.%fZ").strftime("%b %d %Y"))
@@ -590,7 +590,7 @@ class SendMessageView(generics.GenericAPIView, Common):
                         print(request.user.subscription.mail_scan_result,"=>>>>>>>>Mail Scan  result")
                         if request.user.subscription.mail_scan_result:
                             # sending mail on scan complete of single target
-                            active_plan = request.user.get_active_plan().exists()
+                            # active_plan = request.user.get_active_plan().exists()
                             pdf_path, pdf_name, file_url = pdf.generate(request.user.role, request.user.id, order_id, active_plan, [record_obj["id"]])
                             user_name = f"{order['client']['first_name']} {order['client']['last_name']}".upper()
                             email_body = settings.SCAN_DELIVERY_MAIL_HTML.get(request.user.language).format(user_name,record_obj["ip"],datetime.strptime(record_obj["created_at"],"%Y-%m-%dT%H:%M:%S.%fZ").strftime("%b_%d_%Y"))
