@@ -605,9 +605,9 @@ def generate_doc(role, active_plan, cname, scan_date, vulnerabilities, user_name
 
                 story.append(PageBreak())
 
-            # Detailed vulernability Analysis
+            # Detailed vulnerability Analysis
             section_number = section_number + 1
-            # story.append(Paragraph('<a name="detailed_vulernability_analysis"></a><b>{}. Detailed vulernability Analysis</b>'.format(section_number), h1))
+            # story.append(Paragraph('<a name="detailed_vulnerability_analysis"></a><b>{}. Detailed vulnerability Analysis</b>'.format(section_number), h1))
 
             for i, alert in enumerate(vulnerabilities.values()):
 
@@ -616,7 +616,7 @@ def generate_doc(role, active_plan, cname, scan_date, vulnerabilities, user_name
                         cname,
                         alert['complexity']
                     ]
-                    alert_info = [['Risk Factor: {}'.format(alert['complexity']), 'Occurences: {}'.format(alert['instances'])]]
+                    alert_info = [['Risk Factor: {}'.format(alert['complexity']), 'Occurrences: {}'.format(alert['instances'])]]
                     styles = getSampleStyleSheet()
                     cell_style = styles["BodyText"]
 
@@ -659,7 +659,7 @@ def generate_doc(role, active_plan, cname, scan_date, vulnerabilities, user_name
                         cvvs2 = alert['alert_json']['cvvs2']['base_score']
                     
                     vul_detail = [
-                        Paragraph('<a name="detailed_vulernability_analysis"></a><b>{}. Detailed vulernability Analysis</b>'.format(section_number), h1),
+                        Paragraph('<a name="detailed_vulnerability_analysis"></a><b>{}. Detailed vulnerability analysis</b>'.format(section_number), h1),
                         Paragraph('<b><a name="{}"></a>{}.{} {}</b>'.format(alert['alert_ref'],section_number, i+1, escape(doc.fix_html(alert['error']))), h2 if 'error' in alert else 'N/A'),
                         table,
                         Spacer(1, 5),
