@@ -389,8 +389,8 @@ class NIKTO:
         
         :param obj: The `obj` parameter is a dictionary that contains the following keys:
         """
-        error = obj.get('Description').replace("/:","")
-        evidence = obj.get('Test Links')
+        error = obj.get('Title')
+        evidence = obj.get('URI')
         cve_id = await cve.mitre_keyword_search(error)
         vul_data = await alert_response(cve=cve_id, error=error, tool=target.tool.tool_name, alert_type=1, evidence=evidence)
         self.result = {**self.result, **vul_data}
@@ -417,8 +417,11 @@ class NIKTO:
                 for row in rows:
                     columns = row.find_all('td')
                     if len(columns) == 2:
-                        if columns[0].text.strip() == "Description":
+                        if columns[0].text.strip() == "URI":
                             table_obj= {**table_obj, **{columns[0].find(string=True):columns[1].text.strip()}}
+                        if columns[0].text.strip() == "Description":
+                            table_obj= {**table_obj, **{columns[0].find(string=True):columns[1].text.strip(),
+                                        "Title": columns[1].text.strip().replace(f"{table_obj.get('URI')}: ","")}}
                         elif columns[0].text.strip() == "Test Links":
                             table_obj= {**table_obj, **{columns[0].find(string=True):columns[1].text.strip().replace(" ","\n")}}
             result= {**result, **{index:table_obj}}
@@ -426,7 +429,6 @@ class NIKTO:
         if result:
             for key, val in result.items():
                 if val.get('Description'):
-                    error = val.get('Description').replace("/:","")
                     jobs.append(
                         self.set_vul_data(val, target)
                     )
