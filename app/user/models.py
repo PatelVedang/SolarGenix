@@ -91,4 +91,3 @@ class User(AbstractBaseUser, PermissionsMixin):
     
     class Meta:
         ordering = ('-created_at',)
-    

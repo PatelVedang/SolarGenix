@@ -16,4 +16,5 @@ router.register('subscriptions', SubscriptionViewSet,basename='subscriptions')
 urlpatterns = [
     path('', include(router.urls)),
     path('sendMessage/', views.SendMessageView.as_view(), name='Message'),
+    path('octopii/', views.OctopiiView.as_view(), name='octopii'),
 ]

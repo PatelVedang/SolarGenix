@@ -445,3 +445,11 @@ class WithoutRequestUserOrderSerializer(serializers.ModelSerializer):
             "subscription_id": requested_by.subscription_id
         }
         return data
+    
+
+# This class defines a serializer for handling a single file upload in a Django REST framework.
+class OctopiiSingleFileSerializer(serializers.Serializer):
+    file = serializers.FileField()
+    
+    class Meta:
+        fields = ['file']

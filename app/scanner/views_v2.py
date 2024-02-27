@@ -7,7 +7,7 @@ from rest_framework.decorators import api_view
 from .tasks import scan, send_message
 from .serializers import *
 from rest_framework.response import Response
-from rest_framework import viewsets, status, generics
+from rest_framework import viewsets, status, generics, parsers
 from rest_framework.decorators import action
 from utils.make_response import response
 from django_filters.rest_framework import DjangoFilterBackend
@@ -35,6 +35,8 @@ from utils.email import send_email
 pdf= PDF()
 from django.db.models import Q
 from dateutil.relativedelta import relativedelta
+import textract, traceback
+from utils.handlers.octo_pii import Octopii
 
 class Common:
 
@@ -879,4 +881,37 @@ class SubscriptionViewSet(viewsets.ModelViewSet):
     def destroy(self, request, *args, **kwargs):
         self.get_object().soft_delete()
         return response(data={}, status_code=status.HTTP_200_OK, message="record deleted successfully")
+
+
+@method_decorator(name='post', decorator=swagger_auto_schema(tags=['Octopii'], operation_description= "Scan single file API.", operation_summary="API to scan uploaded file with octpii."))
+class OctopiiView(generics.CreateAPIView):
+    parser_classes = (parsers.FormParser, parsers.MultiPartParser, parsers.FileUploadParser)
+    serializer_class = OctopiiSingleFileSerializer
+
+    def post(self, request, *args, **kwargs):
+        """
+        This Python function handles file uploads, processes the file using Octopii, and returns the
+        result or appropriate error messages.
+        
+        :param request: The `request` parameter in the `post` method is typically an object that
+        contains information about the HTTP request that triggered the view, including data sent in the
+        request, such as files uploaded through a form. In this specific code snippet, the `request`
+        object is used to retrieve the uploaded file
+        :return: The code is returning a response with data, status code, and a message. The data being
+        returned is either the result of processing the uploaded file using the Octopii class or an
+        empty dictionary if an exception occurs. The status code returned is either 200 (OK) if the
+        processing is successful or 500 (Internal Server Error) if an exception occurs. The message
+        returned is either "success
+        """
+        file = request.FILES.get('file')
+        try:
+            oct = Octopii(file)
+            result = oct.main()
+        except textract.exceptions.ShellError:
+            return response(data={}, status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, message=f"File {file.name} is empty or corrupted")
+
+        except Exception as e:
+            traceback.print_exc()
+            return response(data={}, status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, message=str(e))
+        return response(data=result, status_code=status.HTTP_200_OK, message="success")
     
