@@ -12,3 +12,8 @@ class SubscriptionPayloadSerializer(serializers.Serializer):
     price_id = serializers.CharField()
     class Meta:
         fields = ["price_id"]
+
+class CancelSubscriptionSerializer(serializers.Serializer):
+    
+    class Meta:
+        pass

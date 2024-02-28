@@ -229,7 +229,9 @@ class CreateSubscriptionView(generics.CreateAPIView):
 
 
 class CancelSubscription(generics.RetrieveAPIView):
+    swagger_fake_view = True
     permission_classes = [IsAuthenticated]
+    serializer_class=CancelSubscriptionSerializer
 
 
     @swagger_auto_schema(

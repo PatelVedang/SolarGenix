@@ -914,5 +914,5 @@ class OctopiiView(generics.CreateAPIView):
             except Exception as e:
                 return response(data={}, status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, message=str(e))
         
-        return response(data=result, status_code=status.HTTP_200_OK, message="success")
+        return response(data=result, status_code=status.HTTP_200_OK, message="file scan completed")
     
