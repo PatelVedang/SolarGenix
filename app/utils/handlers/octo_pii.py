@@ -233,10 +233,7 @@ class Octopii:
         for entity in named_entities:
             if isinstance(entity, nltk.tree.Tree):
                 if entity.label() in ['GPE', 'GSP', 'LOCATION', 'FACILITY']:
-                    for word, tag in entity.leaves():
-                        print(word,":Word", tag, ":Tag")
                     location_name = ' '.join([word for word, tag in entity.leaves() if word.lower() not in stop_words and len(word) > 2])
-                    print(location_name,"=>>>location_name")
                     locations.append(location_name)
 
         return list(set(locations))

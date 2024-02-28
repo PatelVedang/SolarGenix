@@ -453,3 +453,10 @@ class OctopiiSingleFileSerializer(serializers.Serializer):
     
     class Meta:
         fields = ['file']
+
+    def validate_file(self, value):
+        # Check if the file size is more than 10MB
+        max_size = settings.FILE_SIZE * 1024 * 1024  # 10MB in bytes
+        if value.size > max_size:
+            raise serializers.ValidationError(f"File size should not exceed {settings.FILE_SIZE}MB.")
+        return value

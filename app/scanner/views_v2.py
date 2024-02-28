@@ -4,7 +4,7 @@ from payments.models import PaymentHistory
 from user.models import User
 from django.http import HttpResponse, JsonResponse
 from rest_framework.decorators import api_view
-from .tasks import scan, send_message
+from .tasks import scan, send_message, timeout_handler
 from .serializers import *
 from rest_framework.response import Response
 from rest_framework import viewsets, status, generics, parsers
@@ -23,7 +23,7 @@ from utils.pdf_final_report import PDF
 from django.shortcuts import get_object_or_404
 from utils.message import send
 from web_socket.serializers import SendMessageSerializer
-import time
+import time, signal
 from datetime import datetime, timedelta, timezone
 from django.conf import settings
 import logging
@@ -882,11 +882,13 @@ class SubscriptionViewSet(viewsets.ModelViewSet):
         self.get_object().soft_delete()
         return response(data={}, status_code=status.HTTP_200_OK, message="record deleted successfully")
 
+import threading
 
 @method_decorator(name='post', decorator=swagger_auto_schema(tags=['Octopii'], operation_description= "Scan single file API.", operation_summary="API to scan uploaded file with octpii."))
 class OctopiiView(generics.CreateAPIView):
     parser_classes = (parsers.FormParser, parsers.MultiPartParser, parsers.FileUploadParser)
     serializer_class = OctopiiSingleFileSerializer
+    permission_classes = [IsAuthenticated, IsAdminUser]
 
     def post(self, request, *args, **kwargs):
         """
@@ -903,15 +905,14 @@ class OctopiiView(generics.CreateAPIView):
         processing is successful or 500 (Internal Server Error) if an exception occurs. The message
         returned is either "success
         """
-        file = request.FILES.get('file')
-        try:
-            oct = Octopii(file)
-            result = oct.main()
-        except textract.exceptions.ShellError:
-            return response(data={}, status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, message=f"File {file.name} is empty or corrupted")
-
-        except Exception as e:
-            traceback.print_exc()
-            return response(data={}, status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, message=str(e))
+        serializer = self.serializer_class(data=request.data)
+        if serializer.is_valid(raise_exception=True):
+            try:
+                file = serializer.validated_data['file']
+                oct = Octopii(file)
+                result = oct.main()
+            except Exception as e:
+                return response(data={}, status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, message=str(e))
+        
         return response(data=result, status_code=status.HTTP_200_OK, message="success")
     
