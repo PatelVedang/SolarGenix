@@ -9,6 +9,7 @@ from django.conf import settings
 from PIL import Image
 from io import BytesIO
 from docx import Document
+import multiprocessing
 
 class Octopii:
 
@@ -362,5 +363,41 @@ class Octopii:
     def audio_handler(self):
         return self.plan_text_handler()
 
+    def handle_timeout(self, signum, frame):
+        raise TimeoutError("Operation timed out.")
+
     def main(self):
-        return self.handlers[self.file_extension]()
+        
+        # Create a multiprocessing.Manager
+        manager = multiprocessing.Manager()
+        # Create a multiprocessing.dict to store the result
+        result_dict = manager.dict()
+        # Create a multiprocessing.Process instance, passing the result_value as an argument
+        process_instance = multiprocessing.Process(
+            target=self.process, args=(result_dict,)
+        )
+        # Start the process
+        process_instance.start()
+        process_instance.join(timeout=settings.OCTOPII_TIMEOUT)
+
+        # Wait for the process to finish or timeout
+
+        # If the process is still alive after the timeout, terminate it
+        if process_instance.is_alive():
+            process_instance.kill()
+            process_instance.join()
+
+            # Raise a TimeoutError
+            raise TimeoutError("Operation timed out.")
+
+        # If the process completed within the timeout, retrieve the result
+        return result_dict.copy()
+
+    def process(self, result_dict):
+        try:
+            result = self.handlers[self.file_extension]()
+            result_dict.update(result)
+            return result
+        except Exception as e:
+            result_dict["error"] = repr(e)
+            return e

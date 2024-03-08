@@ -28,7 +28,7 @@ from datetime import datetime, timedelta, timezone
 from django.conf import settings
 import logging
 logger = logging.getLogger('django')
-import json
+import json, asyncio
 from django.core.cache import cache
 from utils.cache_helper import Cache
 from utils.email import send_email
@@ -909,9 +909,12 @@ class OctopiiView(generics.CreateAPIView):
         if serializer.is_valid(raise_exception=True):
             try:
                 file = serializer.validated_data['file']
-                oct = Octopii(file)
-                result = oct.main()
+                octopii_instance = Octopii(file)
+                # result = asyncio.run(octopii_instance.main())
+                result = octopii_instance.main()
             except Exception as e:
+                print(e)
+                traceback.print_exc()
                 return response(data={}, status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, message=str(e))
         
         return response(data=result, status_code=status.HTTP_200_OK, message="file scan completed")
