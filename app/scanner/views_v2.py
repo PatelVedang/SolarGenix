@@ -887,7 +887,7 @@ import threading
 @method_decorator(name='post', decorator=swagger_auto_schema(tags=['Octopii'], operation_description= "Scan single file API.", operation_summary="API to scan uploaded file with octpii."))
 class OctopiiView(generics.CreateAPIView):
     parser_classes = (parsers.FormParser, parsers.MultiPartParser, parsers.FileUploadParser)
-    serializer_class = OctopiiSingleFileSerializer
+    serializer_class = OctopiiFileSerializer
     permission_classes = [IsAuthenticated, IsAdminUser]
 
     def post(self, request, *args, **kwargs):
@@ -908,10 +908,23 @@ class OctopiiView(generics.CreateAPIView):
         serializer = self.serializer_class(data=request.data)
         if serializer.is_valid(raise_exception=True):
             try:
-                file = serializer.validated_data['file']
-                octopii_instance = Octopii(file)
-                # result = asyncio.run(octopii_instance.main())
-                result = octopii_instance.main()
+                files = serializer.validated_data['files']
+                result = []
+                for file in files:
+                    octopii_instance = Octopii(file)
+                    # result = asyncio.run(octopii_instance.main())
+                    result.append(octopii_instance.main())
+
+                # if we have multiple files then we need to return list of results
+                if len(files) > 1:
+                    result = [{
+                        'origin': 'Local',
+                        'owner':'admin',
+                        'is_file':False,
+                        'file_location':'temp',
+                        'files':result
+                    }]
+
             except Exception as e:
                 print(e)
                 traceback.print_exc()

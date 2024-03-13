@@ -448,15 +448,15 @@ class WithoutRequestUserOrderSerializer(serializers.ModelSerializer):
     
 
 # This class defines a serializer for handling a single file upload in a Django REST framework.
-class OctopiiSingleFileSerializer(serializers.Serializer):
-    file = serializers.FileField()
+class OctopiiFileSerializer(serializers.Serializer):
+    files = serializers.ListField(child=serializers.FileField())
     
     class Meta:
-        fields = ['file']
+        fields = ['files']
 
-    def validate_file(self, value):
-        # Check if the file size is more than 10MB
-        max_size = settings.FILE_SIZE * 1024 * 1024  # 10MB in bytes
-        if value.size > max_size:
-            raise serializers.ValidationError(f"File size should not exceed {settings.FILE_SIZE}MB.")
-        return value
+    # def validate_files(self, value):
+    #     # Check if the file size is more than 10MB
+    #     max_size = settings.FILE_SIZE * 1024 * 1024  # 10MB in bytes
+    #     if value.size > max_size:
+    #         raise serializers.ValidationError(f"File size should not exceed {settings.FILE_SIZE}MB.")
+    #     return value

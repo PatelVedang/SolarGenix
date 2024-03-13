@@ -319,7 +319,13 @@ class Octopii:
             'contains_faces': contains_faces,
             'phone_numbers': phone_numbers,
             'addresses': addresses,
-            'identifiers': identifiers
+            'identifiers': identifiers,
+            'origin': 'Local',
+            'file_extension': self.file_extension,
+            'owner':'admin',
+            'name_of_file': self.file.name,
+            'is_file':True,
+            'file_location':'temp'
         },
         **keywords_classify_result
         }
