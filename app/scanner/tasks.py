@@ -26,7 +26,7 @@ from .serializers import *
 from utils.cache_helper import Cache
 import zlib
 from zapv2 import ZAPv2
-zap = ZAPv2()
+zap = ZAPv2(proxies={'http': settings.ZAP_PROXY})
 from utils.openvas.scan import openVAS
 
 def update_target_and_add_log(**kwargs):

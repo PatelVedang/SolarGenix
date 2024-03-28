@@ -1,33 +1,36 @@
-# pull official base image
-FROM python:3.9.6-alpine
+# Pull official base image
+FROM kalilinux/kali-rolling
 
-# set work directory
+# Set work directory
 WORKDIR /usr/src/app
 
-RUN apk update && apk add nmap && apk add nmap-scripts
+# Update package lists and install necessary packages
+RUN apt-get update && \
+    apt-get install -y python3 python3-pip && \
+    apt-get clean && \
+    python3 -m pip install --upgrade pip setuptools wheel
 
-# set environment variables
+# Set environment variables
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 
-# install relational database dependemcy 
-RUN apk update && apk add musl-dev mariadb-dev gcc
+# Install system level tools
+RUN apt-get install -y nikto nmap curl netcat-traditional wget
 
-# install dependencies
-RUN pip install --upgrade pip
+# Install dependencies
 COPY ./requirements.txt .
-RUN pip install wheel
-RUN pip install mysqlclient
-RUN pip install -r requirements.txt
+RUN pip3 install -r requirements.txt
 
-# copy entrypoint.sh
+# Install SSLyze
+RUN pip3 install sslyze
+
+# Copy entrypoint.sh
 COPY ./entrypoint.sh /usr/local/bin/
 RUN sed -i 's/\r$//g' /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
 
-
-# copy project
+# Copy project
 COPY . .
 
-# run entrypoint.sh
-ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
+# Run entrypoint.sh
+ENTRYPOINT ["./entrypoint.sh"]

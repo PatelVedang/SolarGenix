@@ -239,20 +239,19 @@ COUNTRY_CODE_REGEX = "^(\+[0-9]{1,3})$"
 #PDF
 PDF_DOWNLOAD_ORIGIN=os.environ.get('PDF_DOWNLOAD_ORIGIN', env('PDF_DOWNLOAD_ORIGIN'))
 
+
+CELERY_BROKER_URL = os.environ.get('CELERY_BROKER_URL', env('CELERY_BROKER_URL'))
+
 #Django channels
 CHANNEL_LAYERS = {
     "default": {
-        # "BACKEND": "channels_rabbitmq.core.RabbitmqChannelLayer",
         "BACKEND": "channels_redis.core.RedisChannelLayer",
         "CONFIG": {
-            # "host": "amqp://guest:guest@localhost:5672/%2F",
-            "hosts": [("localhost", 6379)],
-            # "hosts": ["redis://localhost:6379/0"],
+            "hosts": [CELERY_BROKER_URL],
         },
     },
 }
 WEB_SOCKET_INTERVAL=os.environ.get('WEB_SOCKET_INTERVAL', env('WEB_SOCKET_INTERVAL'))
-
 # Create Logs folder
 if not os.path.exists(f'{BASE_DIR}/logs/'):
     os.mkdir(f'{BASE_DIR}/logs/')
@@ -311,12 +310,13 @@ NVD_API_KEY=os.environ.get('NVD_API_KEY', env('NVD_API_KEY'))
 SPIDER_API_CALL_DELAY=os.environ.get('SPIDER_API_CALL_DELAY', env('SPIDER_API_CALL_DELAY'))
 
 
-CELERY_BROKER_URL = os.environ.get('CELERY_BROKER_URL', env('CELERY_BROKER_URL'))
 LOCAL_API_URL = os.environ.get('LOCAL_API_URL', env('LOCAL_API_URL')).strip()
 EXTRA_BG_TASK_TIME = os.environ.get('EXTRA_BG_TASK_TIME', env('EXTRA_BG_TASK_TIME'))
 
 APP_ERROR_FILE_PATH = f"{BASE_DIR}/utils/custom_owasp/application_errors.xml"
 DIR_LISTING_RESULT_PATH = f"{BASE_DIR}/utils/custom_owasp/tools/directoryListing"
+ZAP_PROXY=os.environ.get('ZAP_PROXY', env('ZAP_PROXY'))
+
 # CELERY_ROUTES = {
 #  'user.tasks.*': {'queue': 'user_queue'},
 #  'scanner.tasks.*': {'queue': 'scanner_queue'},
@@ -326,7 +326,7 @@ DIR_LISTING_RESULT_PATH = f"{BASE_DIR}/utils/custom_owasp/tools/directoryListing
 CACHES = {
     'default': {
         'BACKEND': 'django_redis.cache.RedisCache',
-        'LOCATION': 'redis://127.0.0.1:6379/0',
+        "LOCATION": CELERY_BROKER_URL,
         "TIMEOUT": int(os.environ.get('CACHE_TTL', env('CACHE_TTL'))),
         'OPTIONS': {
             'CLIENT_CLASS': 'django_redis.client.DefaultClient',
