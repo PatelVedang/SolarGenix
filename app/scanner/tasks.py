@@ -237,7 +237,7 @@ def OWASP_ZAP_spider_scan_v1(url):
         'False Positives:': {'class':'risk--1', 'count':0},
     }
 
-    spider_scan_id = zap.spider.scan(url)
+    spider_scan_id = zap.spider.scan(url=url, maxchildren=settings.OWASP_SPIDER_MAX_CHILDREN, recurse=bool(settings.OWASP_SPIDER_ALLOW_RECURSIVE), contextname=None, subtreeonly=bool(settings.OWASP_SPIDER_ALLOW_SUB_TREE_ONLY))
     
     while int(zap.spider.status(spider_scan_id)) < 100:
         # print('Spider scan progress %: {} for scan id {} with url {}'.format(zap.spider.status(spider_scan_id), spider_scan_id, url))
@@ -303,7 +303,7 @@ def OWASP_ZAP_spider_scan_v2(url):
         'False Positives:': {'class':'risk--1', 'count':0},
     }
     # scan url with spider tool of OWASP ZAP fro quick scan
-    spider_scan_id = zap.spider.scan(url=url)
+    spider_scan_id = zap.spider.scan(url=url, maxchildren=settings.OWASP_SPIDER_MAX_CHILDREN, recurse=bool(settings.OWASP_SPIDER_ALLOW_RECURSIVE), contextname=None, subtreeonly=bool(settings.OWASP_SPIDER_ALLOW_SUB_TREE_ONLY))
     
     # Here we are checking if spider scan still in progress then current process is sleep for 1s until 100% is compelete
     while int(zap.spider.status(spider_scan_id)) < 100:
@@ -370,7 +370,7 @@ def OWASP_ZAP_spider_scan_v3(url, order_id, requested_by_id, time_limit):
         url = http_url
     
     # scan url with spider tool of OWASP ZAP fro quick scan
-    spider_scan_id = zap.spider.scan(url=url)
+    spider_scan_id = zap.spider.scan(url=url, maxchildren=settings.OWASP_SPIDER_MAX_CHILDREN, recurse=bool(settings.OWASP_SPIDER_ALLOW_RECURSIVE), contextname=None, subtreeonly=bool(settings.OWASP_SPIDER_ALLOW_SUB_TREE_ONLY))
     
     # Here we are checking if spider scan still in progress then current process is sleep for 1s until 100% is compelete
     while int(zap.spider.status(spider_scan_id)) < 100:
@@ -454,10 +454,10 @@ def OWASP_ZAP_active_scan_v1(url, order_id, requested_by_id, time_limit):
     if not ('http://' in url or 'https://' in url):
         url = http_url
 
-    scan_id = zap.ascan.scan(url)
+    # scan_id = zap.ascan.scan(url=url, recurse=bool(settings.OWASP_ACTIVE_RECURSIVE), inscopeonly=bool(settings.OWASP_ACTIVE_IN_SCOPE_ONLY), scanpolicyname='Default Policy', method='GET', postdata=None, contextid=None)
 
     # Start Spider scan
-    spider_scan_id = zap.spider.scan(url)
+    spider_scan_id = zap.spider.scan(url=url, maxchildren=settings.OWASP_SPIDER_MAX_CHILDREN, recurse=bool(settings.OWASP_SPIDER_ALLOW_RECURSIVE), contextname=None, subtreeonly=bool(settings.OWASP_SPIDER_ALLOW_SUB_TREE_ONLY))
 
     # Waiting to complete spider scan
     while int(zap.spider.status(spider_scan_id)) < 100:
@@ -475,13 +475,13 @@ def OWASP_ZAP_active_scan_v1(url, order_id, requested_by_id, time_limit):
     spider_msg_ids = spider_requests['messageId'].to_list()
     
     # Start Active scan
-    active_scan_id = zap.ascan.scan(url)
+    scan_id = zap.ascan.scan(url=url, recurse=bool(settings.OWASP_ACTIVE_RECURSIVE), inscopeonly=bool(settings.OWASP_ACTIVE_IN_SCOPE_ONLY), scanpolicyname='Default Policy', method='GET', postdata=None, contextid=None)
 
     # Waiting to complete active scan
     while int(zap.ascan.status(scanid=scan_id)) < 100:
-        print('Active scan progress %: {} for scan id {} with url {}'.format(zap.ascan.status(scanid=active_scan_id), active_scan_id, url))
+        print('Active scan progress %: {} for scan id {} with url {}'.format(zap.ascan.status(scanid=scan_id), scan_id, url))
         time.sleep(1)
-    print("Percentage of Active scan is:",int(zap.ascan.status(active_scan_id)))
+    print("Percentage of Active scan is:",int(zap.ascan.status(scan_id)))
 
     # Getting all the alerts of url with http and https
     alerts = pd.DataFrame(data=[*zap.alert.alerts(baseurl=http_url), *zap.alert.alerts(baseurl=https_url)])
@@ -493,7 +493,7 @@ def OWASP_ZAP_active_scan_v1(url, order_id, requested_by_id, time_limit):
         spider_alerts_ids = []
 
     # Active scan's alerts ids 
-    active_alerts_ids = zap.ascan.alerts_ids(scanid=active_scan_id)
+    active_alerts_ids = zap.ascan.alerts_ids(scanid=scan_id)
 
 
     # Getting all the alert based on alerts ids
@@ -502,7 +502,7 @@ def OWASP_ZAP_active_scan_v1(url, order_id, requested_by_id, time_limit):
 
     # Remove scan cache  
     zap.spider.remove_scan(scanid=spider_scan_id)
-    zap.ascan.remove_scan(scanid=active_scan_id)
+    zap.ascan.remove_scan(scanid=scan_id)
 
     return json.dumps({'alerts': alerts_objs})
 
