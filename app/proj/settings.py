@@ -28,7 +28,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.environ.get('SECRET_KEY', env('SECRET_KEY'))
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = int(os.environ.get('DEBUG', env('DEBUG')))
+DEBUG = bool(int(os.environ.get('DEBUG', env('DEBUG'))))
 UNIT_TEST_USER_EMAIL = os.environ.get('UNIT_TEST_USER_EMAIL', env('UNIT_TEST_USER_EMAIL'))
 UNIT_TEST_USER_PASSWORD = os.environ.get('UNIT_TEST_USER_PASSWORD', env('UNIT_TEST_USER_PASSWORD'))
 
