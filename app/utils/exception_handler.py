@@ -26,6 +26,7 @@ def custom_exception_handler(exc, context):
             'ValidationError': _handler_validation_error
         }
         res = exception_handler(exc, context)
+        logger.error(str(exc))
         if exception_class in handlers:
             # calling hanlder based on the custom  
             message = handlers[exception_class](exc, context, res)
