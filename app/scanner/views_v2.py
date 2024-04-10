@@ -882,7 +882,6 @@ class SubscriptionViewSet(viewsets.ModelViewSet):
         self.get_object().soft_delete()
         return response(data={}, status_code=status.HTTP_200_OK, message="record deleted successfully")
 
-import threading
 
 @method_decorator(name='post', decorator=swagger_auto_schema(tags=['Octopii'], operation_description= "Scan single file API.", operation_summary="API to scan uploaded file with octpii."))
 class OctopiiView(generics.CreateAPIView):
