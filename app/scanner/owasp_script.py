@@ -341,6 +341,32 @@ class OWASP(Common):
         
         if not ('http://' in url or 'https://' in url):
             self.url = self.http_url
+    
+    def create_custom_alert_obj(**alert_obj):
+        custom_alert_obj = {
+            "name": alert_obj.get("name"),
+            "description": alert_obj.get("description"),
+            "urls": [
+                {
+                    "url": alert_obj.get("url"),
+                    "method": alert_obj.get("method"),
+                    "parameter": alert_obj.get("param"),
+                    "attack": alert_obj.get("attack"),
+                    "evidence": alert_obj.get("evidence"),
+                }
+            ],
+            "instances": 1,
+            "wascid": (
+                alert_obj.get("wascid") if alert_obj.get("wascid") != "-1" else ""
+            ),
+            "cweid": alert_obj.get("cweid") if alert_obj.get("cweid") != "-1" else "",
+            "plugin_id": alert_obj.get("pluginId"),
+            "reference": "<br>".join(alert_obj.get("reference").split("\n")),
+            "solution": alert_obj.get("solution"),
+            "risk": alert_obj.get("risk"),
+        }
+        return custom_alert_obj
+        
 
     def create_alerts_response(self, alerts_ids):
         """
@@ -357,26 +383,7 @@ class OWASP(Common):
             alert_obj = zap.core.alert(id=alert_id)
             if isinstance(alert_obj,dict):
                 alert_title = alert_obj.get('name')
-                custom_alert_obj = {
-                    'name': alert_obj.get('name'),
-                    'description' : alert_obj.get('description'),
-                    'urls':[
-                        {
-                        'url' : alert_obj.get('url'),
-                        'method': alert_obj.get('method'),
-                        'parameter': alert_obj.get('param'),
-                        'attack': alert_obj.get('attack'),
-                        'evidence': alert_obj.get('evidence'),
-                        }
-                    ],
-                    'instances': 1,
-                    'wascid': alert_obj.get('wascid') if alert_obj.get('wascid')!="-1" else "",
-                    'cweid': alert_obj.get('cweid') if alert_obj.get('cweid')!="-1" else "",
-                    'plugin_id': alert_obj.get('pluginId'),
-                    'reference': "<br>".join(alert_obj.get('reference').split("\n")),
-                    'solution': alert_obj.get('solution'),
-                    'risk': alert_obj.get('risk')
-                }
+                custom_alert_obj = self.create_custom_alert_obj(**alert_obj)
 
                 if alert_title and alerts_objs.get(alert_title):
                     custom_alert_obj['urls'] = [*alerts_objs[alert_title]['urls'], *custom_alert_obj['urls']]

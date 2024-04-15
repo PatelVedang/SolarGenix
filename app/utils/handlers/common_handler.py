@@ -20,6 +20,71 @@ class AlertSortOrder:
         'false-positive' : {'order': 5, 'label': 'False-Positive'}
     }
 
+def set_cwe_ids(**kwargs):
+    """
+    The function `set_cwe_ids` takes keyword arguments and formats a list of CWE IDs into a string with
+    specific replacements.
+    :return: The function `set_cwe_ids` returns a string that contains the CWE IDs provided as input,
+    separated by commas. If the input is not a list, it returns "N/A".
+    """
+    cwe_ids = "N/A"
+    if isinstance(kwargs.get('cwe_ids'), list):
+        cwe_ids = ",".join(kwargs.get('cwe_ids'))
+        cwe_ids = cwe_ids.strip("\n")
+        cwe_ids = cwe_ids.replace("\n","<br/>")
+        cwe_ids = cwe_ids.replace(" ","&nbsp;")
+    return cwe_ids
+
+def set_evidence(**kwargs):
+    """
+    The function `set_evidence` takes keyword arguments and processes the 'evidence' value by stripping
+    whitespace and newlines, replacing newlines with `<br/>`, and spaces with `&nbsp;`.
+    :return: The function `set_evidence` takes keyword arguments and processes the 'evidence' argument
+    to format it for display. It replaces newline characters with `<br/>`, spaces with `&nbsp;`, and
+    removes leading and trailing whitespace and hyphens. The processed evidence is then returned.
+    """
+    evidence = "N/A"
+    if kwargs.get('evidence'):
+        evidence = kwargs.get('evidence')
+        evidence = evidence.strip("\n")
+        evidence = evidence.strip("-")
+        evidence = evidence.strip()
+        evidence = evidence.replace("\n","<br/>")
+        evidence = evidence.replace(" ","&nbsp;")
+    return evidence
+
+def set_complexity(**kwargs):
+    """
+    The function `set_complexity` takes keyword arguments and returns the corresponding complexity label
+    in lowercase if provided, defaulting to "Informational" if not.
+    :return: The function `set_complexity` is returning the complexity level based on the input provided
+    in the `kwargs`. If the `complexity` key is present in the `kwargs`, it will retrieve the
+    corresponding complexity level from `AlertSortOrder.sort_order` dictionary, convert it to lowercase,
+    and then return the label of the complexity level. If the `complexity` key is not present or the
+    """
+    complexity = ""
+    if kwargs.get('complexity'):
+        complexity = kwargs.get('complexity', '').lower()
+        complexity = AlertSortOrder.sort_order.get(complexity)
+        complexity = complexity.get('label', 'Informational')
+    return complexity
+
+def set_alert_order(**kwargs):
+    """
+    The function `set_alert_order` takes keyword arguments and returns the corresponding alert order
+    based on complexity.
+    :return: The function `set_alert_order` is returning the sort order for alerts based on the
+    complexity provided in the keyword arguments. If the complexity is provided, it will retrieve the
+    corresponding sort order from the `AlertSortOrder.sort_order` dictionary, convert it to lowercase,
+    and then return the order value. If no complexity is provided or if the complexity does not match
+    any key in the dictionary, it will
+    """
+    alert_order = ""
+    if kwargs.get('complexity'):
+        alert_order = kwargs.get('complexity','').lower()
+        alert_order = AlertSortOrder.sort_order.get(alert_order, '')
+        alert_order = alert_order.get('order', 0)
+    return alert_order
 
 def make_alert_obj(**kwargs):
     """
@@ -28,14 +93,18 @@ def make_alert_obj(**kwargs):
     :return: an object with the following properties:
     """
     obj = {
-    'complexity' : AlertSortOrder.sort_order.get(kwargs.get('complexity', '').lower()).get('label', 'Informational'),
-    'alert_order' : AlertSortOrder.sort_order.get(kwargs.get('complexity', '').lower()).get('order', 0),
+    'complexity': set_complexity(**kwargs),
+    'alert_order': set_alert_order(**kwargs),
     'alert_ref' : str(uuid.uuid4()),
     'instances' : kwargs.get('instances',1),
     'error': kwargs.get('error'),
     'tool': kwargs.get('tool'),
-    'evidence': kwargs.get('evidence','N/A').strip("\n").strip("-").strip().replace("\n","<br/>").replace(" ","&nbsp;"),
-    'cwe_ids':  ",".join(kwargs.get('cwe_ids')).strip("\n").strip().replace("\n","<br/>").replace(" ","&nbsp;") if isinstance(kwargs.get('cwe_ids'), list) else 'N/A'
+    'evidence': set_evidence(**kwargs),
+    'cwe_ids': set_cwe_ids(**kwargs)
+    # 'complexity' : AlertSortOrder.sort_order.get(kwargs.get('complexity', '').lower()).get('label', 'Informational'),
+    # 'alert_order' : AlertSortOrder.sort_order.get(kwargs.get('complexity', '').lower()).get('order', 0),
+    # 'evidence': kwargs.get('evidence','N/A').strip("\n").strip("-").strip().replace("\n","<br/>").replace(" ","&nbsp;"),
+    # 'cwe_ids':  ",".join(kwargs.get('cwe_ids')).strip("\n").strip().replace("\n","<br/>").replace(" ","&nbsp;") if isinstance(kwargs.get('cwe_ids'), list) else 'N/A'
     }
     return obj
 
