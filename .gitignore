@@ -143,6 +143,7 @@ info.txt
 .env.prod.db
 .venv
 env/
+staticfiles/
 .vscode/
 venv/
 ENV/

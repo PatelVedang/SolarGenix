@@ -30,19 +30,30 @@ class CVE:
         Vulnerability Scoring System) scores and error types for both version 2 and version 3, sources
         (references), and CWE (Common Weakness Enumeration) IDs.
         """
-        self.cve_details={}
-        url = "https://services.nvd.nist.gov/rest/json/cves/2.0"
-        headers = {
-            "Content-Type": "application/json",
-            "Accept": "application/json",
-            "apiKey": self.api_key
-        }
-        params = {"cveId": cve_id}
-        # response = requests.get(url, headers=headers, params=params)
-        async with aiohttp.ClientSession() as session:
-            async with session.get(url=url, headers=headers, params=params) as response:
-                await self.set_cve_detail_v2(response)
-        return self.cve_details
+        cve_data = settings.CVE_DB
+        self.cve_details = {}
+
+        print("➡>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>", cve_id)
+        if cve_id in cve_data:
+            data = cve_data[cve_id]
+            await self.set_cve_detail_v2(data)
+            print("➡ app/utils/handlers/cve.py:41 self.cve_details:", self.cve_details)
+            return self.cve_details
+        else:
+            url = "https://services.nvd.nist.gov/rest/json/cves/2.0"
+            headers = {
+                "Content-Type": "application/json",
+                "Accept": "application/json",
+                "apiKey": self.api_key,
+            }
+            params = {"cveId": cve_id}
+            # response = requests.get(url, headers=headers, params=params)
+            async with aiohttp.ClientSession() as session:
+                async with session.get(
+                    url=url, headers=headers, params=params
+                ) as response:
+                    await self.set_cve_detail_v2(response)
+            return self.cve_details
     
     def get_cve_details_by_id_v1(self, cve_id):
         """
@@ -66,6 +77,168 @@ class CVE:
         response = requests.get(url, headers=headers)
         self.set_cve_detail_v1(response)
         return self.cve_details
+    
+    async def set_cve_vulnerabilities(self, data):
+        if data.get("vulnerabilities") and len(data.get("vulnerabilities")):
+            if data["vulnerabilities"][0].get("cve"):
+                if data["vulnerabilities"][0]["cve"].get("descriptions"):
+                    desc_index = next(
+                        (
+                            index
+                            for (index, i) in enumerate(
+                                data["vulnerabilities"][0]["cve"]["descriptions"]
+                            )
+                            if i["lang"] == "en"
+                        ),
+                        0,
+                    )
+                    self.update_cve(
+                        {
+                            "cve_id": data["vulnerabilities"][0]["cve"]["id"],
+                            "description": data["vulnerabilities"][0]["cve"][
+                                "descriptions"
+                            ][desc_index]["value"],
+                        }
+                    )
+                if data["vulnerabilities"][0]["cve"].get("metrics"):
+                    if data["vulnerabilities"][0]["cve"]["metrics"].get(
+                        "cvssMetricV30"
+                    ):
+                        cvss3_index = next(
+                            (
+                                index
+                                for (index, i) in enumerate(
+                                    data["vulnerabilities"][0]["cve"]["metrics"][
+                                        "cvssMetricV30"
+                                    ]
+                                )
+                                if i["source"] == "nvd@nist.gov"
+                            ),
+                            0,
+                        )
+                        self.update_cve(
+                            {
+                                "cvvs3": {
+                                    "base_score": data["vulnerabilities"][0]["cve"][
+                                        "metrics"
+                                    ]["cvssMetricV30"][cvss3_index]["cvssData"][
+                                        "baseScore"
+                                    ],
+                                    "error_type": data["vulnerabilities"][0]["cve"][
+                                        "metrics"
+                                    ]["cvssMetricV30"][cvss3_index]["cvssData"][
+                                        "baseSeverity"
+                                    ],
+                                }
+                            }
+                        )
+                    else:
+                        self.update_cve(
+                            {
+                                "cvvs3": {
+                                    "base_score": "N/A",
+                                    "error_type": "N/A",
+                                }
+                            }
+                        )
+                    if data["vulnerabilities"][0]["cve"]["metrics"].get(
+                        "cvssMetricV31"
+                    ):
+                        cvss3_index = next(
+                            (
+                                index
+                                for (index, i) in enumerate(
+                                    data["vulnerabilities"][0]["cve"]["metrics"][
+                                        "cvssMetricV31"
+                                    ]
+                                )
+                                if i["source"] == "nvd@nist.gov"
+                            ),
+                            0,
+                        )
+                        self.update_cve(
+                            {
+                                "cvvs3": {
+                                    "base_score": data["vulnerabilities"][0]["cve"][
+                                        "metrics"
+                                    ]["cvssMetricV31"][cvss3_index]["cvssData"][
+                                        "baseScore"
+                                    ],
+                                    "error_type": data["vulnerabilities"][0]["cve"][
+                                        "metrics"
+                                    ]["cvssMetricV31"][cvss3_index]["cvssData"][
+                                        "baseSeverity"
+                                    ],
+                                }
+                            }
+                        )
+                    if data["vulnerabilities"][0]["cve"]["metrics"].get("cvssMetricV2"):
+                        cvss2_index = next(
+                            (
+                                index
+                                for (index, i) in enumerate(
+                                    data["vulnerabilities"][0]["cve"]["metrics"][
+                                        "cvssMetricV2"
+                                    ]
+                                )
+                                if i["source"] == "nvd@nist.gov"
+                            ),
+                            0,
+                        )
+                        self.update_cve(
+                            {
+                                "cvvs2": {
+                                    "base_score": data["vulnerabilities"][0]["cve"][
+                                        "metrics"
+                                    ]["cvssMetricV2"][cvss2_index]["cvssData"][
+                                        "baseScore"
+                                    ],
+                                    "error_type": data["vulnerabilities"][0]["cve"][
+                                        "metrics"
+                                    ]["cvssMetricV2"][cvss2_index]["baseSeverity"],
+                                }
+                            }
+                        )
+                    else:
+                        self.update_cve(
+                            {
+                                "cvvs2": {
+                                    "base_score": "N/A",
+                                    "error_type": "N/A",
+                                }
+                            }
+                        )
+                if data["vulnerabilities"][0]["cve"].get("references"):
+                    refences = [
+                        reference["url"]
+                        for reference in data["vulnerabilities"][0]["cve"]["references"]
+                    ]
+                    self.update_cve({"sources": refences})
+
+                if data["vulnerabilities"][0]["cve"].get("weaknesses"):
+                    weaknesses = [
+                        cwe["value"]
+                        for weakness in data["vulnerabilities"][0]["cve"]["weaknesses"]
+                        for cwe in weakness["description"]
+                    ]
+                    self.update_cve({"cwe_ids": weaknesses})
+
+                if (
+                    self.cve_details.get("cvvs3")
+                    and self.cve_details.get("cvvs3").get("error_type")
+                    and self.cve_details.get("cvvs3").get("error_type") != "N/A"
+                ):
+                    complexity = self.cve_details["cvvs3"].get("error_type")
+                elif (
+                    self.cve_details.get("cvvs2")
+                    and self.cve_details.get("cvvs2").get("error_type")
+                    and self.cve_details.get("cvvs2").get("error_type") != "N/A"
+                ):
+                    complexity = self.cve_details["cvvs2"].get("error_type")
+                else:
+                    complexity = "info"
+
+                self.update_cve({"complexity": complexity})
 
     async def set_cve_detail_v2(self, response):
         """
@@ -74,96 +247,16 @@ class CVE:
         
         :param response: The response object received from an API call
         """
-        if response.status == 200:
-            data = await response.json()
-            if data.get('vulnerabilities') and len(data.get('vulnerabilities')):
-                if data['vulnerabilities'][0].get('cve'):
-                    if data['vulnerabilities'][0]['cve'].get('descriptions'):
-                        desc_index = next((index for (index, i) in enumerate(data['vulnerabilities'][0]['cve']['descriptions']) if i["lang"] == "en"), 0)
-                        self.update_cve(
-                            {
-                                'cve_id':data['vulnerabilities'][0]['cve']['id'],
-                                'description':data['vulnerabilities'][0]['cve']['descriptions'][desc_index]['value']
-                            }
-                        )
-                    if data['vulnerabilities'][0]['cve'].get('metrics'):
-                        if data['vulnerabilities'][0]['cve']['metrics'].get('cvssMetricV30'):
-                            cvss3_index = next((index for (index, i) in enumerate(data['vulnerabilities'][0]['cve']['metrics']['cvssMetricV30']) if i["source"] == "nvd@nist.gov"), 0)
-                            self.update_cve(
-                                {
-                                    'cvvs3':{
-                                        'base_score': data['vulnerabilities'][0]['cve']['metrics']['cvssMetricV30'][cvss3_index]['cvssData']['baseScore'],
-                                        'error_type': data['vulnerabilities'][0]['cve']['metrics']['cvssMetricV30'][cvss3_index]['cvssData']['baseSeverity'],
-                                    }
-                                }
-                            )
-                        else:
-                            self.update_cve(
-                                {
-                                    'cvvs3':{
-                                        'base_score': 'N/A',
-                                        'error_type': 'N/A',
-                                    }
-                                }
-                            )
-                        if data['vulnerabilities'][0]['cve']['metrics'].get('cvssMetricV31'):
-                            cvss3_index = next((index for (index, i) in enumerate(data['vulnerabilities'][0]['cve']['metrics']['cvssMetricV31']) if i["source"] == "nvd@nist.gov"), 0)
-                            self.update_cve(
-                                {
-                                    'cvvs3':{
-                                        'base_score': data['vulnerabilities'][0]['cve']['metrics']['cvssMetricV31'][cvss3_index]['cvssData']['baseScore'],
-                                        'error_type': data['vulnerabilities'][0]['cve']['metrics']['cvssMetricV31'][cvss3_index]['cvssData']['baseSeverity'],
-                                    }
-                                }
-                            )
-                        if data['vulnerabilities'][0]['cve']['metrics'].get('cvssMetricV2'):
-                            cvss2_index = next((index for (index, i) in enumerate(data['vulnerabilities'][0]['cve']['metrics']['cvssMetricV2']) if i["source"] == "nvd@nist.gov"), 0)
-                            self.update_cve(
-                                {
-                                    'cvvs2':{
-                                        'base_score': data['vulnerabilities'][0]['cve']['metrics']['cvssMetricV2'][cvss2_index]['cvssData']['baseScore'],
-                                        'error_type': data['vulnerabilities'][0]['cve']['metrics']['cvssMetricV2'][cvss2_index]['baseSeverity'],
-                                    }
-                                }
-                            )
-                        else:
-                            self.update_cve(
-                                {
-                                    'cvvs2':{
-                                        'base_score': 'N/A',
-                                        'error_type': 'N/A',
-                                    }
-                                }
-                            )
-                    if data['vulnerabilities'][0]['cve'].get('references'):
-                        refences = [reference['url'] for reference in data['vulnerabilities'][0]['cve']['references']]
-                        self.update_cve(
-                            {
-                            'sources': refences
-                            }
-                        )
+        try:
+            if not response.get("status"):
+                data = response
+        except Exception as e:
+            print('➡ app/utils/handlers/cve.py:262 e:', e)
+            if response.status == 200:
+                data = await response.json()
 
-                    if data['vulnerabilities'][0]['cve'].get('weaknesses'):
-                        weaknesses = [cwe['value'] for weakness in data['vulnerabilities'][0]['cve']['weaknesses'] for cwe in weakness['description']]
-                        self.update_cve(
-                            {
-                                'cwe_ids': weaknesses
-                            }
-                        )
+        await self.set_cve_vulnerabilities(data)
 
-                    if self.cve_details.get('cvvs3') and self.cve_details.get('cvvs3').get('error_type') and self.cve_details.get('cvvs3').get('error_type') != 'N/A':
-                        complexity = self.cve_details['cvvs3'].get('error_type')
-                    elif self.cve_details.get('cvvs2') and self.cve_details.get('cvvs2').get('error_type') and self.cve_details.get('cvvs2').get('error_type') != 'N/A':
-                        complexity = self.cve_details['cvvs2'].get('error_type')
-                    else:
-                        complexity = "info"
-
-                    self.update_cve(
-                        {
-                            'complexity': complexity
-                        }
-                    )
-        
     def set_cve_detail_v1(self, response):
         """
         This function extracts various details of a CVE (Common Vulnerabilities and

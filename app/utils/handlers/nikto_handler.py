@@ -225,7 +225,7 @@ class NIKTO:
         search_result = re.search(self.cookie_regex, target.get_raw_result(), re.IGNORECASE)
         if search_result:
             error = "Sensitive Cookie Without 'HttpOnly' Flag"
-            vul_data = await alert_response(cve="CVE-2021-27764", error=error, tool=target.tool.tool_name, alert_type=1, evidence=search_result.group())
+            vul_data = await alert_response(cve="CVE-2022-25172", error=error, tool=target.tool.tool_name, alert_type=1, evidence=search_result.group())
             self.result = {**self.result, **vul_data}
 
     async def put_del_handler(self, target, regenerate):
@@ -276,7 +276,7 @@ class NIKTO:
             root_domain = ".".join(list(extract(target.ip)[1:])).strip()
             subdomains = [f"{subdomain.groupdict().get('subdomain')}.{root_domain}" for subdomain in re.finditer(self.subdomain_regex, target.get_raw_result())]
             error = "Possible subdomain leak"
-            data = cve.get_cve_details_by_id_v2("CVE-2018-7844")
+            data = cve.get_cve_details_by_id_v2("CVE-2024-0753")
             vul_data = await alert_response(**{**data, **{'location':subdomains, 'error': error, 'tool': target.tool.tool_name, 'alert_type':3, 'evidence':"\n".join(subdomains)}})
             self.result = {**self.result, **vul_data}
 
@@ -309,7 +309,7 @@ class NIKTO:
         if re.search(self.outdated_regex, target.get_raw_result(), re.IGNORECASE):
             evidence = ",".join(list(map(lambda i: i.group().strip("\n"), re.finditer(self.outdated_regex,target.get_raw_result(), re.IGNORECASE))))
             error = "Outdated resources found"
-            vul_data = await alert_response(cve="CVE-2022-27615", error=error, tool=target.tool.tool_name, alert_type=1, evidence=evidence)
+            vul_data = await alert_response(cve="CVE-1999-0662", error=error, tool=target.tool.tool_name, alert_type=1, evidence=evidence)
             self.result = {**self.result, **vul_data}
 
     async def shellshock_handler(self, target, regenerate):
@@ -344,7 +344,7 @@ class NIKTO:
         search_result = re.search(self.httpoptions_regex, target.get_raw_result(), re.IGNORECASE)
         if search_result:
             error = "Insecure HTTP methods in Apache"
-            vul_data = await alert_response(cve="CVE-2017-7685", error=error, tool=target.tool.tool_name, alert_type=1, evidence=search_result.group())
+            vul_data = await alert_response(cve="CVE-2022-38115", error=error, tool=target.tool.tool_name, alert_type=1, evidence=search_result.group())
             self.result = {**self.result, **vul_data}
 
     async def sitefiles_handler(self, target, regenerate):

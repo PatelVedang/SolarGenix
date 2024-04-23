@@ -165,7 +165,7 @@ class CURL:
         search_result = re.search(self.server_in_header_regex, target.get_raw_result(), re.IGNORECASE)
         if search_result:
             error = '''Server Leaks Version Information via "Server" HTTP Response Header Field'''
-            vul_data = await alert_response(cve="CVE-2018-7844", error=error, tool=target.tool.tool_name, alert_type=1, evidence=search_result.group())
+            vul_data = await alert_response(cve="CVE-2023-22611", error=error, tool=target.tool.tool_name, alert_type=1, evidence=search_result.group())
             self.result = {**self.result, **vul_data}
 
     async def x_powered_by_in_response_header_handler(self, target, regenerate):
@@ -181,6 +181,5 @@ class CURL:
         search_result = re.search(self.x_powered_by_in_header_regex, target.get_raw_result(), re.IGNORECASE)
         if search_result:
             error = '''Server Leaks Information via "X-Powered-By" HTTP Response Header Field'''
-            vul_data = await alert_response(cve="CVE-2018-7844", error=error, tool=target.tool.tool_name, alert_type=1, evidence=search_result.group())
+            vul_data = await alert_response(cve="CVE-2024-1226", error=error, tool=target.tool.tool_name, alert_type=1, evidence=search_result.group())
             self.result = {**self.result, **vul_data}
-

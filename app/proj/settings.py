@@ -13,6 +13,7 @@ import os
 from pathlib import Path
 import environ
 from datetime import timedelta
+import json
 
 env = environ.Env()
 environ.Env.read_env()
@@ -383,3 +384,10 @@ OWASP_SPIDER_ALLOW_RECURSIVE = int(os.environ.get('OWASP_SPIDER_ALLOW_RECURSIVE'
 OWASP_SPIDER_ALLOW_SUB_TREE_ONLY = int(os.environ.get('OWASP_SPIDER_ALLOW_SUB_TREE_ONLY', env('OWASP_SPIDER_ALLOW_SUB_TREE_ONLY')))
 OWASP_ACTIVE_RECURSIVE = int(os.environ.get('OWASP_ACTIVE_RECURSIVE', env('OWASP_ACTIVE_RECURSIVE')))
 OWASP_ACTIVE_IN_SCOPE_ONLY = int(os.environ.get('OWASP_ACTIVE_IN_SCOPE_ONLY', env('OWASP_ACTIVE_IN_SCOPE_ONLY')))
+
+
+# CVE DATASET
+cve_json_path = f"{BASE_DIR}/utils/vul_database/cve.json"
+file = open(cve_json_path, "r")
+CVE_DB = json.load(file)
+file.close()
