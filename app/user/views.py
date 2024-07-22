@@ -1,24 +1,25 @@
-from django.shortcuts import render
-from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
-from rest_framework import viewsets
-from .serializers import *
-from rest_framework.decorators import action
-from rest_framework import generics, viewsets
-from utils.make_response import response
-from rest_framework import status
-from drf_yasg.utils import swagger_auto_schema
-from .permissions import  AllowAny, AllowAnyWithoutLog, CustomIsAdminUser
-from rest_framework_simplejwt.serializers import TokenVerifySerializer
-from scanner.permissions import IsAuthenticated
-from rest_framework.permissions import IsAdminUser
-from django.utils.decorators import method_decorator 
 import logging
+
 from django.db.models import Q
+from django.utils.decorators import method_decorator
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework.filters import SearchFilter, OrderingFilter
+from drf_yasg.utils import swagger_auto_schema
+from rest_framework import generics, status, viewsets
+from rest_framework.decorators import action
+from rest_framework.filters import OrderingFilter, SearchFilter
+from rest_framework_simplejwt.views import TokenObtainPairView
+from scanner.permissions import IsAuthenticated
+from utils.make_response import response
+
+from .permissions import AllowAny, AllowAnyWithoutLog, CustomIsAdminUser
+from .serializers import *
+
 logger = logging.getLogger('django')
-import stripe 
+import stripe
+
 stripe.api_key = settings.STRIPE_SECRET_KEY
+from .models import Role, User
+
 
 class RegisterView(generics.CreateAPIView):
     queryset = User.objects.all()
@@ -141,8 +142,6 @@ class ValidateOTPView(generics.GenericAPIView):
         serializer = self.serializer_class(data=request.data, context={"request": request})
         if serializer.is_valid(raise_exception=True):
             return response(data={}, status_code=status.HTTP_200_OK, message="OTP has successfully validated.")
-        
-
 
 class ResetPasswordView(generics.GenericAPIView):
     serializer_class = ResetPasswordSerializer
@@ -198,7 +197,7 @@ class ProfileView(generics.RetrieveUpdateAPIView):
                 response_data = {**response_data, **{'plan':{**price, **{'product':product}}}}
             else:
                 response_data = {**response_data, **{'plan':{}}}
-        except Exception as e:
+        except Exception:
             return response(data={}, status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, message="Oops! something went wrong!")
         return response(data=response_data, status_code=status.HTTP_200_OK, message="profile found successfully.")
 
