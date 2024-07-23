@@ -33,9 +33,10 @@ schema_view = get_schema_view(
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('',include([
-        path('api/',include('scanner.urls')),
         path('api/',include('user.urls')),
-        path('api/', include('payments.urls')),
+        path('api/',include('auth_api.urls')),
+        # path('api/docs/', include('rest_framework.urls', namespace='rest_framework')),
+        # path('api/docs/swagger-ui/', include('drf_yasg.urls')),  # Swagger UI
         path('swagger',schema_view.with_ui('swagger', cache_timeout=0), name='swagger-schema')
     ])),
 ]+static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

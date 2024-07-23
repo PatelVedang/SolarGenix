@@ -25,7 +25,7 @@ class UserManager(BaseUserManager):
         extra_fields.setdefault('is_staff', True)
         extra_fields.setdefault('is_superuser', True)
         extra_fields.setdefault('role_id', 1)
-        extra_fields.setdefault('subscription_id', 2)
+        # extra_fields.setdefault('subscription_id', 2)
         extra_fields.setdefault('first_name', 'Admin')
         extra_fields.setdefault('last_name', 'Admin')
         extra_fields.setdefault('is_verified', True)

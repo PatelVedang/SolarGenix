@@ -16,17 +16,18 @@ from datetime import timedelta
 import json
 
 env = environ.Env()
-environ.Env.read_env()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.environ.get('SECRET_KEY', env('SECRET_KEY'))
+
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = bool(int(os.environ.get('DEBUG', env('DEBUG'))))
@@ -39,7 +40,6 @@ ALLOWED_HOSTS = ["*"]
 # Application definition
 
 INSTALLED_APPS = [
-    'daphne',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -47,17 +47,12 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
 
-    'channels',
     'rest_framework',
     'drf_yasg',
     'django_filters',
     'user',
-    'scanner',
-    'celery',
+    'auth_api',
     'corsheaders',
-    'payments',
-    # 'payments.apps.PaymentsConfig',
-    # 'web_socket'
     ]
 
 MIDDLEWARE = [
@@ -69,6 +64,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'auth_api.middleware.CheckBlacklistMiddleware',
 ]
 
 ROOT_URLCONF = 'proj.urls'
@@ -199,7 +195,7 @@ REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "rest_framework_simplejwt.authentication.JWTAuthentication",
     ),
-    'DEFAULT_PAGINATION_CLASS': 'scanner.pagination.PageNumberPagination',
+    # 'DEFAULT_PAGINATION_CLASS': 'scanner.pagination.PageNumberPagination',
 }
 
 # SIMPLE_JWT
@@ -210,7 +206,7 @@ SIMPLE_JWT = {
     'SIGNING_KEY': os.environ.get('SECRET_KEY', env('SECRET_KEY'))
 }
 
-AUTH_USER_MODEL = "user.User"
+AUTH_USER_MODEL = "auth_api.User"
 
 # Base url to serve media files
 MEDIA_URL = '/media/'
@@ -221,12 +217,15 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media/')
 
 #EMAIL
 EMAIL_HOST=os.environ.get('EMAIL_HOST', env('EMAIL_HOST'))
-EMAIL_PORT=os.environ.get('EMAIL_PORT', env('EMAIL_PORT'))
-EMAIL_HOST_USER=os.environ.get('EMAIL_HOST_USER', env('EMAIL_HOST_USER'))
+EMAIL_PORT=int(os.environ.get('EMAIL_PORT', env('EMAIL_PORT')))
+EMAIL_USE_TLS=bool(int(os.environ.get('EMAIL_USE_TLS', env('EMAIL_USE_TLS'))))
+EMAIL_USE_SSL=bool(int(os.environ.get('EMAIL_USE_SSL', env('EMAIL_USE_SSL'))))
+EMAIL_BACKEND=os.environ.get('EMAIL_BACKEND', env('EMAIL_BACKEND'))
+EMAIL_HOST_USER=os.environ.get('EMAIL_HOST_USER', env('EMAIL_HOST_USER')) # Your Gmail email address
 EMAIL_HOST_PASSWORD=os.environ.get('EMAIL_HOST_PASSWORD', env('EMAIL_HOST_PASSWORD'))
-EMAIL_USE_TLS=os.environ.get('EMAIL_USE_TLS', env('EMAIL_USE_TLS'))
-BUSINESS_EMAIL=os.environ.get('BUSINESS_EMAIL', env('BUSINESS_EMAIL'))
-SUPPORT_EMAILS=os.environ.get('SUPPORT_EMAILS', env('SUPPORT_EMAILS')).split(" ")
+
+# BUSINESS_EMAIL=os.environ.get('BUSINESS_EMAIL', env('BUSINESS_EMAIL'))
+# SUPPORT_EMAILS=os.environ.get('SUPPORT_EMAILS', env('SUPPORT_EMAILS')).split(" ")
 
 
 #PASSWORD validation
@@ -238,22 +237,6 @@ MOBILE_NUM_VALIDATE_STRING =  "Invalid mobile number"
 MOBILE_NUMBER_REGEX = "^([0-9]{10})$"
 COUNTRY_CODE_REGEX = "^(\+[0-9]{1,3})$"
 
-#PDF
-PDF_DOWNLOAD_ORIGIN=os.environ.get('PDF_DOWNLOAD_ORIGIN', env('PDF_DOWNLOAD_ORIGIN'))
-
-
-CELERY_BROKER_URL = os.environ.get('CELERY_BROKER_URL', env('CELERY_BROKER_URL'))
-
-#Django channels
-CHANNEL_LAYERS = {
-    "default": {
-        "BACKEND": "channels_redis.core.RedisChannelLayer",
-        "CONFIG": {
-            "hosts": [CELERY_BROKER_URL],
-        },
-    },
-}
-WEB_SOCKET_INTERVAL=os.environ.get('WEB_SOCKET_INTERVAL', env('WEB_SOCKET_INTERVAL'))
 # Create Logs folder
 if not os.path.exists(f'{BASE_DIR}/logs/'):
     os.mkdir(f'{BASE_DIR}/logs/')
@@ -306,88 +289,3 @@ LOGGING = {
         }
     }
 }
-
-SUDO_PWD=os.environ.get('SUDO_PWD', env('SUDO_PWD'))
-NVD_API_KEY=os.environ.get('NVD_API_KEY', env('NVD_API_KEY'))
-SPIDER_API_CALL_DELAY=os.environ.get('SPIDER_API_CALL_DELAY', env('SPIDER_API_CALL_DELAY'))
-
-
-LOCAL_API_URL = os.environ.get('LOCAL_API_URL', env('LOCAL_API_URL')).strip()
-EXTRA_BG_TASK_TIME = os.environ.get('EXTRA_BG_TASK_TIME', env('EXTRA_BG_TASK_TIME'))
-
-APP_ERROR_FILE_PATH = f"{BASE_DIR}/utils/custom_owasp/application_errors.xml"
-DIR_LISTING_RESULT_PATH = f"{BASE_DIR}/utils/custom_owasp/tools/directoryListing"
-ZAP_PROXY=os.environ.get('ZAP_PROXY', env('ZAP_PROXY'))
-
-# CELERY_ROUTES = {
-#  'user.tasks.*': {'queue': 'user_queue'},
-#  'scanner.tasks.*': {'queue': 'scanner_queue'},
-# }
-
-# Django cache
-CACHES = {
-    'default': {
-        'BACKEND': 'django_redis.cache.RedisCache',
-        "LOCATION": CELERY_BROKER_URL,
-        "TIMEOUT": int(os.environ.get('CACHE_TTL', env('CACHE_TTL'))),
-        'OPTIONS': {
-            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
-        }
-    }
-}
-
-
-#Stripe
-STRIPE_WEBHOOK_SECRET=os.environ.get('STRIPE_WEBHOOK_SECRET', env('STRIPE_WEBHOOK_SECRET'))
-STRIPE_PUBLISHABLE_KEY=os.environ.get('STRIPE_PUBLISHABLE_KEY', env('STRIPE_PUBLISHABLE_KEY')).strip()
-STRIPE_SECRET_KEY=os.environ.get('STRIPE_SECRET_KEY', env('STRIPE_SECRET_KEY')).strip()
-STRIPE_MODE = ("live" if "pk_live" in STRIPE_PUBLISHABLE_KEY and "sk_live" in STRIPE_SECRET_KEY else "test")
-
-FONTS_PATH=f'{BASE_DIR}/fonts/'
-SCAN_DELIVERY_MAIL_HTML ={
-    'EN':'''
-        <div style="color:black;">
-        <b><i>{}</i></b>,<br><br>
-        Please find your external vulnerability scan results on the target <b><i>{}</i></b> on <b><i>{}</i></b> in the attached by IsaiX Cyber Services.<br>
-        The PDF file provided "output.pdf" is in an Executive Report format and can be distributed to your company's management if required.<br>
-        Kindly reach out to us at support@isaix.com if you have any questions regarding your scan.<br><br>
-        The IsaiX Cyber Team
-        </div>
-        ''',
-    'FR': '''
-    <div style="color:black;">
-    <b><i>{}</i></b>,<br><br>
-    Veuillez trouver ci-joint les résultats du scan de vulnérabilité externe effectuée par les services IsaiX Cyber sur la cible <b><i>{}</i></b> le <b><i>{}</i></b>.<br>
-    Le fichier PDF fourni "output.pdf" est dans un format de rapport exécutif et peut être distribué à la direction de votre entreprise si nécessaire.<br>
-    N'hésitez pas à nous contacter à l'adresse support@isaix.com si vous avez des questions concernant votre scan.<br><br>
-    L'équipe IsaiX Cyber
-    </div>
-    '''
-}
-
-#OpenVAS
-OPENVAS_API_SERVER=os.environ.get('OPENVAS_API_SERVER',env('OPENVAS_API_SERVER'))
-OPENVAS_ROOT_USER=os.environ.get('OPENVAS_ROOT_USER',env('OPENVAS_ROOT_USER'))
-OPENVAS_ROOT_USER_PASSWORD=os.environ.get('OPENVAS_ROOT_USER_PASSWORD',env('OPENVAS_ROOT_USER_PASSWORD'))
-OPENVAS_STATUS_CHECK_DELAY=os.environ.get('OPENVAS_STATUS_CHECK_DELAY',env('OPENVAS_STATUS_CHECK_DELAY'))
-OPENVAS_REPORT_GEN_TIMEOUT=os.environ.get('OPENVAS_REPORT_GEN_TIMEOUT',env('OPENVAS_REPORT_GEN_TIMEOUT'))
-OPENVAS_REPORT_GEN_DELAY=os.environ.get('OPENVAS_REPORT_GEN_DELAY',env('OPENVAS_REPORT_GEN_DELAY'))
-
-
-#Octopii
-FILE_SIZE=int(os.environ.get('FILE_SIZE',env('FILE_SIZE')))  #MB
-OCTOPII_TIMEOUT=int(os.environ.get('TOOL_TIMEOUT',env('TOOL_TIMEOUT'))) #Seconds
-
-# OWASP ZAP
-OWASP_SPIDER_MAX_CHILDREN = int(os.environ.get('OWASP_SPIDER_MAX_CHILDREN', env('OWASP_SPIDER_MAX_CHILDREN')))
-OWASP_SPIDER_ALLOW_RECURSIVE = int(os.environ.get('OWASP_SPIDER_ALLOW_RECURSIVE', env('OWASP_SPIDER_ALLOW_RECURSIVE')))
-OWASP_SPIDER_ALLOW_SUB_TREE_ONLY = int(os.environ.get('OWASP_SPIDER_ALLOW_SUB_TREE_ONLY', env('OWASP_SPIDER_ALLOW_SUB_TREE_ONLY')))
-OWASP_ACTIVE_RECURSIVE = int(os.environ.get('OWASP_ACTIVE_RECURSIVE', env('OWASP_ACTIVE_RECURSIVE')))
-OWASP_ACTIVE_IN_SCOPE_ONLY = int(os.environ.get('OWASP_ACTIVE_IN_SCOPE_ONLY', env('OWASP_ACTIVE_IN_SCOPE_ONLY')))
-
-
-# CVE DATASET
-cve_json_path = f"{BASE_DIR}/utils/vul_database/cve.json"
-file = open(cve_json_path, "r")
-CVE_DB = json.load(file)
-file.close()

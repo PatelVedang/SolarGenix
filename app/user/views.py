@@ -8,18 +8,13 @@ from rest_framework import generics, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.filters import OrderingFilter, SearchFilter
 from rest_framework_simplejwt.views import TokenObtainPairView
-from scanner.permissions import IsAuthenticated
+# from scanner.permissions import IsAuthenticated
 from utils.make_response import response
 
 from .permissions import AllowAny, AllowAnyWithoutLog, CustomIsAdminUser
 from .serializers import *
 
 logger = logging.getLogger('django')
-import stripe
-
-stripe.api_key = settings.STRIPE_SECRET_KEY
-from .models import Role, User
-
 
 class RegisterView(generics.CreateAPIView):
     queryset = User.objects.all()
@@ -178,7 +173,7 @@ class ResetPasswordView(generics.GenericAPIView):
 ))
 class ProfileView(generics.RetrieveUpdateAPIView):
     serializer_class = UpdateProfileSerializer
-    permission_classes = [IsAuthenticated]
+    # permission_classes = [IsAuthenticated]
 
     def retrieve(self, request, *args, **kwargs):
         """
@@ -219,7 +214,7 @@ class ProfileView(generics.RetrieveUpdateAPIView):
 
 class ChangePasswordView(generics.CreateAPIView):    
     serializer_class = ChangePasswordSerializer
-    permission_classes = [IsAuthenticated]
+    # permission_classes = [IsAuthenticated]
 
     @swagger_auto_schema(
         tags=['Users'],

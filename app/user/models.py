@@ -6,7 +6,6 @@ from django.utils.translation import gettext_lazy as _
 from datetime import datetime
 from django.db.models import Q
 from datetime import datetime
-from payments.models import PaymentHistory
 from django.utils import timezone
 import os
 import uuid
@@ -50,7 +49,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     is_superuser = models.BooleanField(default=False)
     otp = models.CharField(max_length=6, null=True)
     otp_expires = models.DateTimeField(auto_now_add=True, null=True)
-    subscription = models.ForeignKey('scanner.Subscription', on_delete=models.SET_NULL, null=True, blank=True, default=1)
+    # subscription = models.ForeignKey('scanner.Subscription', on_delete=models.SET_NULL, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True, null=True)
     updated_at = models.DateTimeField(auto_now=True, null=True)
     is_verified = models.BooleanField(default=False)
@@ -77,17 +76,6 @@ class User(AbstractBaseUser, PermissionsMixin):
         self.last_name = self.last_name.lower()
         self.email = self.email.lower()
         return super(User, self).save(*args, **kwargs)
-    
-    def get_active_plan(self):
-        today = timezone.make_aware(datetime.utcnow(), timezone=timezone.utc)
-        # today = datetime.utcnow()
-        return PaymentHistory.objects.filter(
-            Q(status=1) &
-            Q(user=self) &
-            Q(current_period_start__lte=today) &
-            (Q(current_period_end__isnull=True) |
-            Q(current_period_end__gte=today))
-        ).order_by('-created_at')
     
     class Meta:
         ordering = ('-created_at',)
