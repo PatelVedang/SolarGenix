@@ -113,17 +113,19 @@ printf "Postgres installed, new database created and successfully assign the pri
 echo "Checking Python 3.11"
 echo "----------------------------------------------------"
 python_version=$(python3.11 --version 2>&1)
-if [[ $python_version == *"3.11"* ]]; then
+if [[ $python_version == *"3.11.9"* ]]; then
     echo "Python 3.11 is already installed."
 else
     echo "Python 3.11 is not installed. Installing..."
     # Update package index
     sudo apt update
+    # Adding PPA repository
+    sudo add-apt-repository ppa:deadsnakes/ppa
     # Install Python 3 and python3.11-venv
-    sudo apt install python3 python3.11-venv -y
+    sudo apt install python3.11 python3.11-venv -y
     # Verify installation
     python_version=$(python3.11 --version 2>&1)
-    if [[ $python_version == *"3.11"* ]]; then
+    if [[ $python_version == *"3.11.9"* ]]; then
         echo "Python 3.11 installed successfully."
     else
         echo "Failed to install Python 3.11. Please check the installation manually."
@@ -139,6 +141,9 @@ if [ ! -d "env" ]; then
     python3.11 -m venv env
 else
     echo "Virtual Environment already exists. Skipping creation."
+fi
+echo "----------------------------------------------------"
+printf "Virtual env Created 😎 \n\n\n"
 fi
 echo "----------------------------------------------------"
 printf "Virtual env Created 😎 \n\n\n"

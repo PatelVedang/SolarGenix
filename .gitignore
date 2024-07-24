@@ -144,7 +144,6 @@ info.txt
 .venv
 env/
 staticfiles/
-.vscode/
 venv/
 ENV/
 logs/
