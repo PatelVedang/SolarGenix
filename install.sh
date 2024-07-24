@@ -144,9 +144,6 @@ else
 fi
 echo "----------------------------------------------------"
 printf "Virtual env Created 😎 \n\n\n"
-fi
-echo "----------------------------------------------------"
-printf "Virtual env Created 😎 \n\n\n"
 
 echo "Activating Virtual Environment"
 echo "----------------------------------------------------"
