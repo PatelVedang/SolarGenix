@@ -10,10 +10,10 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.1/ref/settings/
 """
 import os
-from pathlib import Path
-import environ
 from datetime import timedelta
-import json
+from pathlib import Path
+
+import environ
 
 env = environ.Env()
 
@@ -40,6 +40,7 @@ ALLOWED_HOSTS = ["*"]
 # Application definition
 
 INSTALLED_APPS = [
+    'todos',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -50,7 +51,6 @@ INSTALLED_APPS = [
     'rest_framework',
     'drf_yasg',
     'django_filters',
-    'user',
     'auth_api',
     'corsheaders',
     ]
@@ -89,24 +89,14 @@ WSGI_APPLICATION = 'proj.wsgi.application'
 ASGI_APPLICATION = 'proj.asgi.application'
 
 
-# Database
-# https://docs.djangoproject.com/en/4.1/ref/settings/#databases
-
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.sqlite3',
-#         'NAME': BASE_DIR / 'db.sqlite3',
-#     }
-# }
-
 DATABASES = {
     "default": {
-        'ENGINE': os.environ.get('MYSQL_ENGINE', env('MYSQL_ENGINE')),
-        'NAME': os.environ.get('MYSQL_DATABASE', env('MYSQL_DATABASE')),
-        'USER': os.environ.get('MYSQL_USER', env('MYSQL_USER')),
-        'PASSWORD': os.environ.get('MYSQL_PASSWORD', env('MYSQL_PASSWORD')),
-        'HOST': os.environ.get('MYSQL_DATABASE_HOST', env('MYSQL_DATABASE_HOST')),
-        'PORT': os.environ.get('MYSQL_DATABASE_PORT', env('MYSQL_DATABASE_PORT')),
+        'ENGINE': os.environ.get('SQL_ENGINE', env('SQL_ENGINE')),
+        'NAME': os.environ.get('SQL_DATABASE', env('SQL_DATABASE')),
+        'USER': os.environ.get('SQL_USER', env('SQL_USER')),
+        'PASSWORD': os.environ.get('SQL_PASSWORD', env('SQL_PASSWORD')),
+        'HOST': os.environ.get('SQL_DATABASE_HOST', env('SQL_DATABASE_HOST')),
+        'PORT': os.environ.get('SQL_DATABASE_PORT', env('SQL_DATABASE_PORT')),
         'CONN_MAX_AGE': 60,
         # 'OPTIONS': {
         #     # "init_command": f"SET GLOBAL max_connections = 100000",
@@ -177,25 +167,17 @@ SWAGGER_SETTINGS = {
 
 CSRF_TRUSTED_ORIGINS=os.environ.get('CSRF_TRUSTED_ORIGINS', env('CSRF_TRUSTED_ORIGINS')).split()
 CORS_ORIGIN_WHITELIST=os.environ.get('CORS_ORIGIN_WHITELIST', env('CORS_ORIGIN_WHITELIST')).split()
-PDF_DOWNLOAD_ORIGIN=os.environ.get('PDF_DOWNLOAD_ORIGIN', env('PDF_DOWNLOAD_ORIGIN')).split()
-
-# CORS_ORIGIN_ALLOW_ALL = True
 
 # By pass http to https
 USE_X_FORWARDED_HOST = True
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-
-# DRF_YASG_EXCLUDE_VIEWS = [
-#     'rest_auth.views.LoginView',
-# ]
 
 # Django Rest Framework and JWT and CORS
 REST_FRAMEWORK = {
     "EXCEPTION_HANDLER": "utils.exception_handler.custom_exception_handler",
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "rest_framework_simplejwt.authentication.JWTAuthentication",
-    ),
-    # 'DEFAULT_PAGINATION_CLASS': 'scanner.pagination.PageNumberPagination',
+    )
 }
 
 # SIMPLE_JWT
@@ -224,18 +206,9 @@ EMAIL_BACKEND=os.environ.get('EMAIL_BACKEND', env('EMAIL_BACKEND'))
 EMAIL_HOST_USER=os.environ.get('EMAIL_HOST_USER', env('EMAIL_HOST_USER')) # Your Gmail email address
 EMAIL_HOST_PASSWORD=os.environ.get('EMAIL_HOST_PASSWORD', env('EMAIL_HOST_PASSWORD'))
 
-# BUSINESS_EMAIL=os.environ.get('BUSINESS_EMAIL', env('BUSINESS_EMAIL'))
-# SUPPORT_EMAILS=os.environ.get('SUPPORT_EMAILS', env('SUPPORT_EMAILS')).split(" ")
-
-
 #PASSWORD validation
 PASSWORD_VALIDATE_STRING =  "A minimum 8 characters and maximum 30 character password contains a combination of uppercase and lowercase letter, special symbol and number are required."
 PASSWORD_VALIDATE_REGEX = "^(?=\S*[a-z])(?=\S*[A-Z])(?=\S*\d)(?=\S*[^\w\s])\S{8,30}$"
-
-# mobile number validation
-MOBILE_NUM_VALIDATE_STRING =  "Invalid mobile number"
-MOBILE_NUMBER_REGEX = "^([0-9]{10})$"
-COUNTRY_CODE_REGEX = "^(\+[0-9]{1,3})$"
 
 # Create Logs folder
 if not os.path.exists(f'{BASE_DIR}/logs/'):

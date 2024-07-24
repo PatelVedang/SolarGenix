@@ -16,7 +16,6 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 
-from rest_framework import permissions
 from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
 from django.conf import settings
@@ -24,7 +23,7 @@ from django.conf.urls.static import static
 
 schema_view = get_schema_view(
    openapi.Info(
-      title="Cyber Appliance API",
+      title="Boilerplate API",
       default_version='1.0'
    ),
    public=True
@@ -33,15 +32,13 @@ schema_view = get_schema_view(
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('',include([
-        path('api/',include('user.urls')),
         path('api/',include('auth_api.urls')),
-        # path('api/docs/', include('rest_framework.urls', namespace='rest_framework')),
-        # path('api/docs/swagger-ui/', include('drf_yasg.urls')),  # Swagger UI
+        path('api/todos/', include('todos.urls')),
         path('swagger',schema_view.with_ui('swagger', cache_timeout=0), name='swagger-schema')
     ])),
 ]+static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
 
-admin.site.site_header = "ISAIX"
-admin.site.site_title = "ISAIX Admin Portal"
-admin.site.index_title = "Welcome to ISAIX Portal"
+admin.site.site_header = "ADMINISTRATION"
+admin.site.site_title = "Admin Portal"
+admin.site.index_title = "Welcome to Admin Portal"
