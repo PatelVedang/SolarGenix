@@ -11,5 +11,7 @@
     "python.analysis.autoImportCompletions": true,
     "[json]": {
         "editor.defaultFormatter": "vscode.json-language-features"
-    }
+    },
+    "ruff.lint.enable": true,
+    "ruff.lint.select": ["C", "E", "F", "W"],
 }

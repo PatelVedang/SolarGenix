@@ -1,10 +1,9 @@
-#!/usr/bin/env bash
+!/usr/bin/env bash
 
 # Function to check if a package is installed using dpkg
 function is_package_installed() {
     dpkg -l "$1" &> /dev/null
 }
-
 # Function to check if a command (tool) is available in the system's PATH
 function is_command_available() {
     command -v "$1" &> /dev/null
@@ -65,9 +64,17 @@ echo "----------------------------------------------------"
 
 # Install PostgreSQL
 echo "Installing PostgreSQL..."
-sudo apt-get update
-sudo apt-get install -y postgresql postgresql-contrib
+echo "----------------------------------------------------"
+if is_package_installed postgresql; then
+    echo "PostgreSQL is already installed. Skipping installation."
+else
+    sudo apt-get install -y postgresql postgresql-contrib || ( echo "Failed to install PostgreSQL" && exit 1 )
+fi
+echo "----------------------------------------------------"
+printf "Postgres Installed 😎 \n\n\n"
 
+echo "Creating a new PostgreSQL user and database"
+echo "----------------------------------------------------"
 # Get username, password, and database name
 read -p "Enter the new user name: " new_user
 echo "New User: $new_user"
@@ -92,12 +99,26 @@ sudo -i -u postgres psql -d "$new_db" -c "ALTER SCHEMA public OWNER TO $new_user
 
 # Find the PostgreSQL version dynamically
 postgres_version=$(ls /etc/postgresql/ | grep -E '^[0-9]+$' | tail -n 1)
-
 # Configuring PostgreSQL for remote access
 if [ -n "$postgres_version" ]; then
-    # Use the specific version in the path
-    echo "listen_addresses = '*'" | sudo tee -a "/etc/postgresql/$postgres_version/main/postgresql.conf"
-    echo "host all all 0.0.0.0/0 md5" | sudo tee -a "/etc/postgresql/$postgres_version/main/pg_hba.conf"
+    postgres_conf="/etc/postgresql/$postgres_version/main/postgresql.conf"
+    pg_hba_conf="/etc/postgresql/$postgres_version/main/pg_hba.conf"
+
+    # Check and set listen_addresses if not already set
+    if ! sudo grep -q "^listen_addresses = '*'" "$postgres_conf"; then
+        echo "Setting listen_addresses..."
+        echo "listen_addresses = '*'" | sudo tee -a "$postgres_conf"
+    else
+        echo "listen_addresses is already set to '*'"
+    fi
+
+    # Check and set host access if not already set
+    if ! sudo grep -q "^host all all 0.0.0.0/0 md5" "$pg_hba_conf"; then
+        echo "Setting host access..."
+        echo "host all all 0.0.0.0/0 md5" | sudo tee -a "$pg_hba_conf"
+    else
+        echo "host access is already set"
+    fi
 
     # Restarting PostgreSQL to apply changes
     echo "Restarting PostgreSQL..."
@@ -108,7 +129,7 @@ else
 fi
 
 echo "----------------------------------------------------"
-printf "Postgres installed, new database created and successfully assign the privileges to user for new database 😎 \n\n\n"
+printf "Postgres User and Database Created 😎 \n\n\n"
 
 echo "Checking Python 3.11"
 echo "----------------------------------------------------"
@@ -166,7 +187,6 @@ printf "Virtual Enviroment Deactivated 😎 \n\n\n"
 printf "░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░\n"
 printf "░░░░░░  Now U have to provide the exact value in $env_path And run the below files. ░░░░░░\n"
 printf "░░░░░░  apply_migrations.sh - Applying the migrations                                   ░░░░░░\n"
-printf "░░░░░░  server.sh - Run server                                                          ░░░░░░\n"
 printf "░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░\n"
 
 # Wait for user input before exiting the script
