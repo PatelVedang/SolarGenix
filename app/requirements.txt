@@ -8,3 +8,6 @@ drf-yasg
 psycopg2-binary
 pluralizer
 django-ssl-smtp
+ruff
+pre-commit
+commitlint
