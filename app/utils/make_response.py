@@ -1,5 +1,6 @@
 from rest_framework.response import Response
 
+
 def response(*args, **kwargs):
     """
     The function `response` returns a `Response` object with the provided status code, message, and
@@ -7,7 +8,7 @@ def response(*args, **kwargs):
     :return: a Response object with the provided status code, message, and data.
     """
     status_code = kwargs.get("status_code")
-    message = kwargs.get("message","")
-    data = kwargs.get("data",{})
-    result =  {"status_code":status_code, "message":message, "data": data}
+    message = kwargs.get("message", "")
+    data = kwargs.get("data", {})
+    result = {"message": message, "data": data}
     return Response(result, status=status_code)
