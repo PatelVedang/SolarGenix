@@ -29,6 +29,8 @@ from datetime import datetime
 import jwt
 
 from django.conf import settings
+from utils.swagger import apply_swagger_tags
+
 
    
 def blacklist_token(token):
@@ -37,15 +39,20 @@ def blacklist_token(token):
     token_type = validated_token.get('token_type','unknown')
     BlacklistToken.objects.create(jti=jti, token_type=token_type)    
 
-class UserRegistrationView(APIView):
-    # renderer_classes= [UserRenderer]
-    
+# @apply_swagger_tags(tags=["Auth"])
+@apply_swagger_tags(
+    tags=["Auth"],
+    method_details={
+        "post": {
+            "operation_description": "User registration",
+            "request_body": UserRegistrationSerilizer,
+            "operation_summary": "POST method for user registration"
+        },
+    }
+)
+class UserRegistrationView(APIView):    
     # def get(self, request, format=None):
     #     return render(request, 'auth_api/registration.html')
-    @swagger_auto_schema(
-        operation_description="POST method for user registration",
-        request_body=UserRegistrationSerilizer,
-    )
     def post(self,request,format=None):
         serializer=UserRegistrationSerilizer(data=request.data)
         if serializer.is_valid(raise_exception=True):
@@ -56,14 +63,18 @@ class UserRegistrationView(APIView):
     
     
 
+# @apply_swagger_tags(tags=["Auth"])
+@apply_swagger_tags(
+    tags=["Auth"],
+    method_details={
+        "post": {
+            "operation_description": "Login API",
+            "request_body": UserLoginSerilizer,
+            "operation_summary": "Dynamic POST method for user login",
+        },
+    }
+)
 class UserLoginView(APIView):
-    # renderer_classes= [UserRenderer]
-    # def get(self, request, format=None):
-    #     return render(request, 'auth_api/login.html')
-    @swagger_auto_schema(
-        operation_description="POST method for user login",
-        request_body=UserLoginSerilizer,
-    )
     def post(self,request,format=None):
         serializer=UserLoginSerilizer(data=request.data)
         if serializer.is_valid(raise_exception=True):
@@ -118,13 +129,22 @@ class UserProfileView(APIView):
         return Response(serializer.data,status=status.HTTP_200_OK)
     
     
-            
+@apply_swagger_tags(
+    tags=["Auth"],
+    method_details={
+        "post": {
+            "operation_description": "Reset Password",
+            "request_body": UserChangePasswordSerializer,
+            "operation_summary": "User resets the password",
+        },
+    }
+)        
 class UserChangePassword(APIView):
     # renderer_classes=[UserRenderer]
-    @swagger_auto_schema(
-        operation_description="Send email for forgat password",
-        request_body=UserChangePasswordSerializer,
-    )
+    # @swagger_auto_schema(
+    #     operation_description="Send email for forgat password",
+    #     request_body=UserChangePasswordSerializer,
+    # )
     def post(self,request,token,fromat=None):
         serializer=UserChangePasswordSerializer(data=request.data,context={'token':token})
         if serializer.is_valid(raise_exception=True):
