@@ -292,11 +292,14 @@ class $SINGULAR_CAPITALIZED_MODEL_TESTS(TestCase):
         }
 
         response = self.client.post(url, data, format='multipart')
-        ${APP_NAME}_instance =${SINGULAR_CAPITALIZED}.objects.get(id=response.data.get("id"))
-        if ${APP_NAME}_instance.image:
-            ${APP_NAME}_instance.image.delete(save=False)
-        if ${APP_NAME}_instance.file:
-            ${APP_NAME}_instance.file.delete(save=False)
+        data = response.data.get("data", None)
+        ${APP_NAME}_id = data.get("id") if data else None
+        if ${APP_NAME}_id:
+            ${APP_NAME}_instance =${SINGULAR_CAPITALIZED}.objects.get(id=${APP_NAME}_id)
+            if ${APP_NAME}_instance.image:
+                ${APP_NAME}_instance.image.delete(save=False)
+            if ${APP_NAME}_instance.file:
+                ${APP_NAME}_instance.file.delete(save=False)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
     def test_create_${APP_NAME}_without_authentication(self):
@@ -370,7 +373,7 @@ class $SINGULAR_CAPITALIZED_MODEL_TESTS(TestCase):
 
         response = self.client.get(url, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['name'], self.${APP_NAME}.name)
+        self.assertEqual(response.data['data']['name'], self.${APP_NAME}.name)
     
     def test_read_${APP_NAME}_without_authentication(self):
         # Authenticate the user and obtain the token
@@ -381,14 +384,14 @@ class $SINGULAR_CAPITALIZED_MODEL_TESTS(TestCase):
 
         response = self.client.get(url, format='json')
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
-        # self.assertEqual(response.data['name'], self.${APP_NAME}.name)
+        # self.assertEqual(response.data['data']['name'], self.${APP_NAME}.name)
 
     def test_read_${APP_NAME}_with_not_exists_id(self):
         url = reverse('${APP_NAME}-detail', args=[1231465])  # Ensure this URL name matches your URL pattern
 
         response = self.client.get(url, format='json')
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
-        # self.assertEqual(response.data['name'], self.${APP_NAME}.name)
+        # self.assertEqual(response.data['data']['name'], self.${APP_NAME}.name)
     
     def test_update_${APP_NAME}_authentication(self):
         url = reverse('${APP_NAME}-detail', args=[self.${APP_NAME}.id])  # Ensure this URL name matches your URL pattern
@@ -413,9 +416,9 @@ class $SINGULAR_CAPITALIZED_MODEL_TESTS(TestCase):
             "file": self.generate_test_file(),  # Add updated file here
         }
 
-        response = self.client.put(url, updated_data, format='multipart')
+        response = self.client.patch(url, updated_data, format='multipart')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['name'], updated_data['name'])
+        self.assertEqual(response.data['data']['name'], updated_data['name'])
 
     def test_update_${APP_NAME}_without_authentication(self):
         # Authenticate the user and obtain the token
@@ -444,20 +447,17 @@ class $SINGULAR_CAPITALIZED_MODEL_TESTS(TestCase):
             "file": self.generate_test_file(),  # Add updated file here
         }
 
-        response = self.client.put(url, updated_data, format='multipart')
+        response = self.client.patch(url, updated_data, format='multipart')
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_update_${APP_NAME}_validation(self):
         url = reverse('${APP_NAME}-detail', args=[self.${APP_NAME}.id])  # Ensure this URL name matches your URL pattern
         
         updated_data = {
-            "name": "Updated ${SINGULAR_CAPITALIZED}",
-            "description": "Updated description",
-            "price": 11.99,
-            "inventory": 20
+            "url":"worng value"
         }
 
-        response = self.client.put(url, updated_data, format='multipart')
+        response = self.client.patch(url, updated_data, format='multipart')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_update_${APP_NAME}_with_not_exists_id(self):
@@ -483,7 +483,7 @@ class $SINGULAR_CAPITALIZED_MODEL_TESTS(TestCase):
             "file": self.generate_test_file(),  # Add updated file here
         }
 
-        response = self.client.put(url, updated_data, format='multipart')
+        response = self.client.patch(url, updated_data, format='multipart')
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
     
     def test_partial_update_${APP_NAME}_authenticated(self):
@@ -495,7 +495,7 @@ class $SINGULAR_CAPITALIZED_MODEL_TESTS(TestCase):
 
         response = self.client.patch(url, updated_data, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['name'], updated_data['name'])
+        self.assertEqual(response.data['data']['name'], updated_data['name'])
 
     def test_partial_update_${APP_NAME}_without_authentication(self):
         # Authenticate the user and obtain the token

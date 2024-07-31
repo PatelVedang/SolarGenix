@@ -13,3 +13,4 @@ ruff
 pre-commit
 commitlint
 pillow
+coverage

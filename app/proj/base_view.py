@@ -37,7 +37,7 @@ class BaseModelViewSet(viewsets.ModelViewSet):
         response = super().create(request, *args, **kwargs)
         return Response(
             data=response.data, message=self.get_message(request, *args, **kwargs),
-            status=status.HTTP_201_CREATED,
+            status_code=status.HTTP_201_CREATED,
             headers=response.headers
         )
 
@@ -45,7 +45,7 @@ class BaseModelViewSet(viewsets.ModelViewSet):
         response = super().list(request, *args, **kwargs)
         return Response(
             data=response.data, message=self.get_message(request, *args, **kwargs),
-            status=status.HTTP_200_OK
+            status_code=status.HTTP_200_OK
         )
     
     @swagger_auto_schema(manual_parameters=[
@@ -60,7 +60,7 @@ class BaseModelViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(self.get_queryset(), many=True, fields=fields)
         return Response(
             data=serializer.data, message=self.get_message(request, *args, **kwargs),
-            status=status.HTTP_200_OK
+            status_code=status.HTTP_200_OK
         )
     
     @swagger_auto_schema(manual_parameters=[
@@ -85,26 +85,20 @@ class BaseModelViewSet(viewsets.ModelViewSet):
         return Response(
             data=serializer.data, 
             message=self.get_message(request, *args, **kwargs),
-            status=status.HTTP_200_OK
+            status_code=status.HTTP_200_OK
         )
 
-    def update(self, request, *args, **kwargs):
-        response = super().update(request, *args, **kwargs)
-        return Response(
-            data=response.data, message=self.get_message(request, *args, **kwargs),
-            status=status.HTTP_200_OK
-        )
 
     def partial_update(self, request, *args, **kwargs):
         response = super().partial_update(request, *args, **kwargs)
         return Response(
             data=response.data, message=self.get_message(request, *args, **kwargs),
-            status=status.HTTP_200_OK
+            status_code=status.HTTP_200_OK
         )
 
     def destroy(self, request, *args, **kwargs):
         super().destroy(request, *args, **kwargs)
         return Response(
             message=self.get_message(request, *args, **kwargs),
-            status=status.HTTP_204_NO_CONTENT
+            status_code=status.HTTP_204_NO_CONTENT
         )
