@@ -14,25 +14,37 @@ from datetime import timedelta
 from pathlib import Path
 
 import environ
+from datetime import timedelta
+import json
+from utils.config import load_settings
+<<<<<<< Updated upstream
 
-env = environ.Env()
+
+
+=======
+
+
+
+>>>>>>> Stashed changes
+settings = load_settings()
+# env = environ.Env()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
+# environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ.get('SECRET_KEY', env('SECRET_KEY'))
+SECRET_KEY = settings.SECRET_KEY
 
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = bool(int(os.environ.get('DEBUG', env('DEBUG'))))
-UNIT_TEST_USER_EMAIL = os.environ.get('UNIT_TEST_USER_EMAIL', env('UNIT_TEST_USER_EMAIL'))
-UNIT_TEST_USER_PASSWORD = os.environ.get('UNIT_TEST_USER_PASSWORD', env('UNIT_TEST_USER_PASSWORD'))
+DEBUG = settings.DEBUG
+UNIT_TEST_USER_EMAIL = settings.UNIT_TEST_USER_EMAIL
+UNIT_TEST_USER_PASSWORD = settings.UNIT_TEST_USER_PASSWORD
 
 ALLOWED_HOSTS = ["*"]
 
@@ -40,6 +52,7 @@ ALLOWED_HOSTS = ["*"]
 # Application definition
 
 INSTALLED_APPS = [
+    'todos',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -63,7 +76,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'auth_api.middleware.CheckBlacklistMiddleware',
+    # 'auth_api.middleware.CheckBlacklistMiddleware',
 ]
 
 ROOT_URLCONF = 'proj.urls'
@@ -88,14 +101,38 @@ WSGI_APPLICATION = 'proj.wsgi.application'
 ASGI_APPLICATION = 'proj.asgi.application'
 
 
+# Database
+# https://docs.djangoproject.com/en/4.1/ref/settings/#databases
+
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.sqlite3',
+#         'NAME': BASE_DIR / 'db.sqlite3',
+#     }
+# }
+# DATABASES = {
+#     "default": {
+#         'ENGINE': os.environ.get('SQL_ENGINE', env('SQL_ENGINE')),
+#         'NAME': os.environ.get('SQL_DATABASE', env('SQL_DATABASE')),
+#         'USER': os.environ.get('SQL_USER', env('SQL_USER')),
+#         'PASSWORD': os.environ.get('SQL_PASSWORD', env('SQL_PASSWORD')),
+#         'HOST': os.environ.get('SQL_DATABASE_HOST', env('SQL_DATABASE_HOST')),
+#         'PORT': os.environ.get('SQL_DATABASE_PORT', env('SQL_DATABASE_PORT')),
+#         'CONN_MAX_AGE': 60,
+#         # 'OPTIONS': {
+#         #     # "init_command": f"SET GLOBAL max_connections = 100000",
+#         #     'MAX_AGE': 600
+#         # }
+#     }
+# }
 DATABASES = {
     "default": {
-        'ENGINE': os.environ.get('SQL_ENGINE', env('SQL_ENGINE')),
-        'NAME': os.environ.get('SQL_DATABASE', env('SQL_DATABASE')),
-        'USER': os.environ.get('SQL_USER', env('SQL_USER')),
-        'PASSWORD': os.environ.get('SQL_PASSWORD', env('SQL_PASSWORD')),
-        'HOST': os.environ.get('SQL_DATABASE_HOST', env('SQL_DATABASE_HOST')),
-        'PORT': os.environ.get('SQL_DATABASE_PORT', env('SQL_DATABASE_PORT')),
+        'ENGINE': settings.SQL_ENGINE,
+        'NAME': settings.SQL_DATABASE,
+        'USER': settings.SQL_USER,
+        'PASSWORD': settings.SQL_PASSWORD,
+        'HOST': settings.SQL_DATABASE_HOST,
+        'PORT': settings.SQL_DATABASE_PORT,
         'CONN_MAX_AGE': 60,
         # 'OPTIONS': {
         #     # "init_command": f"SET GLOBAL max_connections = 100000",
@@ -103,7 +140,6 @@ DATABASES = {
         # }
     }
 }
-
 
 # Password validation
 # https://docs.djangoproject.com/en/4.1/ref/settings/#auth-password-validators
@@ -164,8 +200,11 @@ SWAGGER_SETTINGS = {
     },
 }
 
-CSRF_TRUSTED_ORIGINS=os.environ.get('CSRF_TRUSTED_ORIGINS', env('CSRF_TRUSTED_ORIGINS')).split()
-CORS_ORIGIN_WHITELIST=os.environ.get('CORS_ORIGIN_WHITELIST', env('CORS_ORIGIN_WHITELIST')).split()
+# CSRF_TRUSTED_ORIGINS=settings.CSRF_TRUSTED_ORIGINS
+# CORS_ORIGIN_WHITELIST=settings.CORS_ORIGIN_WHITELIST
+# PDF_DOWNLOAD_ORIGIN=settings.PDF_DOWNLOAD_ORIGIN
+
+# CORS_ORIGIN_ALLOW_ALL = True
 
 # By pass http to https
 USE_X_FORWARDED_HOST = True
@@ -181,10 +220,10 @@ REST_FRAMEWORK = {
 
 # SIMPLE_JWT
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(days=1),
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=30),
-    'ALGORITHM': 'HS256',
-    'SIGNING_KEY': os.environ.get('SECRET_KEY', env('SECRET_KEY'))
+    'ACCESS_TOKEN_LIFETIME': timedelta(days=settings.JWT_ACCESS_TOKEN_LIFETIME),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=settings.JWT_REFRESH_TOKEN_LIFETIME),
+    'ALGORITHM': settings.JWT_ALGORITHM,
+    'SIGNING_KEY': settings.SECRET_KEY
 }
 
 AUTH_USER_MODEL = "auth_api.User"
@@ -197,13 +236,17 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media/')
 
 
 #EMAIL
-EMAIL_HOST=os.environ.get('EMAIL_HOST', env('EMAIL_HOST'))
-EMAIL_PORT=int(os.environ.get('EMAIL_PORT', env('EMAIL_PORT')))
-EMAIL_USE_TLS=bool(int(os.environ.get('EMAIL_USE_TLS', env('EMAIL_USE_TLS'))))
-EMAIL_USE_SSL=bool(int(os.environ.get('EMAIL_USE_SSL', env('EMAIL_USE_SSL'))))
-EMAIL_BACKEND=os.environ.get('EMAIL_BACKEND', env('EMAIL_BACKEND'))
-EMAIL_HOST_USER=os.environ.get('EMAIL_HOST_USER', env('EMAIL_HOST_USER')) # Your Gmail email address
-EMAIL_HOST_PASSWORD=os.environ.get('EMAIL_HOST_PASSWORD', env('EMAIL_HOST_PASSWORD'))
+EMAIL_HOST = settings.EMAIL_HOST
+EMAIL_PORT = settings.EMAIL_PORT
+EMAIL_USE_TLS = settings.EMAIL_USE_TLS
+EMAIL_USE_SSL = settings.EMAIL_USE_SSL
+EMAIL_BACKEND = settings.EMAIL_BACKEND
+EMAIL_HOST_USER = settings.EMAIL_HOST_USER
+EMAIL_HOST_PASSWORD = settings.EMAIL_HOST_PASSWORD
+
+# BUSINESS_EMAIL=os.environ.get('BUSINESS_EMAIL', env('BUSINESS_EMAIL'))
+# SUPPORT_EMAILS=os.environ.get('SUPPORT_EMAILS', env('SUPPORT_EMAILS')).split(" ")
+
 
 #PASSWORD validation
 PASSWORD_VALIDATE_STRING =  "A minimum 8 characters and maximum 30 character password contains a combination of uppercase and lowercase letter, special symbol and number are required."

@@ -5,22 +5,27 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from auth_api.serializers import (
     UserRegistrationSerilizer,
-    UserLoginSerilizer,
+    UserLoginSerializer,
     UserProfileSerilizer,
-    UserChangePasswordSerializer,
     SendPasswordResetEmailSerializer,
     UserPasswordResetSerializer,
-    ChangePasswordEmailSerializer,
+    ChangePasswordSerializer,
     ResendResetTokenSerializer,
+    RefreshTokenSerializer,
+    ResendVerifyTokenSerializer,
+    VerifyEmailSerializer,
+    LogoutSerializer,
     get_tokens_for_user,
     check_blacklist,
 )
+from utils.make_response import response
+from utils.custom_filter import apply_filters
 from django.contrib.auth import authenticate
 # from auth_api.renderers import UserRenderer
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.exceptions import AuthenticationFailed
 from auth_api.models import User, Token, BlacklistToken
-
+from auth_api.permissions import IsTokenValid
 from rest_framework_simplejwt.tokens import UntypedToken
 from drf_yasg.utils import swagger_auto_schema
 
@@ -39,207 +44,206 @@ def blacklist_token(token):
     token_type = validated_token.get('token_type','unknown')
     BlacklistToken.objects.create(jti=jti, token_type=token_type)    
 
-# @apply_swagger_tags(tags=["Auth"])
-@apply_swagger_tags(
-    tags=["Auth"],
-    method_details={
-        "post": {
-            "operation_description": "User registration",
-            "request_body": UserRegistrationSerilizer,
-            "operation_summary": "POST method for user registration"
-        },
-    }
-)
-class UserRegistrationView(APIView):    
-    # def get(self, request, format=None):
-    #     return render(request, 'auth_api/registration.html')
-    def post(self,request,format=None):
+class UserRegistrationView(APIView):
+   
+    @swagger_auto_schema(
+        operation_description="POST method for user registration",
+        request_body=UserRegistrationSerilizer,
+    )
+    def post(self,request):
+        # select_fields = request.query_params.get('select_fields')
+        # queryset = User.objects.all()
+        # queryset = apply_filters(queryset,select_fields)
         serializer=UserRegistrationSerilizer(data=request.data)
         if serializer.is_valid(raise_exception=True):
-            user=serializer.save()
-           
-            return Response({'msg': 'Registration done! Please verify your email.'}, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
-    
-    
+            user=serializer.save()  
+            return response(data=request.data, status_code=status.HTTP_201_CREATED, message="Registration Done Please  Activate Your Account!") 
 
-# @apply_swagger_tags(tags=["Auth"])
-@apply_swagger_tags(
-    tags=["Auth"],
-    method_details={
-        "post": {
-            "operation_description": "Login API",
-            "request_body": UserLoginSerilizer,
-            "operation_summary": "Dynamic POST method for user login",
-        },
-    }
-)
+        return response(status_code=status.HTTP_400_BAD_REQUEST, data=serializer.errors)
+
+
+         
 class UserLoginView(APIView):
-    def post(self,request,format=None):
-        serializer=UserLoginSerilizer(data=request.data)
+
+    @swagger_auto_schema(
+        operation_description="POST method for user login",
+        request_body=UserLoginSerializer,
+    )
+    def post(self, request):
+        serializer = UserLoginSerializer(data=request.data)
         if serializer.is_valid(raise_exception=True):
-            email=serializer.data.get('email')
-            password=serializer.data.get('password')
-            user=authenticate(email=email,password=password)
+            email = serializer.validated_data['email']
+            password = serializer.validated_data['password']
+            user = authenticate(email=email, password=password)
             if user is not None:
                 if user.is_active:
-                    
-                    existing_refresh_token = Token.objects.filter(user=user, token_type='refresh').first()
-                    existing_access_token = Token.objects.filter(user=user, token_type='access').first()
-                    if existing_access_token and existing_refresh_token:
-                        access_token = existing_access_token.token
-                        refresh_token = existing_refresh_token.token
-                    else:   
-                        token = get_tokens_for_user(user) 
-                        access_token = token['access']
-                        refresh_token = token['refresh']
-                        payload = jwt.decode(access_token, settings.SECRET_KEY, algorithms=["HS256"])
-                        Token.objects.create(
-                            user=user,
-                            jti=payload['jti'],
-                            token=access_token,
-                            token_type='access',
-                            expires_at=datetime.fromtimestamp(payload['exp'])
-                        )
-                        payload = jwt.decode(refresh_token, settings.SECRET_KEY, algorithms=["HS256"])
-                        # Store refresh token
-                        Token.objects.create(
-                            user=user,
-                            jti=payload['jti'],
-                            token=refresh_token,
-                            token_type='refresh',
-                            expires_at=datetime.fromtimestamp(payload['exp'])
-                        )
-                    return Response({  'access': access_token,
-                            'refresh': refresh_token, 'message': 'Login done!'}, status=status.HTTP_200_OK)
+                    tokens = Token.objects.filter(user=user, token_type__in=['access', 'refresh'], is_deleted=False)
+                    for token in tokens:
+                            token.soft_delete()
+                  
+                    # Generate new tokens
+                    token = get_tokens_for_user(user)
+                    access_token = token['access']
+                    refresh_token = token['refresh']
+
+                    # Decode and store access token
+                    access_payload = jwt.decode(access_token, settings.SECRET_KEY, algorithms=["HS256"])
+                    Token.objects.create(
+                        user=user,
+                        jti=access_payload['jti'],
+                        token=access_token,
+                        token_type='access',
+                        expires_at=datetime.fromtimestamp(access_payload['exp'])
+                    )
+
+                    # Decode and store refresh token
+                    refresh_payload = jwt.decode(refresh_token, settings.SECRET_KEY, algorithms=["HS256"])
+                    Token.objects.create(
+                        user=user,
+                        jti=refresh_payload['jti'],
+                        token=refresh_token,
+                        token_type='refresh',
+                        expires_at=datetime.fromtimestamp(refresh_payload['exp'])
+                    )
+
+                    return response(data={'access': access_token, 'refresh': refresh_token}, status_code=status.HTTP_200_OK, message='Login done!')
                 else:
-                    raise AuthenticationFailed('Email not verified. Please check your email.')
+                    raise AuthenticationFailed('Account Is Not Activated Please Activate Account')
             else:
-                raise AuthenticationFailed('Email or password is invalid.')
+                raise AuthenticationFailed('No active account found with the given credentials.')         
             
             
-            
-                
+ 
 class UserProfileView(APIView): 
-    # renderer_classes=[UserRenderer]
-    permission_classes=[IsAuthenticated]
-    def post(self,request,fromat=None):
-        serializer=UserProfileSerilizer(request.user)
-        # if serializer.is_valid():
-        return Response(serializer.data,status=status.HTTP_200_OK)
+    permission_classes=[IsAuthenticated,IsTokenValid]
     
-    
-@apply_swagger_tags(
-    tags=["Auth"],
-    method_details={
-        "post": {
-            "operation_description": "Reset Password",
-            "request_body": UserChangePasswordSerializer,
-            "operation_summary": "User resets the password",
-        },
-    }
-)        
-class UserChangePassword(APIView):
-    # renderer_classes=[UserRenderer]
-    # @swagger_auto_schema(
-    #     operation_description="Send email for forgat password",
-    #     request_body=UserChangePasswordSerializer,
-    # )
-    def post(self,request,token,fromat=None):
-        serializer=UserChangePasswordSerializer(data=request.data,context={'token':token})
+    def get(self, request):
+        select_fields = request.query_params.get('select_fields')
+        queryset = User.objects.all()
+        
+        # Apply the filter
+        filtered_queryset = apply_filters(queryset, select_fields)
+        
+        # Serialize the filtered queryset
+        serializer = UserProfileSerilizer(filtered_queryset, many=True)
+        
+        return response(
+            data=serializer.data,
+            status_code=status.HTTP_200_OK,
+            message='User profiles retrieved successfully'
+        )
+    def post(self,request):
+        select_fields = request.query_params.get('select_fields')
+        queryset = User.objects.all()
+        queryset = apply_filters(queryset,select_fields)
+        serializer=UserProfileSerilizer(request.user,data=request.data,partial=True)
         if serializer.is_valid(raise_exception=True):
-            return Response({'msg':'Password Change Successfully!'},status=status.HTTP_200_OK)
-        return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
+            return response(data=serializer.data,status_code=status.HTTP_200_OK,message='User Profile Created successfully')
+        return response(status_code=status.HTTP_400_BAD_REQUEST, data=serializer.errors)
+            
+
     
     
-    
-class ChangePassowordEmailView(APIView):
-    # renderer_classes=[UserRenderer]
-    # def get(self,request,format=None):
-    #     return render(request,'auth_api/Email.html')
+class ChangePassowordView(APIView):
+    permission_classes = [IsAuthenticated]
     @swagger_auto_schema(
         operation_description="Send email for forgot password",
-        request_body=ChangePasswordEmailSerializer,
+        request_body=ChangePasswordSerializer,
     )
     
     def post(self,request):
-        serializer = ChangePasswordEmailSerializer(data=request.data, context={"request": request})
+        serializer = ChangePasswordSerializer(data=request.data, context={"request": request})
         if serializer.is_valid(raise_exception=True):
             serializer.save()
-        return Response({'message':'successful changing of the password.'},status=status.HTTP_200_OK)
+            return response(status_code=status.HTTP_204_NO_CONTENT)
     
     
     
 class SendPasswordResetEmailView(APIView):
-    # renderer_classes=[UserRenderer]
-    # def get(self,request,format=None):
-    #     return render(request,'auth_api/Email.html')
     @swagger_auto_schema(
         operation_description="Send email for reset password",
         request_body=SendPasswordResetEmailSerializer,
     )
-    def post(self,request,format=None):
+    def post(self,request):
         
         serializer=SendPasswordResetEmailSerializer(data=request.data,context={'user':request.user})
         if serializer.is_valid(raise_exception=True):
-            return Response({'message':'Reset Password link shared on your Gmail'},status=status.HTTP_200_OK)
-        return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
+            return response(status_code=status.HTTP_204_NO_CONTENT)      
+        return response(status_code=status.HTTP_400_BAD_REQUEST, data=serializer.errors)
+
     
     
 class ResendResetTokenView(APIView):
-    # renderer_classes=[UserRenderer]
-    # def get(self,request,format=None):
-    #     return render(request,'auth_api/Email.html')
     @swagger_auto_schema(
         operation_description="Send email for reset password",
         request_body=ResendResetTokenSerializer,
     )
-    def post(self,request,format=None):
-        
+    def post(self,request):      
         serializer=ResendResetTokenSerializer(data=request.data,context={'user':request.user})
         if serializer.is_valid(raise_exception=True):
-            return Response({'message':'Resend Reset Password link shared on your Gmail'},status=status.HTTP_200_OK)
-        return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
-    
+             return response(data=serializer.data,status_code=status.HTTP_200_OK,message=' Rsend Reset Password Link on Your Account') 
+     
+        return response(status_code=status.HTTP_400_BAD_REQUEST, data=serializer.errors)
     
         
 class UserPasswordResetView(APIView):
-    #  template_name="auth_api/reset_confirmation.html"
-    #  renderer_classes=[UserRenderer]
-     @swagger_auto_schema(
+    permission_classes=[IsTokenValid]
+    @swagger_auto_schema(
         operation_description="Reset Password",
         request_body=UserPasswordResetSerializer,
     )
-     def post(self,request,token):
+    def post(self,request,token):
          serializer=UserPasswordResetSerializer(data=request.data,context={'token':token})
          if serializer.is_valid(raise_exception=True):
-            return Response({'msg':'Password Reset Successfully'},status=status.HTTP_200_OK)
-         return JsonResponse({'msg':'Password Not Reset Successfully'},status=status.HTTP_400_BAD_REQUEST)
+            return response(status_code=status.HTTP_204_NO_CONTENT)
+         return response(status_code=status.HTTP_400_BAD_REQUEST, data=serializer.errors)
+    
      
-     
-def reset_password(request, token):
-    context = {
-        'token': token,
-    }
-    return render(request,'auth_api/reset_password_form.html',context)
 
 class VerifyEmailView(APIView):
-    def get(self, request, token):
-        try:
-            payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
-            print("Payload", payload)
-            check_blacklist(payload['jti'])
-            token_object = Token.objects.get(jti=payload['jti'])
-            user = token_object.user
-            if not user.is_active:
-                user.is_active = True
-                user.save()
-                # token_object.delete()
-                return Response({'message': 'Email verified successfully'}, status=status.HTTP_200_OK)
-            else:
-                return Response({'message': 'Email already verified'}, status=status.HTTP_200_OK)
+    permission_classes = [IsTokenValid]
 
-        except jwt.ExpiredSignatureError:
-            return Response({'error': 'Verification link has expired'}, status=status.HTTP_400_BAD_REQUEST)
-        except (jwt.exceptions.DecodeError, Token.DoesNotExist, User.DoesNotExist):
-            return Response({'error': 'Invalid verification link'}, status=status.HTTP_400_BAD_REQUEST)
+    def get(self, request, token):
+        serializer = VerifyEmailSerializer(data={'token': token})
+        if serializer.is_valid():
+            response_data = serializer.save()
+            return response(status_code=status.HTTP_204_NO_CONTENT)
+        return response(status_code=status.HTTP_400_BAD_REQUEST, data=serializer.errors)
+    
+
+
+class RefreshTokenView(APIView):
+    @swagger_auto_schema(
+        operation_description="Generate a refresh token",
+        request_body=RefreshTokenSerializer,
+    )
+    def post(self, request):
+        serializer = RefreshTokenSerializer(data=request.data)
+        if serializer.is_valid(raise_exception=True):
+            data = serializer.save()
+            return response(data=data,status_code=status.HTTP_200_OK,message="Refresh token Generated")
+        return response(status_code=status.HTTP_400_BAD_REQUEST, data=serializer.errors)
+        
+class ResendVerifyTokenView(APIView):
+ 
+    @swagger_auto_schema(
+        operation_description="Send email for Activate Account",
+        request_body=ResendVerifyTokenSerializer,
+    )
+    def post(self,request):  
+        serializer=ResendVerifyTokenSerializer(data=request.data,context={'user':request.user})
+        if serializer.is_valid(raise_exception=True):
+            return response(status_code=status.HTTP_204_NO_CONTENT)
+        return response(status_code=status.HTTP_400_BAD_REQUEST, data=serializer.errors)
+        
+    
+    
+class LogoutView(APIView):
+
+    serializer_class = LogoutSerializer
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        serializer = self.serializer_class(data={}, context={"request": request})
+        if serializer.is_valid(raise_exception=True):
+            return response(status_code=status.HTTP_204_NO_CONTENT)

@@ -1,46 +1,11 @@
 from django.db import models
-from django.contrib.auth.models import AbstractBaseUser,BaseUserManager
+from django.contrib.auth.models import AbstractBaseUser
+from .managers import UserManager,NonDeleted
 from django.contrib.auth.models import User
 import uuid
 from django.core.exceptions import ValidationError
 
 # Create your models here.
-class UserManager(BaseUserManager):
-    def create_user(self, email,name,tc, password=None,password2=None):
-        """
-        Creates and saves a User with the given email, date of
-        birth and password.
-        """
-        if not email:
-            raise ValueError("Users must have an email address")
-
-        user = self.model(
-            email=self.normalize_email(email),
-            name=name,
-            tc=tc,
-            
-        )
-        user.set_password(password)
-        user.save(using=self._db)
-        return user
-
-    def create_superuser(self, email,name,tc, password=None):
-        """
-        Creates and saves a superuser with the given email, date of
-        birth and password.
-        """
-        user = self.create_user(
-            email,
-            password=password,
-            name=name,
-            tc=tc,
-        )
-        user.is_active = True
-        user.is_superuser = True
-        user.save(using=self._db)
-        return user
-
-        
 class User(AbstractBaseUser):
     email = models.EmailField(
         verbose_name="Email",
@@ -48,15 +13,15 @@ class User(AbstractBaseUser):
         unique=True,
     )
     name=models.CharField(max_length=70)
-    tc=models.BooleanField()
-    is_active = models.BooleanField(default=False)
+    is_staff = models.BooleanField(default=False)
     is_superuser = models.BooleanField(default=False)
+    is_active = models.BooleanField(default=False)
     created_at=models.DateTimeField(auto_now_add=True)
     updated_at=models.DateTimeField(auto_now=True)
     objects = UserManager()
 
     USERNAME_FIELD = "email"
-    REQUIRED_FIELDS = ['name','tc']
+    REQUIRED_FIELDS = []
     
 
     def __str__(self):
@@ -71,14 +36,9 @@ class User(AbstractBaseUser):
         "Does the user have permissions to view the app `app_label`?"
         # Simplest possible answer: Yes, always
         return True
-
-    @property
-    def is_staff(self):
-        "Is the user a member of staff?"
-        # Simplest possible answer: All admins are staff
-        return self.is_superuser
     class Meta:
             app_label = 'auth_api'
+   
     
 class Token(models.Model):
     TOKEN_TYPES = (
@@ -94,12 +54,26 @@ class Token(models.Model):
     token_type = models.CharField(max_length=15, choices=TOKEN_TYPES, default="access")
     expires_at = models.DateTimeField(blank=True, null=True)
     is_blacklisted = models.BooleanField(default=False)
-    
+    is_deleted = models.BooleanField(default=False)
     def __str__(self):
         return f"{self.user.name} - {self.token_type} - {self.jti}"
     
-
+    default = models.Manager()
+    objects = NonDeleted()
     
+    # def delete(self, *args, **kwargs):
+    #     self.is_deleted = True
+    #     self.save()
+       
+    def soft_delete(self):
+        self.is_deleted = True
+        self.save()
+
+    def restore(self):
+        self.is_deleted = False
+        self.save()
+        
+        
 class BlacklistToken(models.Model):
     TOKEN_TYPE_CHOICES = [
         ('access', 'Access'),
