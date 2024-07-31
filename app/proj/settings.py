@@ -180,13 +180,16 @@ USE_X_FORWARDED_HOST = True
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 # Django Rest Framework and JWT and CORS
+AUTH_THROTTLING_LIMIT = os.environ.get(
+    "AUTH_THROTTLING_LIMIT", env("AUTH_THROTTLING_LIMIT")
+)
 REST_FRAMEWORK = {
     "EXCEPTION_HANDLER": "utils.exception_handler.custom_exception_handler",
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "rest_framework_simplejwt.authentication.JWTAuthentication",
     ),
     "DEFAULT_THROTTLE_RATES": {
-        "auth": "20/hour",
+        "auth": AUTH_THROTTLING_LIMIT,
     },
 }
 

@@ -5,7 +5,6 @@ from django.conf import settings
 from django.contrib.auth import authenticate
 from django.http import JsonResponse
 from django.shortcuts import render
-from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status
 from rest_framework.exceptions import AuthenticationFailed
 
@@ -15,6 +14,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import UntypedToken
 from utils import custom_throttling
+from utils.swagger import apply_swagger_tags
 
 from auth_api.models import BlacklistToken, Token, User
 from auth_api.serializers import (
@@ -38,17 +38,22 @@ def blacklist_token(token):
     BlacklistToken.objects.create(jti=jti, token_type=token_type)
 
 
+# @apply_swagger_tags(tags=["Auth"])
+@apply_swagger_tags(
+    tags=["Auth"],
+    method_details={
+        "post": {
+            "operation_description": "User registration",
+            "request_body": UserRegistrationSerilizer,
+            "operation_summary": "POST method for user registration",
+        },
+    },
+)
 class UserRegistrationView(APIView):
     throttle_classes = [custom_throttling.CustomAuthThrottle]
-    # renderer_classes= [UserRenderer]
 
     # def get(self, request, format=None):
     #     return render(request, 'auth_api/registration.html')
-
-    @swagger_auto_schema(
-        operation_description="POST method for user registration",
-        request_body=UserRegistrationSerilizer,
-    )
     def post(self, request, format=None):
         serializer = UserRegistrationSerilizer(data=request.data)
         if serializer.is_valid(raise_exception=True):
@@ -61,16 +66,20 @@ class UserRegistrationView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+# @apply_swagger_tags(tags=["Auth"])
+@apply_swagger_tags(
+    tags=["Auth"],
+    method_details={
+        "post": {
+            "operation_description": "Login API",
+            "request_body": UserLoginSerilizer,
+            "operation_summary": "Dynamic POST method for user login",
+        },
+    },
+)
 class UserLoginView(APIView):
     throttle_classes = [custom_throttling.CustomAuthThrottle]
 
-    # renderer_classes= [UserRenderer]
-    # def get(self, request, format=None):
-    #     return render(request, 'auth_api/login.html')
-    @swagger_auto_schema(
-        operation_description="POST method for user login",
-        request_body=UserLoginSerilizer,
-    )
     def post(self, request, format=None):
         serializer = UserLoginSerilizer(data=request.data)
         if serializer.is_valid(raise_exception=True):
@@ -129,10 +138,25 @@ class UserLoginView(APIView):
                 raise AuthenticationFailed("Email or password is invalid.")
 
 
+@apply_swagger_tags(
+    tags=["User-Profile"],
+    method_details={
+        "post": {
+            "operation_description": "User Profile",
+            "request_body": UserProfileSerilizer,
+            "operation_summary": "POST method for user view profile",
+        },
+    },
+)
 class UserProfileView(APIView):
     # renderer_classes=[UserRenderer]
     throttle_classes = [custom_throttling.CustomAuthThrottle]
     permission_classes = [IsAuthenticated]
+
+    def initial(self, request, *args, **kwargs):
+        self.check_throttles(request)
+        self.check_permissions(request)
+        super().initial(request, *args, **kwargs)
 
     def post(self, request, fromat=None):
         serializer = UserProfileSerilizer(request.user)
@@ -140,14 +164,21 @@ class UserProfileView(APIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
+@apply_swagger_tags(
+    tags=["Auth"],
+    method_details={
+        "post": {
+            "operation_description": "Reset Password",
+            "request_body": UserChangePasswordSerializer,
+        },
+    },
+)
 class UserChangePassword(APIView):
     # renderer_classes=[UserRenderer]
-    throttle_classes = [custom_throttling.CustomAuthThrottle]
-
-    @swagger_auto_schema(
-        operation_description="Send email for forgat password",
-        request_body=UserChangePasswordSerializer,
-    )
+    # @swagger_auto_schema(
+    #     operation_description="Send email for forgat password",
+    #     request_body=UserChangePasswordSerializer,
+    # )
     def post(self, request, token, fromat=None):
         serializer = UserChangePasswordSerializer(
             data=request.data, context={"token": token}
@@ -159,16 +190,25 @@ class UserChangePassword(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+@apply_swagger_tags(
+    tags=["change-password"],
+    method_details={
+        "post": {
+            "operation_description": "Change Password",
+            "request_body": ChangePasswordEmailSerializer,
+        },
+    },
+)
 class ChangePassowordEmailView(APIView):
     throttle_classes = [custom_throttling.CustomAuthThrottle]
     # renderer_classes=[UserRenderer]
     # def get(self,request,format=None):
     #     return render(request,'auth_api/Email.html')
 
-    @swagger_auto_schema(
-        operation_description="Send email for forgot password",
-        request_body=ChangePasswordEmailSerializer,
-    )
+    # @swagger_auto_schema(
+    #     operation_description="Send email for forgot password",
+    #     request_body=ChangePasswordEmailSerializer,
+    # )
     def post(self, request):
         serializer = ChangePasswordEmailSerializer(
             data=request.data, context={"request": request}
@@ -181,16 +221,25 @@ class ChangePassowordEmailView(APIView):
         )
 
 
+@apply_swagger_tags(
+    tags=["forgot-password"],
+    method_details={
+        "post": {
+            "operation_description": "Forgot Password",
+            "request_body": SendPasswordResetEmailSerializer,
+        },
+    },
+)
 class SendPasswordResetEmailView(APIView):
     throttle_classes = [custom_throttling.CustomAuthThrottle]
     # renderer_classes=[UserRenderer]
     # def get(self,request,format=None):
     #     return render(request,'auth_api/Email.html')
 
-    @swagger_auto_schema(
-        operation_description="Send email for reset password",
-        request_body=SendPasswordResetEmailSerializer,
-    )
+    # @swagger_auto_schema(
+    #     operation_description="Send email for reset password",
+    #     request_body=SendPasswordResetEmailSerializer,
+    # )
     def post(self, request, format=None):
         serializer = SendPasswordResetEmailSerializer(
             data=request.data, context={"user": request.user}
@@ -203,16 +252,25 @@ class SendPasswordResetEmailView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+@apply_swagger_tags(
+    tags=["resend-user-reset-token"],
+    method_details={
+        "post": {
+            "operation_description": "Resend email for reset password",
+            "request_body": ResendResetTokenSerializer,
+        },
+    },
+)
 class ResendResetTokenView(APIView):
     throttle_classes = [custom_throttling.CustomAuthThrottle]
     # renderer_classes=[UserRenderer]
     # def get(self,request,format=None):
     #     return render(request,'auth_api/Email.html')
 
-    @swagger_auto_schema(
-        operation_description="Send email for reset password",
-        request_body=ResendResetTokenSerializer,
-    )
+    # @swagger_auto_schema(
+    #     operation_description="Send email for reset password",
+    #     request_body=ResendResetTokenSerializer,
+    # )
     def post(self, request, format=None):
         serializer = ResendResetTokenSerializer(
             data=request.data, context={"user": request.user}
@@ -225,15 +283,24 @@ class ResendResetTokenView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+@apply_swagger_tags(
+    tags=["Password-Reset"],
+    method_details={
+        "post": {
+            "operation_description": "Password Reset",
+            "request_body": UserPasswordResetSerializer,
+        },
+    },
+)
 class UserPasswordResetView(APIView):
     throttle_classes = [custom_throttling.CustomAuthThrottle]
     #  template_name="auth_api/reset_confirmation.html"
     #  renderer_classes=[UserRenderer]
 
-    @swagger_auto_schema(
-        operation_description="Reset Password",
-        request_body=UserPasswordResetSerializer,
-    )
+    # @swagger_auto_schema(
+    #     operation_description="Reset Password",
+    #     request_body=UserPasswordResetSerializer,
+    # )
     def post(self, request, token):
         serializer = UserPasswordResetSerializer(
             data=request.data, context={"token": token}
@@ -255,6 +322,14 @@ def reset_password(request, token):
     return render(request, "auth_api/reset_password_form.html", context)
 
 
+@apply_swagger_tags(
+    tags=["verify-email"],
+    method_details={
+        "get": {
+            "operation_description": "Verify email token",
+        },
+    },
+)
 class VerifyEmailView(APIView):
     throttle_classes = [custom_throttling.CustomAuthThrottle]
 
