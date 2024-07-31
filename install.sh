@@ -1,15 +1,16 @@
-!/usr/bin/env bash
+#!/usr/bin/env bash
 
 # Function to check if a package is installed using dpkg
 function is_package_installed() {
     dpkg -l "$1" &> /dev/null
 }
+
 # Function to check if a command (tool) is available in the system's PATH
 function is_command_available() {
     command -v "$1" &> /dev/null
 }
 
-#clear the screen
+# Clear the screen
 clear
 echo " ____  _                         "
 echo "|  _ \\(_) __ _ _ __   __ _  ___  "
@@ -24,17 +25,30 @@ echo "| |_) | (_) | | |  __/ |  | |_) | | (_| | ||  __/"
 echo "|____/ \\___/|_|_|\\___|_|  | .__/|_|\\__,_|\\__\\___|"
 echo "                          |_|                    "
 
+# Ask user if they want to create the .env file
+read -p "Do you want to create a new .env file from .env_example? (y/n): " create_env
 
-
-# Create the file and write the dynamic content into it using a here document
-example_env_path="app/.env_example"
-env_path="app/.env"
+if [ "$create_env" == "y" ]; then
+    # Create the file and write the dynamic content into it using a here document
+    example_env_path="app/.env_example"
+    env_path="app/.env"
+    
+    if [ -f "$example_env_path" ]; then
+cat "$example_env_path" > "$env_path"
 cat "$example_env_path" > "$env_path"
 
-echo "File '$env_path' created with the following content:"
-echo "----------------------------------------------------"
-cat "$env_path"
-printf "\n----------------------------------------------------\n\n\n"
+        cat "$example_env_path" > "$env_path"
+
+        echo "File '$env_path' created with the following content:"
+        echo "----------------------------------------------------"
+        cat "$env_path"
+        echo "----------------------------------------------------"
+    else
+        echo "Example environment file '$example_env_path' does not exist. Skipping creation of '$env_path'."
+    fi
+else
+    echo "Skipping .env file creation."
+fi
 
 echo "Downloading package information from all configured sources"
 echo "----------------------------------------------------"
@@ -42,12 +56,11 @@ sudo apt-get update -y || ( echo "Failed to update package information" && exit 
 echo "----------------------------------------------------"
 printf "Package information Downloaded 😎 \n\n\n"
 
-echo "Set executable permiossion to the rest generator"
+echo "Set executable permission to the rest generator"
 echo "----------------------------------------------------"
 sudo chmod +x app/rest_generator.sh
 echo "----------------------------------------------------"
 printf "Executable permission set to rest generator 😎 \n\n\n"
-
 
 echo "Installing JQ"
 echo "----------------------------------------------------"
@@ -62,74 +75,82 @@ printf "JQ Installed 😎 \n\n\n"
 echo "Installing Postgres Database"
 echo "----------------------------------------------------"
 
-# Install PostgreSQL
-echo "Installing PostgreSQL..."
-echo "----------------------------------------------------"
-if is_package_installed postgresql; then
-    echo "PostgreSQL is already installed. Skipping installation."
-else
-    sudo apt-get install -y postgresql postgresql-contrib || ( echo "Failed to install PostgreSQL" && exit 1 )
-fi
-echo "----------------------------------------------------"
-printf "Postgres Installed 😎 \n\n\n"
+# Ask user if they want to create a new PostgreSQL user and database
+read -p "Do you want to create a new PostgreSQL user and database? (y/n): " create_db
 
-echo "Creating a new PostgreSQL user and database"
-echo "----------------------------------------------------"
-# Get username, password, and database name
-read -p "Enter the new user name: " new_user
-echo "New User: $new_user"
-read -s -p "Enter the password for the new user: " new_password
-echo -e " "
-read -p "Enter the database name: " new_db
-echo -e "New Database: $new_db"
-
-
-# Create user with password
-echo "Creating a new PostgreSQL user..."
-sudo -i -u postgres psql -c "CREATE USER $new_user WITH PASSWORD '$new_password';"
-
-# Create new database and assign privileges
-echo "Creating a new database and assigning privileges to the new user..."
-sudo -i -u postgres psql -c "CREATE DATABASE $new_db;"
-sudo -i -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE $new_db TO $new_user;"
-
-# Altering the schema owner
-echo "Altering the schema owner..."
-sudo -i -u postgres psql -d "$new_db" -c "ALTER SCHEMA public OWNER TO $new_user;"
-
-# Find the PostgreSQL version dynamically
-postgres_version=$(ls /etc/postgresql/ | grep -E '^[0-9]+$' | tail -n 1)
-# Configuring PostgreSQL for remote access
-if [ -n "$postgres_version" ]; then
-    postgres_conf="/etc/postgresql/$postgres_version/main/postgresql.conf"
-    pg_hba_conf="/etc/postgresql/$postgres_version/main/pg_hba.conf"
-
-    # Check and set listen_addresses if not already set
-    if ! sudo grep -q "^listen_addresses = '*'" "$postgres_conf"; then
-        echo "Setting listen_addresses..."
-        echo "listen_addresses = '*'" | sudo tee -a "$postgres_conf"
+if [ "$create_db" == "y" ]; then
+    # Install PostgreSQL
+    echo "Installing PostgreSQL..."
+    echo "----------------------------------------------------"
+    if is_package_installed postgresql; then
+        echo "PostgreSQL is already installed. Skipping installation."
     else
-        echo "listen_addresses is already set to '*'"
+        sudo apt-get install -y postgresql postgresql-contrib || ( echo "Failed to install PostgreSQL" && exit 1 )
+    fi
+    echo "----------------------------------------------------"
+    printf "Postgres Installed 😎 \n\n\n"
+
+    echo "Creating a new PostgreSQL user and database"
+    echo "----------------------------------------------------"
+    
+    # Get username, password, and database name
+    read -p "Enter the new user name: " new_user
+    echo "New User: $new_user"
+    read -s -p "Enter the password for the new user: " new_password
+    echo -e " "
+    read -p "Enter the database name: " new_db
+    echo -e "New Database: $new_db"
+
+    # Create user with password
+    echo "Creating a new PostgreSQL user..."
+    sudo -i -u postgres psql -c "CREATE USER $new_user WITH PASSWORD '$new_password';"
+
+    # Create new database and assign privileges
+    echo "Creating a new database and assigning privileges to the new user..."
+    sudo -i -u postgres psql -c "CREATE DATABASE $new_db;"
+    sudo -i -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE $new_db TO $new_user;"
+
+    # Altering the schema owner
+    echo "Altering the schema owner..."
+    sudo -i -u postgres psql -d "$new_db" -c "ALTER SCHEMA public OWNER TO $new_user;"
+
+    # Find the PostgreSQL version dynamically
+    postgres_version=$(ls /etc/postgresql/ | grep -E '^[0-9]+$' | tail -n 1)
+    
+    # Configuring PostgreSQL for remote access
+    if [ -n "$postgres_version" ]; then
+        postgres_conf="/etc/postgresql/$postgres_version/main/postgresql.conf"
+        pg_hba_conf="/etc/postgresql/$postgres_version/main/pg_hba.conf"
+
+        # Check and set listen_addresses if not already set
+        if ! sudo grep -q "^listen_addresses = '*'" "$postgres_conf"; then
+            echo "Setting listen_addresses..."
+            echo "listen_addresses = '*'" | sudo tee -a "$postgres_conf"
+        else
+            echo "listen_addresses is already set to '*'"
+        fi
+
+        # Check and set host access if not already set
+        if ! sudo grep -q "^host all all 0.0.0.0/0 md5" "$pg_hba_conf"; then
+            echo "Setting host access..."
+            echo "host all all 0.0.0.0/0 md5" | sudo tee -a "$pg_hba_conf"
+        else
+            echo "host access is already set"
+        fi
+
+        # Restarting PostgreSQL to apply changes
+        echo "Restarting PostgreSQL..."
+        sudo service postgresql restart
+        echo "Remote access granted for new database ..."
+    else
+        echo "Error: Unable to determine PostgreSQL version."
     fi
 
-    # Check and set host access if not already set
-    if ! sudo grep -q "^host all all 0.0.0.0/0 md5" "$pg_hba_conf"; then
-        echo "Setting host access..."
-        echo "host all all 0.0.0.0/0 md5" | sudo tee -a "$pg_hba_conf"
-    else
-        echo "host access is already set"
-    fi
-
-    # Restarting PostgreSQL to apply changes
-    echo "Restarting PostgreSQL..."
-    sudo service postgresql restart
-    echo "Remote access granted for new database ..."
+    echo "----------------------------------------------------"
+    printf "Postgres User and Database Created 😎 \n\n\n"
 else
-    echo "Error: Unable to determine PostgreSQL version."
+    echo "Skipping PostgreSQL user and database creation."
 fi
-
-echo "----------------------------------------------------"
-printf "Postgres User and Database Created 😎 \n\n\n"
 
 echo "Checking Python 3.11"
 echo "----------------------------------------------------"
@@ -178,14 +199,23 @@ pip install -r app/requirements.txt || ( echo "Failed to install python level de
 echo "----------------------------------------------------"
 printf "python level dependencies Installed 😎 \n\n\n"
 
-echo "Deactivating virtual Enviroment"
+echo "Install pre-commit hooks"
+echo "----------------------------------------------------"
+pre-commit install 
+pre-commit install --hook-type commit-msg
+echo "----------------------------------------------------"
+printf "Pre-commit hooks installed 😎 \n\n\n"
+
+echo "Deactivating virtual Environment"
 echo "----------------------------------------------------"
 deactivate
 echo "----------------------------------------------------"
-printf "Virtual Enviroment Deactivated 😎 \n\n\n"
+printf "Virtual Environment Deactivated 😎 \n\n\n"
 
 printf "░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░\n"
-printf "░░░░░░  Now U have to provide the exact value in $env_path And run the below files. ░░░░░░\n"
+if [ "$create_env" == "y" ]; then
+    printf "░░░░░░  Now U have to provide the exact value in $env_path And run the below files. ░░░░░░\n"
+fi
 printf "░░░░░░  apply_migrations.sh - Applying the migrations                                   ░░░░░░\n"
 printf "░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░\n"
 
