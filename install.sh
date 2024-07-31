@@ -178,6 +178,13 @@ pip install -r app/requirements.txt || ( echo "Failed to install python level de
 echo "----------------------------------------------------"
 printf "python level dependencies Installed 😎 \n\n\n"
 
+echo "Install pre-commit hooks"
+echo "----------------------------------------------------"
+pre-commit install 
+pre-commit install --hook-type commit-msg
+echo "----------------------------------------------------"
+printf "Pre-commit hooks installed 😎 \n\n\n"
+
 echo "Deactivating virtual Enviroment"
 echo "----------------------------------------------------"
 deactivate
