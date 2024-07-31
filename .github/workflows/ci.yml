@@ -43,17 +43,11 @@ jobs:
 
     - name: Set up database
       env:
-        SQL_ENGINE: django.db.backends.postgresql
-        SQL_DATABASE: test_db
-        SQL_USER: test_user
-        SQL_PASSWORD: test_password
-        SQL_DATABASE_HOST: localhost
-        SQL_DATABASE_PORT: 5432
         PGPASSWORD: test_password
       run: |
         sudo apt-get update
         sudo apt-get install postgresql-client -y
-        psql -h localhost -U test_user -c "CREATE DATABASE test_db;"
+        psql -h localhost -U test_user -d postgres -c "CREATE DATABASE test_db;"
 
     - name: Apply migrations
       env:
