@@ -12,3 +12,4 @@ commitizen
 ruff
 pre-commit
 commitlint
+pillow
