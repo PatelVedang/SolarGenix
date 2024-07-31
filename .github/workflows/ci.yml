@@ -58,6 +58,7 @@ jobs:
         SQL_PASSWORD: test_password
         SQL_DATABASE_HOST: localhost
         SQL_DATABASE_PORT: 5432
+        SECRET_KEY: "your-secret-key-here"
       run: |
         cd app
         python manage.py migrate
@@ -70,6 +71,7 @@ jobs:
         SQL_PASSWORD: test_password
         SQL_DATABASE_HOST: localhost
         SQL_DATABASE_PORT: 5432
+        SECRET_KEY: "your-secret-key-here"
       run: |
         cd app
         python manage.py test -v 2
