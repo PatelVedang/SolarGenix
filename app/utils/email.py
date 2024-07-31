@@ -3,24 +3,28 @@ from django.core.mail import EmailMessage
 from django.template.loader import render_to_string
 from django.utils.html import strip_tags
 import traceback
+from utils.constant import EmailTemplates
 import logging
 logger = logging.getLogger('django')
 
 def send_email(**kwargs):
     subject=kwargs.get('subject', '')
-    body=kwargs.get('body', '')
+    # body=kwargs.get('body', '')
     sender=kwargs.get('sender')
     recipients=kwargs.get('recipients', [])
     bcc=kwargs.get('bcc', [])
     attachments=kwargs.get('attachments', [])
     html_template=kwargs.get('html_template', '')
     html_string=kwargs.get('html_string', '')
+    button_links=kwargs.get('button_links', [])
+    title=kwargs.get('title', '')
     print(recipients,"=>>>>>>>Recepients")
     
     logger.info(f"***************** SEND MAIL  *****************")
     logger.info(f"Recipients: {recipients}")
     try:
-        email = EmailMessage(subject, strip_tags(body), sender, recipients, bcc=bcc)
+        email = EmailMessage(subject, None, sender, recipients, bcc=bcc)
+        print("email",email)
          # Attachments
         if attachments:
             for attachment in attachments:
@@ -29,7 +33,15 @@ def send_email(**kwargs):
 
         # # HTML content in the body
         if html_template:
-            html_message = render_to_string(html_template, kwargs)
+            template = EmailTemplates(html_template,**kwargs)
+            content = template.result
+
+            # Prepare the final email content
+            context = {
+                'content': content,
+                'title': title
+            }
+            html_message = render_to_string("email-template.html", context)
             email.content_subtype = "html"
             email.body = html_message
         
@@ -37,12 +49,8 @@ def send_email(**kwargs):
             html_message = html_string
             email.content_subtype = "html"
             email.body = html_message
-
         # Send the email
         email.send()
-        
-        # logger.info(f"response {email}")
-        # logger.info(f"Please check your inbox.")
         print(f"response {email}")
         print(f"Please check your inbox.")
     except Exception as e:
