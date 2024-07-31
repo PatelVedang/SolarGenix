@@ -9,6 +9,7 @@ https://docs.djangoproject.com/en/4.1/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.1/ref/settings/
 """
+
 import os
 from datetime import timedelta
 from pathlib import Path
@@ -20,19 +21,25 @@ env = environ.Env()
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
+environ.Env.read_env(os.path.join(BASE_DIR, ".env"))
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ.get('SECRET_KEY', env('SECRET_KEY'))
+SECRET_KEY = os.environ.get(
+    "SECRET_KEY", env("SECRET_KEY", "8936d6507db94f63ac6a008dd48f490d")
+)
 
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = bool(int(os.environ.get('DEBUG', env('DEBUG'))))
-UNIT_TEST_USER_EMAIL = os.environ.get('UNIT_TEST_USER_EMAIL', env('UNIT_TEST_USER_EMAIL'))
-UNIT_TEST_USER_PASSWORD = os.environ.get('UNIT_TEST_USER_PASSWORD', env('UNIT_TEST_USER_PASSWORD'))
+DEBUG = bool(int(os.environ.get("DEBUG", env("DEBUG", "0"))))
+UNIT_TEST_USER_EMAIL = os.environ.get(
+    "UNIT_TEST_USER_EMAIL", env("UNIT_TEST_USER_EMAIL", "example@yopmail.com")
+)
+UNIT_TEST_USER_PASSWORD = os.environ.get(
+    "UNIT_TEST_USER_PASSWORD", env("UNIT_TEST_USER_PASSWORD", "test@123")
+)
 
 ALLOWED_HOSTS = ["*"]
 
@@ -40,63 +47,68 @@ ALLOWED_HOSTS = ["*"]
 # Application definition
 
 INSTALLED_APPS = [
-    'django.contrib.admin',
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
-    'django.contrib.sessions',
-    'django.contrib.messages',
-    'django.contrib.staticfiles',
-
-    'rest_framework',
-    'drf_yasg',
-    'django_filters',
-    'auth_api',
-    'corsheaders',
-    ]
-
-MIDDLEWARE = [
-    'django.middleware.security.SecurityMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
-    'corsheaders.middleware.CorsMiddleware',
-    'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
-    'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'auth_api.middleware.CheckBlacklistMiddleware',
+    "django.contrib.admin",
+    "django.contrib.auth",
+    "django.contrib.contenttypes",
+    "django.contrib.sessions",
+    "django.contrib.messages",
+    "django.contrib.staticfiles",
+    "rest_framework",
+    "drf_yasg",
+    "django_filters",
+    "auth_api",
+    "corsheaders",
 ]
 
-ROOT_URLCONF = 'proj.urls'
+MIDDLEWARE = [
+    "django.middleware.security.SecurityMiddleware",
+    "django.contrib.sessions.middleware.SessionMiddleware",
+    "corsheaders.middleware.CorsMiddleware",
+    "django.middleware.common.CommonMiddleware",
+    "django.middleware.csrf.CsrfViewMiddleware",
+    "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "django.contrib.messages.middleware.MessageMiddleware",
+    "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "auth_api.middleware.CheckBlacklistMiddleware",
+]
+
+ROOT_URLCONF = "proj.urls"
 
 TEMPLATES = [
     {
-        'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
-        'APP_DIRS': True,
-        'OPTIONS': {
-            'context_processors': [
-                'django.template.context_processors.debug',
-                'django.template.context_processors.request',
-                'django.contrib.auth.context_processors.auth',
-                'django.contrib.messages.context_processors.messages',
+        "BACKEND": "django.template.backends.django.DjangoTemplates",
+        "DIRS": [],
+        "APP_DIRS": True,
+        "OPTIONS": {
+            "context_processors": [
+                "django.template.context_processors.debug",
+                "django.template.context_processors.request",
+                "django.contrib.auth.context_processors.auth",
+                "django.contrib.messages.context_processors.messages",
             ],
         },
     },
 ]
 
-WSGI_APPLICATION = 'proj.wsgi.application'
-ASGI_APPLICATION = 'proj.asgi.application'
+WSGI_APPLICATION = "proj.wsgi.application"
+ASGI_APPLICATION = "proj.asgi.application"
 
 
 DATABASES = {
     "default": {
-        'ENGINE': os.environ.get('SQL_ENGINE', env('SQL_ENGINE')),
-        'NAME': os.environ.get('SQL_DATABASE', env('SQL_DATABASE')),
-        'USER': os.environ.get('SQL_USER', env('SQL_USER')),
-        'PASSWORD': os.environ.get('SQL_PASSWORD', env('SQL_PASSWORD')),
-        'HOST': os.environ.get('SQL_DATABASE_HOST', env('SQL_DATABASE_HOST')),
-        'PORT': os.environ.get('SQL_DATABASE_PORT', env('SQL_DATABASE_PORT')),
-        'CONN_MAX_AGE': 60,
+        "ENGINE": os.environ.get(
+            "SQL_ENGINE", env("SQL_ENGINE", "django.db.backends.postgresql")
+        ),
+        "NAME": os.environ.get("SQL_DATABASE", env("SQL_DATABASE", "postgres")),
+        "USER": os.environ.get("SQL_USER", env("SQL_USER", "postgres")),
+        "PASSWORD": os.environ.get("SQL_PASSWORD", env("SQL_PASSWORD", "postgres")),
+        "HOST": os.environ.get(
+            "SQL_DATABASE_HOST", env("SQL_DATABASE_HOST", "localhost")
+        ),
+        "PORT": int(
+            os.environ.get("SQL_DATABASE_PORT", env("SQL_DATABASE_PORT", "5432"))
+        ),
+        "CONN_MAX_AGE": 60,
         # 'OPTIONS': {
         #     # "init_command": f"SET GLOBAL max_connections = 100000",
         #     'MAX_AGE': 600
@@ -110,16 +122,16 @@ DATABASES = {
 
 AUTH_PASSWORD_VALIDATORS = [
     {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
+        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
+        "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
+        "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
     },
 ]
 
@@ -127,9 +139,9 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/4.1/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = "en-us"
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = "UTC"
 
 USE_I18N = True
 
@@ -139,13 +151,13 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.1/howto/static-files/
 
-STATIC_URL = 'static/'
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+STATIC_URL = "static/"
+STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.1/ref/settings/#default-auto-field
 
-DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 # django_celery/settings.py
 
 # remove the traling slash
@@ -153,111 +165,122 @@ APPEND_SLASH = False
 
 # DRF yasg
 SWAGGER_SETTINGS = {
-   'USE_SESSION_AUTH': False,
-   'SECURITY_DEFINITIONS': {
-        'Bearer': {
-            'type': 'apiKey',
-            'scheme': 'bearer',
-            'in': 'header',
-            'name': 'Authorization',
+    "USE_SESSION_AUTH": False,
+    "SECURITY_DEFINITIONS": {
+        "Bearer": {
+            "type": "apiKey",
+            "scheme": "bearer",
+            "in": "header",
+            "name": "Authorization",
         }
     },
 }
 
-CSRF_TRUSTED_ORIGINS=os.environ.get('CSRF_TRUSTED_ORIGINS', env('CSRF_TRUSTED_ORIGINS')).split()
-CORS_ORIGIN_WHITELIST=os.environ.get('CORS_ORIGIN_WHITELIST', env('CORS_ORIGIN_WHITELIST')).split()
+CSRF_TRUSTED_ORIGINS = os.environ.get(
+    "CSRF_TRUSTED_ORIGINS", env("CSRF_TRUSTED_ORIGINS", "")
+).split()
+CORS_ORIGIN_WHITELIST = os.environ.get(
+    "CORS_ORIGIN_WHITELIST", env("CORS_ORIGIN_WHITELIST", "")
+).split()
 
 # By pass http to https
 USE_X_FORWARDED_HOST = True
-SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 # Django Rest Framework and JWT and CORS
 REST_FRAMEWORK = {
     "EXCEPTION_HANDLER": "utils.exception_handler.custom_exception_handler",
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "rest_framework_simplejwt.authentication.JWTAuthentication",
-    )
+    ),
 }
 
 # SIMPLE_JWT
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(days=1),
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=30),
-    'ALGORITHM': 'HS256',
-    'SIGNING_KEY': os.environ.get('SECRET_KEY', env('SECRET_KEY'))
+    "ACCESS_TOKEN_LIFETIME": timedelta(days=1),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=30),
+    "ALGORITHM": "HS256",
+    "SIGNING_KEY": os.environ.get(
+        "SECRET_KEY", env("SECRET_KEY", "8936d6507db94f63ac6a008dd48f490d")
+    ),
 }
 
 AUTH_USER_MODEL = "auth_api.User"
 
 # Base url to serve media files
-MEDIA_URL = '/media/'
+MEDIA_URL = "/media/"
 
 # Path where media is stored
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media/')
+MEDIA_ROOT = os.path.join(BASE_DIR, "media/")
 
 
-#EMAIL
-EMAIL_HOST=os.environ.get('EMAIL_HOST', env('EMAIL_HOST'))
-EMAIL_PORT=int(os.environ.get('EMAIL_PORT', env('EMAIL_PORT')))
-EMAIL_USE_TLS=bool(int(os.environ.get('EMAIL_USE_TLS', env('EMAIL_USE_TLS'))))
-EMAIL_USE_SSL=bool(int(os.environ.get('EMAIL_USE_SSL', env('EMAIL_USE_SSL'))))
-EMAIL_BACKEND=os.environ.get('EMAIL_BACKEND', env('EMAIL_BACKEND'))
-EMAIL_HOST_USER=os.environ.get('EMAIL_HOST_USER', env('EMAIL_HOST_USER')) # Your Gmail email address
-EMAIL_HOST_PASSWORD=os.environ.get('EMAIL_HOST_PASSWORD', env('EMAIL_HOST_PASSWORD'))
+# EMAIL
+EMAIL_HOST = os.environ.get("EMAIL_HOST", env("EMAIL_HOST", "smtp.gmail.com"))
+EMAIL_PORT = int(os.environ.get("EMAIL_PORT", env("EMAIL_PORT", "465")))
+EMAIL_USE_TLS = bool(int(os.environ.get("EMAIL_USE_TLS", env("EMAIL_USE_TLS", "0"))))
+EMAIL_USE_SSL = bool(int(os.environ.get("EMAIL_USE_SSL", env("EMAIL_USE_SSL", "1"))))
+EMAIL_BACKEND = os.environ.get(
+    "EMAIL_BACKEND", env("EMAIL_BACKEND", "django_smtp_ssl.SSLEmailBackend")
+)
+EMAIL_HOST_USER = os.environ.get(
+    "EMAIL_HOST_USER", env("EMAIL_HOST_USER", "example@yopmail.com")
+)  # Your Gmail email address
+EMAIL_HOST_PASSWORD = os.environ.get(
+    "EMAIL_HOST_PASSWORD", env("EMAIL_HOST_PASSWORD", "Test@123")
+)  # Your Gmail password
 
-#PASSWORD validation
-PASSWORD_VALIDATE_STRING =  "A minimum 8 characters and maximum 30 character password contains a combination of uppercase and lowercase letter, special symbol and number are required."
-PASSWORD_VALIDATE_REGEX = "^(?=\S*[a-z])(?=\S*[A-Z])(?=\S*\d)(?=\S*[^\w\s])\S{8,30}$"
+# PASSWORD validation
+PASSWORD_VALIDATE_STRING = "A minimum 8 characters and maximum 30 character password contains a combination of uppercase and lowercase letter, special symbol and number are required."
+PASSWORD_VALIDATE_REGEX = r"^(?=\S*[a-z])(?=\S*[A-Z])(?=\S*\d)(?=\S*[^\w\s])\S{8,30}$"
 
 # Create Logs folder
-if not os.path.exists(f'{BASE_DIR}/logs/'):
-    os.mkdir(f'{BASE_DIR}/logs/')
+if not os.path.exists(f"{BASE_DIR}/logs/"):
+    os.mkdir(f"{BASE_DIR}/logs/")
 
 # Create log file is not exist
-if not os.path.exists(f'{BASE_DIR}/logs/info.log'):
-    f = open(f'{BASE_DIR}/logs/info.log', 'w')
+if not os.path.exists(f"{BASE_DIR}/logs/info.log"):
+    f = open(f"{BASE_DIR}/logs/info.log", "w")
     f.close()
 
-if not os.path.exists(f'{BASE_DIR}/logs/error.log'):
-    f = open(f'{BASE_DIR}/logs/error.log', 'w')
+if not os.path.exists(f"{BASE_DIR}/logs/error.log"):
+    f = open(f"{BASE_DIR}/logs/error.log", "w")
     f.close()
 
 # Logging
 LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': False if DEBUG else True,
-    'handlers':{
-        'info':{
-            'level':'INFO',
-            'class': 'logging.handlers.RotatingFileHandler',
-            'filename': f'{BASE_DIR}/logs/info.log',
-            'maxBytes': 30 * 1024 * 1024, # 30M Log Size
-            'backupCount': 10,
-            'formatter':'info',
+    "version": 1,
+    "disable_existing_loggers": False if DEBUG else True,
+    "handlers": {
+        "info": {
+            "level": "INFO",
+            "class": "logging.handlers.RotatingFileHandler",
+            "filename": f"{BASE_DIR}/logs/info.log",
+            "maxBytes": 30 * 1024 * 1024,  # 30M Log Size
+            "backupCount": 10,
+            "formatter": "info",
         },
-        'error':{
-            'level':'ERROR',
-            'class': 'logging.handlers.RotatingFileHandler',
-            'filename': f'{BASE_DIR}/logs/error.log',
-            'maxBytes': 30 * 1024 * 1024, # 30M Log Size
-            'backupCount':5,
-            'formatter':'error',
+        "error": {
+            "level": "ERROR",
+            "class": "logging.handlers.RotatingFileHandler",
+            "filename": f"{BASE_DIR}/logs/error.log",
+            "maxBytes": 30 * 1024 * 1024,  # 30M Log Size
+            "backupCount": 5,
+            "formatter": "error",
         },
     },
-    'loggers':{
-        'django':{
-            'handlers':['info', 'error'],
-            'level':'INFO',
-            'propagate': True,
+    "loggers": {
+        "django": {
+            "handlers": ["info", "error"],
+            "level": "INFO",
+            "propagate": True,
         },
-
     },
-    'formatters':{
-        'info':{
-            'format': '%(levelname)s %(asctime)s %(module)s %(lineno)s %(message)s',
+    "formatters": {
+        "info": {
+            "format": "%(levelname)s %(asctime)s %(module)s %(lineno)s %(message)s",
         },
-        'error':{
-            'format': '%(asctime)s [%(module)s | %(levelname)s] %(message)s @ %(pathname)s : %(lineno)d : %(funcName)s',
-        }
-    }
+        "error": {
+            "format": "%(asctime)s [%(module)s | %(levelname)s] %(message)s @ %(pathname)s : %(lineno)d : %(funcName)s",
+        },
+    },
 }
