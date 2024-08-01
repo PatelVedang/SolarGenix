@@ -14,12 +14,7 @@ import os
 from datetime import timedelta
 from pathlib import Path
 
-import environ
-from datetime import timedelta
-import json
 from utils.config import load_settings
-
-
 
 settings = load_settings()
 # env = environ.Env()
@@ -33,17 +28,13 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/4.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ.get("SECRET_KEY", os.getenv("SECRET_KEY", "8936d6507"))
+SECRET_KEY = settings.SECRET_KEY
 
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = bool(int(os.environ.get("DEBUG", os.getenv("DEBUG", "0"))))
-UNIT_TEST_USER_EMAIL = os.environ.get(
-    "UNIT_TEST_USER_EMAIL", os.getenv("UNIT_TEST_USER_EMAIL", "example@yopmail.com")
-)
-UNIT_TEST_USER_PASSWORD = os.environ.get(
-    "UNIT_TEST_USER_PASSWORD", os.getenv("UNIT_TEST_USER_PASSWORD", "test@123")
-)
+DEBUG = settings.DEBUG
+UNIT_TEST_USER_EMAIL = settings.UNIT_TEST_USER_EMAIL
+UNIT_TEST_USER_PASSWORD = settings.UNIT_TEST_USER_PASSWORD
 
 ALLOWED_HOSTS = ["*"]
 
@@ -51,30 +42,29 @@ ALLOWED_HOSTS = ["*"]
 # Application definition
 
 INSTALLED_APPS = [
-    'todos',
-    'django.contrib.admin',
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
-    'django.contrib.sessions',
-    'django.contrib.messages',
-    'django.contrib.staticfiles',
-
-    'rest_framework',
-    'drf_yasg',
-    'django_filters',
-    'auth_api',
-    'corsheaders',
-    ]
+    "todos",
+    "django.contrib.admin",
+    "django.contrib.auth",
+    "django.contrib.contenttypes",
+    "django.contrib.sessions",
+    "django.contrib.messages",
+    "django.contrib.staticfiles",
+    "rest_framework",
+    "drf_yasg",
+    "django_filters",
+    "auth_api",
+    "corsheaders",
+]
 
 MIDDLEWARE = [
-    'django.middleware.security.SecurityMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
-    'corsheaders.middleware.CorsMiddleware',
-    'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
-    'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    "django.middleware.security.SecurityMiddleware",
+    "django.contrib.sessions.middleware.SessionMiddleware",
+    "corsheaders.middleware.CorsMiddleware",
+    "django.middleware.common.CommonMiddleware",
+    "django.middleware.csrf.CsrfViewMiddleware",
+    "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "django.contrib.messages.middleware.MessageMiddleware",
+    "django.middleware.clickjacking.XFrameOptionsMiddleware",
     # 'auth_api.middleware.CheckBlacklistMiddleware',
 ]
 
@@ -138,13 +128,13 @@ ASGI_APPLICATION = "proj.asgi.application"
 # }
 DATABASES = {
     "default": {
-        'ENGINE': settings.SQL_ENGINE,
-        'NAME': settings.SQL_DATABASE,
-        'USER': settings.SQL_USER,
-        'PASSWORD': settings.SQL_PASSWORD,
-        'HOST': settings.SQL_DATABASE_HOST,
-        'PORT': settings.SQL_DATABASE_PORT,
-        'CONN_MAX_AGE': 60,
+        "ENGINE": settings.SQL_ENGINE,
+        "NAME": settings.SQL_DATABASE,
+        "USER": settings.SQL_USER,
+        "PASSWORD": settings.SQL_PASSWORD,
+        "HOST": settings.SQL_DATABASE_HOST,
+        "PORT": settings.SQL_DATABASE_PORT,
+        "CONN_MAX_AGE": 60,
         # 'OPTIONS': {
         #     # "init_command": f"SET GLOBAL max_connections = 100000",
         #     'MAX_AGE': 600
@@ -231,10 +221,10 @@ REST_FRAMEWORK = {
 
 # SIMPLE_JWT
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(days=settings.JWT_ACCESS_TOKEN_LIFETIME),
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=settings.JWT_REFRESH_TOKEN_LIFETIME),
-    'ALGORITHM': settings.JWT_ALGORITHM,
-    'SIGNING_KEY': settings.SECRET_KEY
+    "ACCESS_TOKEN_LIFETIME": timedelta(days=settings.JWT_ACCESS_TOKEN_LIFETIME),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=settings.JWT_REFRESH_TOKEN_LIFETIME),
+    "ALGORITHM": settings.JWT_ALGORITHM,
+    "SIGNING_KEY": settings.SECRET_KEY,
 }
 
 AUTH_USER_MODEL = "auth_api.User"
@@ -246,7 +236,7 @@ MEDIA_URL = "/media/"
 MEDIA_ROOT = os.path.join(BASE_DIR, "media/")
 
 
-#EMAIL
+# EMAIL
 EMAIL_HOST = settings.EMAIL_HOST
 EMAIL_PORT = settings.EMAIL_PORT
 EMAIL_USE_TLS = settings.EMAIL_USE_TLS

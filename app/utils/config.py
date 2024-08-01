@@ -1,40 +1,39 @@
-from pydantic import  ValidationError, EmailStr
+from pydantic import ValidationError, EmailStr, Field
 from pydantic_settings import BaseSettings
-import os 
+import os
 
 
 class Settings(BaseSettings):
     SECRET_KEY: str
-    DEBUG: bool
-    UNIT_TEST_USER_EMAIL: EmailStr
-    UNIT_TEST_USER_PASSWORD: str
-    SQL_ENGINE: str
-    SQL_DATABASE: str
-    SQL_USER: str
-    SQL_PASSWORD: str
-    SQL_DATABASE_HOST: str
-    SQL_DATABASE_PORT: int
-    EMAIL_HOST: str
-    EMAIL_PORT: int
-    EMAIL_USE_TLS: bool
-    EMAIL_USE_SSL: bool
-    EMAIL_BACKEND: str
-    EMAIL_HOST_USER: EmailStr
-    EMAIL_HOST_PASSWORD: str
-    CSRF_TRUSTED_ORIGINS: str
-    CORS_ORIGIN_WHITELIST: str
-    PDF_DOWNLOAD_ORIGIN: str
-    
-    # JWT Settings
-    JWT_ACCESS_TOKEN_LIFETIME: int
-    JWT_REFRESH_TOKEN_LIFETIME: int
-    JWT_ALGORITHM: str
-    
+    DEBUG: bool = Field(default=False)
+    UNIT_TEST_USER_EMAIL: EmailStr = Field(default="example@yopmail.com")
+    UNIT_TEST_USER_PASSWORD: str = Field(default="test@123")
+    SQL_ENGINE: str = Field(default="django.db.backends.postgresql")
+    SQL_DATABASE: str = Field(default="postgres")
+    SQL_USER: str = Field(default="postgres")
+    SQL_PASSWORD: str = Field(default="postgres")
+    SQL_DATABASE_HOST: str = Field(default="localhost")
+    SQL_DATABASE_PORT: int = Field(default=5432)
+    EMAIL_HOST: str = Field(default="smtp.gmail.com")
+    EMAIL_PORT: int = Field(default=465)
+    EMAIL_USE_TLS: bool = Field(default=0)
+    EMAIL_USE_SSL: bool = Field(default=1)
+    EMAIL_BACKEND: str = Field(default="django_smtp_ssl.SSLEmailBackend")
+    EMAIL_HOST_USER: EmailStr = Field(default="example@yopmail.com")
+    EMAIL_HOST_PASSWORD: str = Field(default="Test@123")
+    CSRF_TRUSTED_ORIGINS: str = Field(default="http://localhost:8000")
+    CORS_ORIGIN_WHITELIST: str = Field(default="http://localhost:8000")
+    PDF_DOWNLOAD_ORIGIN: str = Field(default="")
 
+    # JWT Settings
+    JWT_ACCESS_TOKEN_LIFETIME: int = Field(default=1)
+    JWT_REFRESH_TOKEN_LIFETIME: int = Field(default=30)
+    JWT_ALGORITHM: str = Field(default="HS256")
 
     class Config:
         env_file = ".env"
         case_sensitive = True
+
 
 def load_settings():
     env_file_path = ".env"
@@ -49,7 +48,5 @@ def load_settings():
         for error in e.errors():
             field = error["loc"][0]
             message = error["msg"]
-            print(f"  - {field}: {message}","error")
-        # print(f"Validation error: {e}")
+            print(f"  - {field}: {message}", "error")
         raise e
-   
