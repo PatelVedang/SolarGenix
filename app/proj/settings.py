@@ -27,16 +27,16 @@ environ.Env.read_env(os.path.join(BASE_DIR, ".env"))
 # See https://docs.djangoproject.com/en/4.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ.get("SECRET_KEY", env("SECRET_KEY"))
+SECRET_KEY = os.environ.get("SECRET_KEY", os.getenv("SECRET_KEY", "8936d6507"))
 
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = bool(int(os.environ.get("DEBUG", env("DEBUG"))))
+DEBUG = bool(int(os.environ.get("DEBUG", os.getenv("DEBUG", "0"))))
 UNIT_TEST_USER_EMAIL = os.environ.get(
-    "UNIT_TEST_USER_EMAIL", env("UNIT_TEST_USER_EMAIL")
+    "UNIT_TEST_USER_EMAIL", os.getenv("UNIT_TEST_USER_EMAIL", "example@yopmail.com")
 )
 UNIT_TEST_USER_PASSWORD = os.environ.get(
-    "UNIT_TEST_USER_PASSWORD", env("UNIT_TEST_USER_PASSWORD")
+    "UNIT_TEST_USER_PASSWORD", os.getenv("UNIT_TEST_USER_PASSWORD", "test@123")
 )
 
 ALLOWED_HOSTS = ["*"]
@@ -75,7 +75,7 @@ ROOT_URLCONF = "proj.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [],
+        "DIRS": [os.path.join(BASE_DIR, "templates")],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -94,12 +94,20 @@ ASGI_APPLICATION = "proj.asgi.application"
 
 DATABASES = {
     "default": {
-        "ENGINE": os.environ.get("SQL_ENGINE", env("SQL_ENGINE")),
-        "NAME": os.environ.get("SQL_DATABASE", env("SQL_DATABASE")),
-        "USER": os.environ.get("SQL_USER", env("SQL_USER")),
-        "PASSWORD": os.environ.get("SQL_PASSWORD", env("SQL_PASSWORD")),
-        "HOST": os.environ.get("SQL_DATABASE_HOST", env("SQL_DATABASE_HOST")),
-        "PORT": os.environ.get("SQL_DATABASE_PORT", env("SQL_DATABASE_PORT")),
+        "ENGINE": os.environ.get(
+            "SQL_ENGINE", os.getenv("SQL_ENGINE", "django.db.backends.postgresql")
+        ),
+        "NAME": os.environ.get("SQL_DATABASE", os.getenv("SQL_DATABASE", "postgres")),
+        "USER": os.environ.get("SQL_USER", os.getenv("SQL_USER", "postgres")),
+        "PASSWORD": os.environ.get(
+            "SQL_PASSWORD", os.getenv("SQL_PASSWORD", "postgres")
+        ),
+        "HOST": os.environ.get(
+            "SQL_DATABASE_HOST", os.getenv("SQL_DATABASE_HOST", "localhost")
+        ),
+        "PORT": int(
+            os.environ.get("SQL_DATABASE_PORT", os.getenv("SQL_DATABASE_PORT", "5432"))
+        ),
         "CONN_MAX_AGE": 60,
         # 'OPTIONS': {
         #     # "init_command": f"SET GLOBAL max_connections = 100000",
@@ -169,10 +177,10 @@ SWAGGER_SETTINGS = {
 }
 
 CSRF_TRUSTED_ORIGINS = os.environ.get(
-    "CSRF_TRUSTED_ORIGINS", env("CSRF_TRUSTED_ORIGINS")
+    "CSRF_TRUSTED_ORIGINS", os.getenv("CSRF_TRUSTED_ORIGINS", "")
 ).split()
 CORS_ORIGIN_WHITELIST = os.environ.get(
-    "CORS_ORIGIN_WHITELIST", env("CORS_ORIGIN_WHITELIST")
+    "CORS_ORIGIN_WHITELIST", os.getenv("CORS_ORIGIN_WHITELIST", "")
 ).split()
 
 # By pass http to https
@@ -181,7 +189,7 @@ SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 # Django Rest Framework and JWT and CORS
 AUTH_THROTTLING_LIMIT = os.environ.get(
-    "AUTH_THROTTLING_LIMIT", env("AUTH_THROTTLING_LIMIT")
+    "AUTH_THROTTLING_LIMIT", os.getenv("AUTH_THROTTLING_LIMIT", "20/hour")
 )
 REST_FRAMEWORK = {
     "EXCEPTION_HANDLER": "utils.exception_handler.custom_exception_handler",
@@ -198,7 +206,9 @@ SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(days=1),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=30),
     "ALGORITHM": "HS256",
-    "SIGNING_KEY": os.environ.get("SECRET_KEY", env("SECRET_KEY")),
+    "SIGNING_KEY": os.environ.get(
+        "SECRET_KEY", os.getenv("SECRET_KEY", "8936d6507db94f63ac6a008dd48f490d")
+    ),
 }
 
 AUTH_USER_MODEL = "auth_api.User"
@@ -211,15 +221,23 @@ MEDIA_ROOT = os.path.join(BASE_DIR, "media/")
 
 
 # EMAIL
-EMAIL_HOST = os.environ.get("EMAIL_HOST", env("EMAIL_HOST"))
-EMAIL_PORT = int(os.environ.get("EMAIL_PORT", env("EMAIL_PORT")))
-EMAIL_USE_TLS = bool(int(os.environ.get("EMAIL_USE_TLS", env("EMAIL_USE_TLS"))))
-EMAIL_USE_SSL = bool(int(os.environ.get("EMAIL_USE_SSL", env("EMAIL_USE_SSL"))))
-EMAIL_BACKEND = os.environ.get("EMAIL_BACKEND", env("EMAIL_BACKEND"))
+EMAIL_HOST = os.environ.get("EMAIL_HOST", os.getenv("EMAIL_HOST", "smtp.gmail.com"))
+EMAIL_PORT = int(os.environ.get("EMAIL_PORT", os.getenv("EMAIL_PORT", "465")))
+EMAIL_USE_TLS = bool(
+    int(os.environ.get("EMAIL_USE_TLS", os.getenv("EMAIL_USE_TLS", "0")))
+)
+EMAIL_USE_SSL = bool(
+    int(os.environ.get("EMAIL_USE_SSL", os.getenv("EMAIL_USE_SSL", "1")))
+)
+EMAIL_BACKEND = os.environ.get(
+    "EMAIL_BACKEND", os.getenv("EMAIL_BACKEND", "django_smtp_ssl.SSLEmailBackend")
+)
 EMAIL_HOST_USER = os.environ.get(
-    "EMAIL_HOST_USER", env("EMAIL_HOST_USER")
+    "EMAIL_HOST_USER", os.getenv("EMAIL_HOST_USER", "example@yopmail.com")
 )  # Your Gmail email address
-EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD", env("EMAIL_HOST_PASSWORD"))
+EMAIL_HOST_PASSWORD = os.environ.get(
+    "EMAIL_HOST_PASSWORD", os.getenv("EMAIL_HOST_PASSWORD", "Test@123")
+)  # Your Gmail password
 
 # PASSWORD validation
 PASSWORD_VALIDATE_STRING = "A minimum 8 characters and maximum 30 character password contains a combination of uppercase and lowercase letter, special symbol and number are required."
