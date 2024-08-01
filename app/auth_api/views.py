@@ -4,13 +4,11 @@ from django.http import JsonResponse
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from auth_api.serializers import (
-    UserRegistrationSerilizer,
-    UserLoginSerilizer,
-    UserProfileSerilizer,
-    UserChangePasswordSerializer,
-    SendPasswordResetEmailSerializer,
+    UserRegistrationSerializer,
+    UserLoginSerializer,
+    UserProfileSerializer,
+    ForgetPasswordSerializer,
     UserPasswordResetSerializer,
-    ChangePasswordEmailSerializer,
     ResendResetTokenSerializer,
     get_tokens_for_user,
     check_blacklist,
@@ -20,14 +18,10 @@ from django.contrib.auth import authenticate
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.exceptions import AuthenticationFailed
 from auth_api.models import User, Token, BlacklistToken
-
 from rest_framework_simplejwt.tokens import UntypedToken
-from drf_yasg.utils import swagger_auto_schema
-
 from django.utils import timezone
 from datetime import datetime
 import jwt
-
 from django.conf import settings
 from utils.swagger import apply_swagger_tags
 
@@ -45,7 +39,7 @@ def blacklist_token(token):
     method_details={
         "post": {
             "operation_description": "User registration",
-            "request_body": UserRegistrationSerilizer,
+            "request_body": UserRegistrationSerializer,
             "operation_summary": "POST method for user registration"
         },
     }
@@ -54,7 +48,7 @@ class UserRegistrationView(APIView):
     # def get(self, request, format=None):
     #     return render(request, 'auth_api/registration.html')
     def post(self,request,format=None):
-        serializer=UserRegistrationSerilizer(data=request.data)
+        serializer=UserRegistrationSerializer(data=request.data)
         if serializer.is_valid(raise_exception=True):
             user=serializer.save()
            
@@ -69,14 +63,14 @@ class UserRegistrationView(APIView):
     method_details={
         "post": {
             "operation_description": "Login API",
-            "request_body": UserLoginSerilizer,
+            "request_body": UserLoginSerializer,
             "operation_summary": "Dynamic POST method for user login",
         },
     }
 )
 class UserLoginView(APIView):
     def post(self,request,format=None):
-        serializer=UserLoginSerilizer(data=request.data)
+        serializer=UserLoginSerializer(data=request.data)
         if serializer.is_valid(raise_exception=True):
             email=serializer.data.get('email')
             password=serializer.data.get('password')
@@ -118,82 +112,53 @@ class UserLoginView(APIView):
                 raise AuthenticationFailed('Email or password is invalid.')
             
             
-            
-                
+@apply_swagger_tags(
+    tags=["Auth"],
+    method_details={
+        "post": {
+            "operation_description": "User profile",
+            "request_body": UserProfileSerializer,
+            "operation_summary": "POST method for user profile details"
+        },
+    }
+)    
 class UserProfileView(APIView): 
-    # renderer_classes=[UserRenderer]
     permission_classes=[IsAuthenticated]
-    def post(self,request,fromat=None):
-        serializer=UserProfileSerilizer(request.user)
+    def post(self,request,format=None):
+        serializer=UserProfileSerializer(request.user)
         # if serializer.is_valid():
         return Response(serializer.data,status=status.HTTP_200_OK)
     
+        
+    
+@apply_swagger_tags(
+    tags=["Auth"],
+    method_details={
+        "post": {
+            "operation_description": "Forgot password",
+            "request_body": ForgetPasswordSerializer,
+            "operation_summary": "Post method for forgot password",
+        },
+    }
+)    
+class ForgotPasswordView(APIView):
+    def post(self,request,format=None):
+        serializer=ForgetPasswordSerializer(data=request.data,context={'user':request.user})
+        if serializer.is_valid(raise_exception=True):
+            return Response({'message':'Reset Password link shared on your Gmail'},status=status.HTTP_200_OK)
+        return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
     
 @apply_swagger_tags(
     tags=["Auth"],
     method_details={
         "post": {
             "operation_description": "Reset Password",
-            "request_body": UserChangePasswordSerializer,
-            "operation_summary": "User resets the password",
+            "request_body": ResendResetTokenSerializer,
+            "operation_summary": "Post method for resending request to reset password",
         },
     }
-)        
-class UserChangePassword(APIView):
-    # renderer_classes=[UserRenderer]
-    # @swagger_auto_schema(
-    #     operation_description="Send email for forgat password",
-    #     request_body=UserChangePasswordSerializer,
-    # )
-    def post(self,request,token,fromat=None):
-        serializer=UserChangePasswordSerializer(data=request.data,context={'token':token})
-        if serializer.is_valid(raise_exception=True):
-            return Response({'msg':'Password Change Successfully!'},status=status.HTTP_200_OK)
-        return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
-    
-    
-    
-class ChangePassowordEmailView(APIView):
-    # renderer_classes=[UserRenderer]
-    # def get(self,request,format=None):
-    #     return render(request,'auth_api/Email.html')
-    @swagger_auto_schema(
-        operation_description="Send email for forgot password",
-        request_body=ChangePasswordEmailSerializer,
-    )
-    
-    def post(self,request):
-        serializer = ChangePasswordEmailSerializer(data=request.data, context={"request": request})
-        if serializer.is_valid(raise_exception=True):
-            serializer.save()
-        return Response({'message':'successful changing of the password.'},status=status.HTTP_200_OK)
-    
-    
-    
-class SendPasswordResetEmailView(APIView):
-    # renderer_classes=[UserRenderer]
-    # def get(self,request,format=None):
-    #     return render(request,'auth_api/Email.html')
-    @swagger_auto_schema(
-        operation_description="Send email for reset password",
-        request_body=SendPasswordResetEmailSerializer,
-    )
-    def post(self,request,format=None):
-        
-        serializer=SendPasswordResetEmailSerializer(data=request.data,context={'user':request.user})
-        if serializer.is_valid(raise_exception=True):
-            return Response({'message':'Reset Password link shared on your Gmail'},status=status.HTTP_200_OK)
-        return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
-    
-    
+)    
 class ResendResetTokenView(APIView):
-    # renderer_classes=[UserRenderer]
-    # def get(self,request,format=None):
-    #     return render(request,'auth_api/Email.html')
-    @swagger_auto_schema(
-        operation_description="Send email for reset password",
-        request_body=ResendResetTokenSerializer,
-    )
     def post(self,request,format=None):
         
         serializer=ResendResetTokenSerializer(data=request.data,context={'user':request.user})
@@ -202,19 +167,22 @@ class ResendResetTokenView(APIView):
         return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
     
     
-        
+@apply_swagger_tags(
+    tags=["Auth"],
+    method_details={
+        "post": {
+            "operation_description": "Reset Password",
+            "request_body": UserPasswordResetSerializer,
+            "operation_summary": "Post method for reset password",
+        },
+    }
+)    
 class UserPasswordResetView(APIView):
-    #  template_name="auth_api/reset_confirmation.html"
-    #  renderer_classes=[UserRenderer]
-     @swagger_auto_schema(
-        operation_description="Reset Password",
-        request_body=UserPasswordResetSerializer,
-    )
-     def post(self,request,token):
-         serializer=UserPasswordResetSerializer(data=request.data,context={'token':token})
-         if serializer.is_valid(raise_exception=True):
+    def post(self,request,token):
+        serializer=UserPasswordResetSerializer(data=request.data,context={'token':token})
+        if serializer.is_valid(raise_exception=True):
             return Response({'msg':'Password Reset Successfully'},status=status.HTTP_200_OK)
-         return JsonResponse({'msg':'Password Not Reset Successfully'},status=status.HTTP_400_BAD_REQUEST)
+        return JsonResponse({'msg':'Password Not Reset Successfully'},status=status.HTTP_400_BAD_REQUEST)
      
      
 def reset_password(request, token):
@@ -223,6 +191,15 @@ def reset_password(request, token):
     }
     return render(request,'auth_api/reset_password_form.html',context)
 
+@apply_swagger_tags(
+    tags=["Auth"],
+    method_details={
+        "get": {
+            "operation_description": "Verify Email",
+            "operation_summary": "Get method to verify email",
+        },
+    }
+)    
 class VerifyEmailView(APIView):
     def get(self, request, token):
         try:
@@ -234,7 +211,6 @@ class VerifyEmailView(APIView):
             if not user.is_active:
                 user.is_active = True
                 user.save()
-                # token_object.delete()
                 return Response({'message': 'Email verified successfully'}, status=status.HTTP_200_OK)
             else:
                 return Response({'message': 'Email already verified'}, status=status.HTTP_200_OK)
