@@ -8,7 +8,8 @@ from proj import settings
 
 from auth_api.send_mail import send_email_async
 from rest_framework_simplejwt.tokens import RefreshToken
-from django.contrib.auth import authenticate
+from rest_framework.exceptions import AuthenticationFailed
+from utils.email import send_email
 
 
 def get_tokens_for_user(user):
@@ -31,6 +32,8 @@ def check_blacklist(jti) -> None:
 
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
+    password2 = serializers.CharField(style={"input_type": "password"}, write_only=True)
+
     class Meta:
         model = User
         fields = ["email", "name", "password"]
@@ -57,21 +60,29 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
             token_type="verify",
             expires_at=datetime.fromtimestamp(token["exp"]),
         )
-        message = (
-            f"Hello {user.name},\n\n"
-            "Thank you for register. To complete your registration and activate your account, please click on the link below::\n\n"
-            f"{verify_token}\n\n"
-        )
         # Send verification email
         send_email_async(
-            "Verify your account", message, settings.EMAIL_HOST_USER, [user.email]
+            "Verify your account",
+            f"Click the link below to verify your account : {verify_token}",
+            settings.EMAIL_HOST_USER,
+            [user.email],
         )
+        context = {
+            "subject": "Verify Your E-mail Address!",
+            "user": user,
+            "recipients": [user.email],
+            "html_template": "email-template.html",
+            "button_links": [
+                f"http://127.0.0.1:8000/api/auth/verify-email/{verify_token}/"
+            ],
+            "title": "Verify Your E-mail Address",
+        }
+        send_email(**context)
         return user
 
 
 class UserLoginSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(max_length=255)
-    password = serializers.CharField(max_length=255, write_only=True)
 
     class Meta:
         model = User
@@ -79,7 +90,7 @@ class UserLoginSerializer(serializers.ModelSerializer):
 
     def validate(self, attrs):
         email = attrs.get("email").lower()
-        password = attrs.get("password")
+        attrs.get("password")
         try:
             user = User.objects.get(email=email)
         except User.DoesNotExist:
@@ -87,16 +98,9 @@ class UserLoginSerializer(serializers.ModelSerializer):
 
         # Check if the user account is active
         if not user.is_active:
-            raise serializers.ValidationError(
-                "Email not verified. Please check your email."
-            )
-
-        # Authenticate the user with provided credentials
-        user = authenticate(email=email, password=password)
-        if not user:
-            raise serializers.ValidationError("Incorrect email or password.")
-
-        return attrs
+            raise AuthenticationFailed("Email Not Verified")
+        else:
+            return attrs
 
 
 class UserProfileSerializer(serializers.ModelSerializer):
@@ -105,32 +109,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
         fields = ["id", "name", "email"]
 
 
-class ChangePasswordSerializer(serializers.Serializer):
-    old_password = serializers.CharField(
-        max_length=255, style={"input-type": "password"}, write_only=True
-    )
-    new_password = serializers.CharField(
-        max_length=255, style={"input-type": "password"}, write_only=True
-    )
-
-    def validate(self, attrs):
-        user = self.context["request"].user
-        if not user.check_password(attrs["old_password"]):
-            raise serializers.ValidationError(
-                {"old_password": "Old password is not correct"}
-            )
-        if not re.search(settings.PASSWORD_VALIDATE_REGEX, attrs["new_password"]):
-            raise serializers.ValidationError(settings.PASSWORD_VALIDATE_STRING)
-        return attrs
-
-    def create(self, validated_data):
-        user = self.context["request"].user
-        user.set_password(validated_data["new_password"])
-        user.save()
-        return user
-
-
-class SendPasswordResetEmailSerializer(serializers.Serializer):
+class ForgetPasswordSerializer(serializers.Serializer):
     email = serializers.EmailField(max_length=255)
 
     def validate(self, attrs):
@@ -140,6 +119,8 @@ class SendPasswordResetEmailSerializer(serializers.Serializer):
             tokens = get_tokens_for_user(user)
             reset_token = tokens["reset"]
             payload = jwt.decode(reset_token, settings.SECRET_KEY, algorithms=["HS256"])
+            print("jti", payload["jti"])
+            print("token type ", payload["token_type"])
             Token.objects.create(
                 user=user,
                 jti=payload["jti"],
@@ -147,21 +128,22 @@ class SendPasswordResetEmailSerializer(serializers.Serializer):
                 token_type="reset",
                 expires_at=datetime.fromtimestamp(payload["exp"]),
             )
-            reset_password_url = (
-                f"http://127.0.0.1:8000/api/user/reset-password/{reset_token}"
-            )
-            message = (
-                f"Hello {user.name},\n\n"
-                "You have requested for password reset. Please click the link below to reset your password:\n\n"
-                f"{reset_password_url}\n\n"
-            )
-            email_subject = "Reset Your Password"
-            email_from = settings.EMAIL_HOST_USER
-            recipient_list = [user.email]
-            send_email_async(email_subject, message, email_from, recipient_list)
-            return attrs
+            # reset_password_url = f'http://127.0.0.1:8000/api/auth/reset-password/{reset_token}/'
+            context = {
+                "subject": "Password Reset Request",
+                "user": user,
+                "recipients": [email],
+                "html_template": "email-template.html",
+                "button_links": [
+                    f"http://127.0.0.1:8000/api/auth/reset-password/{reset_token}/"
+                ],
+                "title": "Reset your password",
+            }
+            send_email(**context)
         else:
             raise serializers.ValidationError("Not Registered Email")
+
+        return attrs
 
 
 class ResendResetTokenSerializer(serializers.Serializer):
@@ -174,6 +156,8 @@ class ResendResetTokenSerializer(serializers.Serializer):
             tokens = get_tokens_for_user(user)
             reset_token = tokens["reset"]
             payload = jwt.decode(reset_token, settings.SECRET_KEY, algorithms=["HS256"])
+            print("jti", payload["jti"])
+            print("token type ", payload["token_type"])
             Token.objects.create(
                 user=user,
                 jti=payload["jti"],
@@ -181,18 +165,17 @@ class ResendResetTokenSerializer(serializers.Serializer):
                 token_type="reset",
                 expires_at=datetime.fromtimestamp(payload["exp"]),
             )
-            reset_password_url = (
-                f"http://127.0.0.1:8000/api/user/reset-password/{reset_token}"
-            )
-            message = (
-                f"Hello {user.name},\n\n"
-                "You have requested for password reset. Please click the link below to reset your password:\n\n"
-                f"{reset_password_url}\n\n"
-            )
-            email_subject = "Reset Your Password "
-            email_from = settings.EMAIL_HOST_USER
-            recipient_list = [user.email]
-            send_email_async(email_subject, message, email_from, recipient_list)
+            context = {
+                "subject": "Resend Password Reset Request",
+                "user": user,
+                "recipients": [email],
+                "html_template": "email-template.html",
+                "button_links": [
+                    f"http://127.0.0.1:8000/api/auth/reset-password/{reset_token}/"
+                ],
+                "title": "Reset your password",
+            }
+            send_email(**context)
             return attrs
         else:
             raise serializers.ValidationError("Not Registered Email")
@@ -219,6 +202,14 @@ class UserPasswordResetSerializer(serializers.Serializer):
             user.password = make_password(password)
             user.save()
             token_object.delete()
+            context = {
+                "subject": "Password updated successfully!",
+                "user": user,
+                "recipients": [user.email],
+                "html_template": "email-template.html",
+                "title": "Password updated successfully",
+            }
+            send_email(**context)
             return attrs
 
         except Token.DoesNotExist:
