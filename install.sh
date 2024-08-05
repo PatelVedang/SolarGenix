@@ -189,7 +189,7 @@ else
     if [ "$OS" == "linux" ]; then
         sudo apt update
         sudo add-apt-repository ppa:deadsnakes/ppa
-        sudo apt install python3.11 python3.11-venv -y
+        sudo apt install python3.11 -y
     elif [ "$OS" == "mac" ]; then
         brew install python@3.11
     fi
@@ -203,6 +203,14 @@ else
 fi
 echo "----------------------------------------------------"
 printf "Python 3.11 check and installation completed 😎 \n\n\n"
+
+echo "Installing Python 3.11 venv module"
+echo "----------------------------------------------------"
+if [ "$OS" == "linux" ]; then
+    sudo apt install python3.11-venv -y
+fi
+echo "----------------------------------------------------"
+printf "Python 3.11 venv module Installed 😎 \n\n\n"
 
 echo "Creating Virtual Environment"
 echo "----------------------------------------------------"
