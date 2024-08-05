@@ -24,7 +24,7 @@ class Settings(BaseSettings):
     CSRF_TRUSTED_ORIGINS: str = Field(default="http://localhost:8000")
     CORS_ORIGIN_WHITELIST: str = Field(default="http://localhost:8000")
     PDF_DOWNLOAD_ORIGIN: str = Field(default="")
-
+    HOST_URL: str = Field(default="http://localhost:8000")
     # JWT Settings
     JWT_ACCESS_TOKEN_LIFETIME: int = Field(default=1)
     JWT_REFRESH_TOKEN_LIFETIME: int = Field(default=30)

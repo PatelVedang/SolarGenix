@@ -3,12 +3,12 @@ from auth_api.views import (
     UserRegistrationView,
     UserLoginView,
     UserProfileView,
-    ChangePassowordView,
-    SendPasswordResetEmailView,
+    ChangePasswordView,
+    ForgotPasswordView,
     UserPasswordResetView,
     ResendResetTokenView,
     RefreshTokenView,
-    ResendVerifyTokenView,
+    SendVerificationEmailView,
     VerifyEmailView,
     LogoutView,
 )
@@ -19,12 +19,12 @@ urlpatterns = [
     path("auth/me/", UserProfileView.as_view(), name="profile"),
     path(
         "auth/change-password/",
-        ChangePassowordView.as_view(),
-        name="change-password-email",
+        ChangePasswordView.as_view(),
+        name="change-password",
     ),
     path(
         "auth/forgot-password/",
-        SendPasswordResetEmailView.as_view(),
+        ForgotPasswordView.as_view(),
         name="send-reset-password-email",
     ),
     path(
@@ -39,8 +39,8 @@ urlpatterns = [
     ),
     path("auth/refresh-token", RefreshTokenView.as_view(), name="refresh-token"),
     path(
-        "auth/resend-verify-token",
-        ResendVerifyTokenView.as_view(),
+        "auth/send-verification-email",
+        SendVerificationEmailView.as_view(),
         name="resend-verify-token",
     ),
     path(

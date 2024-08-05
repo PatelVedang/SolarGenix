@@ -17,12 +17,11 @@ from pathlib import Path
 from utils.config import load_settings
 
 settings = load_settings()
-# env = environ.Env()
+
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.1/howto/deployment/checklist/
@@ -103,29 +102,7 @@ ASGI_APPLICATION = "proj.asgi.application"
 
 
 # Database
-# https://docs.djangoproject.com/en/4.1/ref/settings/#databases
 
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.sqlite3',
-#         'NAME': BASE_DIR / 'db.sqlite3',
-#     }
-# }
-# DATABASES = {
-#     "default": {
-#         'ENGINE': os.environ.get('SQL_ENGINE', env('SQL_ENGINE')),
-#         'NAME': os.environ.get('SQL_DATABASE', env('SQL_DATABASE')),
-#         'USER': os.environ.get('SQL_USER', env('SQL_USER')),
-#         'PASSWORD': os.environ.get('SQL_PASSWORD', env('SQL_PASSWORD')),
-#         'HOST': os.environ.get('SQL_DATABASE_HOST', env('SQL_DATABASE_HOST')),
-#         'PORT': os.environ.get('SQL_DATABASE_PORT', env('SQL_DATABASE_PORT')),
-#         'CONN_MAX_AGE': 60,
-#         # 'OPTIONS': {
-#         #     # "init_command": f"SET GLOBAL max_connections = 100000",
-#         #     'MAX_AGE': 600
-#         # }
-#     }
-# }
 DATABASES = {
     "default": {
         "ENGINE": settings.SQL_ENGINE,
@@ -247,7 +224,7 @@ EMAIL_HOST_PASSWORD = settings.EMAIL_HOST_PASSWORD
 
 # BUSINESS_EMAIL=os.environ.get('BUSINESS_EMAIL', env('BUSINESS_EMAIL'))
 # SUPPORT_EMAILS=os.environ.get('SUPPORT_EMAILS', env('SUPPORT_EMAILS')).split(" ")
-
+HOST_URL = settings.HOST_URL
 
 # PASSWORD validation
 PASSWORD_VALIDATE_STRING = "A minimum 8 characters and maximum 30 character password contains a combination of uppercase and lowercase letter, special symbol and number are required."

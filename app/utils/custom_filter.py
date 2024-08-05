@@ -21,15 +21,11 @@ def filter_model(
 
     filter_q = Q()
     sorting = query_params.get("sort")
-    print("➡ utils/custom_filters.py:23 sorting:", sorting)
     select_fields = query_params.get("select")
-    print("➡ utils/custom_filters.py:25 select_fields:", select_fields)
     search_fields_param = query_params.get("search_fields")
-    print("Search", search_fields_param)
 
     # Handle search filter
     search_param = query_params.get("search")
-    print("search_param", search_param)
     if search_param:
         if search_fields_param:
             search_fields = [
@@ -89,7 +85,9 @@ def filter_model(
         select_fields = [
             field.strip() for field in select_fields.split(",") if field.strip()
         ]
-        queryset = queryset.values(*select_fields)
+        if "id" not in select_fields:
+            select_fields.insert(0, "id")
+            queryset = queryset.values(*select_fields)
 
     if sorting:
         sort_fields = {field.strip() for field in sorting.split(",") if field.strip()}
