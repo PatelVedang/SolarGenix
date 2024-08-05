@@ -26,6 +26,7 @@ def filter_model(
 
     # Handle search filter
     search_param = query_params.get("search")
+
     if search_param:
         if search_fields_param:
             search_fields = [
@@ -87,7 +88,7 @@ def filter_model(
         ]
         if "id" not in select_fields:
             select_fields.insert(0, "id")
-            queryset = queryset.values(*select_fields)
+        queryset = queryset.values(*select_fields)
 
     if sorting:
         sort_fields = {field.strip() for field in sorting.split(",") if field.strip()}

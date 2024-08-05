@@ -25,7 +25,7 @@ urlpatterns = [
     path(
         "auth/forgot-password/",
         ForgotPasswordView.as_view(),
-        name="send-reset-password-email",
+        name="forgot-password",
     ),
     path(
         "auth/reset-password/<str:token>/",
@@ -41,7 +41,7 @@ urlpatterns = [
     path(
         "auth/send-verification-email",
         SendVerificationEmailView.as_view(),
-        name="resend-verify-token",
+        name="send-verification-email",
     ),
     path(
         "auth/verify-email/<str:token>/", VerifyEmailView.as_view(), name="verify-email"

@@ -74,7 +74,7 @@ class UserLoginView(APIView):
     def post(self, request):
         serializer = UserLoginSerializer(data=request.data)
         if serializer.is_valid(raise_exception=True):
-            tokens = serializer.save()  # Calls `create` method in serializer
+            tokens = serializer.save()
             return response(
                 data={"access": tokens["access"], "refresh": tokens["refresh"]},
                 status_code=status.HTTP_200_OK,

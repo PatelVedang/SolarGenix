@@ -13,30 +13,35 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
+
 from django.contrib import admin
 from django.urls import path, include
 
 from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
 from django.conf import settings
-from django.conf.urls.static import static 
+from django.conf.urls.static import static
 
 schema_view = get_schema_view(
-   openapi.Info(
-      title="Boilerplate API",
-      default_version='1.0'
-   ),
-   public=True
+    openapi.Info(title="Boilerplate API", default_version="1.0"), public=True
 )
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
-    path('',include([
-        path('api/',include('auth_api.urls')),
-        path('api/todos/', include('todos.urls')),
-        path('swagger',schema_view.with_ui('swagger', cache_timeout=0), name='swagger-schema')
-    ])),
-]+static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+    path("admin/", admin.site.urls),
+    path(
+        "",
+        include(
+            [
+                path("api/", include("auth_api.urls")),
+                path(
+                    "swagger",
+                    schema_view.with_ui("swagger", cache_timeout=0),
+                    name="swagger-schema",
+                ),
+            ]
+        ),
+    ),
+] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
 
 admin.site.site_header = "ADMINISTRATION"
