@@ -1,13 +1,18 @@
 #!/usr/bin/env bash
 
-# Function to check if a package is installed using dpkg
-function is_package_installed() {
+# Function to check if a package is installed (Linux)
+function is_package_installed_linux() {
     dpkg -l "$1" &> /dev/null
 }
 
-# Function to check if a command (tool) is available in the system's PATH
+# Function to check if a command (tool) is available
 function is_command_available() {
     command -v "$1" &> /dev/null
+}
+
+# Function to check if a package is installed (macOS)
+function is_package_installed_mac() {
+    brew list --versions "$1" &> /dev/null
 }
 
 # Clear the screen
@@ -25,20 +30,25 @@ echo "| |_) | (_) | | |  __/ |  | |_) | | (_| | ||  __/"
 echo "|____/ \\___/|_|_|\\___|_|  | .__/|_|\\__,_|\\__\\___|"
 echo "                          |_|                    "
 
+# Determine OS
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    OS="mac"
+elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
+    OS="linux"
+else
+    echo "Unsupported OS."
+    exit 1
+fi
+
 # Ask user if they want to create the .env file
 read -p "Do you want to create a new .env file from .env_example? (y/n): " create_env
 
 if [ "$create_env" == "y" ]; then
-    # Create the file and write the dynamic content into it using a here document
     example_env_path="app/.env_example"
     env_path="app/.env"
     
     if [ -f "$example_env_path" ]; then
-cat "$example_env_path" > "$env_path"
-cat "$example_env_path" > "$env_path"
-
         cat "$example_env_path" > "$env_path"
-
         echo "File '$env_path' created with the following content:"
         echo "----------------------------------------------------"
         cat "$env_path"
@@ -52,7 +62,11 @@ fi
 
 echo "Downloading package information from all configured sources"
 echo "----------------------------------------------------"
-sudo apt-get update -y || ( echo "Failed to update package information" && exit 1 )
+if [ "$OS" == "linux" ]; then
+    sudo apt-get update -y || ( echo "Failed to update package information" && exit 1 )
+elif [ "$OS" == "mac" ]; then
+    brew update || ( echo "Failed to update package information" && exit 1 )
+fi
 echo "----------------------------------------------------"
 printf "Package information Downloaded 😎 \n\n\n"
 
@@ -65,7 +79,11 @@ printf "Executable permission set to rest generator 😎 \n\n\n"
 echo "Installing JQ"
 echo "----------------------------------------------------"
 if ! is_command_available jq; then
-    sudo apt-get install jq -y || ( echo "Failed to install JQ" && exit 1 )
+    if [ "$OS" == "linux" ]; then
+        sudo apt-get install jq -y || ( echo "Failed to install JQ" && exit 1 )
+    elif [ "$OS" == "mac" ]; then
+        brew install jq || ( echo "Failed to install JQ" && exit 1 )
+    fi
 else
     echo "JQ is already installed. Skipping installation."
 fi
@@ -79,21 +97,29 @@ echo "----------------------------------------------------"
 read -p "Do you want to create a new PostgreSQL user and database? (y/n): " create_db
 
 if [ "$create_db" == "y" ]; then
-    # Install PostgreSQL
-    echo "Installing PostgreSQL..."
-    echo "----------------------------------------------------"
-    if is_package_installed postgresql; then
-        echo "PostgreSQL is already installed. Skipping installation."
-    else
-        sudo apt-get install -y postgresql postgresql-contrib || ( echo "Failed to install PostgreSQL" && exit 1 )
+    if [ "$OS" == "linux" ]; then
+        echo "Installing PostgreSQL..."
+        echo "----------------------------------------------------"
+        if is_package_installed_linux postgresql; then
+            echo "PostgreSQL is already installed. Skipping installation."
+        else
+            sudo apt-get install -y postgresql postgresql-contrib || ( echo "Failed to install PostgreSQL" && exit 1 )
+        fi
+        echo "----------------------------------------------------"
+    elif [ "$OS" == "mac" ]; then
+        echo "Installing PostgreSQL..."
+        echo "----------------------------------------------------"
+        if is_package_installed_mac postgresql; then
+            echo "PostgreSQL is already installed. Skipping installation."
+        else
+            brew install postgresql || ( echo "Failed to install PostgreSQL" && exit 1 )
+        fi
+        echo "----------------------------------------------------"
     fi
-    echo "----------------------------------------------------"
-    printf "Postgres Installed 😎 \n\n\n"
 
     echo "Creating a new PostgreSQL user and database"
     echo "----------------------------------------------------"
     
-    # Get username, password, and database name
     read -p "Enter the new user name: " new_user
     echo "New User: $new_user"
     read -s -p "Enter the password for the new user: " new_password
@@ -101,49 +127,50 @@ if [ "$create_db" == "y" ]; then
     read -p "Enter the database name: " new_db
     echo -e "New Database: $new_db"
 
-    # Create user with password
     echo "Creating a new PostgreSQL user..."
-    sudo -i -u postgres psql -c "CREATE USER $new_user WITH PASSWORD '$new_password';"
+    if [ "$OS" == "linux" ]; then
+        sudo -i -u postgres psql -c "CREATE USER $new_user WITH PASSWORD '$new_password';"
+    elif [ "$OS" == "mac" ]; then
+        createuser -P "$new_user"
+    fi
 
-    # Create new database and assign privileges
     echo "Creating a new database and assigning privileges to the new user..."
-    sudo -i -u postgres psql -c "CREATE DATABASE $new_db;"
-    sudo -i -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE $new_db TO $new_user;"
+    if [ "$OS" == "linux" ]; then
+        sudo -i -u postgres psql -c "CREATE DATABASE $new_db;"
+        sudo -i -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE $new_db TO $new_user;"
+        echo "Altering the schema owner..."
+        sudo -i -u postgres psql -d "$new_db" -c "ALTER SCHEMA public OWNER TO $new_user;"
+    elif [ "$OS" == "mac" ]; then
+        createdb "$new_db"
+        psql -c "GRANT ALL PRIVILEGES ON DATABASE $new_db TO $new_user;"
+    fi
 
-    # Altering the schema owner
-    echo "Altering the schema owner..."
-    sudo -i -u postgres psql -d "$new_db" -c "ALTER SCHEMA public OWNER TO $new_user;"
-
-    # Find the PostgreSQL version dynamically
-    postgres_version=$(ls /etc/postgresql/ | grep -E '^[0-9]+$' | tail -n 1)
-    
-    # Configuring PostgreSQL for remote access
-    if [ -n "$postgres_version" ]; then
-        postgres_conf="/etc/postgresql/$postgres_version/main/postgresql.conf"
-        pg_hba_conf="/etc/postgresql/$postgres_version/main/pg_hba.conf"
-
-        # Check and set listen_addresses if not already set
-        if ! sudo grep -q "^listen_addresses = '*'" "$postgres_conf"; then
-            echo "Setting listen_addresses..."
-            echo "listen_addresses = '*'" | sudo tee -a "$postgres_conf"
+    # Configure PostgreSQL for remote access
+    if [ "$OS" == "linux" ]; then
+        postgres_version=$(ls /etc/postgresql/ | grep -E '^[0-9]+$' | tail -n 1)
+        if [ -n "$postgres_version" ]; then
+            postgres_conf="/etc/postgresql/$postgres_version/main/postgresql.conf"
+            pg_hba_conf="/etc/postgresql/$postgres_version/main/pg_hba.conf"
+            if ! sudo grep -q "^listen_addresses = '*'" "$postgres_conf"; then
+                echo "Setting listen_addresses..."
+                echo "listen_addresses = '*'" | sudo tee -a "$postgres_conf"
+            else
+                echo "listen_addresses is already set to '*'"
+            fi
+            if ! sudo grep -q "^host all all 0.0.0.0/0 md5" "$pg_hba_conf"; then
+                echo "Setting host access..."
+                echo "host all all 0.0.0.0/0 md5" | sudo tee -a "$pg_hba_conf"
+            else
+                echo "host access is already set"
+            fi
+            echo "Restarting PostgreSQL..."
+            sudo service postgresql restart
         else
-            echo "listen_addresses is already set to '*'"
+            echo "Error: Unable to determine PostgreSQL version."
         fi
-
-        # Check and set host access if not already set
-        if ! sudo grep -q "^host all all 0.0.0.0/0 md5" "$pg_hba_conf"; then
-            echo "Setting host access..."
-            echo "host all all 0.0.0.0/0 md5" | sudo tee -a "$pg_hba_conf"
-        else
-            echo "host access is already set"
-        fi
-
-        # Restarting PostgreSQL to apply changes
-        echo "Restarting PostgreSQL..."
-        sudo service postgresql restart
-        echo "Remote access granted for new database ..."
-    else
-        echo "Error: Unable to determine PostgreSQL version."
+    elif [ "$OS" == "mac" ]; then
+        echo "PostgreSQL configuration for remote access is typically managed via `pgAdmin` or other tools."
+        echo "Please ensure that remote access is configured as needed."
     fi
 
     echo "----------------------------------------------------"
@@ -159,13 +186,13 @@ if [[ $python_version == *"3.11.9"* ]]; then
     echo "Python 3.11 is already installed."
 else
     echo "Python 3.11 is not installed. Installing..."
-    # Update package index
-    sudo apt update
-    # Adding PPA repository
-    sudo add-apt-repository ppa:deadsnakes/ppa
-    # Install Python 3 and python3.11-venv
-    sudo apt install python3.11 python3.11-venv -y
-    # Verify installation
+    if [ "$OS" == "linux" ]; then
+        sudo apt update
+        sudo add-apt-repository ppa:deadsnakes/ppa
+        sudo apt install python3.11 python3.11-venv -y
+    elif [ "$OS" == "mac" ]; then
+        brew install python@3.11
+    fi
     python_version=$(python3.11 --version 2>&1)
     if [[ $python_version == *"3.11.9"* ]]; then
         echo "Python 3.11 installed successfully."
@@ -212,7 +239,7 @@ deactivate
 echo "----------------------------------------------------"
 printf "Virtual Environment Deactivated 😎 \n\n\n"
 
-printf "░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░\n"
+printf "░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░\n"
 if [ "$create_env" == "y" ]; then
     printf "░░░░░░  Now U have to provide the exact value in $env_path And run the below files. ░░░░░░\n"
 fi
