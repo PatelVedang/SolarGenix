@@ -14,3 +14,4 @@ pre-commit
 commitlint
 pillow
 coverage
+google-api-python-client
