@@ -1,6 +1,6 @@
 import uuid
 
-from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
+from django.contrib.auth.models import AbstractUser, BaseUserManager, PermissionsMixin
 from django.core.exceptions import ValidationError
 from django.db import models
 
@@ -44,7 +44,8 @@ class UserManager(BaseUserManager):
 AUTH_PROVIDER = {"google": "google", "email": "email"}
 
 
-class User(AbstractBaseUser):
+class User(AbstractUser, PermissionsMixin):
+    username = None
     email = models.EmailField(
         verbose_name="Email",
         max_length=255,
@@ -52,8 +53,8 @@ class User(AbstractBaseUser):
     )
     name = models.CharField(max_length=70)
     tc = models.BooleanField()
-    is_active = models.BooleanField(default=False)
-    is_superuser = models.BooleanField(default=False)
+    # is_active = models.BooleanField(default=False)
+    # is_superuser = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     auth_provider = models.CharField(

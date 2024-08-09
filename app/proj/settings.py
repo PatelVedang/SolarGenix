@@ -231,6 +231,12 @@ EMAIL_HOST_PASSWORD = os.environ.get(
     "EMAIL_HOST_PASSWORD", os.getenv("EMAIL_HOST_PASSWORD", "Test@123")
 )  # Your Gmail password
 
+
+# GOOGLE SSO
+GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID")
+GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET")
+print(GOOGLE_CLIENT_SECRET, GOOGLE_CLIENT_ID)
+
 # PASSWORD validation
 PASSWORD_VALIDATE_STRING = "A minimum 8 characters and maximum 30 character password contains a combination of uppercase and lowercase letter, special symbol and number are required."
 PASSWORD_VALIDATE_REGEX = r"^(?=\S*[a-z])(?=\S*[A-Z])(?=\S*\d)(?=\S*[^\w\s])\S{8,30}$"
@@ -286,3 +292,8 @@ LOGGING = {
         },
     },
 }
+
+# AUTHENTICATION_BACKENDS = [
+#     "utils.custom_backend.EmailOnAuthBackend",  # Custom backend
+#     "django.contrib.auth.backends.ModelBackend",  # Default backend
+# ]

@@ -1,12 +1,12 @@
-from auth_api.models import User
+from auth_api.models import Token, User
+from auth_api.serializers import get_tokens_for_user
 from django.contrib.auth import authenticate
 from rest_framework.exceptions import AuthenticationFailed
 
 
-def register_social_user(provider, name, email):
+def register_social_user(provider, name, email, refresh_token):
     filtered_user_by_email = User.objects.filter(email=email)
     if filtered_user_by_email.exists():
-        print("heyyy")
         if provider == filtered_user_by_email[0].auth_provider:
             registered_user = authenticate(email=email, password="123")
             return {"tokens": registered_user.tokens()}
@@ -17,13 +17,12 @@ def register_social_user(provider, name, email):
             )
 
     else:
-        print("hiiii")
-        user = {"email": email, "password": "123", "name": name, "tc": True}
+        user = {"email": email, "password": "p@$$w0Rd", "name": name, "tc": True}
         user = User.objects.create_user(**user)
-        # user.is_verified = True
         user.auth_provider = provider
         user.save()
-        print(email, "===EMAIL")
-        new_user = authenticate(email=email, password="Parshva@123")
-        print(new_user, "00000000000")
-        return {"tokens": new_user.tokens()}
+        new_user = authenticate(email=email, password="p@$$w0Rd")
+        print("+++++", new_user)
+        Token.objects.create(user=user, token_type="google", token=refresh_token)
+        return {"tokens": get_tokens_for_user(new_user)}
+        # return {"tokens": new_user.tokens()}
