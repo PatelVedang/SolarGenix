@@ -90,6 +90,30 @@ fi
 echo "----------------------------------------------------"
 printf "JQ Installed 😎 \n\n\n"
 
+echo "Installing Ruff VS Code Extension"
+echo "----------------------------------------------------"
+if is_command_available code; then
+    # Check if the Ruff extension is already installed
+    if ! code --list-extensions | grep -q "charliermarsh.ruff"; then
+        echo "Ruff extension not found. Installing..."
+        if code --install-extension charliermarsh.ruff; then
+            echo "Ruff extension installed successfully."
+        else
+            echo "Failed to install the Ruff extension. Please check the error messages above."
+            exit 1
+        fi
+    else
+        echo "Ruff extension is already installed. Skipping installation."
+    fi
+else
+    echo "Visual Studio Code is not installed or the 'code' command is not available in your PATH."
+    echo "Please install Visual Studio Code and make sure the 'code' command is available."
+    exit 1
+fi
+echo "----------------------------------------------------"
+printf "Ruff VS Code Extension Installation Completed 😎 \n\n\n"
+
+
 echo "Installing Postgres Database"
 echo "----------------------------------------------------"
 

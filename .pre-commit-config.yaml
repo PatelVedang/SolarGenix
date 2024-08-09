@@ -20,7 +20,7 @@ repos:
     hooks:
       - id: check-env-synced
         name: Check .env and .env_example synchronization
-        entry: bash app/scripts/check_env_sync.sh
+        entry: ./app/scripts/check_env_sync.sh
         language: script
         always_run: true
         stages: [pre-commit]
