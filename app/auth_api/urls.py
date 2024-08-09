@@ -1,12 +1,13 @@
 from django.urls import path
+
 from auth_api.views import (
-    UserLoginView,
-    UserRegistrationView,
-    UserProfileView,
-    UserPasswordResetView,
-    ResendResetTokenView,
-    VerifyEmailView,
     ForgotPasswordView,
+    ResendResetTokenView,
+    UserLoginView,
+    UserPasswordResetView,
+    UserProfileView,
+    UserRegistrationView,
+    VerifyEmailView,
 )
 
 urlpatterns = [

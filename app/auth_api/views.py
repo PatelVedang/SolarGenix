@@ -49,7 +49,6 @@ def blacklist_token(token):
 )
 class UserRegistrationView(APIView):
     throttle_classes = [custom_throttling.CustomAuthThrottle]
-
     # def get(self, request, format=None):
     #     return render(request, 'auth_api/registration.html')
     def post(self, request, format=None):
@@ -76,6 +75,11 @@ class UserRegistrationView(APIView):
     },
 )
 class UserLoginView(APIView):
+    """
+    Authenticates users and generates access & refresh tokens.
+    This endpoint is used for user authentication. It expects a 'email' and 'password'
+    in the request body. On successful authentication, it returns access and refresh tokens.
+    """
     throttle_classes = [custom_throttling.CustomAuthThrottle]
 
     def post(self, request, format=None):
@@ -154,7 +158,7 @@ class UserProfileView(APIView):
         self.check_throttles(request)
         self.check_permissions(request)
         super().initial(request, *args, **kwargs)
-
+        
     def post(self, request, format=None):
         serializer = UserProfileSerializer(request.user)
         # if serializer.is_valid():
@@ -172,6 +176,11 @@ class UserProfileView(APIView):
     },
 )
 class ForgotPasswordView(APIView):
+    """
+    This endpoint is used to initiate the password reset process by providing a valid email.
+    The provided email should be associated with an existing user account in the system's database.
+    When a valid email is provided, the user will receive an email containing a link to reset the password.
+    """
     throttle_classes = [custom_throttling.CustomAuthThrottle]
 
     def post(self, request, format=None):
@@ -197,6 +206,11 @@ class ForgotPasswordView(APIView):
     },
 )
 class ResendResetTokenView(APIView):
+    """
+    This endpoint is used to resend a link to reset a user's password.
+    The password reset process will only be completed if the password provided matches the password validation.
+    Upon successful password reset, the user's password will be updated, allowing them to login using the new password.
+    """
     throttle_classes = [custom_throttling.CustomAuthThrottle]
 
     def post(self, request, format=None):
@@ -222,6 +236,11 @@ class ResendResetTokenView(APIView):
     },
 )
 class UserPasswordResetView(APIView):
+    """
+    This endpoint is used to reset a user's password.
+    The password reset process will only be completed if the password provided matches the password validation .
+    Upon successful password reset, the user's password will be updated, allowing them to login using the new password.
+    """
     throttle_classes = [custom_throttling.CustomAuthThrottle]
 
     def post(self, request, token):
