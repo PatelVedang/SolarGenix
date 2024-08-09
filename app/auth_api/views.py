@@ -13,6 +13,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import UntypedToken
+from utils import custom_throttling
 from utils.swagger import apply_swagger_tags
 
 from auth_api.models import BlacklistToken, Token, User
@@ -47,6 +48,7 @@ def blacklist_token(token):
     },
 )
 class UserRegistrationView(APIView):
+    throttle_classes = [custom_throttling.CustomAuthThrottle]
     # def get(self, request, format=None):
     #     return render(request, 'auth_api/registration.html')
     def post(self, request, format=None):
@@ -78,6 +80,7 @@ class UserLoginView(APIView):
     This endpoint is used for user authentication. It expects a 'email' and 'password'
     in the request body. On successful authentication, it returns access and refresh tokens.
     """
+    throttle_classes = [custom_throttling.CustomAuthThrottle]
 
     def post(self, request, format=None):
         serializer = UserLoginSerializer(data=request.data)
@@ -148,8 +151,14 @@ class UserLoginView(APIView):
     },
 )
 class UserProfileView(APIView):
+    throttle_classes = [custom_throttling.CustomAuthThrottle]
     permission_classes = [IsAuthenticated]
 
+    def initial(self, request, *args, **kwargs):
+        self.check_throttles(request)
+        self.check_permissions(request)
+        super().initial(request, *args, **kwargs)
+        
     def post(self, request, format=None):
         serializer = UserProfileSerializer(request.user)
         # if serializer.is_valid():
@@ -172,6 +181,7 @@ class ForgotPasswordView(APIView):
     The provided email should be associated with an existing user account in the system's database.
     When a valid email is provided, the user will receive an email containing a link to reset the password.
     """
+    throttle_classes = [custom_throttling.CustomAuthThrottle]
 
     def post(self, request, format=None):
         serializer = ForgetPasswordSerializer(
@@ -201,6 +211,7 @@ class ResendResetTokenView(APIView):
     The password reset process will only be completed if the password provided matches the password validation.
     Upon successful password reset, the user's password will be updated, allowing them to login using the new password.
     """
+    throttle_classes = [custom_throttling.CustomAuthThrottle]
 
     def post(self, request, format=None):
         serializer = ResendResetTokenSerializer(
@@ -230,6 +241,7 @@ class UserPasswordResetView(APIView):
     The password reset process will only be completed if the password provided matches the password validation .
     Upon successful password reset, the user's password will be updated, allowing them to login using the new password.
     """
+    throttle_classes = [custom_throttling.CustomAuthThrottle]
 
     def post(self, request, token):
         serializer = UserPasswordResetSerializer(
@@ -262,6 +274,8 @@ def reset_password(request, token):
     },
 )
 class VerifyEmailView(APIView):
+    throttle_classes = [custom_throttling.CustomAuthThrottle]
+
     def get(self, request, token):
         try:
             payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])

@@ -69,6 +69,9 @@ class InternalServerErrorResponseSerializer(serializers.Serializer):
     # data = serializers.DictField(default={})
 
 
+class TooManyRequestsErrorResponseSerializer(serializers.Serializer):
+    message = serializers.CharField(default="Too Many Requests")
+    
 def get_response_schema():
     """
     Returns a dictionary of response schemas for various HTTP status codes.
@@ -91,6 +94,9 @@ def get_response_schema():
         ),
         404: openapi.Response(
             description="Not Found", schema=NotFoundResponseSerializer
+        ),
+        429: openapi.Response(
+            description="Not Found", schema=TooManyRequestsErrorResponseSerializer
         ),
         500: openapi.Response(
             description="Internal Server Error",
