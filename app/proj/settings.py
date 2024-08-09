@@ -160,8 +160,6 @@ STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 # django_celery/settings.py
 
-# remove the traling slash
-APPEND_SLASH = False
 
 # DRF yasg
 SWAGGER_SETTINGS = {

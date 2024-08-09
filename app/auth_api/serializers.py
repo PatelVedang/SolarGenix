@@ -1,4 +1,3 @@
-import imp
 from rest_framework import serializers
 from auth_api.models import User, Token, BlacklistToken
 from django.contrib.auth.hashers import make_password,check_password

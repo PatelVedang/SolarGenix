@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env bash
 
 #clear the screen
 clear
@@ -17,7 +17,7 @@ echo "                          |_|                    "
 
 
 printf "░░░░░░  Running the migrations ░░░░░░ \n\n\n"
-. env/bin/activate
+source env/bin/activate
 python app/manage.py migrate --no-input
 # printf "░░░░░░  Running the fixtures ░░░░░░ \n\n\n"
 # python app/manage.py loaddata app/scanner/fixtures/tool.json --app scanner.tool
