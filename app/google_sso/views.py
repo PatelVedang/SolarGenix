@@ -5,6 +5,7 @@ from rest_framework.views import APIView
 from utils.swagger import apply_swagger_tags
 
 from .serializers import ExchangeTokenSerializer, GoogleSocialAuthSerializer
+from utils.make_response import response
 
 
 # Create your views here.
@@ -25,9 +26,14 @@ class GoogleApi(APIView):
         serializer = self.serializer_class(data=request.data)
         if serializer.is_valid():
             data = serializer.validated_data
-            return Response(data, status=status.HTTP_200_OK)
-        else:
-            return Response(serializer.errors)
+            return response(
+                data=data,
+                status_code=status.HTTP_200_OK,
+                message="Login done!",
+            )
+        return response(
+            status_code=status.HTTP_401_UNAUTHORIZED, data=serializer.errors
+        )
 
 
 @apply_swagger_tags(

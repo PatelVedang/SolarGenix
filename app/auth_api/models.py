@@ -1,46 +1,12 @@
-import uuid
-
-from django.contrib.auth.models import AbstractUser, BaseUserManager, PermissionsMixin
-from django.core.exceptions import ValidationError
 from django.db import models
+from .managers import UserManager, NonDeleted
+import uuid
+from django.contrib.auth.models import AbstractUser, PermissionsMixin
+from django.core.exceptions import ValidationError
+from django.utils.translation import gettext_lazy as _
 
 
 # Create your models here.
-class UserManager(BaseUserManager):
-    def create_user(self, email, name, tc, password=None, password2=None):
-        """
-        Creates and saves a User with the given email, date of
-        birth and password.
-        """
-        if not email:
-            raise ValueError("Users must have an email address")
-
-        user = self.model(
-            email=self.normalize_email(email),
-            name=name,
-            tc=tc,
-        )
-        user.set_password(password)
-        user.save(using=self._db)
-        return user
-
-    def create_superuser(self, email, name, tc, password=None):
-        """
-        Creates and saves a superuser with the given email, date of
-        birth and password.
-        """
-        user = self.create_user(
-            email,
-            password=password,
-            name=name,
-            tc=tc,
-        )
-        user.is_active = True
-        user.is_superuser = True
-        user.save(using=self._db)
-        return user
-
-
 AUTH_PROVIDER = {"google": "google", "email": "email"}
 
 
@@ -51,22 +17,26 @@ class User(AbstractUser, PermissionsMixin):
         max_length=255,
         unique=True,
     )
-    name = models.CharField(max_length=70)
-    tc = models.BooleanField()
-    # is_active = models.BooleanField(default=False)
-    # is_superuser = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     auth_provider = models.CharField(
         max_length=255, null=False, blank=False, default=AUTH_PROVIDER.get("email")
     )
+    is_active = models.BooleanField(
+        _("active"),
+        default=False,  # Override the default value
+    )
     objects = UserManager()
 
     USERNAME_FIELD = "email"
-    REQUIRED_FIELDS = ["name", "tc"]
+    REQUIRED_FIELDS = []
 
     def __str__(self):
-        return self.name
+        return self.first_name
+
+    def save(self, *args, **kwargs):
+        self.email = self.email.lower()  # Normalize email to lowercase
+        super().save(*args, **kwargs)
 
     def has_perm(self, perm, obj=None):
         "Does the user have a specific permission?"
@@ -78,11 +48,11 @@ class User(AbstractUser, PermissionsMixin):
         # Simplest possible answer: Yes, always
         return True
 
-    @property
-    def is_staff(self):
-        "Is the user a member of staff?"
-        # Simplest possible answer: All admins are staff
-        return self.is_superuser
+    # @property
+    # def is_staff(self):
+    #     "Is the user a member of staff?"
+    #     # Simplest possible answer: All admins are staff
+    #     return self.is_staff
 
     class Meta:
         app_label = "auth_api"
@@ -98,14 +68,26 @@ class Token(models.Model):
     )
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    jti = models.CharField(max_length=255)
+    jti = models.CharField(max_length=255, null=True, blank=True)
     token = models.CharField(max_length=255)
     token_type = models.CharField(max_length=15, choices=TOKEN_TYPES, default="access")
     expires_at = models.DateTimeField(blank=True, null=True)
     is_blacklisted = models.BooleanField(default=False)
+    is_deleted = models.BooleanField(default=False)
 
     def __str__(self):
-        return f"{self.user.name} - {self.token_type} - {self.jti}"
+        return f"{self.user.first_name} - {self.token_type} - {self.jti}"
+
+    default = models.Manager()
+    objects = NonDeleted()
+
+    def soft_delete(self):
+        self.is_deleted = True
+        self.save()
+
+    def restore(self):
+        self.is_deleted = False
+        self.save()
 
 
 class BlacklistToken(models.Model):

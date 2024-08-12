@@ -32,15 +32,26 @@ class GoogleSocialAuthSerializer(serializers.Serializer):
             raise AuthenticationFailed("oops, who are you?")
         # user_id = user_data["sub"]
         email = user_data["email"]
-        name = user_data["name"]
+        first_name = user_data["name"]
         provider = "google"
 
-        return register_social_user(
-            provider=provider, email=email, name=name, refresh_token=refresh_token
+        # return register_social_user(
+        #     provider=provider,
+        #     email=email,
+        #     first_name=first_name,
+        #     refresh_token=refresh_token,
+        # )
+        user_response = register_social_user(
+            provider=provider,
+            email=email,
+            first_name=first_name,
+            refresh_token=refresh_token,
         )
+        return user_response
 
 
 class ExchangeTokenSerializer(serializers.Serializer):
+    print("nooooooooooooo")
     authorization_code = serializers.CharField()
 
     def validate(self, data):

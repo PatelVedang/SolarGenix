@@ -156,7 +156,7 @@ class EmailTemplates:
         button_link = kwargs.get("button_links", "#")
 
         lines = [
-            f"Hello {user.name},",
+            f"Hello {user.first_name} {user.last_name},",
             "We received a request to reset your password. If you did not make this request, please ignore this email.",
             "To reset your password, please click on the link below:",
         ]
@@ -174,7 +174,7 @@ class EmailTemplates:
         user = kwargs.get("user")
 
         lines = [
-            f"Hello {user.name},",
+            f"Hello {user.first_name} {user.last_name},",
             "Your password has been successfully reset. Please use your new password to login.",
             "If you did not initiate this password reset, please contact our support team immediately.",
         ]
@@ -191,7 +191,7 @@ class EmailTemplates:
         button_link = kwargs.get("button_links", "#")
 
         lines = [
-            f"Hello {user.name},",
+            f"Hello {user.first_name} {user.last_name},",
             "You're almost ready to get started. Please click on the button below to verify your email address.",
         ]
         context = {
@@ -209,7 +209,7 @@ class EmailTemplates:
         button_link = kwargs.get("button_links", "#")
 
         lines = [
-            f"Hello {user.name},",
+            f"Hello {user.first_name} {user.last_name},",
             "We received a request to reset your password. If you did not make this request, please ignore this email.",
             "To reset your password, please click on the link below:",
         ]

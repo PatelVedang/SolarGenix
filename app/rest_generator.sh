@@ -118,6 +118,7 @@ cat <<EOL > "$PLURAL_UNDERSCORED/views.py"
 from rest_framework import viewsets
 from rest_framework.permissions import IsAuthenticated
 from utils.swagger import apply_swagger_tags
+from utils.custom_filter import filter_model
 from proj.base_view import BaseModelViewSet
 from .models import $SINGULAR_CAPITALIZED
 from .serializers import $SINGULAR_CAPITALIZED_SERIALIZER
@@ -127,6 +128,13 @@ class $SINGULAR_CAPITALIZED_VIEWSET(BaseModelViewSet):
     queryset = $SINGULAR_CAPITALIZED.objects.all()
     serializer_class = $SINGULAR_CAPITALIZED_SERIALIZER
     permission_classes = [IsAuthenticated]
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        query_params = self.request.query_params
+        if query_params:
+            # Apply filtering based on query parameters
+            return filter_model(query_params, queryset, $SINGULAR_CAPITALIZED)
+        return queryset
 EOL
 
 # Generate urls.py

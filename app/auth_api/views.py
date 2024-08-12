@@ -1,42 +1,27 @@
-from datetime import datetime
-
-import jwt
-from django.conf import settings
-from django.contrib.auth import authenticate
-from django.http import JsonResponse
-from django.shortcuts import render
 from rest_framework import status
-from rest_framework.exceptions import AuthenticationFailed
-
-# from auth_api.renderers import UserRenderer
 from rest_framework.permissions import IsAuthenticated
-from rest_framework.response import Response
+from rest_framework.exceptions import NotAuthenticated
 from rest_framework.views import APIView
-from rest_framework_simplejwt.tokens import UntypedToken
 from utils import custom_throttling
 from utils.swagger import apply_swagger_tags
-
-from auth_api.models import BlacklistToken, Token, User
+from utils.make_response import response
+from utils.permissions import IsTokenValid
 from auth_api.serializers import (
+    ChangePasswordSerializer,
     ForgetPasswordSerializer,
+    LogoutSerializer,
+    RefreshTokenSerializer,
     ResendResetTokenSerializer,
+    SendVerificationEmailSerializer,
     UserLoginSerializer,
     UserPasswordResetSerializer,
     UserProfileSerializer,
     UserRegistrationSerializer,
-    check_blacklist,
-    get_tokens_for_user,
+    VerifyEmailSerializer,
 )
+from auth_api.models import Token
 
 
-def blacklist_token(token):
-    validated_token = UntypedToken(token)
-    jti = validated_token.get("jti")
-    token_type = validated_token.get("token_type", "unknown")
-    BlacklistToken.objects.create(jti=jti, token_type=token_type)
-
-
-# @apply_swagger_tags(tags=["Auth"])
 @apply_swagger_tags(
     tags=["Auth"],
     method_details={
@@ -49,18 +34,23 @@ def blacklist_token(token):
 )
 class UserRegistrationView(APIView):
     throttle_classes = [custom_throttling.CustomAuthThrottle]
-    # def get(self, request, format=None):
-    #     return render(request, 'auth_api/registration.html')
-    def post(self, request, format=None):
+
+    def post(self, request):
         serializer = UserRegistrationSerializer(data=request.data)
         if serializer.is_valid(raise_exception=True):
-            serializer.save()
-
-            return Response(
-                {"msg": "Registration done! Please verify your email."},
-                status=status.HTTP_201_CREATED,
+            user = serializer.save()
+            response_data = {
+                "email": user.email,
+                "first name": user.first_name,
+                "last name": user.last_name,
+            }
+            return response(
+                data=response_data,
+                status_code=status.HTTP_201_CREATED,
+                message="Registration Done. Please Activate Your Account!",
             )
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        return response(status_code=status.HTTP_400_BAD_REQUEST, data=serializer.errors)
 
 
 # @apply_swagger_tags(tags=["Auth"])
@@ -80,89 +70,82 @@ class UserLoginView(APIView):
     This endpoint is used for user authentication. It expects a 'email' and 'password'
     in the request body. On successful authentication, it returns access and refresh tokens.
     """
+
     throttle_classes = [custom_throttling.CustomAuthThrottle]
 
-    def post(self, request, format=None):
+    def post(self, request):
         serializer = UserLoginSerializer(data=request.data)
         if serializer.is_valid(raise_exception=True):
-            email = serializer.data.get("email")
-            password = serializer.data.get("password")
-            user = authenticate(email=email, password=password)
-            if user is not None:
-                if user.is_active:
-                    existing_refresh_token = Token.objects.filter(
-                        user=user, token_type="refresh"
-                    ).first()
-                    existing_access_token = Token.objects.filter(
-                        user=user, token_type="access"
-                    ).first()
-                    if existing_access_token and existing_refresh_token:
-                        access_token = existing_access_token.token
-                        refresh_token = existing_refresh_token.token
-                    else:
-                        token = get_tokens_for_user(user)
-                        access_token = token["access"]
-                        refresh_token = token["refresh"]
-                        payload = jwt.decode(
-                            access_token, settings.SECRET_KEY, algorithms=["HS256"]
-                        )
-                        Token.objects.create(
-                            user=user,
-                            jti=payload["jti"],
-                            token=access_token,
-                            token_type="access",
-                            expires_at=datetime.fromtimestamp(payload["exp"]),
-                        )
-                        payload = jwt.decode(
-                            refresh_token, settings.SECRET_KEY, algorithms=["HS256"]
-                        )
-                        # Store refresh token
-                        Token.objects.create(
-                            user=user,
-                            jti=payload["jti"],
-                            token=refresh_token,
-                            token_type="refresh",
-                            expires_at=datetime.fromtimestamp(payload["exp"]),
-                        )
-                    return Response(
-                        {
-                            "access": access_token,
-                            "refresh": refresh_token,
-                            "message": "Login done!",
-                        },
-                        status=status.HTTP_200_OK,
-                    )
-                else:
-                    raise AuthenticationFailed(
-                        "Email not verified. Please check your email."
-                    )
-            else:
-                raise AuthenticationFailed("Email or password is invalid.")
+            user = serializer.validated_data["user"]
+            # Fetch tokens for the user
+            token_dict = dict(
+                Token.objects.filter(
+                    user=user, is_blacklisted=False, is_deleted=False
+                ).values_list("token_type", "token")
+            )
+            return response(
+                # data={"access": tokens["access"], "refresh": tokens["refresh"]},
+                data={
+                    "access": token_dict.get("access"),
+                    "refresh": token_dict.get("refresh"),
+                },
+                status_code=status.HTTP_200_OK,
+                message="Login done successfully!",
+            )
+        return response(
+            status_code=status.HTTP_401_UNAUTHORIZED, data=serializer.errors
+        )
+
+
+@apply_swagger_tags(
+    tags=["Auth"],
+    method_details={
+        "get": {
+            "operation_description": "User profile",
+            "operation_summary": "GET method for user profile details",
+        },
+    },
+)
+class UserProfileView(APIView):
+    permission_classes = [IsAuthenticated, IsTokenValid]
+    throttle_classes = [custom_throttling.CustomAuthThrottle]
+
+    def initial(self, request, *args, **kwargs):
+        self.check_throttles(request)
+        self.check_permissions(request)
+        super().initial(request, *args, **kwargs)
+
+    def get(self, request):
+        serializer = UserProfileSerializer(request.user)
+        if not request.user.is_authenticated:
+            raise NotAuthenticated("Authentication credentials were not provided.")
+        return response(
+            data=serializer.data,
+            status_code=status.HTTP_200_OK,
+            message="User found successfully",
+        )
 
 
 @apply_swagger_tags(
     tags=["Auth"],
     method_details={
         "post": {
-            "operation_description": "User profile",
-            "request_body": UserProfileSerializer,
-            "operation_summary": "POST method for user profile details",
+            "operation_description": "Change password",
+            "request_body": ChangePasswordSerializer,
+            "operation_summary": "Post method for change password",
         },
     },
 )
-class UserProfileView(APIView):
-    throttle_classes = [custom_throttling.CustomAuthThrottle]
-    permission_classes = [IsAuthenticated]
+class ChangePasswordView(APIView):
+    permission_classes = [IsAuthenticated, IsTokenValid]
 
-    def initial(self, request, *args, **kwargs):
-        self.check_throttles(request)
-        self.check_permissions(request)
-        super().initial(request, *args, **kwargs)
-        
-    def post(self, request, format=None):
-        serializer = UserProfileSerializer(request.user)
-        # if serializer.is_valid():
-        return Response(serializer.data, status=status.HTTP_200_OK)
+    def post(self, request):
+        serializer = ChangePasswordSerializer(
+            data=request.data, context={"request": request}
+        )
+        if serializer.is_valid(raise_exception=True):
+            serializer.save()
+            return response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @apply_swagger_tags(
@@ -181,18 +164,16 @@ class ForgotPasswordView(APIView):
     The provided email should be associated with an existing user account in the system's database.
     When a valid email is provided, the user will receive an email containing a link to reset the password.
     """
+
     throttle_classes = [custom_throttling.CustomAuthThrottle]
 
-    def post(self, request, format=None):
+    def post(self, request):
         serializer = ForgetPasswordSerializer(
             data=request.data, context={"user": request.user}
         )
         if serializer.is_valid(raise_exception=True):
-            return Response(
-                {"message": "Reset Password link shared on your Gmail"},
-                status=status.HTTP_200_OK,
-            )
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return response(status_code=status.HTTP_204_NO_CONTENT)
+        return response(status_code=status.HTTP_400_BAD_REQUEST, data=serializer.errors)
 
 
 @apply_swagger_tags(
@@ -211,18 +192,21 @@ class ResendResetTokenView(APIView):
     The password reset process will only be completed if the password provided matches the password validation.
     Upon successful password reset, the user's password will be updated, allowing them to login using the new password.
     """
+
     throttle_classes = [custom_throttling.CustomAuthThrottle]
 
-    def post(self, request, format=None):
+    def post(self, request):
         serializer = ResendResetTokenSerializer(
             data=request.data, context={"user": request.user}
         )
         if serializer.is_valid(raise_exception=True):
-            return Response(
-                {"message": "Resend Reset Password link shared on your Gmail"},
-                status=status.HTTP_200_OK,
+            return response(
+                data=serializer.data,
+                status_code=status.HTTP_200_OK,
+                message=" Rsend Reset Password Link on Your Account",
             )
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        return response(status_code=status.HTTP_400_BAD_REQUEST, data=serializer.errors)
 
 
 @apply_swagger_tags(
@@ -236,32 +220,21 @@ class ResendResetTokenView(APIView):
     },
 )
 class UserPasswordResetView(APIView):
+    permission_classes = [IsTokenValid]
+    throttle_classes = [custom_throttling.CustomAuthThrottle]
     """
     This endpoint is used to reset a user's password.
     The password reset process will only be completed if the password provided matches the password validation .
     Upon successful password reset, the user's password will be updated, allowing them to login using the new password.
     """
-    throttle_classes = [custom_throttling.CustomAuthThrottle]
 
     def post(self, request, token):
         serializer = UserPasswordResetSerializer(
             data=request.data, context={"token": token}
         )
         if serializer.is_valid(raise_exception=True):
-            return Response(
-                {"msg": "Password Reset Successfully"}, status=status.HTTP_200_OK
-            )
-        return JsonResponse(
-            {"msg": "Password Not Reset Successfully"},
-            status=status.HTTP_400_BAD_REQUEST,
-        )
-
-
-def reset_password(request, token):
-    context = {
-        "token": token,
-    }
-    return render(request, "auth_api/reset_password_form.html", context)
+            return response(status_code=status.HTTP_204_NO_CONTENT)
+        return response(status_code=status.HTTP_400_BAD_REQUEST, data=serializer.errors)
 
 
 @apply_swagger_tags(
@@ -274,34 +247,77 @@ def reset_password(request, token):
     },
 )
 class VerifyEmailView(APIView):
+    permission_classes = [IsTokenValid]
     throttle_classes = [custom_throttling.CustomAuthThrottle]
 
     def get(self, request, token):
-        try:
-            payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
-            print("Payload", payload)
-            check_blacklist(payload["jti"])
-            token_object = Token.objects.get(jti=payload["jti"])
-            user = token_object.user
-            if not user.is_active:
-                user.is_active = True
-                user.save()
-                return Response(
-                    {"message": "Email verified successfully"},
-                    status=status.HTTP_200_OK,
-                )
-            else:
-                return Response(
-                    {"message": "Email already verified"}, status=status.HTTP_200_OK
-                )
+        serializer = VerifyEmailSerializer(data={"token": token})
+        if serializer.is_valid():
+            serializer.save()
+            return response(status_code=status.HTTP_204_NO_CONTENT)
+        return response(status_code=status.HTTP_400_BAD_REQUEST, data=serializer.errors)
 
-        except jwt.ExpiredSignatureError:
-            return Response(
-                {"error": "Verification link has expired"},
-                status=status.HTTP_400_BAD_REQUEST,
+
+@apply_swagger_tags(
+    tags=["Auth"],
+    method_details={
+        "post": {
+            "operation_description": "Resend Verify Token ",
+            "request_body": RefreshTokenSerializer,
+            "operation_summary": "Post method for resend reset token",
+        },
+    },
+)
+class RefreshTokenView(APIView):
+    permission_classes = [IsTokenValid]
+
+    def post(self, request):
+        serializer = RefreshTokenSerializer(data=request.data)
+        if serializer.is_valid(raise_exception=True):
+            data = serializer.save()
+            return response(
+                data=data,
+                status_code=status.HTTP_200_OK,
+                message="Refresh token Generated",
             )
-        except (jwt.exceptions.DecodeError, Token.DoesNotExist, User.DoesNotExist):
-            return Response(
-                {"error": "Invalid verification link"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+        return response(status_code=status.HTTP_400_BAD_REQUEST, data=serializer.errors)
+
+
+@apply_swagger_tags(
+    tags=["Auth"],
+    method_details={
+        "post": {
+            "operation_description": "Resend Verify Token ",
+            "request_body": SendVerificationEmailSerializer,
+            "operation_summary": "Post method for resend verify token",
+        },
+    },
+)
+class SendVerificationEmailView(APIView):
+    def post(self, request):
+        serializer = SendVerificationEmailSerializer(
+            data=request.data, context={"user": request.user}
+        )
+        if serializer.is_valid(raise_exception=True):
+            return response(status_code=status.HTTP_204_NO_CONTENT)
+        return response(status_code=status.HTTP_400_BAD_REQUEST, data=serializer.errors)
+
+
+@apply_swagger_tags(
+    tags=["Auth"],
+    method_details={
+        "post": {
+            "operation_description": "Logout ",
+            "request_body": LogoutSerializer,
+            "operation_summary": "Post method for log out",
+        },
+    },
+)
+class LogoutView(APIView):
+    serializer_class = LogoutSerializer
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        serializer = self.serializer_class(data={}, context={"request": request})
+        if serializer.is_valid(raise_exception=True):
+            return response(status_code=status.HTTP_204_NO_CONTENT)

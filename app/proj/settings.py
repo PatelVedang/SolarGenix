@@ -14,30 +14,26 @@ import os
 from datetime import timedelta
 from pathlib import Path
 
-import environ
+from utils.config import load_settings
 
-env = environ.Env()
+settings = load_settings()
+
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-environ.Env.read_env(os.path.join(BASE_DIR, ".env"))
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ.get("SECRET_KEY", os.getenv("SECRET_KEY", "8936d6507"))
+SECRET_KEY = settings.SECRET_KEY
 
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = bool(int(os.environ.get("DEBUG", os.getenv("DEBUG", "0"))))
-UNIT_TEST_USER_EMAIL = os.environ.get(
-    "UNIT_TEST_USER_EMAIL", os.getenv("UNIT_TEST_USER_EMAIL", "example@yopmail.com")
-)
-UNIT_TEST_USER_PASSWORD = os.environ.get(
-    "UNIT_TEST_USER_PASSWORD", os.getenv("UNIT_TEST_USER_PASSWORD", "test@123")
-)
+DEBUG = settings.DEBUG
+UNIT_TEST_USER_EMAIL = settings.UNIT_TEST_USER_EMAIL
+UNIT_TEST_USER_PASSWORD = settings.UNIT_TEST_USER_PASSWORD
 
 ALLOWED_HOSTS = ["*"]
 
@@ -56,6 +52,18 @@ INSTALLED_APPS = [
     "django_filters",
     "auth_api",
     "corsheaders",
+]
+
+MIDDLEWARE = [
+    "django.middleware.security.SecurityMiddleware",
+    "django.contrib.sessions.middleware.SessionMiddleware",
+    "corsheaders.middleware.CorsMiddleware",
+    "django.middleware.common.CommonMiddleware",
+    "django.middleware.csrf.CsrfViewMiddleware",
+    "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "django.contrib.messages.middleware.MessageMiddleware",
+    "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    # 'auth_api.middleware.CheckBlacklistMiddleware',
 ]
 
 MIDDLEWARE = [
@@ -92,22 +100,16 @@ WSGI_APPLICATION = "proj.wsgi.application"
 ASGI_APPLICATION = "proj.asgi.application"
 
 
+# Database
+
 DATABASES = {
     "default": {
-        "ENGINE": os.environ.get(
-            "SQL_ENGINE", os.getenv("SQL_ENGINE", "django.db.backends.postgresql")
-        ),
-        "NAME": os.environ.get("SQL_DATABASE", os.getenv("SQL_DATABASE", "postgres")),
-        "USER": os.environ.get("SQL_USER", os.getenv("SQL_USER", "postgres")),
-        "PASSWORD": os.environ.get(
-            "SQL_PASSWORD", os.getenv("SQL_PASSWORD", "postgres")
-        ),
-        "HOST": os.environ.get(
-            "SQL_DATABASE_HOST", os.getenv("SQL_DATABASE_HOST", "localhost")
-        ),
-        "PORT": int(
-            os.environ.get("SQL_DATABASE_PORT", os.getenv("SQL_DATABASE_PORT", "5432"))
-        ),
+        "ENGINE": settings.SQL_ENGINE,
+        "NAME": settings.SQL_DATABASE,
+        "USER": settings.SQL_USER,
+        "PASSWORD": settings.SQL_PASSWORD,
+        "HOST": settings.SQL_DATABASE_HOST,
+        "PORT": settings.SQL_DATABASE_PORT,
         "CONN_MAX_AGE": 60,
         # 'OPTIONS': {
         #     # "init_command": f"SET GLOBAL max_connections = 100000",
@@ -115,7 +117,6 @@ DATABASES = {
         # }
     }
 }
-
 
 # Password validation
 # https://docs.djangoproject.com/en/4.1/ref/settings/#auth-password-validators
@@ -174,12 +175,11 @@ SWAGGER_SETTINGS = {
     },
 }
 
-CSRF_TRUSTED_ORIGINS = os.environ.get(
-    "CSRF_TRUSTED_ORIGINS", os.getenv("CSRF_TRUSTED_ORIGINS", "")
-).split()
-CORS_ORIGIN_WHITELIST = os.environ.get(
-    "CORS_ORIGIN_WHITELIST", os.getenv("CORS_ORIGIN_WHITELIST", "")
-).split()
+# CSRF_TRUSTED_ORIGINS=settings.CSRF_TRUSTED_ORIGINS
+# CORS_ORIGIN_WHITELIST=settings.CORS_ORIGIN_WHITELIST
+# PDF_DOWNLOAD_ORIGIN=settings.PDF_DOWNLOAD_ORIGIN
+
+# CORS_ORIGIN_ALLOW_ALL = True
 
 # By pass http to https
 USE_X_FORWARDED_HOST = True
@@ -201,12 +201,10 @@ REST_FRAMEWORK = {
 
 # SIMPLE_JWT
 SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(days=1),
-    "REFRESH_TOKEN_LIFETIME": timedelta(days=30),
-    "ALGORITHM": "HS256",
-    "SIGNING_KEY": os.environ.get(
-        "SECRET_KEY", os.getenv("SECRET_KEY", "8936d6507db94f63ac6a008dd48f490d")
-    ),
+    "ACCESS_TOKEN_LIFETIME": timedelta(days=settings.JWT_ACCESS_TOKEN_LIFETIME),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=settings.JWT_REFRESH_TOKEN_LIFETIME),
+    "ALGORITHM": settings.JWT_ALGORITHM,
+    "SIGNING_KEY": settings.SECRET_KEY,
 }
 
 AUTH_USER_MODEL = "auth_api.User"
@@ -219,29 +217,22 @@ MEDIA_ROOT = os.path.join(BASE_DIR, "media/")
 
 
 # EMAIL
-EMAIL_HOST = os.environ.get("EMAIL_HOST", os.getenv("EMAIL_HOST", "smtp.gmail.com"))
-EMAIL_PORT = int(os.environ.get("EMAIL_PORT", os.getenv("EMAIL_PORT", "465")))
-EMAIL_USE_TLS = bool(
-    int(os.environ.get("EMAIL_USE_TLS", os.getenv("EMAIL_USE_TLS", "0")))
-)
-EMAIL_USE_SSL = bool(
-    int(os.environ.get("EMAIL_USE_SSL", os.getenv("EMAIL_USE_SSL", "1")))
-)
-EMAIL_BACKEND = os.environ.get(
-    "EMAIL_BACKEND", os.getenv("EMAIL_BACKEND", "django_smtp_ssl.SSLEmailBackend")
-)
-EMAIL_HOST_USER = os.environ.get(
-    "EMAIL_HOST_USER", os.getenv("EMAIL_HOST_USER", "example@yopmail.com")
-)  # Your Gmail email address
-EMAIL_HOST_PASSWORD = os.environ.get(
-    "EMAIL_HOST_PASSWORD", os.getenv("EMAIL_HOST_PASSWORD", "Test@123")
-)  # Your Gmail password
+EMAIL_HOST = settings.EMAIL_HOST
+EMAIL_PORT = settings.EMAIL_PORT
+EMAIL_USE_TLS = settings.EMAIL_USE_TLS
+EMAIL_USE_SSL = settings.EMAIL_USE_SSL
+EMAIL_BACKEND = settings.EMAIL_BACKEND
+EMAIL_HOST_USER = settings.EMAIL_HOST_USER
+EMAIL_HOST_PASSWORD = settings.EMAIL_HOST_PASSWORD
+
+# BUSINESS_EMAIL=os.environ.get('BUSINESS_EMAIL', env('BUSINESS_EMAIL'))
+# SUPPORT_EMAILS=os.environ.get('SUPPORT_EMAILS', env('SUPPORT_EMAILS')).split(" ")
+HOST_URL = settings.HOST_URL
 
 
 # GOOGLE SSO
-GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID")
-GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET")
-print(GOOGLE_CLIENT_SECRET, GOOGLE_CLIENT_ID)
+GOOGLE_CLIENT_ID = settings.GOOGLE_CLIENT_ID
+GOOGLE_CLIENT_SECRET = settings.GOOGLE_CLIENT_SECRET
 
 # PASSWORD validation
 PASSWORD_VALIDATE_STRING = "A minimum 8 characters and maximum 30 character password contains a combination of uppercase and lowercase letter, special symbol and number are required."
@@ -299,7 +290,7 @@ LOGGING = {
     },
 }
 
-# AUTHENTICATION_BACKENDS = [
-#     "utils.custom_backend.EmailOnAuthBackend",  # Custom backend
-#     "django.contrib.auth.backends.ModelBackend",  # Default backend
-# ]
+AUTHENTICATION_BACKENDS = [
+    "utils.custom_backend.EmailOnAuthBackend",  # Custom backend
+    "django.contrib.auth.backends.ModelBackend",  # Default backend
+]
