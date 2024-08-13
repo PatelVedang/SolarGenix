@@ -32,13 +32,6 @@ def create_token(user, token_type, token=None):
         payload = jwt.decode(token_str, settings.SECRET_KEY, algorithms=["HS256"])
         jti = payload["jti"]
         expires_at = datetime.fromtimestamp(payload["exp"])
-    # Token.objects.create(
-    # user=user,
-    # jti=payload["jti"],
-    # token=token_str,
-    # token_type=token_type,
-    # expires_at=datetime.fromtimestamp(payload["exp"]),
-    # )
     Token.objects.create(
         user=user,
         jti=jti,
