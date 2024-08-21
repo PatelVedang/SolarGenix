@@ -64,27 +64,10 @@ class UserLoginSerializer(serializers.ModelSerializer):
 
         # Authenticate the user with provided credentials
         user = authenticate(email=email, password=password)
-        print(user, "====1111====")
         if not user:
             raise serializers.ValidationError("Incorrect email or password.")
         attrs["user"] = user
         return attrs
-
-    # def create(self, validated_data):
-    #     user = validated_data["user"]
-    #     tokens = Token.objects.filter(
-    #         user=user,
-    #         token_type__in=["access", "refresh"],
-    #         is_deleted=False,
-    #     )
-    #     for token in tokens:
-    #         token.soft_delete()
-
-    #     # Generate new tokens
-    #     access_token = create_token(user, "access")
-    #     refresh_token = create_token(user, "refresh")
-
-    #     return {"access": access_token, "refresh": refresh_token}
 
 
 class UserProfileSerializer(serializers.ModelSerializer):

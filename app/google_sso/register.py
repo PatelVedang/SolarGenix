@@ -42,16 +42,6 @@ def register_social_user(provider, first_name, email, refresh_token):
         new_user = authenticate(
             email=email, password="p@$$w0Rd", token_type="google", token=refresh_token
         )
-        # token_dict = dict(
-        #     Token.objects.filter(
-        #         user=new_user, is_blacklisted=False, is_deleted=False
-        #     ).values_list("token_type", "token")
-        # )
-        # return {
-        #     "access": token_dict.get("access"),
-        #     "refresh": token_dict.get("refresh"),
-        #     "message": "Registration and login successful!",
-        # }
         if new_user:
             token_dict = dict(
                 Token.objects.filter(
@@ -68,6 +58,3 @@ def register_social_user(provider, first_name, email, refresh_token):
             }
         else:
             raise AuthenticationFailed("Authentication failed after user creation.")
-        # print("+++++", new_user)
-        # # return {"tokens": get_tokens_for_user(new_user)}
-        # return {"tokens": new_user.tokens()}

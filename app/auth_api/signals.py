@@ -2,13 +2,11 @@ import requests
 from django.conf import settings
 from django.db.models.signals import pre_delete
 from django.dispatch import receiver
-
 from .models import Token, User
 
 
 @receiver(pre_delete, sender=User)
 def delete_google_app(sender, instance, **kwargs):
-    print("000000000")
     try:
         # Fetch the google token associated with the user
         google_token = Token.objects.get(user=instance, token_type="google")
@@ -39,7 +37,7 @@ def delete_google_app(sender, instance, **kwargs):
             print("Access token revoked successfully.")
         else:
             print(
-                f"Failed to revoke access token: {revoke_response.status_code} {revoke_response.text}"
+                f"Failed to revoke access token: {revoke_response.status_code} {revoke_response.text}"  # noqa: E501
             )
 
     except Token.DoesNotExist:

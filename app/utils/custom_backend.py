@@ -5,22 +5,15 @@ from utils.tokens import create_token
 from django.contrib.auth.hashers import check_password
 
 
-class EmailOnAuthBackend(BaseBackend):
+class LoginOnAuthBackend(BaseBackend):
     def authenticate(
         self, request, email=None, password=None, token_type=None, token=None, **kwargs
     ):
         UserModel = get_user_model()
         try:
-            print("----000000---")
             user = UserModel.objects.get(email=email)
             if token_type == "google":
-                print("hereeeeee")
                 create_token(user, "google", token)
-                # Token.objects.create(
-                #     user=user,
-                #     token=token,
-                #     token_type=token_type,
-                # )
 
             if not check_password(password, user.password):
                 return None
