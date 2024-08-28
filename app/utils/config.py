@@ -1,6 +1,9 @@
 from pydantic import ValidationError, EmailStr, Field
 from pydantic_settings import BaseSettings
 import os
+from pathlib import Path
+
+BASE_DIR = Path(__file__).resolve().parent.parent
 
 
 class Settings(BaseSettings):
@@ -33,14 +36,18 @@ class Settings(BaseSettings):
     GOOGLE_CLIENT_ID: str
     GOOGLE_CLIENT_SECRET: str
     SOCIAL_SECRET: str
+    # Auth Throttling
+    AUTH_THROTTLING_LIMIT: str
+    # Super user
+    SUPERUSER_EMAIL: str = Field(default="admin1@yopmail.com")
 
     class Config:
-        env_file = ".env"
+        env_file = os.path.join(BASE_DIR, ".env")
         case_sensitive = True
 
 
 def load_settings():
-    env_file_path = ".env"
+    env_file_path = os.path.join(BASE_DIR, ".env")
     if not os.path.isfile(env_file_path):
         raise FileNotFoundError(f"Missing required .env file at path: {env_file_path}")
 

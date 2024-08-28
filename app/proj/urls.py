@@ -31,18 +31,19 @@ urlpatterns = [
         "",
         include(
             [
+                # IMPORT_NEW_ROUTE_HERE
                 path("api/", include("auth_api.urls")),
+                path("api/", include("todos.urls")),
+                path("api/", include("products.urls")),
                 path(
                     "swagger",
                     schema_view.with_ui("swagger", cache_timeout=0),
                     name="swagger-schema",
                 ),
-                path("api/", include("google_sso.urls")),
             ]
         ),
     ),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
-
 
 admin.site.site_header = "ADMINISTRATION"
 admin.site.site_title = "Admin Portal"

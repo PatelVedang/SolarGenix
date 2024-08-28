@@ -1,43 +1,62 @@
-import jwt
-from proj import settings
+from django.conf import settings
 from rest_framework import serializers
 import re
 from django.contrib.auth import authenticate
 from utils.email import send_email
-from utils.tokens import create_token, decode_token, delete_token
 from django.contrib.auth.hashers import make_password
-from auth_api.models import Token, User
+from auth_api.models import Token, User, SimpleToken
+from rest_framework_simplejwt.serializers import TokenRefreshSerializer
+import threading
+from .google import Google
+from rest_framework.exceptions import AuthenticationFailed
+import logging
+
+logger = logging.getLogger("django")
 
 
+# The `UserRegistrationSerializer` class handles user registration data validation and creation,
+# including checking for existing email, password validation, and sending a verification email.
 class UserRegistrationSerializer(serializers.ModelSerializer):
     password = serializers.CharField(style={"input_type": "password"}, write_only=True)
+    password_confirm = serializers.CharField(write_only=True)
 
     class Meta:
         model = User
-        fields = ["email", "first_name", "last_name", "password"]
+        fields = ["email", "first_name", "last_name", "password", "password_confirm"]
 
     def validate(self, attrs):
         password = attrs.get("password")
+        confirm_pasword = attrs.pop("password_confirm")
+
+        if User.objects.filter(email=attrs.get("email").lower()).exists():
+            raise serializers.ValidationError("Email already exists.")
+
         if not re.search(settings.PASSWORD_VALIDATE_REGEX, password):
             raise serializers.ValidationError(settings.PASSWORD_VALIDATE_STRING)
-        attrs["email"] = attrs["email"].lower()
+
+        if password != confirm_pasword:
+            raise serializers.ValidationError("Passwords do not match.")
+
         return attrs
 
     def create(self, validated_data):
-        user = User.objects.create_user(**validated_data)
-        user.is_active = False  # User is inactive until they verify their email
-        verify_token = create_token(user, "verify")
+        validated_data["email"] = validated_data["email"].lower()
+        user = super().create(validated_data)
+        user.set_password(validated_data["password"])
+        user.save()
+        verify_token = SimpleToken.for_user(user, "verify", 60)
         context = {
             "subject": "Verify Your E-mail Address!",
             "user": user,
             "recipients": [user.email],
             "button_links": [
-                f"{settings.HOST_URL}/api/auth/verify-email/{verify_token}/"
+                f"{settings.HOST_URL}/api/auth/verify-email/{verify_token}"
             ],
             "html_template": "verify_email",
             "title": "Verify Your E-mail Address",
         }
-        send_email(**context)
+        thread = threading.Thread(target=send_email, kwargs=context)
+        thread.start()
         return user
 
 
@@ -49,25 +68,36 @@ class UserLoginSerializer(serializers.ModelSerializer):
         fields = ["email", "password"]
 
     def validate(self, attrs):
-        email = attrs.get("email").lower()
-        password = attrs.get("password")
-        try:
-            user = User.objects.get(email=email)
-        except User.DoesNotExist:
-            raise serializers.ValidationError("User is not registered.")
+        attrs["email"] = attrs["email"].lower()
+        # Authenticate the user with provided credentials
+        user = authenticate(**attrs)
+        if not user:
+            user = User.objects.filter(email=attrs.get("email"), is_active=False)
+            if user.exists():
+                user = user.first()
+                verify_token = SimpleToken.for_user(user, "verify", 60)
+                context = {
+                    "subject": "Verify Your E-mail Address!",
+                    "user": user,
+                    "recipients": [user.email],
+                    "button_links": [
+                        f"{settings.HOST_URL}/api/auth/verify-email/{verify_token}"
+                    ],
+                    "html_template": "verify_email",
+                    "title": "Verify Your E-mail Address",
+                }
+                thread = threading.Thread(target=send_email, kwargs=context)
+                thread.start()
+                raise serializers.ValidationError(
+                    "Email not verified. Please check your email for verification link."
+                )
+            raise serializers.ValidationError("Invalid email or password")
 
-        # Check if the user account is active
         if not user.is_active:
             raise serializers.ValidationError(
                 "Email not verified. Please check your email."
             )
-
-        # Authenticate the user with provided credentials
-        user = authenticate(email=email, password=password)
-        if not user:
-            raise serializers.ValidationError("Incorrect email or password.")
-        attrs["user"] = user
-        return attrs
+        return user
 
 
 class UserProfileSerializer(serializers.ModelSerializer):
@@ -76,28 +106,30 @@ class UserProfileSerializer(serializers.ModelSerializer):
         fields = ["id", "first_name", "last_name", "email"]
 
 
-class ForgetPasswordSerializer(serializers.Serializer):
+class ForgotPasswordSerializer(serializers.Serializer):
     email = serializers.EmailField(max_length=255)
 
     def validate(self, attrs):
         email = attrs.get("email").lower()
-        if User.objects.filter(email=email).exists():
-            user = User.objects.get(email=email)
-            reset_token = create_token(user, "reset")
+        user = User.objects.filter(email=email)
+        if user.exists():
+            user = user.first()
+            Token.objects.filter(user=user, token_type="reset").delete()
+            reset_token = SimpleToken.for_user(user, "reset", 60)
             context = {
                 "subject": "Password Reset Request",
                 "user": user,
                 "recipients": [email],
                 "html_template": "forgot_password",
                 "button_links": [
-                    f"{settings.HOST_URL}/api/auth/reset-password/{reset_token}/"
+                    f"{settings.HOST_URL}/api/auth/reset-password/{reset_token}"
                 ],
                 "title": "Reset your password",
             }
-            send_email(**context)
+            thread = threading.Thread(target=send_email, kwargs=context)
+            thread.start()
         else:
-            raise serializers.ValidationError("Not Registered Email")
-
+            logger.error(f"Forgot password mail sent fail due to {email} not found")
         return attrs
 
 
@@ -106,81 +138,76 @@ class ResendResetTokenSerializer(serializers.Serializer):
 
     def validate(self, attrs):
         email = attrs.get("email").lower()
-        if User.objects.filter(email=email).exists():
-            user = User.objects.get(email=email)
-            reset_token = create_token(user, "reset")
+        user = User.objects.filter(email=email)
+        if user.exists():
+            user = user.first()
+            Token.objects.filter(user=user, token_type="reset").delete()
+            token = SimpleToken.for_user(user, "reset", 60)
             context = {
                 "subject": "Resend Password Reset Request",
                 "user": user,
                 "recipients": [email],
                 "html_template": "resend_reset_password",
                 "button_links": [
-                    f"{settings.HOST_URL}/api/auth/reset-password/{reset_token}/"
+                    f"{settings.HOST_URL}/api/auth/reset-password/{token}"
                 ],
                 "title": "Reset your password",
             }
-            send_email(**context)
-            return attrs
+            thread = threading.Thread(target=send_email, kwargs=context)
+            thread.start()
         else:
-            raise serializers.ValidationError("Not Registered Email")
+            logger.error(
+                f"Resend forgot password mail sent fail due to {email} not found"
+            )  # noqa: E501
+        return attrs
 
 
 class UserPasswordResetSerializer(serializers.Serializer):
     password = serializers.CharField(style={"input_type": "password"}, write_only=True)
+    confirm_password = serializers.CharField(
+        style={"input_type": "password"}, write_only=True
+    )
 
     class Meta:
-        fields = ["password"]
+        fields = ["password", "confirm_password"]
 
     def validate(self, attrs):
         password = attrs.get("password")
+        confirm_pasword = attrs.get("confirm_password")
         token = self.context.get("token")
+
         if not re.search(settings.PASSWORD_VALIDATE_REGEX, attrs.get("password")):
             raise serializers.ValidationError(settings.PASSWORD_VALIDATE_STRING)
-        try:
-            # Decode the token using the correct secret and algorithm
-            payload = decode_token(token)
-            if payload.get("token_type") != "reset":
-                raise serializers.ValidationError("Invalid reset token")
-            token_object = Token.objects.get(jti=payload["jti"])
-            user = token_object.user
-            user.password = make_password(password)
-            user.save()
-            # token_object.delete()
-            delete_token(token)
-            context = {
-                "subject": "Password updated successfully!",
-                "user": user,
-                "recipients": [user.email],
-                "html_template": "resend_reset_password",
-                "title": "Password updated successfully",
-            }
-            send_email(**context)
-            return attrs
 
-        except Token.DoesNotExist:
-            raise serializers.ValidationError({"token": "Token not Found"})
-        except User.DoesNotExist:
-            raise serializers.ValidationError({"token": "User not Found"})
-        except jwt.ExpiredSignatureError:
-            raise serializers.ValidationError({"token": "Token has expired."})
-        except jwt.InvalidTokenError:
-            raise serializers.ValidationError("Invalid token")
+        if password != confirm_pasword:
+            raise serializers.ValidationError("Passwords do not match.")
 
-
-class RefreshTokenSerializer(serializers.Serializer):
-    refresh = serializers.CharField(max_length=500)
-
-    def create(self, validated_data):
-        refresh_token = validated_data["refresh"]
-        payload = decode_token(refresh_token)
-        user = Token.objects.get(jti=payload["jti"]).user
-        # Delete the old refresh token
-        delete_token(refresh_token)
-        # Generate new tokens
-        new_refresh_token = create_token(user, "refresh")
-        return {
-            "refresh": new_refresh_token,
+        payload = SimpleToken.validate_token(token, "reset")
+        token_obj = payload.get("token_obj")
+        user = token_obj.user
+        user.password = make_password(password)
+        user.save()
+        token_obj.hard_delete()
+        context = {
+            "subject": "Password updated successfully!",
+            "user": user,
+            "recipients": [user.email],
+            "html_template": "resend_reset_password",
+            "title": "Password updated successfully",
         }
+        thread = threading.Thread(target=send_email, kwargs=context)
+        thread.start()
+        return attrs
+
+
+class RefreshTokenSerializer(TokenRefreshSerializer):
+    def validate(self, attrs):
+        token = attrs.get("refresh")
+        payload = SimpleToken.validate_token(token, "refresh")
+        token_obj = payload.get("token_obj")
+        user = token_obj.user
+        token_obj.hard_delete()
+        return user.auth_tokens()
 
 
 class ChangePasswordSerializer(serializers.Serializer):
@@ -208,67 +235,89 @@ class ChangePasswordSerializer(serializers.Serializer):
         return user
 
 
-class SendVerificationEmailSerializer(serializers.Serializer):
+class ResendVerificationEmailSerializer(serializers.Serializer):
     email = serializers.EmailField(max_length=255)
 
     def validate(self, attrs):
         email = attrs.get("email").lower()
-        if User.objects.filter(email=email).exists():
-            user = User.objects.get(email=email)
-            verify_token = create_token(user, "verify")
+        user = User.objects.filter(email=email)
+        if user.exists():
+            user = user.first()
+            Token.objects.filter(user=user, token_type="verify").delete()
+            token = SimpleToken.for_user(user, "verify", 60)
             context = {
                 "subject": "Verify Your E-mail Address!",
                 "user": user,
                 "recipients": [user.email],
-                "button_links": [
-                    f"{settings.HOST_URL}/api/auth/verify-email/{verify_token}/"
-                ],
+                "button_links": [f"{settings.HOST_URL}/api/auth/verify-email/{token}"],
                 "html_template": "verify_email",
                 "title": "Verify Your E-mail Address",
             }
-            send_email(**context)
+            thread = threading.Thread(target=send_email, kwargs=context)
+            thread.start()
         else:
-            raise serializers.ValidationError("Not Registered Email")
+            logger.error(f"Resend verification mail sent fail due to {email} not found")
+        return attrs
 
 
 class VerifyEmailSerializer(serializers.Serializer):
     token = serializers.CharField()
 
     def validate_token(self, value):
-        try:
-            payload = decode_token(value)
-            if payload.get("token_type") != "verify":
-                raise serializers.ValidationError("Invalid verification token")
-            token_object = Token.objects.get(jti=payload["jti"])
-            token_object.user
-        except jwt.ExpiredSignatureError:
-            raise serializers.ValidationError("Verification link has expired")
-        except (jwt.exceptions.DecodeError, Token.DoesNotExist, User.DoesNotExist):
-            raise serializers.ValidationError("Invalid verification link")
-
+        payload = SimpleToken.decode(value)
+        payload = SimpleToken.validate_token(value, "verify")
+        token_obj = payload.get("token_obj")
+        user = token_obj.user
+        user.is_active = True
+        user.save()
+        token_obj.hard_delete()
         return value
-
-    def create(self, validated_data):
-        token = validated_data["token"]
-        payload = decode_token(token)
-        token_object = Token.objects.get(jti=payload["jti"])
-        user = token_object.user
-        if not user.is_active:
-            user.is_active = True
-            user.save()
-            delete_token(token)
-            # token_object.delete()
-            return {"message": "Email verified successfully"}
-        else:
-            return {"message": "Email already verified"}
 
 
 class LogoutSerializer(serializers.Serializer):
     def validate(self, attrs):
-        token_queryset = Token.default.filter(user=self.context["request"].user)
-        if token_queryset.exists():
-            token_queryset.delete()
-            # delete_token
-            return True
+        jti = self.context["request"].auth["jti"]
+        Token.default.filter(jti=jti, user=self.context["request"].user).delete()
+        return attrs
+
+
+class GoogleSSOSerializer(serializers.Serializer):
+    authorization_code = serializers.CharField(write_only=True, required=True)
+
+    def validate(self, attrs):
+        authorization_code = attrs.get("authorization_code")
+        google = Google()
+        data = google.validate_google_token(authorization_code)
+        email = data.get("email")
+        first_name = data.get("name")
+        google_refresh_token = data.get("refresh_token")
+        user = User.objects.filter(email=email)
+        if user.exists():
+            # Login Flow
+            user = user.first()
+            if user.auth_provider == "google":
+                authorized_user = authenticate(email=email, password="p@$$w0Rd")
+                if authorized_user:
+                    user_data = user.auth_tokens()
+                    return {"message": "Login done successfully!", "data": user_data}
+            else:
+                raise AuthenticationFailed(
+                    f"Please continue your login using {user.auth_provider}"
+                )
         else:
-            raise serializers.ValidationError("Token invalid!")
+            # Register Flow
+            user = {"email": email, "password": "p@$$w0Rd", "first_name": first_name}
+            user = User.objects.create_user(**user)
+            user.auth_provider = "google"
+            user.is_active = True
+            user.save()
+            # new_user = authenticate(email=email, password="p@$$w0Rd")
+            if user:
+                user_data = user.auth_tokens()
+                SimpleToken.for_user(user, "google", None, jti=google_refresh_token)
+                return {"message": "Login done successfully!", "data": user_data}
+            else:
+                logger.error(
+                    f"Google SSO failed for {email} after user creation due to authentication failed"
+                )
+                raise AuthenticationFailed("Authentication failed after user creation.")

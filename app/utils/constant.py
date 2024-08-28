@@ -147,6 +147,7 @@ class EmailTemplates:
             "reset_password": self.reset_password,
             "verify_email": self.verify_email,
             "resend_reset_password": self.resend_reset_password,
+            "superuser_created": self.superuser_created,
         }
         self.result = self.templates[template_name](**kwargs)
 
@@ -217,6 +218,28 @@ class EmailTemplates:
         context = {
             "lines": lines,
             "button_label": button_label,
+            "button_link": button_link[0],
+        }
+        template = Template(self.html_str)
+        html_content = template.render(Context(context))
+        return html_content
+
+    def superuser_created(self, **kwargs):
+        user = kwargs.get("user")
+        password = kwargs.get("password")
+        button_link = kwargs.get("button_links", "#")
+
+        lines = [
+            f"Dear {user.first_name},",
+            "Thank you for joining our community. We're thrilled to have you on board.",
+            "Please use the below credentials to log in to the app:",
+            f"Email: {user.email}",
+            f"Password: {password}",
+        ]
+
+        context = {
+            "lines": lines,
+            "button_label": "Login",  # No button for this email
             "button_link": button_link[0],
         }
         template = Template(self.html_str)

@@ -43,13 +43,13 @@ SINGULAR_CAPITALIZED_VIEWSET=$(echo $NAMES_JSON | jq -r '.singular_capitalized')
 SINGULAR_CAPITALIZED_MODEL_TESTS=$(echo $NAMES_JSON | jq -r '.singular_capitalized')ModelTests
 SINGULAR_CAPITALIZED_ADMIN=$(echo $NAMES_JSON | jq -r '.singular_capitalized')Admin
 PLURAL_DASHED=$(echo $NAMES_JSON | jq -r '.plural_dashed')
+PLURAL_SPACE_SEPRATED=$(echo $NAMES_JSON | jq -r '.plural_space_separated')
 
 # Check if the app already exists
 if [ -d "$APP_PATH" ]; then
     echo "Error: The app '$PLURAL_UNDERSCORED' already exists."
     exit 1
 fi
-
 # Create the Django app
 echo "Task initiated: Creating Django app..."
 python manage.py startapp "$PLURAL_UNDERSCORED"
@@ -63,7 +63,7 @@ fi
 # Add the app's URLs to the project's URLs
 if ! grep -q "'$PLURAL_UNDERSCORED'" "$URLS_FILE"; then
     echo "Task initiated: Adding app URLs to project URLs..."
-    sed -i "/path('swagger',/i\        path('api/$PLURAL_DASHED/', include('$PLURAL_UNDERSCORED.urls'))," "$URLS_FILE"
+    sed -i "/path('swagger',/i\        path('api/', include('$PLURAL_UNDERSCORED.urls'))," "$URLS_FILE"
 fi
 
 # Generate models.py with various field types
@@ -123,7 +123,16 @@ from proj.base_view import BaseModelViewSet
 from .models import $SINGULAR_CAPITALIZED
 from .serializers import $SINGULAR_CAPITALIZED_SERIALIZER
 
-
+@apply_swagger_tags(
+    tags=["$SINGULAR_CAPITALIZED"],
+    extra_actions=["get_all"],
+    method_details={
+        "get_all": {
+            "operation_description": "Get all $PLURAL_SPACE_SEPRATED records without pagination",
+            "operation_summary": "Get all $PLURAL_SPACE_SEPRATED",
+        },
+    },
+)
 class $SINGULAR_CAPITALIZED_VIEWSET(BaseModelViewSet):
     queryset = $SINGULAR_CAPITALIZED.objects.all()
     serializer_class = $SINGULAR_CAPITALIZED_SERIALIZER
@@ -144,11 +153,11 @@ from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from .views import $SINGULAR_CAPITALIZED_VIEWSET
 
-router = DefaultRouter()
+router = DefaultRouter(trailing_slash=True)
 router.register(r'', $SINGULAR_CAPITALIZED_VIEWSET)
 
 urlpatterns = [
-    path('', include(router.urls)),
+    path('$PLURAL_DASHED/', include(router.urls)),
 ]
 EOL
 

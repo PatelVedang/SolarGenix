@@ -3,6 +3,7 @@ from django.utils.text import capfirst
 from utils.make_response import response as Response
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
+from rest_framework.decorators import action
 
 
 class BaseModelViewSet(viewsets.ModelViewSet):
@@ -78,6 +79,15 @@ class BaseModelViewSet(viewsets.ModelViewSet):
             fields = tuple(field.strip() for field in fields.split(","))
 
         serializer = self.get_serializer(self.get_queryset(), many=True, fields=fields)
+        return Response(
+            data=serializer.data,
+            message=self.get_message(request, *args, **kwargs),
+            status_code=status.HTTP_200_OK,
+        )
+
+    @action(methods=["GET"], detail=False, url_path="all")
+    def get_all(self, request, *args, **kwargs):
+        serializer = self.get_serializer(self.get_queryset(), many=True)
         return Response(
             data=serializer.data,
             message=self.get_message(request, *args, **kwargs),

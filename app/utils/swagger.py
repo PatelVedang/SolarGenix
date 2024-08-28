@@ -1,86 +1,39 @@
 from functools import wraps
-
 from django.utils.decorators import method_decorator
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import serializers
 
+
 # Define response serializers for different status codes
-
-
 class BadRequestResponseSerializer(serializers.Serializer):
-    """
-    Serializer for a 400 Bad Request response.
-
-    Attributes:
-        message (CharField): A message describing the error. Defaults to "Bad request".
-        data (DictField): Additional data about the error. Defaults to an empty dictionary.
-    """
-
     message = serializers.CharField(default="Bad request")
     data = serializers.DictField(default={})
 
 
 class UnauthorizedResponseSerializer(serializers.Serializer):
-    """
-    Serializer for a 401 Unauthorized response.
-
-    Attributes:
-        message (CharField): A message describing the error. Defaults to "Unauthorized".
-    """
-
     message = serializers.CharField(default="Unauthorized")
-    # data = serializers.DictField(default={})
 
 
 class ForbiddenResponseSerializer(serializers.Serializer):
-    """
-    Serializer for a 403 Forbidden response.
-
-    Attributes:
-        message (CharField): A message describing the error. Defaults to "Not authenticated".
-    """
-
     message = serializers.CharField(default="Not authenticated")
-    # data = serializers.DictField(default={})
 
 
 class NotFoundResponseSerializer(serializers.Serializer):
-    """
-    Serializer for a 404 Not Found response.
-
-    Attributes:
-        message (CharField): A message describing the error. Defaults to "Not Found".
-    """
-
     message = serializers.CharField(default="Not Found")
-    # data = serializers.DictField(default={})
 
 
 class InternalServerErrorResponseSerializer(serializers.Serializer):
-    """
-    Serializer for a 500 Internal Server Error response.
-
-    Attributes:
-        message (CharField): A message describing the error. Defaults to "Internal Server Error".
-    """
-
     message = serializers.CharField(default="Internal Server Error")
-    # data = serializers.DictField(default={})
 
 
 class TooManyRequestsErrorResponseSerializer(serializers.Serializer):
     message = serializers.CharField(default="Too Many Requests")
-    
+
+
 def get_response_schema():
     """
     Returns a dictionary of response schemas for various HTTP status codes.
-
-    The dictionary maps HTTP status codes to `openapi.Response` objects,
-    which describe the expected response for each status code.
-
-    Returns:
-        dict: A dictionary where keys are HTTP status codes (int) and values are `openapi.Response` objects.
     """
     return {
         400: openapi.Response(
@@ -96,7 +49,8 @@ def get_response_schema():
             description="Not Found", schema=NotFoundResponseSerializer
         ),
         429: openapi.Response(
-            description="Not Found", schema=TooManyRequestsErrorResponseSerializer
+            description="Too Many Requests",
+            schema=TooManyRequestsErrorResponseSerializer,
         ),
         500: openapi.Response(
             description="Internal Server Error",
@@ -122,96 +76,119 @@ def apply_swagger_tags(**kwargs):
     Returns:
         function: A decorator that applies the specified Swagger tags and metadata to the view methods.
     """
-    tags = kwargs.get("tags", ["Test"])
+    tags = kwargs.get("tags", ["Default"])
     extra_actions = kwargs.get("extra_actions", [])
-    not_required_actions = kwargs.get("not_required_actions", []) + ["update"]
-    # detailed_methods = kwargs.get(
-    #     "detailed_methods", ["create", "retrieve", "list", "partial_update", "destroy"]
-    # )
+    not_required_actions = kwargs.get("not_required_actions", ["update"])
     method_details = kwargs.get("method_details", {})
 
     def decorator(view):
+        # Default method metadata
         methods = {
             "create": {
-                "operation_description": "Create API.",
-                "operation_summary": "API to create new record.",
+                "operation_description": "Create a new record.",
+                "operation_summary": "Create API",
             },
             "retrieve": {
-                "operation_description": "Retrieve API.",
-                "operation_summary": "API for retrieve single record by id.",
+                "operation_description": "Retrieve a record by ID.",
+                "operation_summary": "Retrieve API",
             },
             "list": {
-                "operation_description": "List API.",
-                "operation_summary": "API to get list of records.",
+                "operation_description": "Get a list of records.",
+                "operation_summary": "List API",
             },
             "partial_update": {
-                "operation_description": "Partial update API.",
-                "operation_summary": "API for partial update record.",
+                "operation_description": "Partially update a record.",
+                "operation_summary": "Partial Update API",
             },
             "destroy": {
-                "operation_description": "Delete API.",
-                "operation_summary": "API to delete single record by id.",
+                "operation_description": "Delete a record by ID.",
+                "operation_summary": "Delete API",
             },
             "update": {
-                "operation_description": "",
-                "operation_summary": "",
+                "operation_description": "Update a record by ID.",
+                "operation_summary": "Update API",
             },
             "post": {
-                "operation_description": "",
-                "operation_summary": "",
+                "operation_description": "Submit data.",
+                "operation_summary": "Post API",
                 "request_body": None,
             },
             "get": {
-                "operation_description": "",
-                "operation_summary": "",
+                "operation_description": "Fetch data.",
+                "operation_summary": "Get API",
             },
         }
 
+        # Customize method metadata if provided
         for method, obj in method_details.items():
             if method in methods:
                 methods[method].update(obj)
+            else:
+                methods[method] = obj
 
+        # Apply decorators
         for method, obj in methods.items():
             if hasattr(view, method):
+                view_method = getattr(view, method)
                 if method in extra_actions:
-                    view_method = getattr(view, method)
                     setattr(
                         view,
                         method,
                         wraps(view_method)(
                             swagger_auto_schema(
-                                tags=tags, responses=get_response_schema()
+                                tags=tags,
+                                operation_description=obj.get(
+                                    "operation_description", ""
+                                ),
+                                operation_summary=obj.get("operation_summary", ""),
+                                responses=get_response_schema(),
                             )(view_method)
                         ),
                     )
                 elif method not in not_required_actions:
-                    view_method = getattr(view, method)
-                    setattr(
-                        view,
-                        method,
-                        method_decorator(
-                            name=method,
-                            decorator=swagger_auto_schema(
-                                tags=tags,
-                                operation_summary=obj.get("operation_summary", ""),
-                                operation_description=obj.get(
-                                    "operation_description", ""
+                    if hasattr(view_method, "_swagger_auto_schema"):
+                        # Add tags and other details to existing Swagger decorators
+                        if "_swagger_auto_schema" in dir(view_method):
+                            decorator_data = getattr(
+                                view_method, "_swagger_auto_schema"
+                            )
+                            decorator_data.update(tags=tags, **obj)
+                    else:
+                        setattr(
+                            view,
+                            method,
+                            method_decorator(
+                                name=method,
+                                decorator=swagger_auto_schema(
+                                    tags=tags,
+                                    operation_summary=obj.get("operation_summary", ""),
+                                    operation_description=obj.get(
+                                        "operation_description", ""
+                                    ),
+                                    request_body=obj.get("request_body", None),
+                                    responses=get_response_schema(),
                                 ),
-                                request_body=obj.get("request_body", None),
-                                responses=get_response_schema(),
-                            ),
-                        )(view_method),
-                    )
+                            )(view_method),
+                        )
                 else:
-                    view_method = getattr(view, method)
-                    setattr(
-                        view,
-                        method,
-                        method_decorator(
-                            name=method,
-                            decorator=swagger_auto_schema(tags=tags, auto_schema=None),
-                        )(view_method),
-                    )
+                    if hasattr(view_method, "_swagger_auto_schema"):
+                        # Add tags to existing Swagger decorators
+                        if "_swagger_auto_schema" in dir(view_method):
+                            decorator_data = getattr(
+                                view_method, "_swagger_auto_schema"
+                            )
+                            decorator_data.update(tags=tags, auto_schema=None)
+                    else:
+                        setattr(
+                            view,
+                            method,
+                            method_decorator(
+                                name=method,
+                                decorator=swagger_auto_schema(
+                                    tags=tags, auto_schema=None
+                                ),
+                            )(view_method),
+                        )
 
         return view
 

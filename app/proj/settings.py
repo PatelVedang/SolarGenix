@@ -41,6 +41,8 @@ ALLOWED_HOSTS = ["*"]
 # Application definition
 
 INSTALLED_APPS = [
+    "products",
+    "todos",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -52,7 +54,6 @@ INSTALLED_APPS = [
     "django_filters",
     "auth_api",
     "corsheaders",
-    "google_sso",
 ]
 
 MIDDLEWARE = [
@@ -185,6 +186,7 @@ REST_FRAMEWORK = {
     "DEFAULT_THROTTLE_RATES": {
         "auth": AUTH_THROTTLING_LIMIT,
     },
+    "DEFAULT_PAGINATION_CLASS": "utils.pagination.BasePagination",
 }
 
 # SIMPLE_JWT
@@ -279,6 +281,6 @@ LOGGING = {
 }
 
 AUTHENTICATION_BACKENDS = [
-    "utils.custom_backend.LoginOnAuthBackend",  # Custom backend
+    "auth_api.custom_backend.LoginOnAuthBackend",  # Custom backend
     "django.contrib.auth.backends.ModelBackend",  # Default backend
 ]

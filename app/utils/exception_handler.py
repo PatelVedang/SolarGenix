@@ -28,6 +28,7 @@ def custom_exception_handler(exc, context):
             "NotAuthenticated": _handler_authentication_error,
             "InvalidToken": _handler_invalid_token_error,
             "ValidationError": _handler_validation_error,
+            "AuthenticationFailed": _handler_authentication_failed_error,
         }
         res = exception_handler(exc, context)
         logger.error(str(exc))
@@ -49,6 +50,7 @@ def custom_exception_handler(exc, context):
             data={}, status_code=res.status_code, message=message.capitalize()
         )
     except Exception as e:
+        print(e)
         logger.error(str(e))
         return response(data={}, status_code=500, message="Something went wrong.")
 
@@ -67,6 +69,14 @@ def _handler_authentication_error(exc, context, response):
     :return: the string "An authorization token is not provided."
     """
     return "An authorization token is not provided."
+
+
+def _handler_authentication_failed_error(exc, context, response):
+    try:
+        value = exc.__dict__["detail"]["detail"]
+    except Exception:
+        value = str(exc)
+    return value
 
 
 def _handler_invalid_token_error(exc, context, response):
