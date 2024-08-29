@@ -53,6 +53,7 @@ class UserModelTests(TestCase):
         }
 
         response = self.client.post(url, data, format="multipart")
+        print(response, "response :::::::::::::")
         data = response.data.get("data", None)
         user_id = data.get("id") if data else None
         if user_id:
