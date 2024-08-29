@@ -42,6 +42,7 @@ ALLOWED_HOSTS = ["*"]
 
 INSTALLED_APPS = [
     "users",
+    "todos",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -53,7 +54,6 @@ INSTALLED_APPS = [
     "django_filters",
     "auth_api",
     "corsheaders",
-    "google_sso",
 ]
 
 MIDDLEWARE = [
@@ -65,20 +65,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    # 'auth_api.middleware.CheckBlacklistMiddleware',
 ]
-
-# MIDDLEWARE = [
-#     "django.middleware.security.SecurityMiddleware",
-#     "django.contrib.sessions.middleware.SessionMiddleware",
-#     "corsheaders.middleware.CorsMiddleware",
-#     "django.middleware.common.CommonMiddleware",
-#     "django.middleware.csrf.CsrfViewMiddleware",
-#     "django.contrib.auth.middleware.AuthenticationMiddleware",
-#     "django.contrib.messages.middleware.MessageMiddleware",
-#     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-#     "auth_api.middleware.CheckBlacklistMiddleware",
-# ]
 
 ROOT_URLCONF = "proj.urls"
 
@@ -199,6 +186,7 @@ REST_FRAMEWORK = {
     "DEFAULT_THROTTLE_RATES": {
         "auth": AUTH_THROTTLING_LIMIT,
     },
+    "DEFAULT_PAGINATION_CLASS": "utils.pagination.BasePagination",
 }
 
 # SIMPLE_JWT
@@ -233,8 +221,8 @@ HOST_URL = settings.HOST_URL
 
 
 # GOOGLE SSO
-GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID")
-GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET")
+GOOGLE_CLIENT_ID = settings.GOOGLE_CLIENT_ID
+GOOGLE_CLIENT_SECRET = settings.GOOGLE_CLIENT_SECRET
 
 # PASSWORD validation
 PASSWORD_VALIDATE_STRING = "A minimum 8 characters and maximum 30 character password contains a combination of uppercase and lowercase letter, special symbol and number are required."
@@ -293,6 +281,6 @@ LOGGING = {
 }
 
 AUTHENTICATION_BACKENDS = [
-    "utils.custom_backend.EmailOnAuthBackend",  # Custom backend
+    "auth_api.custom_backend.LoginOnAuthBackend",  # Custom backend
     "django.contrib.auth.backends.ModelBackend",  # Default backend
 ]

@@ -3,16 +3,13 @@ from django.utils.text import capfirst
 from utils.make_response import response as Response
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
-from users.serializers import UserSerializer
-from auth_api.models import User
+from rest_framework.decorators import action
 
 
 class BaseModelViewSet(viewsets.ModelViewSet):
     http_method_names = ["get", "post", "patch", "delete"]
     response_message = ""
     status_code = ""
-    queryset = User.objects.all()
-    serializer_class = UserSerializer
 
     def get_model_name(self):
         """
@@ -100,6 +97,15 @@ class BaseModelViewSet(viewsets.ModelViewSet):
             status_code=status.HTTP_200_OK,
         )
 
+    @action(methods=["GET"], detail=False, url_path="all")
+    def get_all(self, request, *args, **kwargs):
+        serializer = self.get_serializer(self.get_queryset(), many=True)
+        return Response(
+            data=serializer.data,
+            message=self.get_message(request, *args, **kwargs),
+            status_code=status.HTTP_200_OK,
+        )
+
     @swagger_auto_schema(
         manual_parameters=[
             openapi.Parameter(
@@ -133,9 +139,6 @@ class BaseModelViewSet(viewsets.ModelViewSet):
         )
 
     def partial_update(self, request, *args, **kwargs):
-        password = request.data.get("password")
-        if password:
-            UserSerializer.update(self, request.data)
         response = super().create(request, *args, **kwargs)
         return Response(
             data=response.data,

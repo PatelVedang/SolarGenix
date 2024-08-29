@@ -9,6 +9,31 @@ logger = logging.getLogger("django")
 
 
 def send_email(**kwargs):
+    """This function sends an email to the recipients with the given subject and body.
+    kwargs = {
+        "subject": "Subject of the email",
+        "body": "Body of the email",
+        "sender": "Sender of the email",
+        "recipients": ["
+            List of recipients
+        "],
+        "bcc": [
+            List of BCC recipients
+        ],
+        "attachments": [
+            {
+                "path": "Path to the attachment",
+                "name": "Name of the attachment",
+                "mime-type": "MIME type of the attachment"
+            }
+        ],
+        "html_template": "Name of the HTML template",
+        "html_string": "HTML content in the body",
+        "title": "Title of the email"
+    }
+    All fields are optional except for the recipients. If the HTML template is provided, the email will be sent with the HTML content in the body.
+    """
+
     subject = kwargs.get("subject", "")
     body = kwargs.get("body", "")
     sender = kwargs.get("sender")
@@ -17,14 +42,12 @@ def send_email(**kwargs):
     attachments = kwargs.get("attachments", [])
     html_template = kwargs.get("html_template", "")
     html_string = kwargs.get("html_string", "")
-    # button_links = kwargs.get("button_links", [])
     title = kwargs.get("title", "")
 
     logger.info("***************** SEND MAIL  *****************")
     logger.info(f"Recipients: {recipients}")
     try:
         email = EmailMessage(subject, strip_tags(body), sender, recipients, bcc=bcc)
-        print("email", email)
         # Attachments
         if attachments:
             for attachment in attachments:
@@ -50,10 +73,8 @@ def send_email(**kwargs):
             email.body = html_message
         # Send the email
         email.send()
-        print(f"response {email}")
-        print("Please check your inbox.")
+        print("Mail sent please check your inbox")
     except Exception as e:
-        print(e, "=>>>>>>>>>>>>Error")
         traceback.print_exc()
         logger.error(str(e))
 

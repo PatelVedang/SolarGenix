@@ -1,11 +1,10 @@
-from django.test import TestCase
 from django.urls import reverse
-from rest_framework.test import APIClient
+from rest_framework.test import APIClient, APITestCase
 from rest_framework import status
 from auth_api.models import User
 
 
-class UserModelTests(TestCase):
+class UserModelTests(APITestCase):
     def setUp(self):
         # Create a superuser and set the password
         self.user = User.objects.create_superuser(
@@ -52,12 +51,13 @@ class UserModelTests(TestCase):
             "is_active": True,
         }
 
-        response = self.client.post(url, data, format="multipart")
-        print(response, "response :::::::::::::")
+        response = self.client.post(url, data)
+        print(vars(response), "response :::::::::::::")
         data = response.data.get("data", None)
         user_id = data.get("id") if data else None
         if user_id:
             User.objects.get(id=user_id)
+        print(response.status_code, ":::::::::::::::::::")
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
     # def test_create_user_without_authentication(self):

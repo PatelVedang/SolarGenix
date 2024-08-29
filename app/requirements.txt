@@ -16,3 +16,6 @@ pillow
 coverage
 google-api-python-client
 django-ssl-smtp
+pydantic
+pydantic-settings
+pydantic[email]

@@ -1,25 +1,27 @@
 from rest_framework import status
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.exceptions import NotAuthenticated
+from rest_framework.permissions import AllowAny
+from .permissions import IsAuthenticated
 from rest_framework.views import APIView
 from utils import custom_throttling
 from utils.swagger import apply_swagger_tags
 from utils.make_response import response
-from utils.permissions import IsTokenValid
+
+# from utils.permissions import IsTokenValid
 from auth_api.serializers import (
     ChangePasswordSerializer,
-    ForgetPasswordSerializer,
+    ForgotPasswordSerializer,
     LogoutSerializer,
     RefreshTokenSerializer,
     ResendResetTokenSerializer,
-    SendVerificationEmailSerializer,
+    ResendVerificationEmailSerializer,
     UserLoginSerializer,
     UserPasswordResetSerializer,
     UserProfileSerializer,
     UserRegistrationSerializer,
     VerifyEmailSerializer,
+    GoogleSSOSerializer,
 )
-from auth_api.models import Token
+from rest_framework_simplejwt.views import TokenObtainPairView
 
 
 @apply_swagger_tags(
@@ -37,23 +39,16 @@ class UserRegistrationView(APIView):
 
     def post(self, request):
         serializer = UserRegistrationSerializer(data=request.data)
-        if serializer.is_valid(raise_exception=True):
-            user = serializer.save()
-            response_data = {
-                "email": user.email,
-                "first name": user.first_name,
-                "last name": user.last_name,
-            }
-            return response(
-                data=response_data,
-                status_code=status.HTTP_201_CREATED,
-                message="Registration Done. Please Activate Your Account!",
-            )
-
-        return response(status_code=status.HTTP_400_BAD_REQUEST, data=serializer.errors)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        response_data = serializer.data
+        return response(
+            data=response_data,
+            status_code=status.HTTP_201_CREATED,
+            message="Registration Done. Please Activate Your Account!",
+        )
 
 
-# @apply_swagger_tags(tags=["Auth"])
 @apply_swagger_tags(
     tags=["Auth"],
     method_details={
@@ -65,35 +60,17 @@ class UserRegistrationView(APIView):
     },
 )
 class UserLoginView(APIView):
-    """
-    Authenticates users and generates access & refresh tokens.
-    This endpoint is used for user authentication. It expects a 'email' and 'password'
-    in the request body. On successful authentication, it returns access and refresh tokens.
-    """
-
     throttle_classes = [custom_throttling.CustomAuthThrottle]
+    permission_classes = []
 
     def post(self, request):
         serializer = UserLoginSerializer(data=request.data)
-        if serializer.is_valid(raise_exception=True):
-            user = serializer.validated_data["user"]
-            # Fetch tokens for the user
-            token_dict = dict(
-                Token.objects.filter(
-                    user=user, is_blacklisted=False, is_deleted=False
-                ).values_list("token_type", "token")
-            )
-            return response(
-                # data={"access": tokens["access"], "refresh": tokens["refresh"]},
-                data={
-                    "access": token_dict.get("access"),
-                    "refresh": token_dict.get("refresh"),
-                },
-                status_code=status.HTTP_200_OK,
-                message="Login done successfully!",
-            )
+        serializer.is_valid(raise_exception=True)
+        user = serializer.validated_data
         return response(
-            status_code=status.HTTP_401_UNAUTHORIZED, data=serializer.errors
+            data=user.auth_tokens(),
+            status_code=status.HTTP_200_OK,
+            message="Login done successfully!",
         )
 
 
@@ -107,18 +84,11 @@ class UserLoginView(APIView):
     },
 )
 class UserProfileView(APIView):
-    permission_classes = [IsAuthenticated, IsTokenValid]
+    permission_classes = [IsAuthenticated]
     throttle_classes = [custom_throttling.CustomAuthThrottle]
-
-    def initial(self, request, *args, **kwargs):
-        self.check_throttles(request)
-        self.check_permissions(request)
-        super().initial(request, *args, **kwargs)
 
     def get(self, request):
         serializer = UserProfileSerializer(request.user)
-        if not request.user.is_authenticated:
-            raise NotAuthenticated("Authentication credentials were not provided.")
         return response(
             data=serializer.data,
             status_code=status.HTTP_200_OK,
@@ -137,7 +107,7 @@ class UserProfileView(APIView):
     },
 )
 class ChangePasswordView(APIView):
-    permission_classes = [IsAuthenticated, IsTokenValid]
+    permission_classes = [IsAuthenticated]
 
     def post(self, request):
         serializer = ChangePasswordSerializer(
@@ -153,27 +123,23 @@ class ChangePasswordView(APIView):
     method_details={
         "post": {
             "operation_description": "Forgot password",
-            "request_body": ForgetPasswordSerializer,
+            "request_body": ForgotPasswordSerializer,
             "operation_summary": "Post method for forgot password",
         },
     },
 )
 class ForgotPasswordView(APIView):
-    """
-    This endpoint is used to initiate the password reset process by providing a valid email.
-    The provided email should be associated with an existing user account in the system's database.
-    When a valid email is provided, the user will receive an email containing a link to reset the password.
-    """
-
     throttle_classes = [custom_throttling.CustomAuthThrottle]
 
     def post(self, request):
-        serializer = ForgetPasswordSerializer(
-            data=request.data, context={"user": request.user}
-        )
-        if serializer.is_valid(raise_exception=True):
+        try:
+            serializer = ForgotPasswordSerializer(
+                data=request.data, context={"user": request.user}
+            )
+            serializer.is_valid(raise_exception=True)
             return response(status_code=status.HTTP_204_NO_CONTENT)
-        return response(status_code=status.HTTP_400_BAD_REQUEST, data=serializer.errors)
+        except Exception:
+            return response(status_code=status.HTTP_400_BAD_REQUEST)
 
 
 @apply_swagger_tags(
@@ -187,26 +153,17 @@ class ForgotPasswordView(APIView):
     },
 )
 class ResendResetTokenView(APIView):
-    """
-    This endpoint is used to resend a link to reset a user's password.
-    The password reset process will only be completed if the password provided matches the password validation.
-    Upon successful password reset, the user's password will be updated, allowing them to login using the new password.
-    """
-
+    permission_classes = [AllowAny]
     throttle_classes = [custom_throttling.CustomAuthThrottle]
 
     def post(self, request):
-        serializer = ResendResetTokenSerializer(
-            data=request.data, context={"user": request.user}
+        serializer = ResendResetTokenSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        return response(
+            data=serializer.data,
+            status_code=status.HTTP_200_OK,
+            message=" Reset token mail sent successfully",
         )
-        if serializer.is_valid(raise_exception=True):
-            return response(
-                data=serializer.data,
-                status_code=status.HTTP_200_OK,
-                message=" Rsend Reset Password Link on Your Account",
-            )
-
-        return response(status_code=status.HTTP_400_BAD_REQUEST, data=serializer.errors)
 
 
 @apply_swagger_tags(
@@ -220,7 +177,7 @@ class ResendResetTokenView(APIView):
     },
 )
 class UserPasswordResetView(APIView):
-    permission_classes = [IsTokenValid]
+    permission_classes = [AllowAny]
     throttle_classes = [custom_throttling.CustomAuthThrottle]
     """
     This endpoint is used to reset a user's password.
@@ -232,9 +189,8 @@ class UserPasswordResetView(APIView):
         serializer = UserPasswordResetSerializer(
             data=request.data, context={"token": token}
         )
-        if serializer.is_valid(raise_exception=True):
-            return response(status_code=status.HTTP_204_NO_CONTENT)
-        return response(status_code=status.HTTP_400_BAD_REQUEST, data=serializer.errors)
+        serializer.is_valid(raise_exception=True)
+        return response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @apply_swagger_tags(
@@ -247,15 +203,13 @@ class UserPasswordResetView(APIView):
     },
 )
 class VerifyEmailView(APIView):
-    permission_classes = [IsTokenValid]
+    permission_classes = [AllowAny]
     throttle_classes = [custom_throttling.CustomAuthThrottle]
 
     def get(self, request, token):
         serializer = VerifyEmailSerializer(data={"token": token})
-        if serializer.is_valid():
-            serializer.save()
-            return response(status_code=status.HTTP_204_NO_CONTENT)
-        return response(status_code=status.HTTP_400_BAD_REQUEST, data=serializer.errors)
+        serializer.is_valid(raise_exception=True)
+        return response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @apply_swagger_tags(
@@ -268,19 +222,17 @@ class VerifyEmailView(APIView):
         },
     },
 )
-class RefreshTokenView(APIView):
-    permission_classes = [IsTokenValid]
+class RefreshTokenView(TokenObtainPairView):
+    permission_classes = [AllowAny]
 
     def post(self, request):
         serializer = RefreshTokenSerializer(data=request.data)
-        if serializer.is_valid(raise_exception=True):
-            data = serializer.save()
-            return response(
-                data=data,
-                status_code=status.HTTP_200_OK,
-                message="Refresh token Generated",
-            )
-        return response(status_code=status.HTTP_400_BAD_REQUEST, data=serializer.errors)
+        serializer.is_valid(raise_exception=True)
+        return response(
+            data=serializer.validated_data,
+            status_code=status.HTTP_200_OK,
+            message="New token generated successfully",
+        )
 
 
 @apply_swagger_tags(
@@ -288,28 +240,27 @@ class RefreshTokenView(APIView):
     method_details={
         "post": {
             "operation_description": "Resend Verify Token ",
-            "request_body": SendVerificationEmailSerializer,
+            "request_body": ResendVerificationEmailSerializer,
             "operation_summary": "Post method for resend verify token",
         },
     },
 )
-class SendVerificationEmailView(APIView):
+class ResendVerificationEmailView(APIView):
+    throttle_classes = [custom_throttling.CustomAuthThrottle]
+    permission_classes = [AllowAny]
+
     def post(self, request):
-        serializer = SendVerificationEmailSerializer(
-            data=request.data, context={"user": request.user}
-        )
-        if serializer.is_valid(raise_exception=True):
-            return response(status_code=status.HTTP_204_NO_CONTENT)
-        return response(status_code=status.HTTP_400_BAD_REQUEST, data=serializer.errors)
+        serializer = ResendVerificationEmailSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        return response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @apply_swagger_tags(
     tags=["Auth"],
     method_details={
-        "post": {
-            "operation_description": "Logout ",
-            "request_body": LogoutSerializer,
-            "operation_summary": "Post method for log out",
+        "get": {
+            "operation_description": "Logout",
+            "operation_summary": "Get method for logout",
         },
     },
 )
@@ -317,7 +268,27 @@ class LogoutView(APIView):
     serializer_class = LogoutSerializer
     permission_classes = [IsAuthenticated]
 
-    def post(self, request):
+    def get(self, request):
         serializer = self.serializer_class(data={}, context={"request": request})
-        if serializer.is_valid(raise_exception=True):
-            return response(status_code=status.HTTP_204_NO_CONTENT)
+        serializer.is_valid(raise_exception=True)
+        return response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@apply_swagger_tags(
+    tags=["Auth"],
+    method_details={
+        "post": {
+            "operation_description": "Google API",
+            "request_body": GoogleSSOSerializer,
+            "operation_summary": "Dynamic POST method for Google SSO",
+        },
+    },
+)
+class GoogleSSOView(APIView):
+    def post(self, request):
+        serializer = GoogleSSOSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+        message = data.get("message")
+        data = data.get("data")
+        return response(status_code=status.HTTP_200_OK, message=message, data=data)

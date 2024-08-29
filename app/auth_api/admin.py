@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
-from auth_api.models import User, Token, BlacklistToken
+from auth_api.models import User, Token
 
 
 # Register your models here.
@@ -9,12 +9,21 @@ class UserModelAdmin(BaseUserAdmin):
     # The fields to be used in displaying the User model.
     # These override the definitions on the base UserAdmin
     # that reference specific fields on auth.User.
-    list_display = ["id", "email", "first_name", "is_superuser"]
+    list_display = [
+        "id",
+        "email",
+        "first_name",
+        "is_superuser",
+        "auth_provider",
+        "is_active",
+        "last_login",
+    ]
     list_filter = ["is_superuser"]
     fieldsets = [
         ("User Credentials", {"fields": ["email", "password"]}),
         ("Personal info", {"fields": ["first_name"]}),
-        ("Permissions", {"fields": ["is_superuser", "is_staff"]}),
+        ("Permissions", {"fields": ["is_superuser", "is_staff", "is_active"]}),
+        ("Important dates", {"fields": ["last_login"]}),
     ]
     # add_fieldsets is not a standard ModelAdmin attribute. UserAdmin
     # overrides get_fieldsets to use this attribute when creating a user.
@@ -37,10 +46,11 @@ admin.site.register(User, UserModelAdmin)
 
 @admin.register(Token)
 class TokenAdmin(admin.ModelAdmin):
-    list_display = ("user", "token_type", "jti", "expires_at", "is_blacklisted")
+    list_display = (
+        "user",
+        "token_type",
+        "jti",
+        "expire_at",
+        "is_blacklist_at",
+    )
     search_fields = ("user__email", "jti")
-
-
-@admin.register(BlacklistToken)
-class BlacklistedTokenAdmin(admin.ModelAdmin):
-    list_display = ("jti", "token_type", "blacklisted_on")
