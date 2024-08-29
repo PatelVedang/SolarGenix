@@ -3,12 +3,16 @@ from django.utils.text import capfirst
 from utils.make_response import response as Response
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
+from users.serializers import UserSerializer
+from auth_api.models import User
 
 
 class BaseModelViewSet(viewsets.ModelViewSet):
     http_method_names = ["get", "post", "patch", "delete"]
     response_message = ""
     status_code = ""
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
 
     def get_model_name(self):
         """
@@ -35,13 +39,25 @@ class BaseModelViewSet(viewsets.ModelViewSet):
         return "Request processed successfully"
 
     def create(self, request, *args, **kwargs):
-        response = super().create(request, *args, **kwargs)
-        return Response(
-            data=response.data,
-            message=self.get_message(request, *args, **kwargs),
-            status_code=status.HTTP_201_CREATED,
-            headers=response.headers,
-        )
+        password = request.data.get("password")
+        if password is None:
+            serializer = self.get_serializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+            headers = self.get_success_headers(serializer.data)
+            return Response(
+                data=serializer.data,
+                status=status.HTTP_201_CREATED,
+                headers=headers,
+            )
+        else:
+            # Default behavior, use the standard `create` method
+            response = super().create(request, *args, **kwargs)
+            return Response(
+                data=response.data,
+                status=status.HTTP_201_CREATED,
+                headers=response.headers,
+            )
 
     @swagger_auto_schema(
         manual_parameters=[
@@ -117,7 +133,10 @@ class BaseModelViewSet(viewsets.ModelViewSet):
         )
 
     def partial_update(self, request, *args, **kwargs):
-        response = super().partial_update(request, *args, **kwargs)
+        password = request.data.get("password")
+        if password:
+            UserSerializer.update(self, request.data)
+        response = super().create(request, *args, **kwargs)
         return Response(
             data=response.data,
             message=self.get_message(request, *args, **kwargs),

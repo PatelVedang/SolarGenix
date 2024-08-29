@@ -25,6 +25,24 @@ schema_view = get_schema_view(
     openapi.Info(title="Boilerplate API", default_version="1.0"), public=True
 )
 
+# urlpatterns = [
+#     path("admin/", admin.site.urls),
+#     path(
+#         "",
+#         include(
+#             [
+#                 path("api/", include("auth_api.urls")),
+#                 path(
+#                     "swagger",
+#                     schema_view.with_ui("swagger", cache_timeout=0),
+#                     name="swagger-schema",
+#                 ),
+#                 path("api/", include("google_sso.urls")),
+#             ]
+#         ),
+#     ),
+# ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+
 urlpatterns = [
     path("admin/", admin.site.urls),
     path(
@@ -32,6 +50,7 @@ urlpatterns = [
         include(
             [
                 path("api/", include("auth_api.urls")),
+                path("api/users/", include("users.urls")),
                 path(
                     "swagger",
                     schema_view.with_ui("swagger", cache_timeout=0),
