@@ -36,25 +36,13 @@ class BaseModelViewSet(viewsets.ModelViewSet):
         return "Request processed successfully"
 
     def create(self, request, *args, **kwargs):
-        password = request.data.get("password")
-        if password is None:
-            serializer = self.get_serializer(data=request.data)
-            serializer.is_valid(raise_exception=True)
-            serializer.save()
-            headers = self.get_success_headers(serializer.data)
-            return Response(
-                data=serializer.data,
-                status=status.HTTP_201_CREATED,
-                headers=headers,
-            )
-        else:
-            # Default behavior, use the standard `create` method
-            response = super().create(request, *args, **kwargs)
-            return Response(
-                data=response.data,
-                status=status.HTTP_201_CREATED,
-                headers=response.headers,
-            )
+        response = super().create(request, args, *kwargs)
+        return Response(
+            data=response.data,
+            message=self.get_message(request, args, *kwargs),
+            status_code=status.HTTP_201_CREATED,
+            headers=response.headers,
+        )
 
     @swagger_auto_schema(
         manual_parameters=[

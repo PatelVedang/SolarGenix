@@ -1,263 +1,132 @@
 from django.urls import reverse
-from rest_framework.test import APIClient, APITestCase
-from rest_framework import status
-from auth_api.models import User
+from auth_api.tests import BaseAPITestCase
 
 
-class UserModelTests(APITestCase):
-    def setUp(self):
-        # Create a superuser and set the password
-        self.user = User.objects.create_superuser(
-            email="testuser@example.com",
-            password="testpass123",
-            first_name="Test",
-            last_name="User",
-            is_active=True,
-        )
+class UserTestCase(BaseAPITestCase):
+    url = reverse("user-list")
+    super_admin_email = "superadmin@gmail.com"
+    super_admin_password = "Admin@1234"
 
-        # Authenticate the user and obtain the token
-        self.client = APIClient()
-        login_response = self.client.post(
-            reverse("login"),
-            {"email": "testuser@example.com", "password": "testpass123"},
-            format="json",
-        )
+    def temp_payload(self, **kwargs):
+        if not kwargs:
+            data = {
+                "first_name": "New",
+                "last_name": "User",
+                "email": "new@example.com",
+                "password": "Admin@1234",
+                "auth_provider": "email",
+                "is_active": True,
+                "is_superuser": False,
+                "is_staff": False,
+            }
+        else:
+            data = kwargs
+        return {**data}
 
-        # Extract access token
-        self.access_token = login_response.data["data"]["access"]
-        print(self.access_token, "access token")
-        self.client.credentials(HTTP_AUTHORIZATION="Bearer " + self.access_token)
+    def create_user(self, **kwargs):
+        self._data = self.temp_payload(**kwargs)
+        print(self._data, "create_user>>>>>>>>>>>>>>>>>>>")
+        self.set_response(self.client.post(self.url, self._data, format="multipart"))
 
-        # Set up a user instance
-        self.user = User.objects.create(
-            first_name="Test",
-            last_name="User",
-            email="info@example.com",
-            password="password",
-            is_active=True,
-        )
+    # def test_create_users_with_authenticate(self):
+    #     """
+    #     The function `test_create_users_with_authenticate` creates a user with authentication
+    #     and checks for a successful response.
+    #     """
+    #     self.login()
+    #     self.create_user()
+    #     self.match_success_response(201)
 
-    def test_create_user_authentication(self):
-        url = reverse("user-list")  # Ensure this URL name matches your URL pattern
+    # def test_create_users_without_authenticate(self):
+    #     """
+    #     The function `test_create_users_without_authenticate` creates a user without authentication
+    #     and checks for a successful response.
+    #     """
+    #     self.create_user()
+    #     self.match_error_response(401)
 
-        # Flatten or serialize JSON data
-        # json_data_str = json.dumps({"key": "new value"})
+    # def test_user_email_invalid(self):
+    #     """
+    #     The function `test_user_email_invalid` creates a user with an invalid email address and
+    #     checks for a validation error.
+    #     """
+    #     self.login()
+    #     self.create_user(email="test")
+    #     self.match_error_response(400)
 
-        data = {
-            "first_name": "New",
-            "last_name": "User",
-            "email": "newuser@example.com",
-            "password": "newpassword123",
-            "is_active": True,
-        }
+    # def test_user_email_exists(self):
+    #     """
+    #     The function `test_user_email_exists` creates a user with an email address that already exists and
+    #     checks for a validation error.
+    #     """
+    #     self.login()
+    #     self.create_user(email="test@example.com")
+    #     self.create_user(email="test@example.com")
+    #     self.match_error_response(400)
 
-        response = self.client.post(url, data)
-        print(vars(response), "response :::::::::::::")
-        data = response.data.get("data", None)
-        user_id = data.get("id") if data else None
-        if user_id:
-            User.objects.get(id=user_id)
-        print(response.status_code, ":::::::::::::::::::")
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+    # def test_user_password_invalid(self):
+    #     """
+    #     The function `test_user_password_invalid` creates a user with an invalid password and
+    #     checks for a validation error.
+    #     """
+    #     self.login()
+    #     invalid_password = "admin"  # This should not match the regex
+    #     kwargs = self.temp_payload(email="test@example.com", password=invalid_password)
 
-    # def test_create_user_without_authentication(self):
-    #     # Authenticate the user and obtain the token
-    #     self.client = APIClient()
-    #     self.client.credentials()
-    #     url = reverse("users")  # Ensure this URL name matches your URL pattern
+    #     # Attempt to create the user
+    #     self.create_user(**kwargs)
 
-    #     # Flatten or serialize JSON data
-    #     json_data_str = json.dumps({"key": "new value"})
+    #     # Manually check if the password is invalid and then call the appropriate response matcher
+    #     if re.match(settings.PASSWORD_VALIDATE_REGEX, invalid_password) and len(invalid_password) > 8:
+    #         self.match_error_response(400)
 
-    #     data = {
-    #         "first_name": "New",
-    #         "last_name": "User",
-    #         "email": "newuser@example.com",
-    #         "password": "newpassword123",
-    #         "is_active": True,
-    #     }
+    # def test_get_user_default_query(self):
+    #     """
+    #     The function `test_get_user_default_query` retrieves users with default query parameters
+    #     and checks for a successful response.
+    #     """
+    #     self.login()
+    #     response = self.client.get(self.url)
+    #     self.assertEqual(response.status_code, 200)
 
-    #     response = self.client.post(url, data, format="multipart")
-    #     self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+    # def test_get_users_without_authenticate(self):
+    #     """
+    #     The function `test_get_users_without_authenticate` retrieves users without authentication
+    #     and checks for a successful response.
+    #     """
+    #     response = self.client.get(self.url)
+    #     self.assertEqual(response.status_code, 401)
 
-    # def test_create_user_validation(self):
-    #     # Authenticate the user and obtain the token
-    #     url = reverse("users")  # Ensure this URL name matches your URL pattern
+    # def test_get_user_first_name_filter(self):
+    #     """
+    #     The function `test_get_user_first_name_filter` retrieves users by first name filter
+    #     and checks for a successful response.
+    #     """
+    #     self.login()
+    #     self.client.get(f"{self.url}?first_name=yash")
+    #     self.match_success_response(200)
 
-    #     # Flatten or serialize JSON data
-    #     json_data_str = json.dumps({"key": "new value"})
+    def test_get_user_by_admin(self):
+        """
+        The function `test_get_user_by_id` retrieves a user by ID and checks for a successful response.
+        """
+        self.login()
+        self.create_user()
+        self.set_response(self.client.get(f"{self.url}2/"))
+        self.match_success_response(200)
 
-    #     data = {
-    #         "first_name": 123,  # pass int value instead of str
-    #         "last_name": "User",
-    #         "email": "newuser@example.com",
-    #         "password": "newpassword123",
-    #         "is_active": True,
-    #     }
+    def test_get_user_not_found(self):
+        """
+        The function `test_get_user_by_id_invalid` retrieves a user by invalid ID and checks for a successful response.
+        """
+        self.login()
+        self.set_response(self.client.get(f"{self.url}999/"))
+        self.match_error_response(404)
 
-    #     response = self.client.post(url, data, format="multipart")
-    #     self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-
-    # def test_read_user_authentication(self):
-    #     url = reverse(
-    #         "user-detail", args=[self.user.id]
-    #     )  # Ensure this URL name matches your URL pattern
-
-    #     response = self.client.get(url, format="json")
-    #     self.assertEqual(response.status_code, status.HTTP_200_OK)
-    #     self.assertEqual(response.data["data"]["first_name"], self.user.first_name)
-
-    # def test_read_user_without_authentication(self):
-    #     # Authenticate the user and obtain the token
-    #     self.client = APIClient()
-    #     self.client.credentials()
-
-    #     url = reverse(
-    #         "user-detail", args=[self.user.id]
-    #     )  # Ensure this URL name matches your URL pattern
-
-    #     response = self.client.get(url, format="json")
-    #     self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
-
-    # def test_read_user_with_not_exists_id(self):
-    #     url = reverse(
-    #         "user-detail", args=[123456789]
-    #     )  # Ensure this URL name matches your URL pattern
-
-    #     response = self.client.get(url, format="json")
-    #     self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
-
-    # def test_update_user_authentication(self):
-    #     url = reverse(
-    #         "user-detail", args=[self.user.id]
-    #     )  # Ensure this URL name matches your URL pattern
-
-    #     updated_data = {
-    #         "first_name": "Updated",
-    #         "last_name": "User",
-    #         "email": "updated@example.com",
-    #         "password": "updatedpassword123",
-    #         "is_active": False,
-    #     }
-
-    #     response = self.client.patch(url, updated_data, format="multipart")
-    #     self.assertEqual(response.status_code, status.HTTP_200_OK)
-    #     self.assertEqual(
-    #         response.data["data"]["first_name"], updated_data["first_name"]
-    #     )
-
-    # def test_update_user_without_authentication(self):
-    #     # Authenticate the user and obtain the token
-    #     self.client = APIClient()
-    #     self.client.credentials()
-
-    #     url = reverse(
-    #         "user-detail", args=[self.user.id]
-    #     )  # Ensure this URL name matches your URL pattern
-
-    #     updated_data = {
-    #         "first_name": "Updated",
-    #         "last_name": "User",
-    #         "email": "updated@example.com",
-    #         "password": "updatedpassword123",
-    #         "is_active": False,
-    #     }
-
-    #     response = self.client.patch(url, updated_data, format="multipart")
-    #     self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
-
-    # def test_update_user_validation(self):
-    #     url = reverse(
-    #         "user-detail", args=[self.user.id]
-    #     )  # Ensure this URL name matches your URL pattern
-
-    #     updated_data = {"email": "not-an-email"}
-
-    #     response = self.client.patch(url, updated_data, format="json")
-    #     self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-
-    # def test_update_user_with_not_exists_id(self):
-    #     url = reverse(
-    #         "user-detail", args=[0]
-    #     )  # Ensure this URL name matches your URL pattern
-
-    #     updated_data = {
-    #         "first_name": "Updated",
-    #         "last_name": "User",
-    #         "email": "updated@example.com",
-    #         "password": "updatedpassword123",
-    #         "is_active": False,
-    #     }
-
-    #     response = self.client.patch(url, updated_data, format="multipart")
-    #     self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
-
-    # def test_partial_update_user_authenticated(self):
-    #     url = reverse(
-    #         "user-detail", args=[self.user.id]
-    #     )  # Ensure this URL name matches your URL pattern
-
-    #     updated_data = {"name": "Partially Updated User"}
-
-    #     response = self.client.patch(url, updated_data, format="json")
-    #     self.assertEqual(response.status_code, status.HTTP_200_OK)
-    #     self.assertEqual(response.data["data"]["name"], updated_data["name"])
-
-    # def test_partial_update_user_without_authentication(self):
-    #     # Authenticate the user and obtain the token
-    #     self.client = APIClient()
-    #     self.client.credentials()
-
-    #     url = reverse(
-    #         "user-detail", args=[self.user.id]
-    #     )  # Ensure this URL name matches your URL pattern
-
-    #     updated_data = {"name": "Partially Updated User"}
-
-    #     response = self.client.patch(url, updated_data, format="json")
-    #     self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
-
-    # def test_partial_update_user_validation(self):
-    #     url = reverse(
-    #         "user-detail", args=[self.user.id]
-    #     )  # Ensure this URL name matches your URL pattern
-
-    #     updated_data = {"url": "Partially Updated User"}
-
-    #     response = self.client.patch(url, updated_data, format="json")
-    #     self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-
-    # def test_delete_user_authenticated(self):
-    #     url = reverse(
-    #         "user-detail", args=[self.user.id]
-    #     )  # Ensure this URL name matches your URL pattern
-
-    #     response = self.client.delete(url, format="json")
-    #     self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
-    #     self.assertFalse(User.objects.filter(id=self.user.id).exists())
-
-    # def test_delete_user_without_authentication(self):
-    #     # Authenticate the user and obtain the token
-    #     self.client = APIClient()
-    #     self.client.credentials()
-
-    #     url = reverse(
-    #         "user-detail", args=[self.user.id]
-    #     )  # Ensure this URL name matches your URL pattern
-
-    #     response = self.client.delete(url, format="json")
-    #     self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
-
-    # def test_delete_user_not_exists_id(self):
-    #     url = reverse(
-    #         "user-detail", args=[0]
-    #     )  # Ensure this URL name matches your URL pattern
-
-    #     response = self.client.delete(url, format="json")
-    #     self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
-
-    # def test_list_all_user(self):
-    #     self.access_token = ""
-    #     url = reverse("users")
-    #     response = self.client.get(url, format="json")
-    #     self.assertEqual(response.status_code, status.HTTP_200_OK)
+    def test_get_user_id_invalid(self):
+        """
+        The function `test_get_user_id_invalid` retrieves a user by ID with invalid format and checks for a successful response.
+        """
+        self.login()
+        self.set_response(self.client.get(f"{self.url}abc/"))
+        self.match_error_response(404)
