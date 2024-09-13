@@ -1,5 +1,4 @@
 from django.urls import reverse
-from .models import Todo
 from auth_api.tests import BaseAPITestCase
 import json
 
@@ -156,6 +155,4 @@ class TodoTest(BaseAPITestCase):
         self.login()
         self.create_todo()
         self.set_response(self.client.delete(f"{self.url}1/"))
-        todo = Todo.objects.filter()
-        print(todo.values())
         self.match_success_response()
