@@ -224,57 +224,59 @@ class UserTestCase(BaseAPITestCase):
         # Expect a 404 error since the user does not exist
         self.match_error_response(404)
 
-    # def test_update_user_by_id(self):
-    #     """
-    #     The function `test_update_user_by_id` ensures that the API returns a 200 response
-    #     and successfully updates the user if the data provided is valid.
-    #     """
-    #     # Log in as the first user (authenticated user)
-    #     self.login()
+    def test_update_user_by_id(self):
+        """
+        The function `test_update_user_by_id` ensures that the API returns a 200 response
+        and successfully updates the user if the data provided is valid.
+        """
+        # Log in as the first user (authenticated user)
+        self.login()
 
-    #     # Create a user to update
-    #     self.create_user()
+        # Create a user to update
+        user = self.create_user_via_orm()
+        created_user_id = user.id
 
-    #     # Data to update the user
+        # Data to update the user
 
-    #     # Send a PATCH request to update the user by ID
-    #     self.set_response(
-    #         self.client.patch(
-    #             f"{self.url}8/",
-    #             {
-    #                 "first_name": "UpdatedFirstName",
-    #                 "last_name": "UpdatedLastName",
-    #                 "email": "updated_email@example.com",
-    #             },
-    #             format="json",
-    #         )
-    #     )
+        # Send a PATCH request to update the user by ID
+        self.set_response(
+            self.client.patch(
+                f"{self.url}{created_user_id}/",
+                {
+                    "first_name": "UpdatedFirstName",
+                    "last_name": "UpdatedLastName",
+                    "email": "updated_email@example.com",
+                },
+                format="json",
+            )
+        )
 
-    #     # Expect a 200 response since the data is valid and the update is successful
-    #     self.match_success_response(200)
+        # Expect a 200 response since the data is valid and the update is successful
+        self.match_success_response(200)
 
-    # def test_update_user_without_authenticate(self):
-    #     """
-    #     The function `test_update_user_without_token` ensures that the API returns a 401 error
-    #     if the access token is missing when trying to update a user.
-    #     """
-    #     # Create a user to update
-    #     self.create_user()
-    #     # Send a PATCH request to update the user by ID without logging in (no access token)
-    #     self.set_response(
-    #         self.client.patch(
-    #             f"{self.url}9/",
-    #             {
-    #                 "first_name": "UpdatedFirstName",
-    #                 "last_name": "UpdatedLastName",
-    #                 "email": "updated_email@example.com",
-    #             },
-    #             format="json",
-    #         )
-    #     )
+    def test_update_user_without_authenticate(self):
+        """
+        The function `test_update_user_without_token` ensures that the API returns a 401 error
+        if the access token is missing when trying to update a user.
+        """
+        # Create a user to update
+        user = self.create_user_via_orm()
+        created_user_id = user.id
+        # Send a PATCH request to update the user by ID without logging in (no access token)
+        self.set_response(
+            self.client.patch(
+                f"{self.url}{created_user_id}/",
+                {
+                    "first_name": "UpdatedFirstName",
+                    "last_name": "UpdatedLastName",
+                    "email": "updated_email@example.com",
+                },
+                format="json",
+            )
+        )
 
-    #     # Expect a 401 error since the access token is missing
-    #     self.match_error_response(401)
+        # Expect a 401 error since the access token is missing
+        self.match_error_response(401)
 
     # def test_update_another_user_by_id(self):
     #     """
@@ -320,144 +322,118 @@ class UserTestCase(BaseAPITestCase):
     #         )
     #     )
 
-    #     # Expect a 403 error since the logged-in user should not be able to update another user's account
-    #     self.match_error_response(403)
+    # Expect a 403 error since the logged-in user should not be able to update another user's account
+    # self.match_error_response(403)
 
-    # def test_update_user_with_invalid_id(self):
-    #     """
-    #     The function `test_update_user_with_invalid_id` ensures that the API returns a 400 error
-    #     if the userId provided is not a valid MongoDB ObjectID.
-    #     """
-    #     # Log in as the first user (authenticated user)
-    #     self.login()
+    def test_update_user_with_invalid_id(self):
+        """
+        The function `test_update_user_with_invalid_id` ensures that the API returns a 400 error
+        if the userId provided is not a valid MongoDB ObjectID.
+        """
+        # Log in as the first user (authenticated user)
+        self.login()
 
-    #     # Data to update the user
+        # Data to update the user
 
-    #     # Send a PATCH request to update the user by the invalid ID
-    #     self.set_response(
-    #         self.client.patch(
-    #             f"{self.url}1000/",
-    #             {"name": "Updated name"},
-    #             format="json",
-    #         )
-    #     )
+        # Send a PATCH request to update the user by the invalid ID
+        self.set_response(
+            self.client.patch(
+                f"{self.url}1000/",
+                {"name": "Updated name"},
+                format="json",
+            )
+        )
 
-    #     # Expect a 400 error since the userId is not a valid MongoDB ObjectID
-    #     self.match_error_response(400)
+        # Expect a 400 error since the userId is not a valid MongoDB ObjectID
+        self.match_error_response(400)
 
-    # def test_update_user_with_invalid_email(self):
-    #     """
-    #     The function `test_update_user_with_invalid_id` ensures that the API returns a 400 error
-    #     if the userId provided is not a valid MongoDB ObjectID.
-    #     """
-    #     # Log in as the first user (authenticated user)
-    #     self.login()
+    def test_update_user_with_invalid_email(self):
+        """
+        The function `test_update_user_with_invalid_id` ensures that the API returns a 400 error
+        if the userId provided is not a valid MongoDB ObjectID.
+        """
+        # Log in as the first user (authenticated user)
+        self.login()
 
-    #     # Data to update the user
+        # Data to update the user
 
-    #     # Send a PATCH request to update the user by the invalid ID
-    #     self.set_response(
-    #         self.client.patch(
-    #             f"{self.url}1000/",
-    #             {"email": "email"},
-    #             format="json",
-    #         )
-    #     )
+        # Send a PATCH request to update the user by the invalid ID
+        self.set_response(
+            self.client.patch(
+                f"{self.url}1000/",
+                {"email": "email"},
+                format="json",
+            )
+        )
 
-    #     # Expect a 400 error since the userId is not a valid MongoDB ObjectID
-    #     self.match_error_response(400)
+        # Expect a 400 error since the userId is not a valid MongoDB ObjectID
+        self.match_error_response(400)
 
-    # def test_update_user_with_taken_email(self):
-    #     """
-    #     The function `test_update_user_with_taken_email` ensures that the API returns a 400 error
-    #     if the email provided for updating is already taken by another user.
-    #     """
-    #     # Log in as the first user (authenticated user)
-    #     self.login()
+    def test_update_user_with_taken_email(self):
+        """
+        The function `test_update_user_with_taken_email` ensures that the API returns a 400 error
+        if the email provided for updating is already taken by another user.
+        """
+        # Log in as the first user (authenticated user)
+        self.login()
 
-    #     # Create the first user with a unique email
-    #     self.create_user(
-    #         email="unique_email@example.com", username="user1", password="password123"
-    #     )
+        # Create the first user with a unique email
+        user = self.create_user_via_orm(
+            email="unique_email@example.com", password="password123"
+        )
+        created_user_id = user.id
 
-    #     # Create another user with the email that will be used to test the conflict
-    #     self.create_user(
-    #         email="taken_email@example.com", username="user2", password="password123"
-    #     )
+        # Create another user with the email that will be used to test the conflict
+        self.create_user_via_orm(
+            email="taken_email@example.com", password="password123"
+        )
 
-    #     # Data to update the user with an email that is already taken
-    #     update_data = {
-    #         "email": "taken_email@example.com",
-    #     }
+        # Data to update the user with an email that is already taken
+        update_data = {
+            "email": "taken_email@example.com",
+        }
 
-    #     # Send a PATCH request to update the user by ID with the conflicting email
-    #     self.set_response(
-    #         self.client.patch(
-    #             f"{self.url}10/",  # Assuming user ID 1 is the one to be updated
-    #             update_data,
-    #             format="json",
-    #         )
-    #     )
+        # Send a PATCH request to update the user by ID with the conflicting email
+        self.set_response(
+            self.client.patch(
+                f"{self.url}{created_user_id}/",  # Assuming user ID 1 is the one to be updated
+                update_data,
+                format="json",
+            )
+        )
 
-    #     # Expect a 400 error since the email is already taken
-    #     self.match_error_response(400)
+        # Expect a 400 error since the email is already taken
+        self.match_error_response(400)
 
-    # def test_update_user_with_same_email(self):
-    #     """
-    #     The function `test_update_user_with_same_email` ensures that the API does not return a 400 error
-    #     if the email being updated is the same as the current email of the user.
-    #     """
-    #     # Log in as the first user (authenticated user)
-    #     self.login()
+    def test_update_user_with_same_email(self):
+        """
+        The function `test_update_user_with_same_email` ensures that the API does not return a 400 error
+        if the email being updated is the same as the current email of the user.
+        """
+        # Log in as the first user (authenticated user)
+        self.login()
 
-    #     # Create a user with a specific email
-    #     user = self.create_user(
-    #         # email="current_email@example.com",
-    #         # first_name="user",
-    #         # password="password123",
-    #     )
+        # Create a user with a specific email
+        user = self.create_user_via_orm(
+            # email="current_email@example.com",
+            # first_name="user",
+            # password="password123",
+        )
+        created_user_id = user.id
 
-    #     # Data to update the user with the same email
-    #     update_data = {
-    #         "email": "current_email@example.com",
-    #     }
+        # Data to update the user with the same email
+        update_data = {
+            "email": "current_email@example.com",
+        }
 
-    #     # Send a PATCH request to update the user’s email to the same email
-    #     self.set_response(
-    #         self.client.patch(
-    #             f"{self.url}{user.id}/",  # Use the ID of the created user
-    #             update_data,
-    #             format="json",
-    #         )
-    #     )
+        # Send a PATCH request to update the user’s email to the same email
+        self.set_response(
+            self.client.patch(
+                f"{self.url}{created_user_id}/",  # Use the ID of the created user
+                update_data,
+                format="json",
+            )
+        )
 
-    #     # Expect a 200 OK response since the email is the same and no conflict should occur
-    #     self.match_success_response(200)
-
-    # def test_user_password_invalid(self):
-    #     """
-    #     The function `test_user_password_invalid` creates a user with an invalid password and
-    #     checks for a validation error.
-    #     """
-    #     self.login()
-
-    #     # Attempt to create the user
-    #     self.create_user()
-
-    #     invalid_password = "admin"
-    #     email = "test@example.com"  # This should not match the regex
-    #     self.set_response(
-    #         self.client.patch(
-    #             f"{self.url}11/",
-    #             {
-    #                 "email": email,
-    #                 "password": invalid_password,
-    #             },
-    #             format="json",
-    #         )
-    #     )
-    #     if (
-    #         re.match(settings.PASSWORD_VALIDATE_REGEX, invalid_password)
-    #         and len(invalid_password) > 8
-    #     ):
-    #         self.match_error_response(400)
+        # Expect a 200 OK response since the email is the same and no conflict should occur
+        self.match_success_response(200)
