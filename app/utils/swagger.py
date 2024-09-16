@@ -1,7 +1,10 @@
-from functools import wraps
-from django.utils.decorators import method_decorator
 from drf_yasg import openapi
+from functools import wraps
+from django.conf import settings
+from django.http import HttpResponse
 from drf_yasg.utils import swagger_auto_schema
+from drf_yasg.generators import OpenAPISchemaGenerator
+from django.utils.decorators import method_decorator
 from rest_framework import serializers
 
 
@@ -193,3 +196,39 @@ def apply_swagger_tags(**kwargs):
         return view
 
     return decorator
+
+
+def swagger_auth_required(view_func):
+    """
+    Custom decorator to force Basic Auth for Swagger UI.
+    """
+
+    def _wrapped_view(request, *args, **kwargs):
+        # Get username and password from .env (you can use django-environ for this)
+        from base64 import b64decode
+
+        AUTH_USER = settings.SWAGGER_AUTH_USERNAME
+        AUTH_PASS = settings.SWAGGER_AUTH_PASSWORD
+
+        # Extract credentials from request headers
+        auth_header = request.META.get("HTTP_AUTHORIZATION")
+        if auth_header and auth_header.startswith("Basic "):
+            credentials = b64decode(auth_header.split(" ")[1]).decode("utf-8")
+            email, password = credentials.split(":", 1)
+            # Check credentials
+            if email == AUTH_USER and password == AUTH_PASS:
+                return view_func(request, *args, **kwargs)
+
+        # Return Unauthorized if credentials are incorrect
+        response = HttpResponse("Unauthorized", status=401)
+        response["WWW-Authenticate"] = 'Basic realm="Swagger"'
+        return response
+
+    return _wrapped_view
+
+
+class HttpAndHttpsSchemaGenerator(OpenAPISchemaGenerator):
+    def get_schema(self, request=None, public=False):
+        schema = super().get_schema(request, public)
+        schema.schemes = ["http", "https"]
+        return schema

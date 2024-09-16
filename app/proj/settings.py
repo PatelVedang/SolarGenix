@@ -284,3 +284,7 @@ AUTHENTICATION_BACKENDS = [
     "auth_api.custom_backend.LoginOnAuthBackend",  # Custom backend
     "django.contrib.auth.backends.ModelBackend",  # Default backend
 ]
+
+# Swagger Authentication
+SWAGGER_AUTH_USERNAME = settings.SWAGGER_AUTH_USERNAME
+SWAGGER_AUTH_PASSWORD = settings.SWAGGER_AUTH_PASSWORD
