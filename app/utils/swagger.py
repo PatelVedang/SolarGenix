@@ -60,6 +60,73 @@ def get_response_schema():
     }
 
 
+def set_attr(view, method, tags, obj, view_method, extra_action):
+    params = {
+        "operation_description": obj.get("operation_description", ""),
+        "operation_summary": obj.get("operation_summary", ""),
+        "responses": get_response_schema(),
+        "tags": tags,
+    }
+    if method == "list":
+        params["manual_parameters"] = [
+            openapi.Parameter(
+                "fields",
+                openapi.IN_QUERY,
+                description="Comma separated fields",
+                type=openapi.TYPE_STRING,
+            ),
+            openapi.Parameter(
+                name="sort",
+                in_=openapi.IN_QUERY,
+                description="Fields to sort",
+                type=openapi.TYPE_STRING,
+            ),
+            openapi.Parameter(
+                name="search",
+                in_=openapi.IN_QUERY,
+                description="Search term.",
+                type=openapi.TYPE_STRING,
+            ),
+            openapi.Parameter(
+                name="search_fields",
+                in_=openapi.IN_QUERY,
+                description="Fields on search ",
+                type=openapi.TYPE_STRING,
+            ),
+        ]
+    elif method == "retrieve":
+        params["manual_parameters"] = [
+            openapi.Parameter(
+                "fields",
+                openapi.IN_QUERY,
+                description="Comma separated fields",
+                type=openapi.TYPE_STRING,
+            )
+        ]
+
+    if extra_action:
+        setattr(
+            view,
+            method,
+            wraps(view_method)(
+                swagger_auto_schema(
+                    tags=tags,
+                    operation_description=obj.get("operation_description", ""),
+                    operation_summary=obj.get("operation_summary", ""),
+                    responses=get_response_schema(),
+                )(view_method)
+            ),
+        )
+    else:
+        setattr(
+            view,
+            method,
+            method_decorator(name=method, decorator=swagger_auto_schema(**params))(
+                view_method
+            ),
+        )
+
+
 def apply_swagger_tags(**kwargs):
     """
     A decorator to apply Swagger tags and additional metadata to API views.
@@ -131,20 +198,7 @@ def apply_swagger_tags(**kwargs):
             if hasattr(view, method):
                 view_method = getattr(view, method)
                 if method in extra_actions:
-                    setattr(
-                        view,
-                        method,
-                        wraps(view_method)(
-                            swagger_auto_schema(
-                                tags=tags,
-                                operation_description=obj.get(
-                                    "operation_description", ""
-                                ),
-                                operation_summary=obj.get("operation_summary", ""),
-                                responses=get_response_schema(),
-                            )(view_method)
-                        ),
-                    )
+                    set_attr(view, method, tags, obj, view_method, True)
                 elif method not in not_required_actions:
                     if hasattr(view_method, "_swagger_auto_schema"):
                         # Add tags and other details to existing Swagger decorators
@@ -154,41 +208,16 @@ def apply_swagger_tags(**kwargs):
                             )
                             decorator_data.update(tags=tags, **obj)
                     else:
-                        setattr(
-                            view,
-                            method,
-                            method_decorator(
-                                name=method,
-                                decorator=swagger_auto_schema(
-                                    tags=tags,
-                                    operation_summary=obj.get("operation_summary", ""),
-                                    operation_description=obj.get(
-                                        "operation_description", ""
-                                    ),
-                                    request_body=obj.get("request_body", None),
-                                    responses=get_response_schema(),
-                                ),
-                            )(view_method),
-                        )
+                        set_attr(view, method, tags, obj, view_method, False)
                 else:
                     if hasattr(view_method, "_swagger_auto_schema"):
-                        # Add tags to existing Swagger decorators
                         if "_swagger_auto_schema" in dir(view_method):
                             decorator_data = getattr(
                                 view_method, "_swagger_auto_schema"
                             )
                             decorator_data.update(tags=tags, auto_schema=None)
                     else:
-                        setattr(
-                            view,
-                            method,
-                            method_decorator(
-                                name=method,
-                                decorator=swagger_auto_schema(
-                                    tags=tags, auto_schema=None
-                                ),
-                            )(view_method),
-                        )
+                        set_attr(view, method, tags, obj, view_method, False)
 
         return view
 

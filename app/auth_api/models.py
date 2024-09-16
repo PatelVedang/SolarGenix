@@ -16,6 +16,14 @@ import logging
 logger = logging.getLogger("django")
 
 
+class TokenType(models.TextChoices):
+    ACCESS = "access", ("Access")
+    REFRESH = "refresh", ("Refresh")
+    RESET = "reset", ("Reset")
+    VERIFY_MAIL = "verify_mail", ("Verify Mail")
+    GOOGLE = "google", ("Google")
+
+
 class SimpleToken(BaseToken):
     def __init__(self, token_type=None, lifetime=None, *args, **kwargs):
         self.token_type = token_type
@@ -148,18 +156,11 @@ class User(AbstractUser, PermissionsMixin):
 
 
 class Token(BaseClass):  # Inherits from BaseClass
-    TOKEN_TYPES = (
-        ("access", "access"),
-        ("refresh", "refresh"),
-        ("reset", "reset"),
-        ("verify", "verify"),
-        ("google", "google"),
-    )
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     jti = models.CharField(max_length=255, default=uuid.uuid4().hex)
     token = models.TextField(null=True, blank=True)
-    token_type = models.CharField(max_length=15, choices=TOKEN_TYPES, default="access")
+    token_type = models.CharField(max_length=15, choices=TokenType, default="access")
     expire_at = models.DateTimeField(blank=True, null=True)
     is_blacklist_at = models.DateTimeField(blank=True, null=True)
 

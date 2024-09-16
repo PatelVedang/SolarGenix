@@ -1,16 +1,13 @@
 {
     "editor.formatOnSave": false,
     "editor.codeActionsOnSave": {
-        "source.fixAll": "explicit"
+        "source.fixAll": "explicit",
+        "source.organizeImports": "explicit"
     },
     "editor.defaultFormatter": "charliermarsh.ruff",
     "[python]": {
         "editor.formatOnSave": true,
-        "editor.defaultFormatter": "charliermarsh.ruff",
-        "editor.codeActionsOnSave": {
-            "source.fixAll": false,
-            "source.organizeImports": false
-        }
+        "editor.defaultFormatter": "charliermarsh.ruff"
     },
     "python.analysis.autoImportCompletions": true,
     "[json]": {
@@ -18,5 +15,5 @@
     },
     "ruff.lint.enable": true,
     "ruff.lint.select": ["C", "E", "F", "W"],
-    "ruff.lint.ignore": ["apps.py"]
+    // "ruff.lint.ignore": ["apps.py"],
 }

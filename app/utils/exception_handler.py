@@ -50,7 +50,6 @@ def custom_exception_handler(exc, context):
             data={}, status_code=res.status_code, message=message.capitalize()
         )
     except Exception as e:
-        print(e)
         logger.error(str(e))
         return response(data={}, status_code=500, message="Something went wrong.")
 

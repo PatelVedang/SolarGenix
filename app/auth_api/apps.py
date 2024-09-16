@@ -1,3 +1,5 @@
+import importlib
+
 from django.apps import AppConfig
 
 
@@ -6,4 +8,4 @@ class AuthApiConfig(AppConfig):
     name = "auth_api"
 
     def ready(self):
-        pass
+        importlib.import_module(f"{self.name}.signals")

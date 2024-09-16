@@ -61,9 +61,9 @@ if ! grep -q "'$PLURAL_UNDERSCORED'" "$SETTINGS_FILE"; then
 fi
 
 # Add the app's URLs to the project's URLs
-if ! grep -q "'$PLURAL_UNDERSCORED'" "$URLS_FILE"; then
+if ! grep -q "'$PLURAL_UNDERSCORED.urls'" "$URLS_FILE"; then
     echo "Task initiated: Adding app URLs to project URLs..."
-    sed -i "/path('swagger',/i\        path('api/', include('$PLURAL_UNDERSCORED.urls'))," "$URLS_FILE"
+    sed -i "/# IMPORT_NEW_ROUTE_HERE/a\                path('api/', include('$PLURAL_UNDERSCORED.urls'))," "$URLS_FILE"
 fi
 
 # Generate models.py with various field types
@@ -115,16 +115,17 @@ EOL
 # Generate views.py
 echo "Task initiated: Generating views.py..."
 cat <<EOL > "$PLURAL_UNDERSCORED/views.py"
-from rest_framework import viewsets
-from rest_framework.permissions import IsAuthenticated
 from utils.swagger import apply_swagger_tags
 from utils.custom_filter import filter_model
 from proj.base_view import BaseModelViewSet
 from .models import $SINGULAR_CAPITALIZED
 from .serializers import $SINGULAR_CAPITALIZED_SERIALIZER
+from auth_api.permissions import IsAuthenticated
+from rest_framework.decorators import action
+from utils.make_response import response
 
 @apply_swagger_tags(
-    tags=["$SINGULAR_CAPITALIZED"],
+    tags=["$PLURAL_SPACE_SEPRATED"],
     extra_actions=["get_all"],
     method_details={
         "get_all": {
@@ -144,6 +145,16 @@ class $SINGULAR_CAPITALIZED_VIEWSET(BaseModelViewSet):
             # Apply filtering based on query parameters
             return filter_model(query_params, queryset, $SINGULAR_CAPITALIZED)
         return queryset
+    
+    @action(methods=["GET"], detail=False, url_path="all")
+    def get_all(self, request, *args, **kwargs):
+        self.pagination_class = None
+        serializer = self.get_serializer(self.get_queryset(), many=True)
+        return response(
+            data=serializer.data,
+            message=self.get_message(request, *args, **kwargs),
+            status_code=200,
+        )
 EOL
 
 # Generate urls.py
