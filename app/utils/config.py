@@ -1,7 +1,8 @@
-from pydantic import ValidationError, EmailStr, Field
-from pydantic_settings import BaseSettings
 import os
 from pathlib import Path
+
+from pydantic import EmailStr, Field, ValidationError
+from pydantic_settings import BaseSettings
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 

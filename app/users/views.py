@@ -1,4 +1,5 @@
 from utils.custom_filter import filter_model
+
 from proj.base_view import BaseModelViewSet
 from auth_api.models import User
 from .serializers import UserSerializer

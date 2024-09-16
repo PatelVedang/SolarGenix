@@ -55,6 +55,7 @@ INSTALLED_APPS = [
     "django_filters",
     "auth_api",
     "corsheaders",
+    "django_extensions",
 ]
 
 MIDDLEWARE = [
