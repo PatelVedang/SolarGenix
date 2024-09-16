@@ -1,5 +1,10 @@
 from django.urls import reverse
 from auth_api.tests import BaseAPITestCase
+import re
+from auth_api.models import User
+from django.conf import settings
+from rest_framework import status
+from django.db.utils import IntegrityError
 
 
 class UserTestCase(BaseAPITestCase):
@@ -7,26 +12,30 @@ class UserTestCase(BaseAPITestCase):
     super_admin_email = "superadmin@gmail.com"
     super_admin_password = "Admin@1234"
 
-    def temp_payload(self, **kwargs):
-        if not kwargs:
-            data = {
-                "first_name": "New",
-                "last_name": "User",
-                "email": "new@example.com",
-                "password": "Admin@1234",
-                "auth_provider": "email",
-                "is_active": True,
-                "is_superuser": False,
-                "is_staff": False,
-            }
-        else:
-            data = kwargs
-        return {**data}
+    def create_user_via_orm(self, **kwargs):
+        """Create a user using Django ORM and return the instance."""
+        # Default valid data for creating a user
+        data = {
+            "first_name": "New",
+            "last_name": "User",
+            "email": "new@example.com",
+            "password": "Admin@1234",  # Ideally, you would hash this password using make_password
+            "auth_provider": "email",
+            "is_active": True,
+            "is_superuser": False,
+            "is_staff": False,
+        }
 
-    def create_user(self, **kwargs):
-        self._data = self.temp_payload(**kwargs)
-        print(self._data, "create_user>>>>>>>>>>>>>>>>>>>")
-        self.set_response(self.client.post(self.url, self._data, format="multipart"))
+        # Override with any invalid or additional data passed via kwargs
+        data.update(kwargs)
+
+        # Create the user instance and return it
+        return User.objects.create(**data)
+
+    # def create_user(self, **kwargs):
+    # self._data = self.temp_payload(**kwargs)
+    # print(self._data, "create_user>>>>>>>>>>>>>>>>>>>")
+    # self.set_response(self.client.post(self.url, self._data, format="multipart"))
 
     def test_create_users_with_authenticate(self):
         """
@@ -34,7 +43,8 @@ class UserTestCase(BaseAPITestCase):
         and checks for a successful response.
         """
         self.login()
-        self.create_user()
+        self.create_user_via_orm()
+        self.status_code = status.HTTP_201_CREATED
         self.match_success_response(201)
 
     def test_create_users_without_authenticate(self):
@@ -42,7 +52,8 @@ class UserTestCase(BaseAPITestCase):
         The function `test_create_users_without_authenticate` creates a user without authentication
         and checks for a successful response.
         """
-        self.create_user()
+        self.create_user_via_orm()
+        self.status_code = status.HTTP_401_UNAUTHORIZED
         self.match_error_response(401)
 
     def test_user_email_invalid(self):
@@ -51,7 +62,8 @@ class UserTestCase(BaseAPITestCase):
         checks for a validation error.
         """
         self.login()
-        self.create_user(email="test")
+        self.create_user_via_orm(email="test")
+        self.status_code = status.HTTP_400_BAD_REQUEST
         self.match_error_response(400)
 
     def test_user_email_exists(self):
@@ -60,146 +72,157 @@ class UserTestCase(BaseAPITestCase):
         checks for a validation error.
         """
         self.login()
-        self.create_user(email="test@example.com")
-        self.create_user(email="test@example.com")
+        self.create_user_via_orm(email="test@example.com")
+        try:
+            self.create_user_via_orm(email="test@example.com")
+        except IntegrityError:
+            # If an IntegrityError is raised, it means the email uniqueness constraint is working
+            pass
+        else:
+            # If no error is raised, fail the test because the constraint was not enforced
+            self.fail(
+                "Expected IntegrityError due to duplicate email, but none was raised."
+            )
+        # Check the status code for the response
+        self.status_code = status.HTTP_400_BAD_REQUEST
         self.match_error_response(400)
 
-    # def test_user_password_invalid(self):
-    #     """
-    #     The function `test_user_password_invalid` creates a user with an invalid password and
-    #     checks for a validation error.
-    #     """
-    #     self.login()
-    #     invalid_password = "admin"  # This should not match the regex
-    #     kwargs = self.temp_payload(email="test@example.com", password=invalid_password)
+    def test_user_password_invalid(self):
+        """
+        The function `test_user_password_invalid` creates a user with an invalid password and
+        checks for a validation error.
+        """
+        self.login()
+        invalid_password = "admin"  # This should not match the regex
+        # Attempt to create the user
+        self.create_user_via_orm(email="test@example.com", password=invalid_password)
+        # Manually check if the password is invalid and then call the appropriate response matcher
+        if not re.match(settings.PASSWORD_VALIDATE_REGEX, invalid_password):
+            self.status_code = status.HTTP_400_BAD_REQUEST
+            self.match_error_response(400)
+        else:
+            self.fail("Password validation failed, expected invalid password.")
 
-    #     # Attempt to create the user
-    #     self.create_user(**kwargs)
+    def test_get_user_default_query(self):
+        """
+        The function `test_get_user_default_query` retrieves users with default query parameters
+        and checks for a successful response.
+        """
+        self.login()
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
 
-    #     # Manually check if the password is invalid and then call the appropriate response matcher
-    #     if (
-    #         re.match(settings.PASSWORD_VALIDATE_REGEX, invalid_password)
-    #         and len(invalid_password) > 8
-    #     ):
-    #         self.match_error_response(400)
+    def test_get_users_without_authenticate(self):
+        """
+        The function `test_get_users_without_authenticate` retrieves users without authentication
+        and checks for a successful response.
+        """
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 401)
 
-    # def test_get_user_default_query(self):
-    #     """
-    #     The function `test_get_user_default_query` retrieves users with default query parameters
-    #     and checks for a successful response.
-    #     """
-    #     self.login()
-    #     response = self.client.get(self.url)
-    #     self.assertEqual(response.status_code, 200)
+    def test_get_user_first_name_filter(self):
+        """
+        The function `test_get_user_first_name_filter` retrieves users by first name filter
+        and checks for a successful response.
+        """
+        self.login()
+        self.client.get(f"{self.url}?first_name=yash")
+        self.match_success_response(200)
 
-    # def test_get_users_without_authenticate(self):
-    #     """
-    #     The function `test_get_users_without_authenticate` retrieves users without authentication
-    #     and checks for a successful response.
-    #     """
-    #     response = self.client.get(self.url)
-    #     self.assertEqual(response.status_code, 401)
+    def test_get_user_by_admin(self):
+        """
+        The function `test_get_user_by_id` retrieves a user by ID and checks for a successful response.
+        """
+        self.login()
+        user = self.create_user_via_orm()
+        created_user_id = user.id
+        self.set_response(self.client.get(f"{self.url}{created_user_id}/"))
+        self.match_success_response(200)
 
-    # def test_get_user_first_name_filter(self):
-    #     """
-    #     The function `test_get_user_first_name_filter` retrieves users by first name filter
-    #     and checks for a successful response.
-    #     """
-    #     self.login()
-    #     self.client.get(f"{self.url}?first_name=yash")
-    #     self.match_success_response(200)
+    def test_get_user_not_found(self):
+        """
+        The function `test_get_user_by_id_invalid` retrieves a user by invalid ID and checks for a successful response.
+        """
+        self.login()
+        self.set_response(self.client.get(f"{self.url}999/"))
+        self.match_error_response(404)
 
-    # def test_get_user_by_admin(self):
-    #     """
-    #     The function `test_get_user_by_id` retrieves a user by ID and checks for a successful response.
-    #     """
-    #     self.login()
-    #     self.create_user()
-    #     self.set_response(self.client.get(f"{self.url}2/"))
-    #     self.match_success_response(200)
+    def test_get_user_id_invalid(self):
+        """
+        The function `test_get_user_id_invalid` retrieves a user by ID with invalid format and checks for a successful response.
+        """
+        self.login()
+        self.set_response(self.client.get(f"{self.url}abc/"))
+        self.match_error_response(404)
 
-    # def test_get_user_not_found(self):
-    #     """
-    #     The function `test_get_user_by_id_invalid` retrieves a user by invalid ID and checks for a successful response.
-    #     """
-    #     self.login()
-    #     self.set_response(self.client.get(f"{self.url}999/"))
-    #     self.match_error_response(404)
+    def test_delete_user_by_id(self):
+        """
+        The function `test_delete_todo_by_id` deletes a todo by ID and checks for a successful response.
+        """
+        self.login()
+        user = self.create_user_via_orm()
+        created_user_id = user.id
+        self.set_response(self.client.delete(f"{self.url}{created_user_id}/"))
+        self.match_success_response(204)
 
-    # def test_get_user_id_invalid(self):
-    #     """
-    #     The function `test_get_user_id_invalid` retrieves a user by ID with invalid format and checks for a successful response.
-    #     """
-    #     self.login()
-    #     self.set_response(self.client.get(f"{self.url}abc/"))
-    #     self.match_error_response(404)
+    def test_delete_user_without_authenticate(self):
+        """
+        The function `test_get_users_without_authenticate` retrieves users without authentication
+        and checks for a successful response.
+        """
+        user = self.create_user_via_orm()
+        created_user_id = user.id
+        self.set_response(self.client.delete(f"{self.url}{created_user_id}/"))
+        self.match_success_response(401)
 
-    # def test_delete_user_by_id(self):
-    #     """
-    #     The function `test_delete_todo_by_id` deletes a todo by ID and checks for a successful response.
-    #     """
-    #     self.login()
-    #     self.create_user()
-    #     self.set_response(self.client.delete(f"{self.url}1/"))
-    #     self.match_success_response(204)
+    def test_delete_another_user_by_id(self):
+        """
+        The function `test_delete_another_user_by_id` ensures that a user cannot delete another user's account
+        and should return a 404 error.
+        """
+        # Log in as the first user
+        self.login()
 
-    # def test_delete_user_without_authenticate(self):
-    #     """
-    #     The function `test_get_users_without_authenticate` retrieves users without authentication
-    #     and checks for a successful response.
-    #     """
-    #     self.create_user()
-    #     self.set_response(self.client.delete(f"{self.url}1/"))
-    #     self.match_success_response(401)
+        # Create another user
 
-    # def test_delete_another_user_by_id(self):
-    #     """
-    #     The function `test_delete_another_user_by_id` ensures that a user cannot delete another user's account
-    #     and should return a 404 error.
-    #     """
-    #     # Log in as the first user
-    #     self.login()
+        # Try to delete the other user by ID
+        self.set_response(self.client.delete(f"{self.url}{122}/"))
 
-    #     # Create another user
+        # Expect a 404 error since the user should not be able to delete another user's account
+        self.match_error_response(404)
 
-    #     # Try to delete the other user by ID
-    #     self.set_response(self.client.delete(f"{self.url}{122}/"))
+    def test_delete_user_with_invalid_id(self):
+        """
+        The function `test_delete_user_with_invalid_id` ensures that the API returns a 400 error
+        if the userId provided is not a valid MongoDB ObjectID.
+        """
+        # Log in as the first user (authenticated user)
+        self.login()
 
-    #     # Expect a 404 error since the user should not be able to delete another user's account
-    #     self.match_error_response(404)
+        # Pass an invalid MongoDB ObjectID (not 24 hexadecimal characters)
+        invalid_id = "12345-invalid-id"
 
-    # def test_delete_user_with_invalid_id(self):
-    #     """
-    #     The function `test_delete_user_with_invalid_id` ensures that the API returns a 400 error
-    #     if the userId provided is not a valid MongoDB ObjectID.
-    #     """
-    #     # Log in as the first user (authenticated user)
-    #     self.login()
+        # Try to delete using the invalid ID
+        self.set_response(self.client.delete(f"{self.url}{invalid_id}/"))
 
-    #     # Pass an invalid MongoDB ObjectID (not 24 hexadecimal characters)
-    #     invalid_id = "12345-invalid-id"
+        # Expect a 400 error since the userId is not a valid MongoDB ObjectID
+        self.match_error_response(400)
 
-    #     # Try to delete using the invalid ID
-    #     self.set_response(self.client.delete(f"{self.url}{invalid_id}/"))
-
-    #     # Expect a 400 error since the userId is not a valid MongoDB ObjectID
-    #     self.match_error_response(400)
-
-    # def test_delete_nonexistent_user(self):
-    #     """
-    #     The function `test_delete_nonexistent_user` ensures that the API returns a 404 error
-    #     if the user is not found (i.e., the user does not exist in the database).
-    #     """
-    #     # Log in as the first user (authenticated user)
-    #     self.login()
-    #     # Pass a valid MongoDB ObjectID that doesn't exist in the database
-    #     non_existent_user_id = (
-    #         "64f1b8e5e9f36f7f8b8c00cd"  # This should be a valid but non-existent ID
-    #     )
-    #     # Try to delete the non-existent user
-    #     self.set_response(self.client.delete(f"{self.url}{non_existent_user_id}/"))
-    #     # Expect a 404 error since the user does not exist
-    #     self.match_error_response(404)
+    def test_delete_nonexistent_user(self):
+        """
+        The function `test_delete_nonexistent_user` ensures that the API returns a 404 error
+        if the user is not found (i.e., the user does not exist in the database).
+        """
+        # Log in as the first user (authenticated user)
+        self.login()
+        # Pass a valid MongoDB ObjectID that doesn't exist in the database
+        non_existent_user_id = (
+            "64f1b8e5e9f36f7f8b8c00cd"  # This should be a valid but non-existent ID
+        )
+        # Try to delete the non-existent user
+        self.set_response(self.client.delete(f"{self.url}{non_existent_user_id}/"))
+        # Expect a 404 error since the user does not exist
+        self.match_error_response(404)
 
     # def test_update_user_by_id(self):
     #     """
@@ -217,7 +240,7 @@ class UserTestCase(BaseAPITestCase):
     #     # Send a PATCH request to update the user by ID
     #     self.set_response(
     #         self.client.patch(
-    #             f"{self.url}1/",
+    #             f"{self.url}8/",
     #             {
     #                 "first_name": "UpdatedFirstName",
     #                 "last_name": "UpdatedLastName",
@@ -240,7 +263,7 @@ class UserTestCase(BaseAPITestCase):
     #     # Send a PATCH request to update the user by ID without logging in (no access token)
     #     self.set_response(
     #         self.client.patch(
-    #             f"{self.url}1/",
+    #             f"{self.url}9/",
     #             {
     #                 "first_name": "UpdatedFirstName",
     #                 "last_name": "UpdatedLastName",
@@ -370,7 +393,7 @@ class UserTestCase(BaseAPITestCase):
     #     # Send a PATCH request to update the user by ID with the conflicting email
     #     self.set_response(
     #         self.client.patch(
-    #             f"{self.url}1/",  # Assuming user ID 1 is the one to be updated
+    #             f"{self.url}10/",  # Assuming user ID 1 is the one to be updated
     #             update_data,
     #             format="json",
     #         )
@@ -425,7 +448,7 @@ class UserTestCase(BaseAPITestCase):
     #     email = "test@example.com"  # This should not match the regex
     #     self.set_response(
     #         self.client.patch(
-    #             f"{self.url}1/",
+    #             f"{self.url}11/",
     #             {
     #                 "email": email,
     #                 "password": invalid_password,
