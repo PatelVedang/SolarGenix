@@ -58,17 +58,18 @@ class BaseAPITestCase(APITestCase):
             status_code if status_code else status.HTTP_400_BAD_REQUEST,
         )
 
-    def login(self):
+    def login(self, email=None, password=None):
+        print(email, password)
         self._data = {
-            "email": self.super_admin_email,
-            "password": self.super_admin_password,
+            "email": email or self.super_admin_email,
+            "password": password or self.super_admin_password,
         }
         # super_user = User.objects.get(email=self.)
         self.set_response(
             self.client.post(self.login_url, data=self._data, format="json")
         )
         self.client.credentials(
-            HTTP_AUTHORIZATION=f"Bearer {self._data['data']['access']['token']}"
+            HTTP_AUTHORIZATION=f"Bearer {self._data.get('data',{}).get('access',{}).get('token','')}"
         )
 
     def send_forgot_password_mail(self, email=None):

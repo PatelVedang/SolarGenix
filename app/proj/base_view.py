@@ -36,10 +36,10 @@ class BaseModelViewSet(viewsets.ModelViewSet):
         return "Request processed successfully"
 
     def create(self, request, *args, **kwargs):
-        response = super().create(request, *args, **kwargs)
+        response = super().create(request, args, *kwargs)
         return Response(
             data=response.data,
-            message=self.get_message(request, *args, **kwargs),
+            message=self.get_message(request, args, *kwargs),
             status_code=status.HTTP_201_CREATED,
             headers=response.headers,
         )
@@ -127,7 +127,7 @@ class BaseModelViewSet(viewsets.ModelViewSet):
         )
 
     def partial_update(self, request, *args, **kwargs):
-        response = super().partial_update(request, *args, **kwargs)
+        response = super().create(request, *args, **kwargs)
         return Response(
             data=response.data,
             message=self.get_message(request, *args, **kwargs),

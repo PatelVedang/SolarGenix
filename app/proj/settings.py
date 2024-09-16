@@ -41,6 +41,7 @@ ALLOWED_HOSTS = ["*"]
 # Application definition
 
 INSTALLED_APPS = [
+    "users",
     "products",
     "todos",
     "django.contrib.admin",
@@ -54,6 +55,7 @@ INSTALLED_APPS = [
     "django_filters",
     "auth_api",
     "corsheaders",
+    "django_extensions",
 ]
 
 MIDDLEWARE = [
