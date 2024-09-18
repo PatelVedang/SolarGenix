@@ -55,7 +55,6 @@ INSTALLED_APPS = [
     "django_filters",
     "auth_api",
     "corsheaders",
-    "django_extensions",
 ]
 
 MIDDLEWARE = [
@@ -287,5 +286,10 @@ AUTHENTICATION_BACKENDS = [
     "django.contrib.auth.backends.ModelBackend",  # Default backend
 ]
 
+# Swagger Authentication
+SWAGGER_AUTH_USERNAME = settings.SWAGGER_AUTH_USERNAME
+SWAGGER_AUTH_PASSWORD = settings.SWAGGER_AUTH_PASSWORD
+
+# Token Lifespan
 AUTH_VERIFY_EMAIL_TOKEN_LIFELINE = settings.AUTH_VERIFY_EMAIL_TOKEN_LIFELINE
 AUTH_RESET_PASSWORD_TOKEN_LIFELINE = settings.AUTH_RESET_PASSWORD_TOKEN_LIFELINE

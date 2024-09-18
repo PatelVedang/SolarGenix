@@ -4,6 +4,7 @@ import json
 
 
 from todos.models import Todo
+from rest_framework import status
 
 
 class TodoTest(BaseAPITestCase):
@@ -38,41 +39,40 @@ class TodoTest(BaseAPITestCase):
         # Attempt to create the todo using Django's ORM and return the instance
         return Todo.objects.create(**data)
 
-    # def test_create_todos_with_authenticate(self):
-    #     """
-    #     The function `test_create_todos_with_authenticate` creates a todo with authentication
-    #     and checks for a successful response.
-    #     """
-    #     self.login()
-    #     self.create_todo_via_orm()
-    #     self.status_code = status.HTTP_201_CREATED
+    def test_create_todos_with_authenticate(self):
+        """
+        The function `test_create_todos_with_authenticate` creates a todo with authentication
+        and checks for a successful response.
+        """
+        self.login()
+        self.create_todo_via_orm()
+        self.status_code = status.HTTP_201_CREATED
 
-    #     self.match_success_response(201)
+        self.match_success_response(201)
 
-    # def test_create_todos_without_authenticate(self):
-    #     """
-    #     The function `test_create_todos_without_authenticate` creates a todo without authentication
-    #     and checks for a successful response.
-    #     """
-    #     self.create_todo_via_orm()
-    #     self.status_code = status.HTTP_401_UNAUTHORIZED
-    #     self.match_error_response(401)
+    def test_create_todos_without_authenticate(self):
+        """
+        The function `test_create_todos_without_authenticate` creates a todo without authentication
+        and checks for a successful response.
+        """
+        self.create_todo_via_orm()
+        self.status_code = status.HTTP_401_UNAUTHORIZED
+        self.match_error_response(401)
 
-    # def test_create_todos_with_invalid_data(self):
-    #     """
-    #     The function `test_create_todos_with_invalid_data` creates a todo with invalid data
-    #     and checks for a successful response.
-    #     """
-    #     self.login()
-    #     invalid_data = {
-    #         "url": "invalid_url"  # Invalid URL format
-    #     }
-    #     # Try creating a todo with invalid data via ORM
-    #     with self.assertRaises(Exception):  # Expect failure due to invalid data
-    #         self.
-    # create_todo_via_orm(**invalid_data)
+    def test_create_todos_with_invalid_data(self):
+        """
+        The function `test_create_todos_with_invalid_data` creates a todo with invalid data
+        and checks for a successful response.
+        """
+        self.login()
+        invalid_data = {
+            "url": "invalid_url"  # Invalid URL format
+        }
+        # Try creating a todo with invalid data via ORM
+        with self.assertRaises(Exception):  # Expect failure due to invalid data
+            self.create_todo_via_orm(**invalid_data)
 
-    #         self.match_error_response(400)
+        self.match_error_response(400)
 
     def test_get_todos(self):
         """
@@ -120,45 +120,46 @@ class TodoTest(BaseAPITestCase):
         self.set_response(self.client.get(f"{self.url}1000/"))
         self.match_error_response(404)
 
-    # def test_update_todo_by_id(self):
-    #     """
-    #     The function `test_update_todo_by_id` updates a todo by ID and checks for a successful response.
-    #     """
-    #     self.login()
-    #     todo = self.create_todo_via_orm()
-    #     # Update the todo with a patch request
-    #     self.client.patch(
-    #         f"{self.url}{todo.id}/", {"name": "Updated name"}, format="json"
-    #     )
-    #     self.match_success_response()
+    def test_update_todo_by_id(self):
+        """
+        The function `test_update_todo_by_id` updates a todo by ID and checks for a successful response.
+        """
+        self.login()
+        todo = self.create_todo_via_orm()
+        created_todo_id = todo.id
+        # Update the todo with a patch request
+        self.client.patch(
+            f"{self.url}{created_todo_id}/", {"name": "Updated name"}, format="json"
+        )
+        self.match_success_response()
 
-    # def test_update_todo_by_id_without_authenticate(self):
-    #     """
-    #     The function `test_update_todo_by_id_without_authenticate` updates a todo by ID without authentication
-    #     and checks for a successful response.
-    #     """
-    #     todo = self.create_todo_via_orm()
-    #     # Update the todo with a patch request
-    #     self.client.patch(
-    #         f"{self.url}{todo.id}/", {"name": "Updated name"}, format="json"
-    #     )
-    #     self.status_code = status.HTTP_401_UNAUTHORIZED
-    #     self.match_error_response(401)
+    def test_update_todo_by_id_without_authenticate(self):
+        """
+        The function `test_update_todo_by_id_without_authenticate` updates a todo by ID without authentication
+        and checks for a successful response.
+        """
+        todo = self.create_todo_via_orm()
+        # Update the todo with a patch request
+        self.client.patch(
+            f"{self.url}{todo.id}/", {"name": "Updated name"}, format="json"
+        )
+        self.status_code = status.HTTP_401_UNAUTHORIZED
+        self.match_error_response(401)
 
-    # def test_update_todo_by_id_with_wrong_id(self):
-    #     """
-    #     The function `test_update_todo_by_id_with_wrong_id` updates a todo by ID with wrong ID
-    #     and checks for a successful response.
-    #     """
-    #     self.login()
-    #     # todo = self.create_todo_via_orm()
+    def test_update_todo_by_id_with_wrong_id(self):
+        """
+        The function `test_update_todo_by_id_with_wrong_id` updates a todo by ID with wrong ID
+        and checks for a successful response.
+        """
+        self.login()
+        # todo = self.create_todo_via_orm()
 
-    #     self.set_response(
-    #         self.client.patch(
-    #             f"{self.url}1000/", {"name": "Updated name"}, format="json"
-    #         )
-    #     )
-    #     self.match_error_response(404)
+        self.set_response(
+            self.client.patch(
+                f"{self.url}1000/", {"name": "Updated name"}, format="json"
+            )
+        )
+        self.match_error_response(404)
 
     # def test_create_todos_with_invalid_email(self):
     #     """Test creating todos with invalid email."""
@@ -187,25 +188,25 @@ class TodoTest(BaseAPITestCase):
     #         self.create_todo_via_orm(email="duplicate@example.com")
     #         self.match_error_response(200)  # This line is for testing purposes
 
-    # def test_delete_todo_by_id(self):
-    #     """
-    #     The function `test_delete_todo_by_id` deletes a todo by ID and checks for a successful response.
-    #     """
-    #     self.login()
-    #     todo = self.create_todo_via_orm()
-    #     created_todo_id = todo.id
-    #     self.set_response(self.client.delete(f"{self.url}{created_todo_id}/"))
-    #     self.match_success_response(204)
+    def test_delete_todo_by_id(self):
+        """
+        The function `test_delete_todo_by_id` deletes a todo by ID and checks for a successful response.
+        """
+        self.login()
+        todo = self.create_todo_via_orm()
+        created_todo_id = todo.id
+        self.set_response(self.client.delete(f"{self.url}{created_todo_id}/"))
+        self.match_success_response(204)
 
-    # def test_delete_todo_by_id_without_authenticate(self):
-    #     #     """Test deleting a todo by ID without authentication."""
-    #     todo = self.create_todo_via_orm()
-    #     created_todo_id = todo.id
-    #     self.set_response(self.client.delete(f"{self.url}{created_todo_id}/"))
-    #     self.match_error_response(401)
+    def test_delete_todo_by_id_without_authenticate(self):
+        #     """Test deleting a todo by ID without authentication."""
+        todo = self.create_todo_via_orm()
+        created_todo_id = todo.id
+        self.set_response(self.client.delete(f"{self.url}{created_todo_id}/"))
+        self.match_error_response(401)
 
-    # def test_delete_todo_by_id_with_wrong_id(self):
-    #     """Test deleting a todo by an invalid ID."""
-    #     self.login()
-    #     self.set_response(self.client.delete(f"{self.url}111/"))
-    #     self.match_error_response(404)
+    def test_delete_todo_by_id_with_wrong_id(self):
+        """Test deleting a todo by an invalid ID."""
+        self.login()
+        self.set_response(self.client.delete(f"{self.url}111/"))
+        self.match_error_response(404)
