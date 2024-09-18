@@ -47,8 +47,9 @@ class Settings(BaseSettings):
     AUTH_THROTTLING_LIMIT: str
     # Super user
     SUPERUSER_EMAIL: str = Field(default="admin1@yopmail.com")
-    SUPERUSER_ADMIN: str
-    SUPERUSER_PASSWORD: str
+    # Swagger Authentication
+    SWAGGER_AUTH_USERNAME: str
+    SWAGGER_AUTH_PASSWORD: str
 
     class Config:
         env_file = os.path.join(BASE_DIR, ".env")
