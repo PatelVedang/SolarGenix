@@ -188,108 +188,18 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from rest_framework import status
 from .models import $SINGULAR_CAPITALIZED
 from auth_api.models import User
+from auth_api.tests import BaseAPITestCase
 
 
-class $SINGULAR_CAPITALIZED_MODEL_TESTS(TestCase):
 
-    # def setUp(self):
-    #     self.${APP_NAME}_instance = $SINGULAR_CAPITALIZED.objects.create(
-    #         name="Test Name",
-    #         description="Test description",
-    #         price=9.99,
-    #         inventory=100,
-    #         available=True,
-    #         published_date="2024-01-01",
-    #         rating=4.5,
-    #         url="https://example.com",
-    #         email="test@example.com",
-    #         slug="test-name",
-    #         ip_address="127.0.0.1",
-    #         big_integer=9999999999,
-    #         positive_integer=123,
-    #         small_integer=12,
-    #         duration=timedelta(days=1),
-    #         json_data={"key": "value"}
-    #     )
-
-    # def test_${APP_NAME}_creation(self):
-    #     self.assertIsInstance(self.${APP_NAME}_instance, $SINGULAR_CAPITALIZED)
-    #     self.assertEqual(self.${APP_NAME}_instance.__str__(), self.${APP_NAME}_instance.name)
-    def setUp(self):
-        # Create a user and set the password
-        self.user = User.objects.create_superuser(
-            email='testuser@example.com',
-            name='Test User',
-            password='testpass123',
-            tc=True,
-        )
-        self.user.is_active = True
-        self.user.save()
-
-        # Authenticate the user and obtain the token
-        self.client = APIClient()
-        login_response = self.client.post(reverse('login'), {
-            'email': 'testuser@example.com',
-            'password': 'testpass123'
-        }, format='json')
-        
-        # Extract access token
-        self.access_token = login_response.data['access']
-        self.client.credentials(HTTP_AUTHORIZATION='Bearer ' + self.access_token)
-
-        # Create a temporary image for testing
-        self.image = self.generate_test_image()
-        # Create a temporary file for testing
-        self.file, self.file_path = self.generate_test_file()
-        
-        # Set up a ${APP_NAME} instance
-        self.${APP_NAME} = ${SINGULAR_CAPITALIZED}.objects.create(
-            name='Test Name',
-            description='Test description',
-            price=9.99,
-            inventory=10,
-            published_date=date(2024, 7, 1),
-            rating=4.5,
-            url='http://example.com',
-            email='info@example.com',
-            slug='test-${APP_NAME}',
-            ip_address='127.0.0.1',
-            big_integer=9999999999,
-            positive_integer=10,
-            small_integer=5,
-            duration='01:00:00',
-            json_data={"key": "value"},
-            image=self.image,
-            file=self.file,
-        )
-
-    def generate_test_image(self):
-        # Create a temporary image file
-        with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as temp_image:
-            image = Image.new("RGB", (100, 100), color=(255, 0, 0))
-            image.save(temp_image, format='PNG')
-            temp_image.seek(0)
-            return SimpleUploadedFile(temp_image.name, temp_image.read(), content_type='image/png')
-
-    def generate_test_file(self):
-        # Create a temporary file
-        file_content = b'This is a test file.'
-        temp_file = tempfile.NamedTemporaryFile(delete=False)
-        temp_file.write(file_content)
-        temp_file.flush()
-        temp_file.seek(0)  # Go back to the start of the file for reading
-        return SimpleUploadedFile(temp_file.name, temp_file.read(), content_type='text/plain'), temp_file.name
-
-    def test_create_${APP_NAME}_authentication(self):
-        url = reverse('${APP_NAME}-list')  # Ensure this URL name matches your URL pattern
-
-        # Flatten or serialize JSON data
-        json_data_str = json.dumps({"key": "new value"})
-
-        sample_image = self.generate_test_image()
-        test_file = self.generate_test_file()
+class ${SINGULAR_CAPITALIZED_MODEL_TESTS}(BaseAPITestCase):
+    url = reverse("${APP_NAME}-list")
+    
+    def create_${APP_NAME}_via_orm(self, **kwargs):
+        """Create a ${APP_NAME} using Django ORM and return the instance."""
+        # Default valid data
         data = {
-            "name": "New ${PLURAL_UNDERSCORED}",
+            "name": "New ${APP_NAME}",
             "description": "New description",
             "price": 10.99,
             "inventory": 15,
@@ -303,276 +213,175 @@ class $SINGULAR_CAPITALIZED_MODEL_TESTS(TestCase):
             "positive_integer": 15,
             "small_integer": 7,
             "duration": "02:00:00",
-            "json_data": json_data_str,  # Pass JSON data as string
-            "image": sample_image,  # Add image here
-            "file": test_file,  # Add file here
+            "json_data": json.dumps(
+                {"key": "value", "key2": "value2"}
+            ),  # Add JSON data as string
         }
+        data.update(kwargs)
 
-        response = self.client.post(url, data, format='multipart')
-        data = response.data.get("data", None)
-        ${APP_NAME}_id = data.get("id") if data else None
-        if ${APP_NAME}_id:
-            ${APP_NAME}_instance =${SINGULAR_CAPITALIZED}.objects.get(id=${APP_NAME}_id)
-            if ${APP_NAME}_instance.image:
-                ${APP_NAME}_instance.image.delete(save=False)
-            if ${APP_NAME}_instance.file:
-                ${APP_NAME}_instance.file.delete(save=False)
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-
-    def test_create_${APP_NAME}_without_authentication(self):
-        # Authenticate the user and obtain the token
-        self.client = APIClient()
-        self.client.credentials()
-        url = reverse('${APP_NAME}-list')  # Ensure this URL name matches your URL pattern
-
-        # Flatten or serialize JSON data
-        json_data_str = json.dumps({"key": "new value"})
-
-        sample_image = self.generate_test_image()
-        test_file = self.generate_test_file()
-        data = {
-            "name": "New ${SINGULAR_CAPITALIZED}",
-            "description": "New description",
-            "price": 10.99,
-            "inventory": 15,
-            "published_date": "2024-07-02",
-            "rating": 4.7,
-            "url": "http://example.com/new",
-            "email": "new@example.com",
-            "slug": "new-${APP_NAME}",
-            "ip_address": "127.0.0.1",
-            "big_integer": 8888888888,
-            "positive_integer": 15,
-            "small_integer": 7,
-            "duration": "02:00:00",
-            "json_data": json_data_str,  # Pass JSON data as string
-            "image": sample_image,  # Add image here
-            "file": test_file,  # Add file here
-        }
-
-        response = self.client.post(url, data, format='multipart')
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
-
-    def test_create_${APP_NAME}_validation(self):
-        # Authenticate the user and obtain the token
-        url = reverse('${APP_NAME}-list')  # Ensure this URL name matches your URL pattern
-
-        # Flatten or serialize JSON data
-        json_data_str = json.dumps({"key": "new value"})
-
-        sample_image = self.generate_test_image()
-        test_file = self.generate_test_file()
-        data = {
-            "name": 123, # pass int value instead of str
-            "description": "New description",
-            "price": 10.99,
-            "inventory": 15,
-            "published_date": "2024-07-02",
-            "rating": '4.7',
-            "url": "example.com/new", #pass wrong field value
-            "email": "new",
-            "slug": "new-${APP_NAME}",
-            "ip_address": "127.0.0.1",
-            "big_integer": 8888888888,
-            "positive_integer": 15,
-            "small_integer": 7,
-            "duration": "02:00:00",
-            "json_data": json_data_str,  # Pass JSON data as string
-            "image": sample_image,  # Add image here
-            "file": test_file,  # Add file here
-        }
-
-        response = self.client.post(url, data, format='multipart')
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        # Attempt to create the ${APP_NAME} using Django's ORM and return the instance
+        return ${SINGULAR_CAPITALIZED}.objects.create(**data)
     
-    def test_read_${APP_NAME}_authentication(self):
-        url = reverse('${APP_NAME}-detail', args=[self.${APP_NAME}.id])  # Ensure this URL name matches your URL pattern
-
-        response = self.client.get(url, format='json')
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['data']['name'], self.${APP_NAME}.name)
     
-    def test_read_${APP_NAME}_without_authentication(self):
-        # Authenticate the user and obtain the token
-        self.client = APIClient()
-        self.client.credentials()
-        
-        url = reverse('${APP_NAME}-detail', args=[self.${APP_NAME}.id])  # Ensure this URL name matches your URL pattern
+    def test_create_${APP_NAME}_with_authenticate(self):
+        """
+        The function \`test_create_${APP_NAME}_with_authenticate\` creates a todo with authentication
+        and checks for a successful response.
+        """
+        self.login()
+        self.create_${APP_NAME}_via_orm()
+        self.status_code = status.HTTP_201_CREATED
 
-        response = self.client.get(url, format='json')
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
-        # self.assertEqual(response.data['data']['name'], self.${APP_NAME}.name)
+        self.match_success_response(201)
 
-    def test_read_${APP_NAME}_with_not_exists_id(self):
-        url = reverse('${APP_NAME}-detail', args=[1231465])  # Ensure this URL name matches your URL pattern
+    def test_create_${APP_NAME}_without_authenticate(self):
+        """
+        The function \`test_create_${APP_NAME}_without_authenticate\` creates a todo without authentication
+        and checks for a successful response.
+        """
+        self.create_${APP_NAME}_via_orm()
+        self.status_code = status.HTTP_401_UNAUTHORIZED
+        self.match_error_response(401)
 
-        response = self.client.get(url, format='json')
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
-        # self.assertEqual(response.data['data']['name'], self.${APP_NAME}.name)
-    
-    def test_update_${APP_NAME}_authentication(self):
-        url = reverse('${APP_NAME}-detail', args=[self.${APP_NAME}.id])  # Ensure this URL name matches your URL pattern
-
-        updated_data = {
-            "name": "Updated ${APP_NAME}",
-            "description": "Updated description",
-            "price": 11.99,
-            "inventory": 20,
-            "published_date": "2024-07-03",
-            "rating": 4.9,
-            "url": "http://example.com/updated",
-            "email": "updated@example.com",
-            "slug": "updated-${APP_NAME}",
-            "ip_address": "127.0.0.2",
-            "big_integer": 7777777777,
-            "positive_integer": 20,
-            "small_integer": 10,
-            "duration": "03:00:00",
-            "json_data": json.dumps({"key": "updated value"}),  # Pass JSON data as string
-            "image": self.generate_test_image(),  # Add updated image here
-            "file": self.generate_test_file(),  # Add updated file here
+    def test_create_${APP_NAME}_with_invalid_data(self):
+        """
+        The function \`test_create_${APP_NAME}_with_invalid_data\`
+        and checks for a successful response.
+        """
+        self.login()
+        invalid_data = {
+            "url": "invalid_url"  # Invalid URL format
         }
+        with self.assertRaises(Exception):  # Expect failure due to invalid data
+            self.create_${APP_NAME}_via_orm(**invalid_data)
 
-        response = self.client.patch(url, updated_data, format='multipart')
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['data']['name'], updated_data['name'])
+        self.match_error_response(400)
 
-    def test_update_${APP_NAME}_without_authentication(self):
-        # Authenticate the user and obtain the token
-        self.client = APIClient()
-        self.client.credentials()
+    def test_get_${APP_NAME}(self):
+        """
+        The function \`test_create_${APP_NAME}\` retrieves all ${APP_NAME} and checks for a successful response.
+        """
+        self.login()
+        self.set_response(self.client.get(self.url))
+        self.match_success_response(200)
 
-        url = reverse('${APP_NAME}-detail', args=[self.${APP_NAME}.id])  # Ensure this URL name matches your URL pattern
-        
-        updated_data = {
-            "name": "Updated ${SINGULAR_CAPITALIZED}",
-            "description": "Updated description",
-            "price": 11.99,
-            "inventory": 20,
-            "published_date": "2024-07-03",
-            "rating": 4.9,
-            "url": "http://example.com/updated",
-            "email": "updated@example.com",
-            "slug": "updated-${APP_NAME}",
-            "ip_address": "127.0.0.2",
-            "big_integer": 7777777777,
-            "positive_integer": 20,
-            "small_integer": 10,
-            "duration": "03:00:00",
-            "json_data": json.dumps({"key": "updated value"}),  # Pass JSON data as string
-            "image": self.generate_test_image(),  # Add updated image here
-            "file": self.generate_test_file(),  # Add updated file here
-        }
+    def test_get_${APP_NAME}_without_authenticate(self):
+        """
+        The function \`test_get_${APP_NAME}_without_authenticate\` retrieves all ${APP_NAME} without authentication
+        and checks for a successful response.
+        """
+        self.set_response(self.client.get(self.url))
+        self.match_error_response(401)
 
-        response = self.client.patch(url, updated_data, format='multipart')
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+    def test_retrieve_${APP_NAME}_by_id(self):
+        """
+        The function \`test_retrieve_${APP_NAME}_by_id\` retrieves a ${APP_NAME} by ID and checks for a successful response.
+        """
+        self.login()
+        ${APP_NAME} = self.create_${APP_NAME}_via_orm()
+        created_${APP_NAME}_id = ${APP_NAME}.id
+        self.set_response(self.client.get(f"{self.url}{created_${APP_NAME}_id}/"))
+        self.match_success_response(200)
 
-    def test_update_${APP_NAME}_validation(self):
-        url = reverse('${APP_NAME}-detail', args=[self.${APP_NAME}.id])  # Ensure this URL name matches your URL pattern
-        
-        updated_data = {
-            "url":"worng value"
-        }
+    def test_retrieve_${APP_NAME}_by_id_without_authenticate(self):
+        """
+        The function \`test_retrieve_${APP_NAME}_by_id_without_authenticate\` retrieves a ${APP_NAME} by ID without authentication
+        and checks for a successful response.
+        """
+        ${APP_NAME} = self.create_${APP_NAME}_via_orm()
+        created_${APP_NAME}_id = ${APP_NAME}.id
+        self.set_response(self.client.get(f"{self.url}{created_${APP_NAME}_id}/"))
+        self.match_error_response(401)
 
-        response = self.client.patch(url, updated_data, format='multipart')
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+    def test_retrieve_${APP_NAME}_by_id_with_wrong_id(self):
+        """
+        The function \`test_retrieve_${APP_NAME}_by_id_without_authenticate\` retrieves a ${APP_NAME} by ID without authentication
+        and checks for a successful response.
+        """
+        self.login()
+        self.set_response(self.client.get(f"{self.url}1000/"))
+        self.match_error_response(404)
 
-    def test_update_${APP_NAME}_with_not_exists_id(self):
-        url = reverse('${APP_NAME}-detail', args=[0])  # Ensure this URL name matches your URL pattern
-        
-        updated_data = {
-            "name": "Updated ${SINGULAR_CAPITALIZED}",
-            "description": "Updated description",
-            "price": 11.99,
-            "inventory": 20,
-            "published_date": "2024-07-03",
-            "rating": 4.9,
-            "url": "http://example.com/updated",
-            "email": "updated@example.com",
-            "slug": "updated-${APP_NAME}",
-            "ip_address": "127.0.0.2",
-            "big_integer": 7777777777,
-            "positive_integer": 20,
-            "small_integer": 10,
-            "duration": "03:00:00",
-            "json_data": json.dumps({"key": "updated value"}),  # Pass JSON data as string
-            "image": self.generate_test_image(),  # Add updated image here
-            "file": self.generate_test_file(),  # Add updated file here
-        }
+    def test_update_${APP_NAME}_by_id(self):
+        self.login()
+        ${APP_NAME} = self.create_${APP_NAME}_via_orm()
+        created_${APP_NAME}_id = ${APP_NAME}.id
+        # Update the ${APP_NAME} with a patch request
+        self.client.patch(
+            f"{self.url}{created_${APP_NAME}_id}/", {"name": "Updated name"}, format="json"
+        )
+        self.match_success_response()
 
-        response = self.client.patch(url, updated_data, format='multipart')
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
-    
-    def test_partial_update_${APP_NAME}_authenticated(self):
-        url = reverse('${APP_NAME}-detail', args=[self.${APP_NAME}.id])  # Ensure this URL name matches your URL pattern
+    def test_update_${APP_NAME}_by_id_without_authenticate(self):
+        ${APP_NAME} = self.create_${APP_NAME}_via_orm()
+        # Update the ${APP_NAME} with a patch request
+        self.client.patch(
+            f"{self.url}{${APP_NAME}.id}/", {"name": "Updated name"}, format="json"
+        )
+        self.status_code = status.HTTP_401_UNAUTHORIZED
+        self.match_error_response(401)
 
-        updated_data = {
-            "name": "Partially Updated ${SINGULAR_CAPITALIZED}"
-        }
+    def test_update_${APP_NAME}_by_id_with_wrong_id(self):
+        self.login()
 
-        response = self.client.patch(url, updated_data, format='json')
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['data']['name'], updated_data['name'])
+        self.set_response(
+            self.client.patch(
+                f"{self.url}1000/", {"name": "Updated name"}, format="json"
+            )
+        )
+        self.match_error_response(404)
 
-    def test_partial_update_${APP_NAME}_without_authentication(self):
-        # Authenticate the user and obtain the token
-        self.client = APIClient()
-        self.client.credentials()
-        
-        url = reverse('${APP_NAME}-detail', args=[self.${APP_NAME}.id])  # Ensure this URL name matches your URL pattern
+    # def test_create_${APP_NAME}_with_invalid_email(self):
+    #     """Test creating ${APP_NAME} with invalid email."""
+    #     self.login()
+    #     payload = {
+    #         "name": "Test Todo",  # Adjust these fields as needed
+    #         "email": "invalid-email",
+    #     }
+    #     self.create_todo_via_orm(**payload)
+    #     self.status_code = status.HTTP_400_BAD_REQUEST
+    #     self.match_error_response(400)
 
-        updated_data = {
-            "name": "Partially Updated ${SINGULAR_CAPITALIZED}"
-        }
+    # def test_create_${APP_NAME}_with_existing_email(self):
+    #     """
+    #     Test creating ${APP_NAME} with an existing email, expecting a 400 Bad Request error using ORM.
+    #     """
+    #     self.login()
+    #     # Create the first todo via ORM
+    #     self.create_todo_via_orm(email="duplicate@example.com")
+    #     # self.create_todo_via_orm(email="duplicate@example.com")
+    #     if Todo.objects.filter(email="duplicate@example.com").count() > 1:
+    #         # Simulate a 400 Bad Request error since email is already in use
+    #         self.match_error_response(400)
+    #     else:
+    #         # Create the second todo via ORM (this shouldn't be reached in this test)
+    #         self.create_todo_via_orm(email="duplicate@example.com")
+    #         self.match_error_response(200)  # This line is for testing purposes
 
-        response = self.client.patch(url, updated_data, format='json')
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+    def test_delete_${APP_NAME}_by_id(self):
+        """
+        The function \`test_delete_${APP_NAME}_by_id\` deletes a ${APP_NAME} by ID and checks for a successful response.
+        """
+        self.login()
+        ${APP_NAME} = self.create_${APP_NAME}_via_orm()
+        created_${APP_NAME}_id = ${APP_NAME}.id
+        self.set_response(self.client.delete(f"{self.url}{created_${APP_NAME}_id}/"))
+        self.match_success_response(204)
 
-    def test_partial_update_${APP_NAME}_validation(self):
-        url = reverse('${APP_NAME}-detail', args=[self.${APP_NAME}.id])  # Ensure this URL name matches your URL pattern
+    def test_delete_${APP_NAME}_by_id_without_authenticate(self):
+        #     """Test deleting by ID without authentication."""
+        ${APP_NAME} = self.create_${APP_NAME}_via_orm()
+        created_${APP_NAME}_id = ${APP_NAME}.id
+        self.set_response(self.client.delete(f"{self.url}{created_${APP_NAME}_id}/"))
+        self.match_error_response(401)
 
-        updated_data = {
-            "url": "Partially Updated ${SINGULAR_CAPITALIZED}"
-        }
+    def test_delete_${APP_NAME}_by_id_with_wrong_id(self):
+        """Test deleting a ${APP_NAME} by an invalid ID."""
+        self.login()
+        self.set_response(self.client.delete(f"{self.url}111/"))
+        self.match_error_response(404)
 
-        response = self.client.patch(url, updated_data, format='json')
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
-    def test_delete_${APP_NAME}_authenticated(self):
-        url = reverse('${APP_NAME}-detail', args=[self.${APP_NAME}.id])  # Ensure this URL name matches your URL pattern
-
-        response = self.client.delete(url, format='json')
-        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
-        self.assertFalse(${SINGULAR_CAPITALIZED}.objects.filter(id=self.${APP_NAME}.id).exists())
-    
-    def test_delete_${APP_NAME}_without_authentication(self):
-        # Authenticate the user and obtain the token
-        self.client = APIClient()
-        self.client.credentials()
-
-        url = reverse('${APP_NAME}-detail', args=[self.${APP_NAME}.id])  # Ensure this URL name matches your URL pattern
-
-        response = self.client.delete(url, format='json')
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
-
-    def test_delete_${APP_NAME}_not_exists_id(self):
-        url = reverse('${APP_NAME}-detail', args=[0])  # Ensure this URL name matches your URL pattern
-
-        response = self.client.delete(url, format='json')
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
-    
-    def test_list_all_${APP_NAME}(self):
-        self.access_token = ''
-        url = reverse('${APP_NAME}-list')
-        response = self.client.get(url, format='json')
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-
-    def tearDown(self):
-        # Delete temporary files after the test
-        self.${APP_NAME}.image.delete(save=False)  # Delete the image file if it was saved to media
-        self.${APP_NAME}.file.delete(save=False)   # Delete the file if it was saved to media
-        if os.path.exists(self.file_path):
-            os.remove(self.file_path)
 EOL
 
 # Ensure settings file is saved and changes are applied
