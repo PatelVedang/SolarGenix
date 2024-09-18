@@ -14,14 +14,17 @@ class IsAuthenticated(BasePermission):
         if payload.get("token_type") != "access":
             return False
 
-        token = Token.objects.filter(
+        tokens = Token.objects.filter(
             jti=payload["jti"],
             user_id=payload["user_id"],
             token_type="access",
             is_blacklist_at__isnull=True,
         )
+        if not tokens.exists():
+            return False
 
-        if not token.exists():
+        token = tokens.first()
+        if token.is_expired():
             return False
 
         return True

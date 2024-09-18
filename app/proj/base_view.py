@@ -1,9 +1,6 @@
 from rest_framework import viewsets, status
 from django.utils.text import capfirst
 from utils.make_response import response as Response
-from drf_yasg.utils import swagger_auto_schema
-from drf_yasg import openapi
-from rest_framework.decorators import action
 
 
 class BaseModelViewSet(viewsets.ModelViewSet):
@@ -13,12 +10,29 @@ class BaseModelViewSet(viewsets.ModelViewSet):
 
     def get_model_name(self):
         """
+        The function `get_model_name` returns the model name in a readable format by capitalizing the
+        first letter.
+        :return: The method `get_model_name` is returning the model name in a readable format by
+        capitalizing the first letter of the model's verbose name.
+        """
+        """
         Method to get the model name in a readable format.
         Override this method if you want a different model name representation.
         """
         return capfirst(self.queryset.model._meta.verbose_name)
 
     def get_message(self, request, *args, **kwargs):
+        """
+        The function `get_message` generates a dynamic message based on the request method and model
+        name.
+
+        :param request: The `request` parameter in the `get_message` method represents the HTTP request
+        made to the server. It contains information about the request type (GET, POST, PATCH, DELETE),
+        any data sent with the request, headers, and other relevant details. The method uses the
+        `request.method` attribute
+        :return: The method is returning a dynamic message based on the HTTP method of the request and
+        the model name. The specific message returned depends on the request method:
+        """
         """
         Method to generate a dynamic message based on the request and model name.
         """
@@ -36,43 +50,36 @@ class BaseModelViewSet(viewsets.ModelViewSet):
         return "Request processed successfully"
 
     def create(self, request, *args, **kwargs):
+        """
+        The `create` function overrides the default behavior to return a custom response with a message
+        and status code.
+
+        :param request: The `request` parameter in the `create` method represents the HTTP request that
+        is being made to create a new resource. It contains information such as the request method,
+        headers, data, and other details related to the request being processed by the API endpoint
+        :return: The `create` method is returning a Response object with the data from the super class
+        method call, a message obtained from the `get_message` method, and a status code of 201
+        (HTTP_CREATED).
+        """
         response = super().create(request, *args, **kwargs)
         return Response(
             data=response.data,
-            message=self.get_message(request, *args, **kwargs),
+            message=self.get_message(request, args, *kwargs),
             status_code=status.HTTP_201_CREATED,
-            headers=response.headers,
         )
 
-    @swagger_auto_schema(
-        manual_parameters=[
-            openapi.Parameter(
-                "fields",
-                openapi.IN_QUERY,
-                description="Comma separated fields",
-                type=openapi.TYPE_STRING,
-            ),
-            openapi.Parameter(
-                name="sort",
-                in_=openapi.IN_QUERY,
-                description="Fields to sort",
-                type=openapi.TYPE_STRING,
-            ),
-            openapi.Parameter(
-                name="search",
-                in_=openapi.IN_QUERY,
-                description="Search term.",
-                type=openapi.TYPE_STRING,
-            ),
-            openapi.Parameter(
-                name="search_fields",
-                in_=openapi.IN_QUERY,
-                description="Fields on search ",
-                type=openapi.TYPE_STRING,
-            ),
-        ]
-    )
     def list(self, request, *args, **kwargs):
+        """
+        This Python function retrieves a list of objects based on query parameters and returns the
+        serialized data along with a message and status code.
+
+        :param request: The `request` parameter in the code snippet represents the HTTP request object
+        that is received by the view. It contains information about the incoming request, such as query
+        parameters, headers, and data. In this specific code snippet, the `request` object is used to
+        extract query parameters using `request.query
+        :return: The code snippet is returning a response with data from the serializer, a message
+        obtained from the `get_message` method, and a status code of 200 (HTTP OK).
+        """
         fields = request.query_params.get("fields")
 
         if fields:
@@ -85,26 +92,19 @@ class BaseModelViewSet(viewsets.ModelViewSet):
             status_code=status.HTTP_200_OK,
         )
 
-    @action(methods=["GET"], detail=False, url_path="all")
-    def get_all(self, request, *args, **kwargs):
-        serializer = self.get_serializer(self.get_queryset(), many=True)
-        return Response(
-            data=serializer.data,
-            message=self.get_message(request, *args, **kwargs),
-            status_code=status.HTTP_200_OK,
-        )
-
-    @swagger_auto_schema(
-        manual_parameters=[
-            openapi.Parameter(
-                "fields",
-                openapi.IN_QUERY,
-                description="Comma separated fields",
-                type=openapi.TYPE_STRING,
-            )
-        ]
-    )
     def retrieve(self, request, *args, **kwargs):
+        """
+        This Python function retrieves an object from the database, filters its fields based on query
+        parameters, and returns a response with the filtered data.
+
+        :param request: The `request` parameter in the `retrieve` method is typically an HTTP request
+        object that contains information about the incoming request, such as query parameters, headers,
+        and the request body. In this context, it is used to extract the query parameters, specifically
+        the "fields" parameter, to dynamically filter
+        :return: The code snippet is returning a response with the filtered data using a serializer with
+        dynamic fields. The response includes the serialized data, a message obtained from the
+        `get_message` method, and a status code of 200 (HTTP OK).
+        """
         # Get the object from the database
         instance = self.get_object()
 
@@ -127,14 +127,38 @@ class BaseModelViewSet(viewsets.ModelViewSet):
         )
 
     def partial_update(self, request, *args, **kwargs):
+        """
+        The `partial_update` function overrides the default behavior to return a response with custom
+        data, message, and status code.
+
+        :param request: The `request` parameter in the `partial_update` method is typically an object
+        that contains information about the current HTTP request, such as the request method, headers,
+        data, and user authentication details. It is commonly used to extract data from the request,
+        validate input, and perform operations based on the
+        :return: The `partial_update` method is being overridden to return a custom response. It calls
+        the parent class method `partial_update` and then constructs a new Response object with the data
+        from the parent method, a custom message obtained from `self.get_message`, and a status code of
+        206. This custom response is what is being returned by the `partial_update` method.
+        """
         response = super().partial_update(request, *args, **kwargs)
         return Response(
             data=response.data,
             message=self.get_message(request, *args, **kwargs),
-            status_code=status.HTTP_200_OK,
+            status_code=206,
         )
 
     def destroy(self, request, *args, **kwargs):
+        """
+        This function overrides the destroy method to return a response with a message and status code.
+
+        :param request: The `request` parameter in the `destroy` method is typically an object that
+        represents the HTTP request made to the server. It contains information such as the request
+        method (GET, POST, DELETE, etc.), headers, user authentication details, and any data sent in the
+        request body. In this context
+        :return: The `destroy` method is being called on the parent class using `super().destroy(request,
+        *args, **kwargs)`, and then a `Response` object is being returned with a message obtained from
+        `self.get_message(request, *args, **kwargs)` and a status code of `status.HTTP_204_NO_CONTENT`.
+        """
         super().destroy(request, *args, **kwargs)
         return Response(
             message=self.get_message(request, *args, **kwargs),

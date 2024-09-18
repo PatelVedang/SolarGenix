@@ -1,15 +1,17 @@
-from django.conf import settings
-from rest_framework import serializers
-import re
-from django.contrib.auth import authenticate
-from utils.email import send_email
-from django.contrib.auth.hashers import make_password
-from auth_api.models import Token, User, SimpleToken
-from rest_framework_simplejwt.serializers import TokenRefreshSerializer
-import threading
-from .google import Google
-from rest_framework.exceptions import AuthenticationFailed
 import logging
+import re
+import threading
+
+from auth_api.models import SimpleToken, Token, TokenType, User
+from django.conf import settings
+from django.contrib.auth import authenticate
+from django.contrib.auth.hashers import make_password
+from rest_framework import serializers
+from rest_framework.exceptions import AuthenticationFailed
+from rest_framework_simplejwt.serializers import TokenRefreshSerializer
+from utils.email import send_email
+
+from .google import Google
 
 logger = logging.getLogger("django")
 
@@ -18,15 +20,15 @@ logger = logging.getLogger("django")
 # including checking for existing email, password validation, and sending a verification email.
 class UserRegistrationSerializer(serializers.ModelSerializer):
     password = serializers.CharField(style={"input_type": "password"}, write_only=True)
-    password_confirm = serializers.CharField(write_only=True)
+    confirm_password = serializers.CharField(write_only=True)
 
     class Meta:
         model = User
-        fields = ["email", "first_name", "last_name", "password", "password_confirm"]
+        fields = ["email", "first_name", "last_name", "password", "confirm_password"]
 
     def validate(self, attrs):
         password = attrs.get("password")
-        confirm_pasword = attrs.pop("password_confirm")
+        confirm_pasword = attrs.pop("confirm_password")
 
         if User.objects.filter(email=attrs.get("email").lower()).exists():
             raise serializers.ValidationError("Email already exists.")
@@ -44,7 +46,9 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         user = super().create(validated_data)
         user.set_password(validated_data["password"])
         user.save()
-        verify_token = SimpleToken.for_user(user, "verify", 60)
+        verify_token = SimpleToken.for_user(
+            user, TokenType.VERIFY_MAIL.value, settings.AUTH_VERIFY_EMAIL_TOKEN_LIFELINE
+        )
         context = {
             "subject": "Verify Your E-mail Address!",
             "user": user,
@@ -75,7 +79,11 @@ class UserLoginSerializer(serializers.ModelSerializer):
             user = User.objects.filter(email=attrs.get("email"), is_active=False)
             if user.exists():
                 user = user.first()
-                verify_token = SimpleToken.for_user(user, "verify", 60)
+                verify_token = SimpleToken.for_user(
+                    user,
+                    TokenType.VERIFY_MAIL.value,
+                    settings.AUTH_VERIFY_EMAIL_TOKEN_LIFELINE,
+                )
                 context = {
                     "subject": "Verify Your E-mail Address!",
                     "user": user,
@@ -107,7 +115,9 @@ class UserProfileSerializer(serializers.ModelSerializer):
 
 
 class ForgotPasswordSerializer(serializers.Serializer):
-    email = serializers.EmailField(max_length=255)
+    email = serializers.EmailField(
+        max_length=255, required=True, allow_blank=False, allow_null=False
+    )
 
     def validate(self, attrs):
         email = attrs.get("email").lower()
@@ -115,7 +125,9 @@ class ForgotPasswordSerializer(serializers.Serializer):
         if user.exists():
             user = user.first()
             Token.objects.filter(user=user, token_type="reset").delete()
-            reset_token = SimpleToken.for_user(user, "reset", 60)
+            reset_token = SimpleToken.for_user(
+                user, TokenType.RESET.value, settings.AUTH_RESET_PASSWORD_TOKEN_LIFELINE
+            )
             context = {
                 "subject": "Password Reset Request",
                 "user": user,
@@ -142,7 +154,9 @@ class ResendResetTokenSerializer(serializers.Serializer):
         if user.exists():
             user = user.first()
             Token.objects.filter(user=user, token_type="reset").delete()
-            token = SimpleToken.for_user(user, "reset", 60)
+            token = SimpleToken.for_user(
+                user, TokenType.RESET.value, settings.AUTH_RESET_PASSWORD_TOKEN_LIFELINE
+            )
             context = {
                 "subject": "Resend Password Reset Request",
                 "user": user,
@@ -182,7 +196,7 @@ class UserPasswordResetSerializer(serializers.Serializer):
         if password != confirm_pasword:
             raise serializers.ValidationError("Passwords do not match.")
 
-        payload = SimpleToken.validate_token(token, "reset")
+        payload = SimpleToken.validate_token(token, TokenType.RESET.value)
         token_obj = payload.get("token_obj")
         user = token_obj.user
         user.password = make_password(password)
@@ -203,7 +217,7 @@ class UserPasswordResetSerializer(serializers.Serializer):
 class RefreshTokenSerializer(TokenRefreshSerializer):
     def validate(self, attrs):
         token = attrs.get("refresh")
-        payload = SimpleToken.validate_token(token, "refresh")
+        payload = SimpleToken.validate_token(token, TokenType.REFRESH.value)
         token_obj = payload.get("token_obj")
         user = token_obj.user
         token_obj.hard_delete()
@@ -243,8 +257,12 @@ class ResendVerificationEmailSerializer(serializers.Serializer):
         user = User.objects.filter(email=email)
         if user.exists():
             user = user.first()
-            Token.objects.filter(user=user, token_type="verify").delete()
-            token = SimpleToken.for_user(user, "verify", 60)
+            Token.objects.filter(user=user, token_type="verify_mail").delete()
+            token = SimpleToken.for_user(
+                user,
+                TokenType.VERIFY_MAIL.value,
+                settings.AUTH_VERIFY_EMAIL_TOKEN_LIFELINE,
+            )
             context = {
                 "subject": "Verify Your E-mail Address!",
                 "user": user,
@@ -265,7 +283,7 @@ class VerifyEmailSerializer(serializers.Serializer):
 
     def validate_token(self, value):
         payload = SimpleToken.decode(value)
-        payload = SimpleToken.validate_token(value, "verify")
+        payload = SimpleToken.validate_token(value, TokenType.VERIFY_MAIL.value)
         token_obj = payload.get("token_obj")
         user = token_obj.user
         user.is_active = True
@@ -314,10 +332,13 @@ class GoogleSSOSerializer(serializers.Serializer):
             # new_user = authenticate(email=email, password="p@$$w0Rd")
             if user:
                 user_data = user.auth_tokens()
-                SimpleToken.for_user(user, "google", None, jti=google_refresh_token)
+                SimpleToken.for_user(
+                    user, TokenType.GOOGLE.value, None, jti=google_refresh_token
+                )
                 return {"message": "Login done successfully!", "data": user_data}
             else:
                 logger.error(
                     f"Google SSO failed for {email} after user creation due to authentication failed"
                 )
+                raise AuthenticationFailed("Authentication failed after user creation.")
                 raise AuthenticationFailed("Authentication failed after user creation.")

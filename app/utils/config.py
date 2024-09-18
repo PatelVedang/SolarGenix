@@ -1,7 +1,8 @@
-from pydantic import ValidationError, EmailStr, Field
-from pydantic_settings import BaseSettings
 import os
 from pathlib import Path
+
+from pydantic import EmailStr, Field, ValidationError
+from pydantic_settings import BaseSettings
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -28,9 +29,15 @@ class Settings(BaseSettings):
     CORS_ORIGIN_WHITELIST: str = Field(default="http://localhost:8000")
     PDF_DOWNLOAD_ORIGIN: str = Field(default="")
     HOST_URL: str = Field(default="http://localhost:8000")
-    # JWT Settings
-    JWT_ACCESS_TOKEN_LIFETIME: int = Field(default=1)
-    JWT_REFRESH_TOKEN_LIFETIME: int = Field(default=30)
+
+    # Token Expiry
+    # Token LifeLine in days
+    AUTH_ACCESS_TOKEN_LIFELINE: int = Field(default=1)
+    AUTH_REFRESH_TOKEN_LIFELINE: int = Field(default=30)
+    # Token LifeLine in minutes
+    AUTH_VERIFY_EMAIL_TOKEN_LIFELINE: int = Field(default=60)
+    AUTH_RESET_PASSWORD_TOKEN_LIFELINE: int = Field(default=60)
+
     JWT_ALGORITHM: str = Field(default="HS256")
     # Google SSO
     GOOGLE_CLIENT_ID: str
@@ -63,4 +70,5 @@ def load_settings():
             field = error["loc"][0]
             message = error["msg"]
             print(f"  - {field}: {message}", "error")
+        raise e
         raise e

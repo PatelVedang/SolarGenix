@@ -4,6 +4,8 @@ from proj.base_view import BaseModelViewSet
 from .models import Todo
 from .serializers import TodoSerializer
 from auth_api.permissions import IsAuthenticated
+from rest_framework.decorators import action
+from utils.make_response import response
 
 
 @apply_swagger_tags(
@@ -29,6 +31,12 @@ class TodoViewset(BaseModelViewSet):
             return filter_model(query_params, queryset, Todo)
         return queryset
 
-    # def destroy(self, request, *args, **kwargs):
-    #     Todo.objects.delete()
-    #     return super().destroy(request, *args, **kwargs)
+    @action(methods=["GET"], detail=False, url_path="all")
+    def get_all(self, request, *args, **kwargs):
+        self.pagination_class = None
+        serializer = self.get_serializer(self.get_queryset(), many=True)
+        return response(
+            data=serializer.data,
+            message=self.get_message(request, *args, **kwargs),
+            status_code=200,
+        )

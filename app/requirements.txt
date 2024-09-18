@@ -9,7 +9,6 @@ psycopg2-binary
 pluralizer
 django-ssl-smtp
 commitizen
-ruff
 pre-commit
 commitlint
 pillow
@@ -19,3 +18,9 @@ django-ssl-smtp
 pydantic
 pydantic-settings
 pydantic[email]
+
+# dev
+ruff
+ipython
+flake8
+flake8-pyproject

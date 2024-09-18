@@ -41,7 +41,7 @@ ALLOWED_HOSTS = ["*"]
 # Application definition
 
 INSTALLED_APPS = [
-    "products",
+    "users",
     "todos",
     "django.contrib.admin",
     "django.contrib.auth",
@@ -191,8 +191,8 @@ REST_FRAMEWORK = {
 
 # SIMPLE_JWT
 SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(days=settings.JWT_ACCESS_TOKEN_LIFETIME),
-    "REFRESH_TOKEN_LIFETIME": timedelta(days=settings.JWT_REFRESH_TOKEN_LIFETIME),
+    "ACCESS_TOKEN_LIFETIME": timedelta(days=settings.AUTH_ACCESS_TOKEN_LIFELINE),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=settings.AUTH_REFRESH_TOKEN_LIFELINE),
     "ALGORITHM": settings.JWT_ALGORITHM,
     "SIGNING_KEY": settings.SECRET_KEY,
 }
@@ -288,3 +288,7 @@ AUTHENTICATION_BACKENDS = [
 # Swagger Authentication
 SWAGGER_AUTH_USERNAME = settings.SWAGGER_AUTH_USERNAME
 SWAGGER_AUTH_PASSWORD = settings.SWAGGER_AUTH_PASSWORD
+
+# Token Lifespan
+AUTH_VERIFY_EMAIL_TOKEN_LIFELINE = settings.AUTH_VERIFY_EMAIL_TOKEN_LIFELINE
+AUTH_RESET_PASSWORD_TOKEN_LIFELINE = settings.AUTH_RESET_PASSWORD_TOKEN_LIFELINE

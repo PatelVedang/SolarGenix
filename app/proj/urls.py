@@ -28,6 +28,24 @@ schema_view = get_schema_view(
     generator_class=HttpAndHttpsSchemaGenerator,
 )
 
+# urlpatterns = [
+#     path("admin/", admin.site.urls),
+#     path(
+#         "",
+#         include(
+#             [
+#                 path("api/", include("auth_api.urls")),
+#                 path(
+#                     "swagger",
+#                     schema_view.with_ui("swagger", cache_timeout=0),
+#                     name="swagger-schema",
+#                 ),
+#                 path("api/", include("google_sso.urls")),
+#             ]
+#         ),
+#     ),
+# ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+
 urlpatterns = [
     path("admin/", admin.site.urls),
     path(
@@ -36,8 +54,8 @@ urlpatterns = [
             [
                 # IMPORT_NEW_ROUTE_HERE
                 path("api/", include("auth_api.urls")),
+                path("api/", include("users.urls")),
                 path("api/", include("todos.urls")),
-                path("api/", include("products.urls")),
                 path(
                     "swagger",
                     swagger_auth_required(
