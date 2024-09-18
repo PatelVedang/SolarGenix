@@ -1,6 +1,7 @@
 import logging
 import traceback
 
+from rest_framework import status
 from rest_framework.views import exception_handler
 
 from .make_response import response
@@ -25,16 +26,27 @@ def custom_exception_handler(exc, context):
         exception_class = exc.__class__.__name__
 
         handlers = {
-            "NotAuthenticated": _handler_authentication_error,
-            "InvalidToken": _handler_invalid_token_error,
+            # "NotAuthenticated": _handler_authentication_error,
+            # "InvalidToken": _handler_invalid_token_error,
             "ValidationError": _handler_validation_error,
-            "AuthenticationFailed": _handler_authentication_failed_error,
+            # "AuthenticationFailed": _handler_authentication_failed_error,
         }
         res = exception_handler(exc, context)
         logger.error(str(exc))
+        print(":=", exception_class)
         if exception_class in handlers:
             # calling hanlder based on the custom
-            message = handlers[exception_class](exc, context, res)
+            # print("<--------------", exc)
+            if exception_class == "ValidationError":
+                data = handlers[exception_class](exc, context, res)
+                return response(
+                    data=data,
+                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                    message="validation errors",
+                )
+            else:
+                message = handlers[exception_class](exc, context, res)
+
         else:
             # if there is no hanlder is presnet
             message = str(exc)
@@ -46,11 +58,10 @@ def custom_exception_handler(exc, context):
         print("\n\n", exception_class, "\n\n")
         print(">" * 30, " " * 15, "Exception class end", " " * 15, "<" * 30)
 
-        return response(
-            data={}, status_code=res.status_code, message=message.capitalize()
-        )
+        return response(data={}, status_code=res.status_code, message=message)
     except Exception as e:
         logger.error(str(e))
+        print("=---------", e, type(e))
         return response(data={}, status_code=500, message="Something went wrong.")
 
 
@@ -108,18 +119,64 @@ def _handler_validation_error(exc, context, response):
     handler. It is used to modify the response if needed
     :return: a message based on the validation error code.
     """
-    key = list(list(exc.__dict__.values())[0].keys())[0]
+    print(exc, "#" * 100)
+    # print(type(exc))
+    # print(dir(exc))
+
+    errors = []
+    error_dict = exc.get_full_details()
+    errors_list = []
+
     try:
-        code = list(list(exc.__dict__.values())[0].values())[0][0].__dict__["code"]
-        value = list(list(exc.__dict__.values())[0].values())[0][0]
+        for key, value in error_dict.items():
+            if isinstance(value, dict):
+                temp_dict = {}
+                for k, v in value.items():
+                    if k == "key":
+                        temp_dict[k] = str(v["message"])
+                    if k == "label":
+                        temp_dict[k] = v["message"].title()
+                    if k == "message":
+                        temp_dict[k] = v["message"].title()
 
-    except Exception:
-        code = list(list(exc.__dict__.values())[0].values())[0][0][0].__dict__["code"]
-        value = list(list(exc.__dict__.values())[0].values())[0][0][0]
+                    temp_dict["code"] = v["code"]
+                errors_list.append(temp_dict)
+                print(errors_list, "\n\n")
 
-    custom_msg_code = ["required", "null", "blank"]
-    if code in custom_msg_code:
-        message = f"{key} field is required"
-    elif code:
-        message = f"{value}"
-    return message
+        # print(errors_list)
+    except Exception as e:
+        print("eeee", e)
+    # pdb.set_trace()
+    return errors_list
+    for field, messages in exc.items():
+        print(field, "====", messages)
+        for message in messages:
+            expected_type = (
+                ""  # str(serializer.fields[field].__class__.__name__).lower()
+            )
+            received_type = ""  # type(request.data.get(field)).__name__ if request.data.get(field) is not None else "undefined"
+
+            error_detail = {
+                "code": "invalid_type",
+                "expected": expected_type,
+                "received": received_type,
+                "path": [field],
+                "message": message,
+            }
+            errors.append(error_detail)
+    print("\n\n\n\n", errors)
+    # key = list(list(exc.__dict__.values())[0].keys())[0]
+    # try:
+    #     code = list(list(exc.__dict__.values())[0].values())[0][0].__dict__["code"]
+    #     value = list(list(exc.__dict__.values())[0].values())[0][0]
+
+    # except Exception:
+    #     code = list(list(exc.__dict__.values())[0].values())[0][0][0].__dict__["code"]
+    #     value = list(list(exc.__dict__.values())[0].values())[0][0][0]
+
+    # custom_msg_code = ["required", "null", "blank"]
+    # if code in custom_msg_code:
+    #     message = f"{key} field is required"
+    # elif code:
+    #     message = f"{value}"
+    # return message
