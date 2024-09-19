@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "rest_framework",
     "drf_yasg",
+    "drf_spectacular",
     "django_filters",
     "auth_api",
     "corsheaders",
@@ -151,18 +152,43 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 # django_celery/settings.py
 
 
-# DRF yasg
-SWAGGER_SETTINGS = {
-    "USE_SESSION_AUTH": False,
-    "SECURITY_DEFINITIONS": {
-        "Bearer": {
-            "type": "apiKey",
-            "scheme": "bearer",
-            "in": "header",
-            "name": "Authorization",
+# # DRF yasg
+# SWAGGER_SETTINGS = {
+#     "USE_SESSION_AUTH": False,
+#     "SECURITY_DEFINITIONS": {
+#         "Bearer": {
+#             "type": "apiKey",
+#             "scheme": "bearer",
+#             "in": "header",
+#             "name": "Authorization",
+#         }
+#     },
+# }
+
+SPECTACULAR_SETTINGS = {
+    "TITLE": "Your API Title",
+    "DESCRIPTION": "Your API description",
+    "VERSION": "1.0.0",
+    "SERVE_INCLUDE_SCHEMA": False,  # Exclude schema from the public Swagger UI
+    "SCHEMA_PATH_PREFIX": "/api/",  # Adjust according to your path structure
+    "SCHEMES": ["http", "https"],  # Support both HTTP and HTTPS
+    "SECURITY": [
+        {
+            "basicAuth": []  # Enable Basic Auth in the API documentation
+        },
+    ],
+    "COMPONENTS": {
+        "securitySchemes": {
+            "basicAuth": {
+                "type": "http",
+                "scheme": "basic",
+            }
         }
     },
 }
+
+
+# For security definitions, add this
 
 # CSRF_TRUSTED_ORIGINS=settings.CSRF_TRUSTED_ORIGINS
 # CORS_ORIGIN_WHITELIST=settings.CORS_ORIGIN_WHITELIST
@@ -187,6 +213,7 @@ REST_FRAMEWORK = {
         "auth": AUTH_THROTTLING_LIMIT,
     },
     "DEFAULT_PAGINATION_CLASS": "utils.pagination.BasePagination",
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
 }
 
 # SIMPLE_JWT

@@ -50,6 +50,8 @@ class Settings(BaseSettings):
     # Swagger Authentication
     SWAGGER_AUTH_USERNAME: str
     SWAGGER_AUTH_PASSWORD: str
+    SUPERUSER_PASSWORD: str  # Add this field if needed
+    SUPERUSER_ADMIN: str
 
     class Config:
         env_file = os.path.join(BASE_DIR, ".env")

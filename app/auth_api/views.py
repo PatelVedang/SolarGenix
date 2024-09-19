@@ -1,15 +1,16 @@
 from rest_framework import status
 from rest_framework.permissions import AllowAny
-from .permissions import IsAuthenticated
 from rest_framework.views import APIView
+from rest_framework_simplejwt.views import TokenObtainPairView
 from utils import custom_throttling
-from utils.swagger import apply_swagger_tags
 from utils.make_response import response
+from utils.swagger import apply_swagger_tags
 
 # from utils.permissions import IsTokenValid
 from auth_api.serializers import (
     ChangePasswordSerializer,
     ForgotPasswordSerializer,
+    GoogleSSOSerializer,
     LogoutSerializer,
     RefreshTokenSerializer,
     ResendResetTokenSerializer,
@@ -19,23 +20,23 @@ from auth_api.serializers import (
     UserProfileSerializer,
     UserRegistrationSerializer,
     VerifyEmailSerializer,
-    GoogleSSOSerializer,
 )
-from rest_framework_simplejwt.views import TokenObtainPairView
+
+from .permissions import IsAuthenticated
 
 
 @apply_swagger_tags(
     tags=["Auth"],
     method_details={
         "post": {
-            "operation_description": "User registration",
-            "request_body": UserRegistrationSerializer,
-            "operation_summary": "POST method for user registration",
+            "description": "User registration",
+            "summary": "POST method for user registration",
         },
     },
 )
 class UserRegistrationView(APIView):
     throttle_classes = [custom_throttling.CustomAuthThrottle]
+    serializer_class = UserRegistrationSerializer
 
     def post(self, request):
         serializer = UserRegistrationSerializer(data=request.data)
@@ -53,14 +54,14 @@ class UserRegistrationView(APIView):
     tags=["Auth"],
     method_details={
         "post": {
-            "operation_description": "Login API",
-            "request_body": UserLoginSerializer,
-            "operation_summary": "Dynamic POST method for user login",
+            "description": "Login API",
+            "summary": "Dynamic POST method for user login",
         },
     },
 )
 class UserLoginView(APIView):
     throttle_classes = [custom_throttling.CustomAuthThrottle]
+    serializer_class = UserLoginSerializer
     permission_classes = []
 
     def post(self, request):
@@ -78,8 +79,8 @@ class UserLoginView(APIView):
     tags=["Auth"],
     method_details={
         "get": {
-            "operation_description": "User profile",
-            "operation_summary": "GET method for user profile details",
+            "description": "User profile",
+            "summary": "GET method for user profile details",
         },
     },
 )
@@ -100,14 +101,14 @@ class UserProfileView(APIView):
     tags=["Auth"],
     method_details={
         "post": {
-            "operation_description": "Change password",
-            "request_body": ChangePasswordSerializer,
-            "operation_summary": "Post method for change password",
+            "description": "Change password",
+            "summary": "Post method for change password",
         },
     },
 )
 class ChangePasswordView(APIView):
     permission_classes = [IsAuthenticated]
+    serializer_class = ChangePasswordSerializer
 
     def post(self, request):
         serializer = ChangePasswordSerializer(
@@ -122,14 +123,14 @@ class ChangePasswordView(APIView):
     tags=["Auth"],
     method_details={
         "post": {
-            "operation_description": "Forgot password",
-            "request_body": ForgotPasswordSerializer,
-            "operation_summary": "Post method for forgot password",
+            "description": "Forgot password",
+            "summary": "Post method for forgot password",
         },
     },
 )
 class ForgotPasswordView(APIView):
     throttle_classes = [custom_throttling.CustomAuthThrottle]
+    serializer_class = ForgotPasswordSerializer
 
     def post(self, request):
         try:
@@ -146,15 +147,15 @@ class ForgotPasswordView(APIView):
     tags=["Auth"],
     method_details={
         "post": {
-            "operation_description": "Reset Password",
-            "request_body": ResendResetTokenSerializer,
-            "operation_summary": "Post method for resending request to reset password",
+            "description": "Reset Password",
+            "summary": "Post method for resending request to reset password",
         },
     },
 )
 class ResendResetTokenView(APIView):
     permission_classes = [AllowAny]
     throttle_classes = [custom_throttling.CustomAuthThrottle]
+    serializer_class = ResendResetTokenSerializer
 
     def post(self, request):
         serializer = ResendResetTokenSerializer(data=request.data)
@@ -170,15 +171,16 @@ class ResendResetTokenView(APIView):
     tags=["Auth"],
     method_details={
         "post": {
-            "operation_description": "Reset Password",
-            "request_body": UserPasswordResetSerializer,
-            "operation_summary": "Post method for reset password",
+            "description": "Reset Password",
+            "summary": "Post method for reset password",
         },
     },
 )
 class UserPasswordResetView(APIView):
     permission_classes = [AllowAny]
     throttle_classes = [custom_throttling.CustomAuthThrottle]
+    serializer_class = UserPasswordResetSerializer
+
     """
     This endpoint is used to reset a user's password.
     The password reset process will only be completed if the password provided matches the password validation .
@@ -197,8 +199,8 @@ class UserPasswordResetView(APIView):
     tags=["Auth"],
     method_details={
         "get": {
-            "operation_description": "Verify Email",
-            "operation_summary": "Get method to verify email",
+            "description": "Verify Email",
+            "summary": "Get method to verify email",
         },
     },
 )
@@ -216,14 +218,14 @@ class VerifyEmailView(APIView):
     tags=["Auth"],
     method_details={
         "post": {
-            "operation_description": "Resend Verify Token ",
-            "request_body": RefreshTokenSerializer,
-            "operation_summary": "Post method for resend reset token",
+            "description": "Resend Verify Token ",
+            "summary": "Post method for resend reset token",
         },
     },
 )
 class RefreshTokenView(TokenObtainPairView):
     permission_classes = [AllowAny]
+    serializer_class = RefreshTokenSerializer
 
     def post(self, request):
         serializer = RefreshTokenSerializer(data=request.data)
@@ -239,15 +241,15 @@ class RefreshTokenView(TokenObtainPairView):
     tags=["Auth"],
     method_details={
         "post": {
-            "operation_description": "Resend Verify Token ",
-            "request_body": ResendVerificationEmailSerializer,
-            "operation_summary": "Post method for resend verify token",
+            "description": "Resend Verify Token ",
+            "summary": "Post method for resend verify token",
         },
     },
 )
 class ResendVerificationEmailView(APIView):
     throttle_classes = [custom_throttling.CustomAuthThrottle]
     permission_classes = [AllowAny]
+    serializer_class = ResendVerificationEmailSerializer
 
     def post(self, request):
         serializer = ResendVerificationEmailSerializer(data=request.data)
@@ -259,8 +261,8 @@ class ResendVerificationEmailView(APIView):
     tags=["Auth"],
     method_details={
         "get": {
-            "operation_description": "Logout",
-            "operation_summary": "Get method for logout",
+            "description": "Logout",
+            "summary": "Get method for logout",
         },
     },
 )
@@ -278,13 +280,14 @@ class LogoutView(APIView):
     tags=["Auth"],
     method_details={
         "post": {
-            "operation_description": "Google API",
-            "request_body": GoogleSSOSerializer,
-            "operation_summary": "Dynamic POST method for Google SSO",
+            "description": "Google API",
+            "summary": "Dynamic POST method for Google SSO",
         },
     },
 )
 class GoogleSSOView(APIView):
+    serializer_class = UserRegistrationSerializer
+
     def post(self, request):
         serializer = GoogleSSOSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
