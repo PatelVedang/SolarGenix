@@ -68,8 +68,10 @@ def set_attr(view, method, tags, obj, view_method, extra_action):
         "operation_description": obj.get("operation_description", ""),
         "operation_summary": obj.get("operation_summary", ""),
         "responses": get_response_schema(),
+        "request_body": obj.get("request_body", None),
         "tags": tags,
     }
+
     if method == "list":
         params["manual_parameters"] = [
             openapi.Parameter(

@@ -53,6 +53,7 @@ urlpatterns = [
         include(
             [
                 # IMPORT_NEW_ROUTE_HERE
+                path("api/", include("demos.urls")),
                 path("api/", include("auth_api.urls")),
                 path("api/", include("users.urls")),
                 path("api/", include("todos.urls")),

@@ -10,7 +10,6 @@ from rest_framework import serializers
 from rest_framework.exceptions import AuthenticationFailed
 from rest_framework_simplejwt.serializers import TokenRefreshSerializer
 from utils.email import send_email
-
 from .google import Google
 
 logger = logging.getLogger("django")
