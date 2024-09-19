@@ -1,7 +1,7 @@
 from rest_framework import serializers
 
 
-class DynamicFieldsSerializer(serializers.ModelSerializer):
+class BaseSerializer(serializers.ModelSerializer):
     def __init__(self, *args, **kwargs):
         fields = kwargs.pop("fields", None)
         super().__init__(*args, **kwargs)
@@ -12,13 +12,6 @@ class DynamicFieldsSerializer(serializers.ModelSerializer):
             for field_name in existing - allowed:
                 self.fields.pop(field_name)
 
-    def to_representation(self, instance):
-        if isinstance(instance, dict):
-            return instance
-        return super().to_representation(instance)
-
-
-class BaseSerializerValidator(serializers.ModelSerializer):
     def run_validation(self, data):
         try:
             return super().run_validation(data)
@@ -111,3 +104,8 @@ class BaseSerializerValidator(serializers.ModelSerializer):
 
             return {"key": field, "label": original_label, "message": message}
         return {}
+
+    def to_representation(self, instance):
+        if isinstance(instance, dict):
+            return instance
+        return super().to_representation(instance)

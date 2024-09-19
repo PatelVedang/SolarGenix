@@ -2,14 +2,16 @@ import logging
 import re
 import threading
 
-from auth_api.models import SimpleToken, Token, TokenType, User
 from django.conf import settings
 from django.contrib.auth import authenticate
 from django.contrib.auth.hashers import make_password
+from proj.base_serializer import BaseSerializer
 from rest_framework import serializers
 from rest_framework.exceptions import AuthenticationFailed
 from rest_framework_simplejwt.serializers import TokenRefreshSerializer
 from utils.email import send_email
+
+from auth_api.models import SimpleToken, Token, TokenType, User
 
 from .google import Google
 
@@ -18,7 +20,7 @@ logger = logging.getLogger("django")
 
 # The `UserRegistrationSerializer` class handles user registration data validation and creation,
 # including checking for existing email, password validation, and sending a verification email.
-class UserRegistrationSerializer(serializers.ModelSerializer):
+class UserRegistrationSerializer(BaseSerializer):
     password = serializers.CharField(style={"input_type": "password"}, write_only=True)
     confirm_password = serializers.CharField(write_only=True)
 
@@ -64,7 +66,7 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         return user
 
 
-class UserLoginSerializer(serializers.ModelSerializer):
+class UserLoginSerializer(BaseSerializer):
     email = serializers.EmailField(max_length=255)
 
     class Meta:
@@ -114,10 +116,14 @@ class UserProfileSerializer(serializers.ModelSerializer):
         fields = ["id", "first_name", "last_name", "email"]
 
 
-class ForgotPasswordSerializer(serializers.Serializer):
+class ForgotPasswordSerializer(BaseSerializer):
     email = serializers.EmailField(
         max_length=255, required=True, allow_blank=False, allow_null=False
     )
+
+    class Meta:
+        model = User
+        fields = ["email"]
 
     def validate(self, attrs):
         email = attrs.get("email").lower()
@@ -145,8 +151,14 @@ class ForgotPasswordSerializer(serializers.Serializer):
         return attrs
 
 
-class ResendResetTokenSerializer(serializers.Serializer):
-    email = serializers.EmailField(max_length=255)
+class ResendResetTokenSerializer(BaseSerializer):
+    email = serializers.EmailField(
+        max_length=255, label="Test", error_messages={"invalid": "ddd"}
+    )
+
+    class Meta:
+        model = User
+        fields = ["email"]
 
     def validate(self, attrs):
         email = attrs.get("email").lower()
@@ -176,13 +188,14 @@ class ResendResetTokenSerializer(serializers.Serializer):
         return attrs
 
 
-class UserPasswordResetSerializer(serializers.Serializer):
+class UserPasswordResetSerializer(BaseSerializer):
     password = serializers.CharField(style={"input_type": "password"}, write_only=True)
     confirm_password = serializers.CharField(
         style={"input_type": "password"}, write_only=True
     )
 
     class Meta:
+        model = User
         fields = ["password", "confirm_password"]
 
     def validate(self, attrs):
@@ -249,8 +262,12 @@ class ChangePasswordSerializer(serializers.Serializer):
         return user
 
 
-class ResendVerificationEmailSerializer(serializers.Serializer):
+class ResendVerificationEmailSerializer(BaseSerializer):
     email = serializers.EmailField(max_length=255)
+
+    class Meta:
+        model = User
+        fields = ["email"]
 
     def validate(self, attrs):
         email = attrs.get("email").lower()
@@ -278,8 +295,12 @@ class ResendVerificationEmailSerializer(serializers.Serializer):
         return attrs
 
 
-class VerifyEmailSerializer(serializers.Serializer):
+class VerifyEmailSerializer(BaseSerializer):
     token = serializers.CharField()
+
+    class Meta:
+        model = User
+        fields = ["token"]
 
     def validate_token(self, value):
         payload = SimpleToken.decode(value)
@@ -299,8 +320,12 @@ class LogoutSerializer(serializers.Serializer):
         return attrs
 
 
-class GoogleSSOSerializer(serializers.Serializer):
+class GoogleSSOSerializer(BaseSerializer):
     authorization_code = serializers.CharField(write_only=True, required=True)
+
+    class Meta:
+        model = User
+        fields = ["authorization_code"]
 
     def validate(self, attrs):
         authorization_code = attrs.get("authorization_code")

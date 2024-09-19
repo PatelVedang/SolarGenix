@@ -1,19 +1,17 @@
-from proj.base_serializer import DynamicFieldsSerializer
-from auth_api.models import User
-
-from django.conf import settings
-from django.core.mail import EmailMessage
-from django.template.loader import render_to_string
-from django.contrib.auth.hashers import make_password
-
-from rest_framework.exceptions import ValidationError
-from rest_framework.serializers import CharField
-
 import random
 import string
 
+from auth_api.models import User
+from django.conf import settings
+from django.contrib.auth.hashers import make_password
+from django.core.mail import EmailMessage
+from django.template.loader import render_to_string
+from proj.base_serializer import BaseSerializer
+from rest_framework.exceptions import ValidationError
+from rest_framework.serializers import CharField
 
-class UserSerializer(DynamicFieldsSerializer):
+
+class UserSerializer(BaseSerializer):
     password = CharField(write_only=True, required=False, allow_blank=True)
 
     class Meta:

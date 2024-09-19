@@ -1,15 +1,16 @@
 from rest_framework import status
 from rest_framework.permissions import AllowAny
-from .permissions import IsAuthenticated
 from rest_framework.views import APIView
+from rest_framework_simplejwt.views import TokenObtainPairView
 from utils import custom_throttling
-from utils.swagger import apply_swagger_tags
 from utils.make_response import response
+from utils.swagger import apply_swagger_tags
 
 # from utils.permissions import IsTokenValid
 from auth_api.serializers import (
     ChangePasswordSerializer,
     ForgotPasswordSerializer,
+    GoogleSSOSerializer,
     LogoutSerializer,
     RefreshTokenSerializer,
     ResendResetTokenSerializer,
@@ -19,9 +20,9 @@ from auth_api.serializers import (
     UserProfileSerializer,
     UserRegistrationSerializer,
     VerifyEmailSerializer,
-    GoogleSSOSerializer,
 )
-from rest_framework_simplejwt.views import TokenObtainPairView
+
+from .permissions import IsAuthenticated
 
 
 @apply_swagger_tags(
@@ -132,14 +133,11 @@ class ForgotPasswordView(APIView):
     throttle_classes = [custom_throttling.CustomAuthThrottle]
 
     def post(self, request):
-        try:
-            serializer = ForgotPasswordSerializer(
-                data=request.data, context={"user": request.user}
-            )
-            serializer.is_valid(raise_exception=True)
-            return response(status_code=status.HTTP_204_NO_CONTENT)
-        except Exception:
-            return response(status_code=status.HTTP_400_BAD_REQUEST)
+        serializer = ForgotPasswordSerializer(
+            data=request.data, context={"user": request.user}
+        )
+        serializer.is_valid(raise_exception=True)
+        return response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @apply_swagger_tags(
