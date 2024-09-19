@@ -166,7 +166,7 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 # }
 
 SPECTACULAR_SETTINGS = {
-    "TITLE": "Your API Title",
+    "TITLE": "DRF Boilerplate",
     "DESCRIPTION": "Your API description",
     "VERSION": "1.0.0",
     "SERVE_INCLUDE_SCHEMA": False,  # Exclude schema from the public Swagger UI
