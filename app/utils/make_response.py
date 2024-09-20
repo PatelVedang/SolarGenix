@@ -11,4 +11,6 @@ def response(*args, **kwargs):
     message = kwargs.get("message", "")
     data = kwargs.get("data", {})
     result = {"message": message, "data": data}
+    if status_code == 204:
+        return Response(status=status_code)
     return Response(result, status=status_code)
