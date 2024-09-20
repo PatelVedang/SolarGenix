@@ -18,6 +18,7 @@ django-ssl-smtp
 pydantic
 pydantic-settings
 pydantic[email]
+drf-spectacular
 
 # dev
 ruff

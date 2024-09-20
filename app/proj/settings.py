@@ -49,9 +49,9 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    "rest_framework",
-    "drf_yasg",
     "drf_spectacular",
+    "rest_framework",
+    # "drf_yasg",
     "django_filters",
     "auth_api",
     "corsheaders",
@@ -167,11 +167,10 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 SPECTACULAR_SETTINGS = {
     "TITLE": "DRF Boilerplate",
-    "DESCRIPTION": "Your API description",
+    "DESCRIPTION": "DRF- Boilerplate",
     "VERSION": "1.0.0",
     "SERVE_INCLUDE_SCHEMA": False,  # Exclude schema from the public Swagger UI
     "SCHEMA_PATH_PREFIX": "/api/",  # Adjust according to your path structure
-    "SCHEMES": ["http", "https"],  # Support both HTTP and HTTPS
     "SECURITY": [
         {
             "basicAuth": []  # Enable Basic Auth in the API documentation
@@ -185,6 +184,9 @@ SPECTACULAR_SETTINGS = {
             }
         }
     },
+    "SERVERS": [
+        {"url": "http://localhost:8000", "description": "server"},
+    ],
 }
 
 
@@ -194,7 +196,7 @@ SPECTACULAR_SETTINGS = {
 # CORS_ORIGIN_WHITELIST=settings.CORS_ORIGIN_WHITELIST
 # PDF_DOWNLOAD_ORIGIN=settings.PDF_DOWNLOAD_ORIGIN
 
-# CORS_ORIGIN_ALLOW_ALL = True
+CORS_ORIGIN_ALLOW_ALL = True
 
 # By pass http to https
 USE_X_FORWARDED_HOST = True
