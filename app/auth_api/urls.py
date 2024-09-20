@@ -1,18 +1,18 @@
 from django.urls import path
 
 from auth_api.views import (
-    UserRegistrationView,
-    UserLoginView,
-    UserProfileView,
     ChangePasswordView,
     ForgotPasswordView,
-    UserPasswordResetView,
-    ResendResetTokenView,
-    RefreshTokenView,
-    ResendVerificationEmailView,
-    VerifyEmailView,
-    LogoutView,
     GoogleSSOView,
+    LogoutView,
+    RefreshTokenView,
+    ResendResetTokenView,
+    ResendVerificationEmailView,
+    UserLoginView,
+    UserPasswordResetView,
+    UserProfileView,
+    UserRegistrationView,
+    VerifyEmailView,
 )
 
 urlpatterns = [
