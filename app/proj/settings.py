@@ -184,17 +184,14 @@ SPECTACULAR_SETTINGS = {
             }
         }
     },
-    "SERVERS": [
-        {"url": "http://localhost:8000", "description": "server"},
-    ],
+    "SERVERS": [{"url": i} for i in settings.CSRF_TRUSTED_ORIGINS.split()],
 }
 
 
-# For security definitions, add this
-
-# CSRF_TRUSTED_ORIGINS=settings.CSRF_TRUSTED_ORIGINS
+# CORS & CSRF allowed origins
+CSRF_TRUSTED_ORIGINS = settings.CSRF_TRUSTED_ORIGINS.split()
+print("CORS allowed origins", CSRF_TRUSTED_ORIGINS)
 # CORS_ORIGIN_WHITELIST=settings.CORS_ORIGIN_WHITELIST
-# PDF_DOWNLOAD_ORIGIN=settings.PDF_DOWNLOAD_ORIGIN
 
 CORS_ORIGIN_ALLOW_ALL = True
 

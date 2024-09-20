@@ -50,8 +50,6 @@ class Settings(BaseSettings):
     # Swagger Authentication
     SWAGGER_AUTH_USERNAME: str
     SWAGGER_AUTH_PASSWORD: str
-    SUPERUSER_PASSWORD: str  # Add this field if needed
-    SUPERUSER_ADMIN: str
 
     class Config:
         env_file = os.path.join(BASE_DIR, ".env")
@@ -65,6 +63,7 @@ def load_settings():
 
     try:
         settings = Settings()
+
         print("Settings loaded successfully.")
         return settings
     except ValidationError as e:
@@ -72,5 +71,4 @@ def load_settings():
             field = error["loc"][0]
             message = error["msg"]
             print(f"  - {field}: {message}", "error")
-        raise e
         raise e
