@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib.admin.actions import delete_selected
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
-
+from .google import Google
 from auth_api.models import Token, User
 
 
@@ -10,8 +10,21 @@ class SoftDeleteAdminMixin(admin.ModelAdmin):
 
     def soft_delete(self, request, queryset):
         """Soft delete selected items."""
-        queryset.update(is_deleted=True, is_active=False)  # Bulk update for efficiency
-        self.message_user(request, f"{queryset.count()} items soft deleted.")
+        # Perform soft delete on the user
+        queryset.update(is_deleted=True, is_active=False)
+
+        # Delete tokens related to the soft-deleted users
+        for user in queryset:
+            tokens = Token.objects.filter(user=user)
+            for token in tokens:
+                if token.token_type == "google":
+                    google = Google()
+                    google.revoke_token(token.jti)  # Revoke Google access
+                token.hard_delete()  # Hard delete tokens after revoking
+        self.message_user(
+            request,
+            f"{queryset.count()} items soft deleted and related tokens deleted.",
+        )
 
     def soft_delete_recover(self, request, queryset):
         """Recover selected soft deleted items."""
