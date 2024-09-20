@@ -4,7 +4,7 @@ import uuid
 from django.contrib.auth.models import AbstractUser, PermissionsMixin
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
-from proj.models import BaseClass
+from proj.models import BaseModel
 from datetime import timedelta, datetime
 from django.utils import timezone
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -95,7 +95,7 @@ class SimpleToken(BaseToken):
 AUTH_PROVIDER = {"google": "google", "email": "email"}
 
 
-class User(AbstractUser, PermissionsMixin):
+class User(AbstractUser, PermissionsMixin, BaseModel):
     username = None
     email = models.EmailField(
         verbose_name="Email",
@@ -155,7 +155,7 @@ class User(AbstractUser, PermissionsMixin):
         app_label = "auth_api"
 
 
-class Token(BaseClass):  # Inherits from BaseClass
+class Token(BaseModel):  # Inherits from BaseClass
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     jti = models.CharField(max_length=255, default=uuid.uuid4().hex)
