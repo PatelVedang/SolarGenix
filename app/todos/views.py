@@ -1,23 +1,13 @@
-from utils.swagger import apply_swagger_tags
-from utils.custom_filter import filter_model
-from proj.base_view import BaseModelViewSet
-from .models import Todo
-from .serializers import TodoSerializer
 from auth_api.permissions import IsAuthenticated
+from proj.base_view import BaseModelViewSet
 from rest_framework.decorators import action
+from utils.custom_filter import filter_model
 from utils.make_response import response
 
+from .models import Todo
+from .serializers import TodoSerializer
 
-@apply_swagger_tags(
-    tags=["Todos"],
-    extra_actions=["get_all"],
-    method_details={
-        "get_all": {
-            "operation_description": "Get all todos records without pagination",
-            "operation_summary": "Get all todos",
-        },
-    },
-)
+
 class TodoViewset(BaseModelViewSet):
     queryset = Todo.objects.all()
     serializer_class = TodoSerializer
