@@ -25,7 +25,6 @@ def custom_exception_handler(exc, context):
     try:
         traceback.print_exc()
         exception_class = exc.__class__.__name__
-
         handlers = {
             "NotAuthenticated": _handler_authentication_error,
             "InvalidToken": _handler_invalid_token_error,
@@ -36,7 +35,6 @@ def custom_exception_handler(exc, context):
         logger.error(str(exc))
         if exception_class in handlers:
             message = handlers[exception_class](exc, context, res)
-
         else:
             # if there is no handler is present
             message = str(exc)
@@ -148,7 +146,6 @@ def _handler_validation_error(exc, context, response):
             if isinstance(value, dict):  # Ensure the value is a dictionary
                 # Use defaultdict to apply default values for missing keys
                 error_data = defaultdict(default_value, value)
-
                 # Extract relevant information from the error_data
                 temp_dict = {
                     "key": error_data["key"]["message"],  # Extract message from 'key'

@@ -71,4 +71,3 @@ def load_settings():
             message = error["msg"]
             print(f"  - {field}: {message}", "error")
         raise e
-        raise e

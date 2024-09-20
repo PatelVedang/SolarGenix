@@ -69,7 +69,10 @@ class UserLoginView(APIView):
         serializer.is_valid(raise_exception=True)
         user = serializer.validated_data
         return response(
-            data=user.auth_tokens(),
+            data={
+                "user": UserProfileSerializer(user).data,
+                "tokens": user.auth_tokens(),
+            },
             status_code=status.HTTP_200_OK,
             message="Login done successfully!",
         )

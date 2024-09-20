@@ -103,10 +103,10 @@ EOL
 echo "Task initiated: Generating serializers.py..."
 cat <<EOL > "$PLURAL_UNDERSCORED/serializers.py"
 from rest_framework import serializers
-from proj.base_serializer import BaseSerializer
+from proj.base_serializer import BaseModelSerializer
 from .models import $SINGULAR_CAPITALIZED
 
-class $SINGULAR_CAPITALIZED_SERIALIZER(BaseSerializer):
+class $SINGULAR_CAPITALIZED_SERIALIZER(BaseModelSerializer):
     class Meta:
         model = $SINGULAR_CAPITALIZED
         fields = '__all__'

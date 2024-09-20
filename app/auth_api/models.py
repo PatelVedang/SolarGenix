@@ -1,17 +1,19 @@
-from django.db import models
-from .managers import UserManager
+import logging
 import uuid
-from django.contrib.auth.models import AbstractUser, PermissionsMixin
-from django.core.exceptions import ValidationError
-from django.utils.translation import gettext_lazy as _
-from proj.models import BaseClass
-from datetime import timedelta, datetime
-from django.utils import timezone
-from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework_simplejwt.tokens import Token as BaseToken
+from datetime import datetime, timedelta
+
 import jwt
 from django.conf import settings
-import logging
+from django.contrib.auth.models import AbstractUser, PermissionsMixin
+from django.db import models
+from django.utils import timezone
+from django.utils.translation import gettext_lazy as _
+from proj.models import BaseClass
+from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.tokens import Token as BaseToken
+from utils.custom_exception import CustomValidationError
+
+from .managers import UserManager
 
 logger = logging.getLogger("django")
 
@@ -59,19 +61,27 @@ class SimpleToken(BaseToken):
             )
         except jwt.ExpiredSignatureError as e:
             logger.error("Token has expired with error: %s", e)
-            raise ValidationError("Token has expired")
+            raise CustomValidationError(
+                "Email verification link is invalid or has expired. Please request a new verification link"
+            )
         except jwt.DecodeError as e:
             logger.error("Invalid token with error: %s", e)
-            raise ValidationError("Invalid token")
+            raise CustomValidationError(
+                "Email verification link is invalid or has expired. Please request a new verification link"
+            )
         except jwt.InvalidTokenError as e:
             logger.error("Invalid token with error: %s", e)
-            raise ValidationError("Invalid token")
+            raise CustomValidationError(
+                "Email verification link is invalid or has expired. Please request a new verification link"
+            )
 
     @classmethod
     def validate_token(cls, token, token_type):
         payload = cls.decode(token)
         if payload["token_type"] != token_type:
-            raise ValidationError("Invalid token")
+            raise CustomValidationError(
+                "Email verification link is invalid or has expired. Please request a new verification link"
+            )
         jti = payload["jti"]
         user_id = payload["user_id"]
         token = Token.objects.filter(
@@ -84,11 +94,15 @@ class SimpleToken(BaseToken):
             token = token.first()
             if token.is_expired():
                 token.hard_delete()
-                raise ValidationError("Token has expired")
+                raise CustomValidationError(
+                    "Email verification link is invalid or has expired. Please request a new verification link"
+                )
             payload["token_obj"] = token
             return payload
         else:
-            raise ValidationError("Invalid token")
+            raise CustomValidationError(
+                "Email verification link is invalid or has expired. Please request a new verification link"
+            )
 
 
 # Create your models here.
@@ -144,10 +158,10 @@ class User(AbstractUser, PermissionsMixin):
         )
 
         return {
-            "access": {"token": str(access_token), "expires_at": access_token["exp"]},
+            "access": {"token": str(access_token), "expires": access_token["exp"]},
             "refresh": {
                 "token": str(refresh_token),
-                "expires_at": refresh_token["exp"],
+                "expires": refresh_token["exp"],
             },
         }
 
