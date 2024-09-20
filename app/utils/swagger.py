@@ -333,7 +333,6 @@ def set_attr(view, method, tags, obj, view_method, extra_action):
         "description": obj.get("description", ""),
         "summary": obj.get("summary", ""),
         "responses": get_response_schema(),
-        "request_body": obj.get("request_body", None),
         "tags": tags,
     }
 
