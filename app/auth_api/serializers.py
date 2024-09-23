@@ -2,7 +2,6 @@ import logging
 import re
 import threading
 
-from auth_api.models import SimpleToken, Token, TokenType, User
 from django.conf import settings
 from django.contrib.auth import authenticate
 from django.contrib.auth.hashers import make_password
@@ -10,6 +9,9 @@ from rest_framework import serializers
 from rest_framework.exceptions import AuthenticationFailed
 from rest_framework_simplejwt.serializers import TokenRefreshSerializer
 from utils.email import send_email
+
+from auth_api.models import SimpleToken, Token, TokenType, User
+
 from .google import Google
 
 logger = logging.getLogger("django")
@@ -339,5 +341,4 @@ class GoogleSSOSerializer(serializers.Serializer):
                 logger.error(
                     f"Google SSO failed for {email} after user creation due to authentication failed"
                 )
-                raise AuthenticationFailed("Authentication failed after user creation.")
                 raise AuthenticationFailed("Authentication failed after user creation.")
