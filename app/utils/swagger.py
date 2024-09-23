@@ -339,8 +339,8 @@ def set_attr(view, method, tags, obj, view_method, extra_action):
     if method == "list":
         params["parameters"] = [
             OpenApiParameter(
-                "fields",
-                OpenApiParameter.QUERY,
+                name="fields",
+                location=OpenApiParameter.QUERY,
                 description="Comma separated fields",
                 type=str,
             ),
@@ -366,8 +366,8 @@ def set_attr(view, method, tags, obj, view_method, extra_action):
     elif method == "retrieve":
         params["parameters"] = [
             OpenApiParameter(
-                "fields",
-                OpenApiParameter.QUERY,
+                name="fields",
+                location=OpenApiParameter.QUERY,
                 description="Comma separated fields",
                 type=str,
             )
@@ -484,32 +484,6 @@ def apply_swagger_tags(**kwargs):
     return decorator
 
 
-# def swagger_auth_required(view_func):
-#     """
-#     Custom decorator to force Basic Auth for Swagger UI access.
-#     """
-
-#     def _wrapped_view(request, args, *kwargs):
-#         # Static credentials stored in settings.py
-#         AUTH_USER = settings.SWAGGER_AUTH_USERNAME
-#         AUTH_PASS = settings.SWAGGER_AUTH_PASSWORD
-
-#         # Get the Authorization header
-#         auth_header = request.META.get("HTTP_AUTHORIZATION")
-#         if auth_header and auth_header.startswith("Basic "):
-#             # Decode base64 and check credentials
-#             credentials = b64decode(auth_header.split(" ")[1]).decode("utf-8")
-#             username, password = credentials.split(":", 1)
-#             if username == AUTH_USER and password == AUTH_PASS:
-#                 return view_func(request, args, *kwargs)
-
-#         # Return 401 Unauthorized if the credentials don't match
-#         response = HttpResponse("Unauthorized", status=401)
-#         response["WWW-Authenticate"] = 'Basic realm="Swagger"'
-#         return response
-
-
-#     return wraps(view_func)(_wrapped_view)
 def swagger_auth_required(view_func):
     """
     Custom decorator to force Basic Auth for Swagger UI access.
