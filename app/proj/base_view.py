@@ -1,5 +1,5 @@
-from rest_framework import viewsets, status
 from django.utils.text import capfirst
+from rest_framework import status, viewsets
 from utils.make_response import response as Response
 
 
@@ -85,9 +85,12 @@ class BaseModelViewSet(viewsets.ModelViewSet):
         if fields:
             fields = tuple(field.strip() for field in fields.split(","))
 
-        serializer = self.get_serializer(self.get_queryset(), many=True, fields=fields)
+        paginate_queryset = self.paginate_queryset(self.get_queryset())
+        serializer = self.get_serializer(paginate_queryset, many=True, fields=fields)
+        pagination_serializer = self.get_paginated_response(serializer.data)
+        # serializer = self.get_serializer(self.get_queryset(), many=True, fields=fields)
         return Response(
-            data=serializer.data,
+            data=pagination_serializer.data,
             message=self.get_message(request, *args, **kwargs),
             status_code=status.HTTP_200_OK,
         )
