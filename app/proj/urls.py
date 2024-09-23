@@ -1,70 +1,51 @@
-"""proj URL Configuration
+# """proj URL Configuration
 
-The `urlpatterns` list routes URLs to views. For more information please see:
-    https://docs.djangoproject.com/en/4.1/topics/http/urls/
-Examples:
-Function views
-    1. Add an import:  from my_app import views
-    2. Add a URL to urlpatterns:  path('', views.home, name='home')
-Class-based views
-    1. Add an import:  from other_app.views import Home
-    2. Add a URL to urlpatterns:  path('', Home.as_view(), name='home')
-Including another URLconf
-    1. Import the include() function: from django.urls import include, path
-    2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
-"""
+# The `urlpatterns` list routes URLs to views. For more information please see:
+#     https://docs.djangoproject.com/en/4.1/topics/http/urls/
+# Examples:
+# Function views
+#     1. Add an import:  from my_app import views
+#     2. Add a URL to urlpatterns:  path('', views.home, name='home')
+# Class-based views
+#     1. Add an import:  from other_app.views import Home
+#     2. Add a URL to urlpatterns:  path('', Home.as_view(), name='home')
+# Including another URLconf
+#     1. Import the include() function: from django.urls import include, path
+#     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
+# """
 
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path
-from drf_yasg import openapi
-from drf_yasg.views import get_schema_view
-from utils.swagger import HttpAndHttpsSchemaGenerator, swagger_auth_required
-
-schema_view = get_schema_view(
-    openapi.Info(title="Boilerplate API", default_version="1.0"),
-    public=True,
-    generator_class=HttpAndHttpsSchemaGenerator,
+from drf_spectacular.views import (
+    SpectacularAPIView,
+    SpectacularSwaggerView,
 )
-
-# urlpatterns = [
-#     path("admin/", admin.site.urls),
-#     path(
-#         "",
-#         include(
-#             [
-#                 path("api/", include("auth_api.urls")),
-#                 path(
-#                     "swagger",
-#                     schema_view.with_ui("swagger", cache_timeout=0),
-#                     name="swagger-schema",
-#                 ),
-#                 path("api/", include("google_sso.urls")),
-#             ]
-#         ),
-#     ),
-# ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+from utils.swagger import swagger_auth_required
 
 urlpatterns = [
     path("admin/", admin.site.urls),
     path(
-        "",
+        "api/",
         include(
             [
                 # IMPORT_NEW_ROUTE_HERE
-                path("api/", include("auth_api.urls")),
-                path("api/", include("users.urls")),
-                path("api/", include("todos.urls")),
-                path(
-                    "swagger",
-                    swagger_auth_required(
-                        schema_view.with_ui("swagger", cache_timeout=0)
-                    ),
-                    name="swagger-schema",
-                ),
+                path("", include("auth_api.urls")),
+                path("", include("users.urls")),
+                path("", include("todos.urls")),
             ]
         ),
+    ),
+    path(
+        "api/schema/",
+        SpectacularAPIView.as_view(),
+        name="schema",
+    ),
+    path(
+        "swagger/",
+        swagger_auth_required(SpectacularSwaggerView.as_view(url_name="schema")),
+        name="swagger-ui",
     ),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 

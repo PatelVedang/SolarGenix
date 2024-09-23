@@ -48,8 +48,8 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     # installed
+    "drf_spectacular",
     "rest_framework",
-    "drf_yasg",
     "django_filters",
     "auth_api",
     "corsheaders",
@@ -153,24 +153,48 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 # django_celery/settings.py
 
 
-# DRF yasg
-SWAGGER_SETTINGS = {
-    "USE_SESSION_AUTH": False,
-    "SECURITY_DEFINITIONS": {
-        "Bearer": {
-            "type": "apiKey",
-            "scheme": "bearer",
-            "in": "header",
-            "name": "Authorization",
+# # DRF yasg
+# SWAGGER_SETTINGS = {
+#     "USE_SESSION_AUTH": False,
+#     "SECURITY_DEFINITIONS": {
+#         "Bearer": {
+#             "type": "apiKey",
+#             "scheme": "bearer",
+#             "in": "header",
+#             "name": "Authorization",
+#         }
+#     },
+# }
+
+SPECTACULAR_SETTINGS = {
+    "TITLE": "DRF Boilerplate",
+    "DESCRIPTION": "DRF- Boilerplate",
+    "VERSION": "1.0.0",
+    "SERVE_INCLUDE_SCHEMA": False,  # Exclude schema from the public Swagger UI
+    "SCHEMA_PATH_PREFIX": "/api/",  # Adjust according to your path structure
+    "SECURITY": [
+        {
+            "basicAuth": []  # Enable Basic Auth in the API documentation
+        },
+    ],
+    "COMPONENTS": {
+        "securitySchemes": {
+            "basicAuth": {
+                "type": "http",
+                "scheme": "basic",
+            }
         }
     },
+    "SERVERS": [{"url": i} for i in settings.CSRF_TRUSTED_ORIGINS.split()],
 }
 
-# CSRF_TRUSTED_ORIGINS=settings.CSRF_TRUSTED_ORIGINS
-# CORS_ORIGIN_WHITELIST=settings.CORS_ORIGIN_WHITELIST
-# PDF_DOWNLOAD_ORIGIN=settings.PDF_DOWNLOAD_ORIGIN
+
+# CORS & CSRF allowed origins
+CSRF_TRUSTED_ORIGINS = settings.CSRF_TRUSTED_ORIGINS.split()
+CORS_ORIGIN_WHITELIST = settings.CORS_ORIGIN_WHITELIST.split()
 
 # CORS_ORIGIN_ALLOW_ALL = True
+CORS_ALLOW_ALL_ORIGINS = True
 
 # By pass http to https
 USE_X_FORWARDED_HOST = True
@@ -189,6 +213,7 @@ REST_FRAMEWORK = {
         "auth": AUTH_THROTTLING_LIMIT,
     },
     "DEFAULT_PAGINATION_CLASS": "utils.pagination.BasePagination",
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
 }
 
 # SIMPLE_JWT
