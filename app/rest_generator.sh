@@ -63,7 +63,7 @@ fi
 # Add the app's URLs to the project's URLs
 if ! grep -q "'$PLURAL_UNDERSCORED.urls'" "$URLS_FILE"; then
     echo "Task initiated: Adding app URLs to project URLs..."
-    sed -i "/# IMPORT_NEW_ROUTE_HERE/a\                path('api/', include('$PLURAL_UNDERSCORED.urls'))," "$URLS_FILE"
+    sed -i "/# IMPORT_NEW_ROUTE_HERE/a\                path('', include('$PLURAL_UNDERSCORED.urls'))," "$URLS_FILE"
 fi
 
 # Generate models.py with various field types
@@ -129,8 +129,8 @@ from utils.make_response import response
     extra_actions=["get_all"],
     method_details={
         "get_all": {
-            "operation_description": "Get all $PLURAL_SPACE_SEPRATED records without pagination",
-            "operation_summary": "Get all $PLURAL_SPACE_SEPRATED",
+            "description": "Get all $PLURAL_SPACE_SEPRATED records without pagination",
+            "summary": "Get all $PLURAL_SPACE_SEPRATED",
         },
     },
 )
