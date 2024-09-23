@@ -11,7 +11,7 @@ from django.utils.translation import gettext_lazy as _
 from proj.models import BaseClass
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.tokens import Token as BaseToken
-from utils.custom_exception import CustomValidationError
+from utils.custom_exception import CustomValidationError as ValidationError
 
 from .managers import UserManager
 
@@ -61,27 +61,19 @@ class SimpleToken(BaseToken):
             )
         except jwt.ExpiredSignatureError as e:
             logger.error("Token has expired with error: %s", e)
-            raise CustomValidationError(
-                "Email verification link is invalid or has expired. Please request a new verification link"
-            )
+            raise ValidationError("Token has expired")
         except jwt.DecodeError as e:
             logger.error("Invalid token with error: %s", e)
-            raise CustomValidationError(
-                "Email verification link is invalid or has expired. Please request a new verification link"
-            )
+            raise ValidationError("Invalid token")
         except jwt.InvalidTokenError as e:
             logger.error("Invalid token with error: %s", e)
-            raise CustomValidationError(
-                "Email verification link is invalid or has expired. Please request a new verification link"
-            )
+            raise ValidationError("Invalid token")
 
     @classmethod
     def validate_token(cls, token, token_type):
         payload = cls.decode(token)
         if payload["token_type"] != token_type:
-            raise CustomValidationError(
-                "Email verification link is invalid or has expired. Please request a new verification link"
-            )
+            raise ValidationError("Invalid token")
         jti = payload["jti"]
         user_id = payload["user_id"]
         token = Token.objects.filter(
@@ -94,15 +86,11 @@ class SimpleToken(BaseToken):
             token = token.first()
             if token.is_expired():
                 token.hard_delete()
-                raise CustomValidationError(
-                    "Email verification link is invalid or has expired. Please request a new verification link"
-                )
+                raise ValidationError("Token has expired")
             payload["token_obj"] = token
             return payload
         else:
-            raise CustomValidationError(
-                "Email verification link is invalid or has expired. Please request a new verification link"
-            )
+            raise ValidationError("Invalid token")
 
 
 # Create your models here.

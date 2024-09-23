@@ -1,5 +1,4 @@
 from rest_framework import serializers
-from utils.custom_exception import CustomValidationError
 
 # class BaseSerializer(serializers.Serializer):
 #     def __init__(self, *args, **kwargs):
@@ -132,7 +131,7 @@ class BaseNormalSerializer(serializers.Serializer):
         except serializers.ValidationError as exc:
             errors = exc.detail
             new_errors = self.format_errors(errors, self.fields)
-            raise CustomValidationError(new_errors)
+            raise serializers.ValidationError(new_errors)
 
     def format_errors(self, errors, fields, parent_field=None, parent_index=None):
         new_errors = {}
@@ -329,7 +328,7 @@ class BaseSerializer(BaseErrorFormatter, serializers.Serializer):
         except serializers.ValidationError as exc:
             errors = exc.detail
             new_errors = self.format_errors(errors, self.fields)
-            raise CustomValidationError(new_errors)
+            raise serializers.ValidationError(new_errors)
 
     def to_representation(self, instance):
         if isinstance(instance, dict):
@@ -354,4 +353,4 @@ class BaseModelSerializer(BaseErrorFormatter, serializers.ModelSerializer):
         except serializers.ValidationError as exc:
             errors = exc.detail
             new_errors = self.format_errors(errors, self.fields)
-            raise CustomValidationError(new_errors)
+            raise serializers.ValidationError(new_errors)

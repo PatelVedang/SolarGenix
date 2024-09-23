@@ -9,6 +9,7 @@ from proj.base_serializer import BaseModelSerializer, BaseSerializer
 from rest_framework import serializers
 from rest_framework.exceptions import AuthenticationFailed
 from rest_framework_simplejwt.serializers import TokenRefreshSerializer
+from utils.custom_exception import CustomValidationError
 from utils.email import send_email
 
 from auth_api.models import SimpleToken, Token, TokenType, User
@@ -32,17 +33,13 @@ class UserRegistrationSerializer(BaseModelSerializer):
         password = attrs.get("password")
         confirm_password = attrs.pop("confirm_password")
         if User.objects.filter(email=attrs.get("email").lower()).exists():
-            raise serializers.ValidationError({"email": "Email already exists__custom"})
+            raise CustomValidationError("Email already exists")
 
         if not re.search(settings.PASSWORD_VALIDATE_REGEX, password):
-            raise serializers.ValidationError(
-                {"password": f"{settings.PASSWORD_VALIDATE_STRING}__custom"}
-            )
+            raise CustomValidationError(f"{settings.PASSWORD_VALIDATE_STRING}")
 
         if password != confirm_password:
-            raise serializers.ValidationError(
-                {"password": "Passwords and Confirm Password does not match__custom"}
-            )
+            raise CustomValidationError("Passwords and Confirm Password does not match")
 
         return attrs
 
@@ -102,14 +99,14 @@ class UserLoginSerializer(BaseModelSerializer):
                 }
                 thread = threading.Thread(target=send_email, kwargs=context)
                 thread.start()
-                raise serializers.ValidationError(
-                    "Email not verified. Please check your email for verification link__custom"
+                raise CustomValidationError(
+                    "Email not verified. Please check your email for verification link"
                 )
             raise AuthenticationFailed("Invalid email or password.")
 
         if not user.is_active:
-            raise serializers.ValidationError(
-                {"email": "Email not verified. Please check your email__custom"}
+            raise CustomValidationError(
+                "Email not verified. Please check your email for verification link"
             )
         return user
 
@@ -196,14 +193,10 @@ class UserPasswordResetSerializer(BaseSerializer):
         token = self.context.get("token")
 
         if not re.search(settings.PASSWORD_VALIDATE_REGEX, attrs.get("password")):
-            raise serializers.ValidationError(
-                {"password": f"{settings.PASSWORD_VALIDATE_STRING}__custom"}
-            )
+            raise CustomValidationError(f"{settings.PASSWORD_VALIDATE_STRING}")
 
         if password != confirm_pasword:
-            raise serializers.ValidationError(
-                {"password": "Passwords do not match__custom"}
-            )
+            raise CustomValidationError("Passwords do not match")
 
         payload = SimpleToken.validate_token(token, TokenType.RESET.value)
         token_obj = payload.get("token_obj")
@@ -235,7 +228,13 @@ class RefreshTokenSerializer(TokenRefreshSerializer, BaseSerializer):
 
 class ChangePasswordSerializer(BaseSerializer):
     old_password = serializers.CharField(
-        max_length=255, style={"input-type": "password"}, write_only=True
+        max_length=255,
+        style={"input-type": "password"},
+        write_only=True,
+        error_messages={
+            "unique": "A user with this email already exists!",
+            "invalid": "Old Passsw",
+        },
     )
     new_password = serializers.CharField(
         max_length=255, style={"input-type": "password"}, write_only=True
@@ -244,13 +243,9 @@ class ChangePasswordSerializer(BaseSerializer):
     def validate(self, attrs):
         user = self.context["request"].user
         if not user.check_password(attrs["old_password"]):
-            raise serializers.ValidationError(
-                {"old_password": "Old password is not correct__custom"}
-            )
+            raise CustomValidationError("Old password is not correct")
         if not re.search(settings.PASSWORD_VALIDATE_REGEX, attrs["new_password"]):
-            raise serializers.ValidationError(
-                {"new_password": f"{settings.PASSWORD_VALIDATE_STRING}__custom"}
-            )
+            raise CustomValidationError(f"{settings.PASSWORD_VALIDATE_STRING}")
         return attrs
 
     def create(self, validated_data):
@@ -294,7 +289,12 @@ class VerifyEmailSerializer(BaseSerializer):
 
     def validate_token(self, value):
         payload = SimpleToken.decode(value)
-        payload = SimpleToken.validate_token(value, TokenType.VERIFY_MAIL.value)
+        try:
+            payload = SimpleToken.validate_token(value, TokenType.VERIFY_MAIL.value)
+        except Exception:
+            raise CustomValidationError(
+                "Email verification link is invalid or has expired. Please request a new verification link"
+            )
         token_obj = payload.get("token_obj")
         user = token_obj.user
         user.is_active = True

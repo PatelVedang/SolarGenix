@@ -172,5 +172,5 @@ def _handler_validation_error(exc, context, response):
     except Exception as e:
         # Catch and handle any other unexpected exceptions
         print(f"An error occurred: {e}")
-
-    return errors_list  # Return the final list of formatted error details
+    # errors_list = {"error": errors_list}
+    return {"errors": errors_list}  # Return the final list of formatted error details

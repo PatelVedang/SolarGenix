@@ -18,7 +18,7 @@ from .serializers import TodoSerializer
         },
     },
 )
-class TodoViewset(BaseModelViewSet):
+class TodoViewSet(BaseModelViewSet):
     queryset = Todo.objects.all()
     serializer_class = TodoSerializer
     # permission_classes = [IsAuthenticated]
@@ -40,36 +40,3 @@ class TodoViewset(BaseModelViewSet):
             message=self.get_message(request, *args, **kwargs),
             status_code=200,
         )
-
-    # def create(self, request, *args, **kwargs):
-    #     serializer = self.serializer_class(data=request.data)
-    #     if serializer.is_valid():
-    #         # Process valid data
-    #         return Response(serializer.data, status=status.HTTP_201_CREATED)
-    #     else:
-    #         # Customize error response
-    #         errors = []
-    #         print("========", serializer.errors)
-    #         for field, messages in serializer.errors.items():
-    #             for message in messages:
-    #                 expected_type = str(
-    #                     serializer.fields[field].__class__.__name__
-    #                 ).lower()
-    #                 received_type = (
-    #                     type(request.data.get(field)).__name__
-    #                     if request.data.get(field) is not None
-    #                     else "undefined"
-    #                 )
-
-    #                 error_detail = {
-    #                     "code": "invalid_type",
-    #                     "expected": expected_type,
-    #                     "received": received_type,
-    #                     "path": [field],
-    #                     "message": message,
-    #                 }
-    #                 errors.append(error_detail)
-    #         return Response(
-    #             {"data": errors, "message": "validation error"},
-    #             status=status.HTTP_422_UNPROCESSABLE_ENTITY,
-    #         )

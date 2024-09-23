@@ -1,28 +1,35 @@
 import random
 import string
+import threading
 
-from auth_api.models import User
+from auth_api.models import SimpleToken, TokenType, User
 from django.conf import settings
-from django.core.mail import EmailMessage
-from django.template.loader import render_to_string
 from proj.base_serializer import BaseModelSerializer
+from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from utils.custom_exception import CustomValidationError
+from utils.email import send_email
 
 
 class UserSerializer(BaseModelSerializer):
+    email = serializers.EmailField(
+        error_messages={
+            "unique": "A user with this email already exists!",
+            "invalid": "Please enter a valid email address.",
+        }
+    )
+
     class Meta:
         model = User
-        fields = [
-            "id",
-            "email",
-            "first_name",
-            "last_name",
-            "is_active",
-            "date_joined",
-            "last_login",
-        ]
+        fields = ["id", "email", "first_name", "last_name", "is_active"]
         read_only_fields = ["id", "is_active"]
+
+    def validate(self, attrs):
+        email = attrs.get("email").strip().lower()
+
+        if User.objects.filter(email=email).exists():
+            raise CustomValidationError("A user with this email already exists!")
+        return attrs
 
     @staticmethod
     def generate_password():
@@ -30,38 +37,56 @@ class UserSerializer(BaseModelSerializer):
         try:
             return "".join(
                 random.choices(
-                    string.ascii_letters + string.digits + string.punctuation, k=10
+                    f"{string.ascii_letters}{string.digits}{string.punctuation}".replace(
+                        '"', ""
+                    ).replace("'", ""),
+                    k=10,
                 )
             )
+        # allowed_characters =
         except Exception as e:
             print(f"Error generating password: {e}")
             return None
 
     def create(self, validated_data):
-        email = validated_data.get("email", None)
-        first_name = validated_data.get("first_name", "")
-        last_name = validated_data.get("last_name", "")
-
         # Always generate a new password
         raw_password = self.generate_password()
-        raw_password = None
         if not raw_password:
             raise CustomValidationError("Error generating password")
 
         validated_data["password"] = raw_password
-        validated_data["is_active"] = True  # Activate the user
+        validated_data["is_active"] = False  # Activate the user
 
         try:
             user = User.objects.create_user(**validated_data)
             # Send email with the generated password
             try:
-                self.send_email(email, raw_password, first_name, last_name)
+                verify_token = SimpleToken.for_user(
+                    user,
+                    TokenType.VERIFY_MAIL.value,
+                    settings.AUTH_VERIFY_EMAIL_TOKEN_LIFELINE,
+                )
+                context = {
+                    "subject": f"Welcome to Our Community, {user.first_name}!",
+                    "user": user,
+                    "password": raw_password,
+                    "recipients": [user.email],
+                    "button_links": [
+                        f"{settings.HOST_URL}/api/auth/verify-email/{verify_token}"
+                    ],
+                    "html_template": "user_created_by_admin",
+                    "title": "Verify Your E-mail Address",
+                }
+                thread = threading.Thread(target=send_email, kwargs=context)
+                thread.start()
+
             except Exception as e:
                 print(f"Error sending email: {e}")
-                raise ValidationError("Error sending email.")
+                raise CustomValidationError("Error sending email.")
+
             return user
         except Exception as e:
-            raise ValidationError(str(e))
+            raise CustomValidationError(str(e))
 
     def update(self, instance, validated_data):
         email = validated_data.get("email", None)
@@ -69,21 +94,3 @@ class UserSerializer(BaseModelSerializer):
             raise ValidationError({"email": "This email is already in use."})
 
         return super().update(instance, validated_data)
-
-    @staticmethod
-    def send_email(email, password, first_name, last_name):
-        """Sends an email with the auto-generated password."""
-        subject = "Your Auto-Generated Password"
-        html_message = render_to_string(
-            "user-with-credentials.html",
-            {
-                "email": email,
-                "user_name": f"{first_name} {last_name}",
-                "password": password,
-            },
-        )
-        email_message = EmailMessage(
-            subject, html_message, from_email=settings.EMAIL_HOST_USER, to=[email]
-        )
-        email_message.content_subtype = "html"
-        email_message.send()
