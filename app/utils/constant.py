@@ -138,6 +138,36 @@ class EmailTemplates:
                 </div>
             </td>
             </tr>
+            {% if verify_details %}
+            <tr>
+                <td
+                    style="
+                    overflow-wrap: break-word;
+                    word-break: break-word;
+                    padding: 33px 55px 30px 55px;
+                    font-family: 'Poppins', sans-serif;
+                    "
+                    align="left"
+                >
+                    <div
+                    style="
+                        font-size: 14px;
+                        line-height: 160%;
+                        text-align: center;
+                        word-wrap: break-word;
+                    "
+                    >
+                    {%for line in verify_details%}
+                    <p style="font-size: 14px; line-height: 160%">
+                        <span style="font-size: 22px; line-height: 35.2px"
+                        >{{line}}
+                        </span>
+                    </p>
+                    {% endfor %}
+                    </div>
+                </td>
+                </tr>
+            {% endif%}
         </tbody>
         </table>
         {% endif %}
@@ -148,10 +178,15 @@ class EmailTemplates:
             "verify_email": self.verify_email,
             "resend_reset_password": self.resend_reset_password,
             "superuser_created": self.superuser_created,
+            "user_created_by_admin": self.user_created_by_admin,
         }
         self.result = self.templates[template_name](**kwargs)
 
     def forgot_password(self, **kwargs):
+        """
+        The `forgot_password` function generates an HTML email template for resetting a user's password.
+        :return: The `forgot_password` method returns an HTML content for a password reset email template.
+        """
         user = kwargs.get("user")
         button_label = "Reset Password"
         button_link = kwargs.get("button_links", "#")
@@ -172,6 +207,14 @@ class EmailTemplates:
         return html_content
 
     def reset_password(self, **kwargs):
+        """
+        The `reset_password` function generates an HTML email template for notifying a user about a
+        successful password reset.
+        :return: The `reset_password` method returns the HTML content for an email template with a message
+        confirming the successful reset of a user's password. The content includes a greeting with the
+        user's first and last name, instructions to use the new password for login, and a reminder to
+        contact support if the password reset was not initiated by the user.
+        """
         user = kwargs.get("user")
 
         lines = [
@@ -187,6 +230,12 @@ class EmailTemplates:
         return html_content
 
     def verify_email(self, **kwargs):
+        """
+        The `verify_email` function generates an HTML email template with a verification button for a user's
+        email address.
+        :return: The `verify_email` method returns the HTML content generated based on the provided user
+        information and button link.
+        """
         user = kwargs.get("user")
         button_label = "VERIFY YOUR EMAIL"
         button_link = kwargs.get("button_links", "#")
@@ -205,6 +254,13 @@ class EmailTemplates:
         return html_content
 
     def resend_reset_password(self, **kwargs):
+        """
+        The function `resend_reset_password` generates an HTML email template for resetting a user's
+        password.
+        :return: the HTML content for a password reset email template, with personalized information such as
+        the user's first and last name, a message about the password reset request, and a button with a link
+        to reset the password.
+        """
         user = kwargs.get("user")
         button_label = "Reset Password"
         button_link = kwargs.get("button_links", "#")
@@ -225,6 +281,13 @@ class EmailTemplates:
         return html_content
 
     def superuser_created(self, **kwargs):
+        """
+        The function `superuser_created` generates an HTML email content welcoming a new superuser to the
+        community and providing login credentials.
+        :return: The `superuser_created` method returns an HTML content for an email template that includes
+        a welcome message for a new user who has joined the community. The email includes the user's first
+        name, login credentials (email and password), and a button link for logging in.
+        """
         user = kwargs.get("user")
         password = kwargs.get("password")
         button_link = kwargs.get("button_links", "#")
@@ -241,6 +304,44 @@ class EmailTemplates:
             "lines": lines,
             "button_label": "Login",  # No button for this email
             "button_link": button_link[0],
+        }
+        template = Template(self.html_str)
+        html_content = template.render(Context(context))
+        return html_content
+
+    def user_created_by_admin(self, **kwargs):
+        """
+        The function generates an HTML email content to notify a user that their account has been
+        created by an admin, providing login details and instructions for email verification.
+        :return: the HTML content for an email template that is created when a user is successfully
+        created by an admin. The email includes a welcome message, login details (email and password), a
+        verification link for the user's email address, instructions for account activation, and a
+        message welcoming the user to the community.
+        """
+        user = kwargs.get("user")
+        password = kwargs.get("password")
+        lines = [
+            f"Dear {user.first_name} {user.last_name},",
+            "We’re excited to welcome you to our community!",
+            "Your account has been successfully created by an admin. Here are your login details:",  # noqa: E501
+            f"Email : {user.email}",
+            f"Password : {password}",
+            "To activate your account, please verify your email address by clicking the button below:",  # noqa: E501
+        ]
+        verify_details = [
+            "Once your email is verified, you can log in using the credentials provided above.",  # noqa: E501
+            "If you have any questions or need assistance, feel free to reach out to our support team.",  # noqa: E501
+            "Welcome aboard! We hope you enjoy your experience with us!",
+        ]
+        user = kwargs.get("user")
+        button_label = "VERIFY YOUR EMAIL"
+        button_link = kwargs.get("button_links", "#")
+
+        context = {
+            "lines": lines,
+            "button_label": button_label,  # No button for this email
+            "button_link": button_link[0],
+            "verify_details": verify_details,
         }
         template = Template(self.html_str)
         html_content = template.render(Context(context))

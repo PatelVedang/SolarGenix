@@ -1,6 +1,7 @@
 from auth_api.models import User
 from proj.base_view import BaseModelViewSet
 from rest_framework.decorators import action
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import IsAuthenticated
 from utils.custom_filter import filter_model
 from utils.make_response import response
@@ -19,7 +20,7 @@ from .serializers import UserSerializer
         },
     },
 )
-class UserViewset(BaseModelViewSet):
+class UserViewSet(BaseModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
 
@@ -32,6 +33,14 @@ class UserViewset(BaseModelViewSet):
             # Apply filtering based on query parameters
             return filter_model(query_params, queryset, User)
         return queryset
+
+    def create(self, request, *args, **kwargs):
+        # Check if the user is a superuser
+        if not request.user.is_superuser:
+            raise PermissionDenied("Only superusers can create users.")
+
+        # If superuser, proceed with the default create behavior
+        return super().create(request, *args, **kwargs)
 
     @action(methods=["GET"], detail=False, url_path="get_all")
     def get_all(self, request, *args, **kwargs):

@@ -5,9 +5,11 @@ import threading
 from django.conf import settings
 from django.contrib.auth import authenticate
 from django.contrib.auth.hashers import make_password
+from proj.base_serializer import BaseModelSerializer, BaseSerializer
 from rest_framework import serializers
 from rest_framework.exceptions import AuthenticationFailed
 from rest_framework_simplejwt.serializers import TokenRefreshSerializer
+from utils.custom_exception import CustomValidationError
 from utils.email import send_email
 
 from auth_api.models import SimpleToken, Token, TokenType, User
@@ -19,9 +21,9 @@ logger = logging.getLogger("django")
 
 # The `UserRegistrationSerializer` class handles user registration data validation and creation,
 # including checking for existing email, password validation, and sending a verification email.
-class UserRegistrationSerializer(serializers.ModelSerializer):
+class UserRegistrationSerializer(BaseModelSerializer):
     password = serializers.CharField(style={"input_type": "password"}, write_only=True)
-    confirm_password = serializers.CharField(write_only=True)
+    confirm_password = serializers.CharField(write_only=True, label="Confirm Password")
 
     class Meta:
         model = User
@@ -29,23 +31,22 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
 
     def validate(self, attrs):
         password = attrs.get("password")
-        confirm_pasword = attrs.pop("confirm_password")
-
+        confirm_password = attrs.pop("confirm_password")
         if User.objects.filter(email=attrs.get("email").lower()).exists():
-            raise serializers.ValidationError("Email already exists.")
+            raise CustomValidationError("Email already exists")
 
         if not re.search(settings.PASSWORD_VALIDATE_REGEX, password):
-            raise serializers.ValidationError(settings.PASSWORD_VALIDATE_STRING)
+            raise CustomValidationError(f"{settings.PASSWORD_VALIDATE_STRING}")
 
-        if password != confirm_pasword:
-            raise serializers.ValidationError("Passwords do not match.")
+        if password != confirm_password:
+            raise CustomValidationError("Passwords and Confirm Password does not match")
 
         return attrs
 
     def create(self, validated_data):
         validated_data["email"] = validated_data["email"].lower()
-        user = super().create(validated_data)
-        user.set_password(validated_data["password"])
+        print(validated_data)
+        user = User.objects.create_user(**validated_data)
         user.save()
         verify_token = SimpleToken.for_user(
             user, TokenType.VERIFY_MAIL.value, settings.AUTH_VERIFY_EMAIL_TOKEN_LIFELINE
@@ -65,7 +66,7 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         return user
 
 
-class UserLoginSerializer(serializers.ModelSerializer):
+class UserLoginSerializer(BaseModelSerializer):
     email = serializers.EmailField(max_length=255)
 
     class Meta:
@@ -76,6 +77,7 @@ class UserLoginSerializer(serializers.ModelSerializer):
         attrs["email"] = attrs["email"].lower()
         # Authenticate the user with provided credentials
         user = authenticate(**attrs)
+
         if not user:
             user = User.objects.filter(email=attrs.get("email"), is_active=False)
             if user.exists():
@@ -97,25 +99,25 @@ class UserLoginSerializer(serializers.ModelSerializer):
                 }
                 thread = threading.Thread(target=send_email, kwargs=context)
                 thread.start()
-                raise serializers.ValidationError(
-                    "Email not verified. Please check your email for verification link."
+                raise CustomValidationError(
+                    "Email not verified. Please check your email for verification link"
                 )
-            raise serializers.ValidationError("Invalid email or password")
+            raise AuthenticationFailed("Invalid email or password.")
 
         if not user.is_active:
-            raise serializers.ValidationError(
-                "Email not verified. Please check your email."
+            raise CustomValidationError(
+                "Email not verified. Please check your email for verification link"
             )
         return user
 
 
-class UserProfileSerializer(serializers.ModelSerializer):
+class UserProfileSerializer(BaseModelSerializer):
     class Meta:
         model = User
-        fields = ["id", "first_name", "last_name", "email"]
+        fields = ["id", "first_name", "last_name", "email", "is_active"]
 
 
-class ForgotPasswordSerializer(serializers.Serializer):
+class ForgotPasswordSerializer(BaseSerializer):
     email = serializers.EmailField(
         max_length=255, required=True, allow_blank=False, allow_null=False
     )
@@ -146,8 +148,10 @@ class ForgotPasswordSerializer(serializers.Serializer):
         return attrs
 
 
-class ResendResetTokenSerializer(serializers.Serializer):
-    email = serializers.EmailField(max_length=255)
+class ResendResetTokenSerializer(BaseSerializer):
+    email = serializers.EmailField(
+        max_length=255, label="Test", error_messages={"invalid": "ddd"}
+    )
 
     def validate(self, attrs):
         email = attrs.get("email").lower()
@@ -177,14 +181,11 @@ class ResendResetTokenSerializer(serializers.Serializer):
         return attrs
 
 
-class UserPasswordResetSerializer(serializers.Serializer):
+class UserPasswordResetSerializer(BaseSerializer):
     password = serializers.CharField(style={"input_type": "password"}, write_only=True)
     confirm_password = serializers.CharField(
         style={"input_type": "password"}, write_only=True
     )
-
-    class Meta:
-        fields = ["password", "confirm_password"]
 
     def validate(self, attrs):
         password = attrs.get("password")
@@ -192,10 +193,10 @@ class UserPasswordResetSerializer(serializers.Serializer):
         token = self.context.get("token")
 
         if not re.search(settings.PASSWORD_VALIDATE_REGEX, attrs.get("password")):
-            raise serializers.ValidationError(settings.PASSWORD_VALIDATE_STRING)
+            raise CustomValidationError(f"{settings.PASSWORD_VALIDATE_STRING}")
 
         if password != confirm_pasword:
-            raise serializers.ValidationError("Passwords do not match.")
+            raise CustomValidationError("Passwords do not match")
 
         payload = SimpleToken.validate_token(token, TokenType.RESET.value)
         token_obj = payload.get("token_obj")
@@ -215,7 +216,7 @@ class UserPasswordResetSerializer(serializers.Serializer):
         return attrs
 
 
-class RefreshTokenSerializer(TokenRefreshSerializer):
+class RefreshTokenSerializer(TokenRefreshSerializer, BaseSerializer):
     def validate(self, attrs):
         token = attrs.get("refresh")
         payload = SimpleToken.validate_token(token, TokenType.REFRESH.value)
@@ -225,9 +226,15 @@ class RefreshTokenSerializer(TokenRefreshSerializer):
         return user.auth_tokens()
 
 
-class ChangePasswordSerializer(serializers.Serializer):
+class ChangePasswordSerializer(BaseSerializer):
     old_password = serializers.CharField(
-        max_length=255, style={"input-type": "password"}, write_only=True
+        max_length=255,
+        style={"input-type": "password"},
+        write_only=True,
+        error_messages={
+            "unique": "A user with this email already exists!",
+            "invalid": "Old Passsw",
+        },
     )
     new_password = serializers.CharField(
         max_length=255, style={"input-type": "password"}, write_only=True
@@ -236,11 +243,9 @@ class ChangePasswordSerializer(serializers.Serializer):
     def validate(self, attrs):
         user = self.context["request"].user
         if not user.check_password(attrs["old_password"]):
-            raise serializers.ValidationError(
-                {"old_password": "Old password is not correct"}
-            )
+            raise CustomValidationError("Old password is not correct")
         if not re.search(settings.PASSWORD_VALIDATE_REGEX, attrs["new_password"]):
-            raise serializers.ValidationError(settings.PASSWORD_VALIDATE_STRING)
+            raise CustomValidationError(f"{settings.PASSWORD_VALIDATE_STRING}")
         return attrs
 
     def create(self, validated_data):
@@ -250,7 +255,7 @@ class ChangePasswordSerializer(serializers.Serializer):
         return user
 
 
-class ResendVerificationEmailSerializer(serializers.Serializer):
+class ResendVerificationEmailSerializer(BaseSerializer):
     email = serializers.EmailField(max_length=255)
 
     def validate(self, attrs):
@@ -279,12 +284,17 @@ class ResendVerificationEmailSerializer(serializers.Serializer):
         return attrs
 
 
-class VerifyEmailSerializer(serializers.Serializer):
+class VerifyEmailSerializer(BaseSerializer):
     token = serializers.CharField()
 
     def validate_token(self, value):
         payload = SimpleToken.decode(value)
-        payload = SimpleToken.validate_token(value, TokenType.VERIFY_MAIL.value)
+        try:
+            payload = SimpleToken.validate_token(value, TokenType.VERIFY_MAIL.value)
+        except Exception:
+            raise CustomValidationError(
+                "Email verification link is invalid or has expired. Please request a new verification link"
+            )
         token_obj = payload.get("token_obj")
         user = token_obj.user
         user.is_active = True
@@ -293,14 +303,14 @@ class VerifyEmailSerializer(serializers.Serializer):
         return value
 
 
-class LogoutSerializer(serializers.Serializer):
+class LogoutSerializer(BaseSerializer):
     def validate(self, attrs):
         jti = self.context["request"].auth["jti"]
         Token.default.filter(jti=jti, user=self.context["request"].user).delete()
         return attrs
 
 
-class GoogleSSOSerializer(serializers.Serializer):
+class GoogleSSOSerializer(BaseSerializer):
     authorization_code = serializers.CharField(write_only=True, required=True)
 
     def validate(self, attrs):

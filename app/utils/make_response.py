@@ -10,5 +10,6 @@ def response(*args, **kwargs):
     status_code = kwargs.get("status_code")
     message = kwargs.get("message", "")
     data = kwargs.get("data", {})
+
     result = {"message": message, "data": data}
     return Response(result, status=status_code)

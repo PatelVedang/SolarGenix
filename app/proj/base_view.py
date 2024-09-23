@@ -88,7 +88,6 @@ class BaseModelViewSet(viewsets.ModelViewSet):
         paginate_queryset = self.paginate_queryset(self.get_queryset())
         serializer = self.get_serializer(paginate_queryset, many=True, fields=fields)
         pagination_serializer = self.get_paginated_response(serializer.data)
-        # serializer = self.get_serializer(self.get_queryset(), many=True, fields=fields)
         return Response(
             data=pagination_serializer.data,
             message=self.get_message(request, *args, **kwargs),

@@ -69,7 +69,10 @@ class UserLoginView(APIView):
         serializer.is_valid(raise_exception=True)
         user = serializer.validated_data
         return response(
-            data=user.auth_tokens(),
+            data={
+                "user": UserProfileSerializer(user).data,
+                "tokens": user.auth_tokens(),
+            },
             status_code=status.HTTP_200_OK,
             message="Login done successfully!",
         )
@@ -133,14 +136,11 @@ class ForgotPasswordView(APIView):
     serializer_class = ForgotPasswordSerializer
 
     def post(self, request):
-        try:
-            serializer = ForgotPasswordSerializer(
-                data=request.data, context={"user": request.user}
-            )
-            serializer.is_valid(raise_exception=True)
-            return response(status_code=status.HTTP_204_NO_CONTENT)
-        except Exception:
-            return response(status_code=status.HTTP_400_BAD_REQUEST)
+        serializer = ForgotPasswordSerializer(
+            data=request.data, context={"user": request.user}
+        )
+        serializer.is_valid(raise_exception=True)
+        return response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @apply_swagger_tags(

@@ -39,7 +39,7 @@ NAMES_JSON=$(python ./scripts/name_generator.py "$APP_NAME")
 PLURAL_UNDERSCORED=$(echo $NAMES_JSON | jq -r '.plural_underscored')
 SINGULAR_CAPITALIZED=$(echo $NAMES_JSON | jq -r '.singular_capitalized')
 SINGULAR_CAPITALIZED_SERIALIZER=$(echo $NAMES_JSON | jq -r '.singular_capitalized')Serializer
-SINGULAR_CAPITALIZED_VIEWSET=$(echo $NAMES_JSON | jq -r '.singular_capitalized')Viewset
+SINGULAR_CAPITALIZED_VIEWSET=$(echo $NAMES_JSON | jq -r '.singular_capitalized')ViewSet
 SINGULAR_CAPITALIZED_MODEL_TESTS=$(echo $NAMES_JSON | jq -r '.singular_capitalized')ModelTests
 SINGULAR_CAPITALIZED_ADMIN=$(echo $NAMES_JSON | jq -r '.singular_capitalized')Admin
 PLURAL_DASHED=$(echo $NAMES_JSON | jq -r '.plural_dashed')
@@ -57,7 +57,8 @@ python manage.py startapp "$PLURAL_UNDERSCORED"
 # Add the app to INSTALLED_APPS
 if ! grep -q "'$PLURAL_UNDERSCORED'" "$SETTINGS_FILE"; then
     echo "Task initiated: Adding app to INSTALLED_APPS..."
-    sed -i "/INSTALLED_APPS = \[/a\    '$PLURAL_UNDERSCORED'," "$SETTINGS_FILE"
+    # sed -i "/INSTALLED_APPS = \[/a\    '$PLURAL_UNDERSCORED'," "$SETTINGS_FILE"
+    sed -i "/# django apps/a\    "$PLURAL_UNDERSCORED"," "$SETTINGS_FILE"
 fi
 
 # Add the app's URLs to the project's URLs
@@ -103,10 +104,10 @@ EOL
 echo "Task initiated: Generating serializers.py..."
 cat <<EOL > "$PLURAL_UNDERSCORED/serializers.py"
 from rest_framework import serializers
-from proj.base_serializer import DynamicFieldsSerializer
+from proj.base_serializer import BaseModelSerializer
 from .models import $SINGULAR_CAPITALIZED
 
-class $SINGULAR_CAPITALIZED_SERIALIZER(DynamicFieldsSerializer):
+class $SINGULAR_CAPITALIZED_SERIALIZER(BaseModelSerializer):
     class Meta:
         model = $SINGULAR_CAPITALIZED
         fields = '__all__'

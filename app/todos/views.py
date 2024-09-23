@@ -19,7 +19,7 @@ from .serializers import TodoSerializer
         },
     },
 )
-class TodoViewset(BaseModelViewSet):
+class TodoViewSet(BaseModelViewSet):
     queryset = Todo.objects.all()
     serializer_class = TodoSerializer
     permission_classes = [IsAuthenticated]

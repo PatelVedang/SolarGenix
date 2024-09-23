@@ -1,17 +1,19 @@
-from django.db import models
-from .managers import UserManager
+import logging
 import uuid
-from django.contrib.auth.models import AbstractUser, PermissionsMixin
-from django.core.exceptions import ValidationError
-from django.utils.translation import gettext_lazy as _
-from proj.models import BaseClass
-from datetime import timedelta, datetime
-from django.utils import timezone
-from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework_simplejwt.tokens import Token as BaseToken
+from datetime import datetime, timedelta
+
 import jwt
 from django.conf import settings
-import logging
+from django.contrib.auth.models import AbstractUser, PermissionsMixin
+from django.db import models
+from django.utils import timezone
+from django.utils.translation import gettext_lazy as _
+from proj.models import BaseClass
+from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.tokens import Token as BaseToken
+from utils.custom_exception import CustomValidationError as ValidationError
+
+from .managers import UserManager
 
 logger = logging.getLogger("django")
 
@@ -144,10 +146,10 @@ class User(AbstractUser, PermissionsMixin):
         )
 
         return {
-            "access": {"token": str(access_token), "expires_at": access_token["exp"]},
+            "access": {"token": str(access_token), "expires": access_token["exp"]},
             "refresh": {
                 "token": str(refresh_token),
-                "expires_at": refresh_token["exp"],
+                "expires": refresh_token["exp"],
             },
         }
 

@@ -41,21 +41,21 @@ ALLOWED_HOSTS = ["*"]
 # Application definition
 
 INSTALLED_APPS = [
-    "demos",
-    "users",
-    "todos",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    # installed
     "drf_spectacular",
     "rest_framework",
-    # "drf_yasg",
     "django_filters",
     "auth_api",
     "corsheaders",
+    # django apps
+    "users",
+    "todos",
 ]
 
 MIDDLEWARE = [

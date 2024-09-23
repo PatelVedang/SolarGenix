@@ -1,10 +1,11 @@
+import logging
+
+import requests
+from django.conf import settings
 from google.auth.transport import requests as google_requests
 from google.oauth2 import id_token
-import requests
-import logging
-from rest_framework.serializers import ValidationError
 from rest_framework.exceptions import AuthenticationFailed
-from django.conf import settings
+from utils.custom_exception import CustomValidationError
 
 logger = logging.getLogger("django")
 
@@ -18,7 +19,7 @@ class Google:
             if "accounts.google.com" in id_info["iss"]:
                 return id_info
         except:  # noqa: E722
-            ValidationError("The token is either invalid or expired")
+            CustomValidationError("The token is either invalid or expired")
 
     def exchange_token(self, grant_type, token):
         """
@@ -52,7 +53,7 @@ class Google:
             return response.json()
         else:
             logger.error("Google exchange token error :", response.json())
-            raise ValidationError("Opps, something went wrong")
+            raise CustomValidationError("Opps, something went wrong")
 
     def validate_google_token(self, authorization_code):
         """
@@ -72,7 +73,7 @@ class Google:
         try:
             user_data["sub"]
         except KeyError:
-            raise ValidationError(
+            raise CustomValidationError(
                 "The token is invalid or expired. Please login again."
             )
 
