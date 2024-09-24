@@ -74,18 +74,39 @@ class BaseAPITestCase(APITestCase):
             self.client.post(f"{self.prefix}/register", data=self._data, format="json")
         )
 
+    # def login(self, email=None, password=None):
+    #     self._data = {
+    #         "email": email or self.super_admin_email,
+    #         "password": password or self.super_admin_password,
+    #     }
+    #     # super_user = User.objects.get(email=self.)
+    #     self.set_response(
+    #         self.client.post(self.login_url, data=self._data, format="json")
+    #     )
+    #     self.client.credentials(
+    #         HTTP_AUTHORIZATION=f"Bearer {self._data.get('data',{}).get('access',{}).get('token','')}"
+    #     )
+
     def login(self, email=None, password=None):
         self._data = {
             "email": email or self.super_admin_email,
             "password": password or self.super_admin_password,
         }
-        # super_user = User.objects.get(email=self.)
-        self.set_response(
-            self.client.post(self.login_url, data=self._data, format="json")
+
+        # Make the login request
+        response = self.client.post(self.login_url, data=self._data, format="json")
+
+        # Set the response for future assertions if needed
+        self.set_response(response)
+
+        # Extract the token from the response
+        token = (
+            response.data.get("data", {})
+            .get("tokens", {})
+            .get("access", {})
+            .get("token", "")
         )
-        self.client.credentials(
-            HTTP_AUTHORIZATION=f"Bearer {self._data.get('data',{}).get('access',{}).get('token','')}"
-        )
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {token}")
 
     def send_forgot_password_mail(self, email=None):
         self._data = {
@@ -273,7 +294,7 @@ class AuthTest(BaseAPITestCase):
         """
         self.login()
         self._data = {
-            "refresh": self._data["data"]["refresh"]["token"],
+            "refresh": self._data["data"]["tokens"]["refresh"]["token"],
         }
         self.set_response(
             self.client.post(
@@ -313,7 +334,7 @@ class AuthTest(BaseAPITestCase):
         This function tests the refresh token functionality with an invalid secret.
         """
         self.login()
-        refresh_token = self._data["data"]["refresh"]["token"]
+        refresh_token = self._data["data"]["tokens"]["refresh"]["token"]
         ORIGINAL_SECRET_KEY = settings.SECRET_KEY
         settings.SECRET_KEY = "test"
         self.login()
@@ -334,7 +355,7 @@ class AuthTest(BaseAPITestCase):
         """
         self.login()
         self._data = {
-            "refresh": self._data["data"]["refresh"]["token"],
+            "refresh": self._data["data"]["tokens"]["refresh"]["token"],
         }
         Token.objects.filter(token_type="refresh").delete()
         self.set_response(
@@ -351,7 +372,7 @@ class AuthTest(BaseAPITestCase):
         self.login()
         self.make_token_blacklist("refresh")
         self._data = {
-            "refresh": self._data["data"]["refresh"]["token"],
+            "refresh": self._data["data"]["tokens"]["refresh"]["token"],
         }
         self.set_response(
             self.client.post(
@@ -367,7 +388,7 @@ class AuthTest(BaseAPITestCase):
         self.login()
         self.make_token_expired("refresh")
         self._data = {
-            "refresh": self._data["data"]["refresh"]["token"],
+            "refresh": self._data["data"]["tokens"]["refresh"]["token"],
         }
         self.set_response(
             self.client.post(
@@ -383,7 +404,7 @@ class AuthTest(BaseAPITestCase):
         self.login()
         self.super_admin.delete()
         self._data = {
-            "refresh": self._data["data"]["refresh"]["token"],
+            "refresh": self._data["data"]["tokens"]["refresh"]["token"],
         }
         self.set_response(
             self.client.post(

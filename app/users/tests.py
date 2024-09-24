@@ -1,10 +1,11 @@
-from django.urls import reverse
-from auth_api.tests import BaseAPITestCase
 import re
+
 from auth_api.models import User
+from auth_api.tests import BaseAPITestCase
 from django.conf import settings
-from rest_framework import status
 from django.db.utils import IntegrityError
+from django.urls import reverse
+from rest_framework import status
 
 
 class UserTestCase(BaseAPITestCase):
@@ -437,3 +438,29 @@ class UserTestCase(BaseAPITestCase):
 
         # Expect a 200 OK response since the email is the same and no conflict should occur
         self.match_success_response(200)
+
+    def test_get_users_with_search_filter(self):
+        """
+        Test for filtering users by email.
+        """
+        self.login()
+
+        # Create users with specific emails for the test
+        self.create_user_via_orm(first_name="Drake", email="drake@yopmail.com")
+        self.create_user_via_orm(first_name="Roger", email="roger@yopmail.com")
+        self.create_user_via_orm(first_name="Perry", email="perry@yopmail.com")
+
+        # Search filter (search for "user1")
+        url_search = f"{self.url}?first_name=Drake"
+        response_search = self.client.get(url_search)
+        self.match_success_response(response_search.status_code)
+
+        response_data_search = response_search.json()
+        results_search = response_data_search["data"]["results"]
+
+        expected_first_names_search = ["Drake"]
+        result_first_names_search = [user["first_name"] for user in results_search]
+
+        print("Extracted Emails from Search Results:", result_first_names_search)
+
+        self.assertListEqual(result_first_names_search, expected_first_names_search)

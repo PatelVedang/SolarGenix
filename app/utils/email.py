@@ -1,9 +1,11 @@
+import logging
+import traceback
+
+from django.conf import settings
 from django.core.mail import EmailMessage
 from django.template.loader import render_to_string
 from django.utils.html import strip_tags
-import traceback
 from utils.constant import EmailTemplates
-import logging
 
 logger = logging.getLogger("django")
 
@@ -47,7 +49,13 @@ def send_email(**kwargs):
     logger.info("***************** SEND MAIL  *****************")
     logger.info(f"Recipients: {recipients}")
     try:
-        email = EmailMessage(subject, strip_tags(body), sender, recipients, bcc=bcc)
+        email = EmailMessage(
+            subject,
+            strip_tags(body),
+            f"{settings.PROJECT_TITLE}  <{sender}>",
+            recipients,
+            bcc=bcc,
+        )
         # Attachments
         if attachments:
             for attachment in attachments:
