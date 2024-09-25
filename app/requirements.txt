@@ -22,6 +22,6 @@ drf-spectacular
 
 # dev
 ruff
-ipython
+ipython==8.27.0
 flake8
 flake8-pyproject

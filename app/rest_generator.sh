@@ -58,7 +58,7 @@ python manage.py startapp "$PLURAL_UNDERSCORED"
 if ! grep -q "'$PLURAL_UNDERSCORED'" "$SETTINGS_FILE"; then
     echo "Task initiated: Adding app to INSTALLED_APPS..."
     # sed -i "/INSTALLED_APPS = \[/a\    '$PLURAL_UNDERSCORED'," "$SETTINGS_FILE"
-    sed -i "/# django apps/a\    "$PLURAL_UNDERSCORED"," "$SETTINGS_FILE"
+    sed -i "/# django apps/a\    '$PLURAL_UNDERSCORED'," "$SETTINGS_FILE"
 fi
 
 # Add the app's URLs to the project's URLs
