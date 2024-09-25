@@ -219,7 +219,7 @@ class VerifyEmailView(APIView):
     method_details={
         "post": {
             "description": "Resend Verify Token ",
-            "summary": "Post method for resend reset token",
+            "summary": "Post method for resend refresh token",
         },
     },
 )
