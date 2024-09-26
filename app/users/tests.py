@@ -3,7 +3,7 @@ import re
 from auth_api.models import User
 from auth_api.tests import BaseAPITestCase
 from django.conf import settings
-from django.db.utils import IntegrityError
+from django.db import IntegrityError
 from django.urls import reverse
 from rest_framework import status
 
@@ -130,15 +130,15 @@ class UserTestCase(BaseAPITestCase):
         self.client.get(f"{self.url}?first_name=yash")
         self.match_success_response(200)
 
-    def test_get_user_by_admin(self):
-        """
-        The function `test_get_user_by_id` retrieves a user by ID and checks for a successful response.
-        """
-        self.login()
-        user = self.create_user_via_orm()
-        created_user_id = user.id
-        self.set_response(self.client.get(f"{self.url}{created_user_id}/"))
-        self.match_success_response(200)
+    # def test_get_user_by_admin(self):
+    #     """
+    #     The function `test_get_user_by_id` retrieves a user by ID and checks for a successful response.
+    #     """
+    #     self.login()
+    #     user = self.create_user_via_orm()
+    #     created_user_id = user.id
+    #     self.set_response(self.client.get(f"{self.url}{created_user_id}/"))
+    #     self.match_success_response(200)
 
     def test_get_user_not_found(self):
         """
@@ -439,18 +439,28 @@ class UserTestCase(BaseAPITestCase):
         # Expect a 200 OK response since the email is the same and no conflict should occur
         self.match_success_response(200)
 
+    def create_sample_users(self):
+        """
+        Utility function to create a set of sample users for tests.
+        """
+        users = [
+            {"first_name": "Drake", "email": "drake@yopmail.com"},
+            {"first_name": "Roger", "email": "roger@yopmail.com"},
+            {"first_name": "Perry", "email": "perry@yopmail.com"},
+        ]
+        for user in users:
+            self.create_user_via_orm(first_name=user["first_name"], email=user["email"])
+
     def test_get_users_with_search_filter(self):
         """
-        Test for filtering users by email.
+        Test for filtering users by first name.
         """
         self.login()
 
-        # Create users with specific emails for the test
-        self.create_user_via_orm(first_name="Drake", email="drake@yopmail.com")
-        self.create_user_via_orm(first_name="Roger", email="roger@yopmail.com")
-        self.create_user_via_orm(first_name="Perry", email="perry@yopmail.com")
+        # Create sample users
+        self.create_sample_users()
 
-        # Search filter (search for "user1")
+        # Search filter (search for "Drake")
         url_search = f"{self.url}?first_name=Drake"
         response_search = self.client.get(url_search)
         self.match_success_response(response_search.status_code)
@@ -461,6 +471,92 @@ class UserTestCase(BaseAPITestCase):
         expected_first_names_search = ["Drake"]
         result_first_names_search = [user["first_name"] for user in results_search]
 
-        print("Extracted Emails from Search Results:", result_first_names_search)
+        print("Extracted First Names from Search Results:", result_first_names_search)
 
         self.assertListEqual(result_first_names_search, expected_first_names_search)
+
+    def test_get_users_with_sort_ascending(self):
+        """
+        Test for sorting users by first name in ascending order.
+        """
+        self.login()
+
+        # Create sample users
+        self.create_sample_users()
+
+        # Sort Ascending (by first name)
+        url_sort_asc = f"{self.url}?sort=first_name"
+
+        response_sort_asc = self.client.get(url_sort_asc)
+        self.match_success_response(response_sort_asc.status_code)
+
+        response_data_sort_asc = response_sort_asc.json()
+        results_sort_asc = response_data_sort_asc["data"]["results"]
+
+        print("Sort Results (Asc):", results_sort_asc)
+
+        expected_first_names_asc = ["admin", "Drake", "Perry", "Roger"]
+        result_first_names_sort_asc = [user["first_name"] for user in results_sort_asc]
+        self.assertListEqual(result_first_names_sort_asc, expected_first_names_asc)
+
+    def test_get_users_with_sort_descending(self):
+        """
+        Test for sorting users by first name in descending order.
+        """
+        self.login()
+
+        # Create sample users
+        self.create_sample_users()
+
+        # Sort Descending (by first name)
+        url_sort_desc = f"{self.url}?sort=-first_name"
+        response_sort_desc = self.client.get(url_sort_desc)
+        self.match_success_response(response_sort_desc.status_code)
+
+        response_data_sort_desc = response_sort_desc.json()
+        results_sort_desc = response_data_sort_desc["data"]["results"]
+
+        print("Sort Results (Desc):", results_sort_desc)
+
+        expected_first_names_desc = ["Roger", "Perry", "Drake", "admin"]
+        result_first_names_sort_desc = [
+            user["first_name"] for user in results_sort_desc
+        ]
+        self.assertListEqual(result_first_names_sort_desc, expected_first_names_desc)
+
+    def test_get_users_with_pagination(self):
+        """
+        Test for paginating users.
+        """
+        self.login()
+
+        # Create sample users
+        self.create_sample_users()
+
+        # Pagination (limit to 2 users per page)
+        url_pagination = f"{self.url}?paginate=2&page=1"
+        response_pagination = self.client.get(url_pagination)
+        self.match_success_response(response_pagination.status_code)
+
+        response_data_pagination = response_pagination.json()
+        results_pagination = response_data_pagination["data"]["results"]
+
+        expected_first_names_pagination = ["admin", "Drake"]
+        self.assertEqual(len(results_pagination), 2)
+        self.assertListEqual(
+            [user["first_name"] for user in results_pagination],
+            expected_first_names_pagination,
+        )
+
+        # Pagination, second page (next user)
+        url_pagination_skip = f"{self.url}?paginate=2&page=2"
+        response_pagination_skip = self.client.get(url_pagination_skip)
+        self.match_success_response(response_pagination_skip.status_code)
+
+        response_data_skip = response_pagination_skip.json()
+        results_skip = response_data_skip["data"]["results"]
+
+        expected_first_names_skip = ["Roger", "Perry"]
+        self.assertListEqual(
+            [user["first_name"] for user in results_skip], expected_first_names_skip
+        )

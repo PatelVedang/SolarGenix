@@ -211,16 +211,25 @@ class TodoTest(BaseAPITestCase):
         self.set_response(self.client.delete(f"{self.url}111/"))
         self.match_error_response(404)
 
+    def create_sample_todos(self):
+        """
+        Utility function to create a set of sample todos for tests.
+        """
+        todos = [
+            {"name": "todo", "description": "First todo"},
+            {"name": "folder", "description": "Second todo"},
+            {"name": "file", "description": "Third todo"},
+        ]
+        for todo in todos:
+            self.create_todo_via_orm(name=todo["name"], description=todo["description"])
+
     def test_get_todos_with_search_filter(self):
         """
         Test for filtering todos by name.
         """
         self.login()
 
-        # Create todos with specific names for the test
-        self.create_todo_via_orm(name="todo", description="First todo")
-        self.create_todo_via_orm(name="folder", description="Second todo")
-        self.create_todo_via_orm(name="file", description="Third todo")
+        self.create_sample_todos()
 
         # Search filter (search for "todo")
         url_search = f"{self.url}?name=todo"
@@ -243,11 +252,7 @@ class TodoTest(BaseAPITestCase):
         Test for sorting todos by name in ascending order.
         """
         self.login()
-
-        # Create todos with specific names for the test
-        self.create_todo_via_orm(name="todo", description="First todo")
-        self.create_todo_via_orm(name="folder", description="Second todo")
-        self.create_todo_via_orm(name="file", description="Third todo")
+        self.create_sample_todos()
 
         # Sort Ascending (by name)
         url_sort_asc = f"{self.url}?sort=name"
@@ -271,10 +276,7 @@ class TodoTest(BaseAPITestCase):
         """
         self.login()
 
-        # Create todos with specific names for the test
-        self.create_todo_via_orm(name="todo", description="First todo")
-        self.create_todo_via_orm(name="folder", description="Second todo")
-        self.create_todo_via_orm(name="file", description="Third todo")
+        self.create_sample_todos()
 
         # Sort Descending (by name)
         url_sort_desc = f"{self.url}?sort=-name"
@@ -297,10 +299,7 @@ class TodoTest(BaseAPITestCase):
         """
         self.login()
 
-        # Create todos with specific names for the test
-        self.create_todo_via_orm(name="todo", description="First todo")
-        self.create_todo_via_orm(name="folder", description="Second todo")
-        self.create_todo_via_orm(name="file", description="Third todo")
+        self.create_sample_todos()
 
         # Pagination (skip and limit)
         url_pagination = f"{self.url}?paginate=2&page=1"
