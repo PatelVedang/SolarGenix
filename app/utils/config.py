@@ -8,16 +8,19 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 
 class Settings(BaseSettings):
+    # ::::::::::::: General :::::::::::::
     SECRET_KEY: str
     DEBUG: bool = Field(default=False)
-    UNIT_TEST_USER_EMAIL: EmailStr = Field(default="example@yopmail.com")
-    UNIT_TEST_USER_PASSWORD: str = Field(default="test@123")
+
+    # ::::::::::::: DB Configuration :::::::::::::
     SQL_ENGINE: str = Field(default="django.db.backends.postgresql")
     SQL_DATABASE: str = Field(default="postgres")
     SQL_USER: str = Field(default="postgres")
     SQL_PASSWORD: str = Field(default="postgres")
     SQL_DATABASE_HOST: str = Field(default="localhost")
     SQL_DATABASE_PORT: int = Field(default=5432)
+
+    # :::::::::::::: Email settings :::::::::::::
     EMAIL_HOST: str = Field(default="smtp.gmail.com")
     EMAIL_PORT: int = Field(default=465)
     EMAIL_USE_TLS: bool = Field(default=0)
@@ -25,33 +28,41 @@ class Settings(BaseSettings):
     EMAIL_BACKEND: str = Field(default="django_smtp_ssl.SSLEmailBackend")
     EMAIL_HOST_USER: EmailStr = Field(default="example@yopmail.com")
     EMAIL_HOST_PASSWORD: str = Field(default="Test@123")
+    EMAIL_FORM_NAME: str
+
+    # :::::::::::::: CSRF and CORS :::::::::::::
     CSRF_TRUSTED_ORIGINS: str = Field(default="http://localhost:8000")
     CORS_ORIGIN_WHITELIST: str = Field(default="http://localhost:8000")
-    PDF_DOWNLOAD_ORIGIN: str = Field(default="")
-    HOST_URL: str = Field(default="http://localhost:8000")
 
-    # Token Expiry
-    # Token LifeLine in days
-    AUTH_ACCESS_TOKEN_LIFELINE: int = Field(default=1)
-    AUTH_REFRESH_TOKEN_LIFELINE: int = Field(default=30)
-    # Token LifeLine in minutes
-    AUTH_VERIFY_EMAIL_TOKEN_LIFELINE: int = Field(default=60)
-    AUTH_RESET_PASSWORD_TOKEN_LIFELINE: int = Field(default=60)
+    # :::::::::::::: Request Throttling :::::::::::::
+    AUTH_THROTTLING_LIMIT: str
 
-    JWT_ALGORITHM: str = Field(default="HS256")
-    # Google SSO
+    # ::::::::::::: Unit test :::::::::::::
+    UNIT_TEST_USER_EMAIL: EmailStr = Field(default="example@yopmail.com")
+    UNIT_TEST_USER_PASSWORD: str = Field(default="test@123")
+
+    # ::::::::::::: Google OAuth :::::::::::::
     GOOGLE_CLIENT_ID: str
     GOOGLE_CLIENT_SECRET: str
     SOCIAL_SECRET: str
-    # Auth Throttling
-    AUTH_THROTTLING_LIMIT: str
-    # Super user
+
+    # ::::::::::::: Configs :::::::::::::
+    HOST_URL: str = Field(default="http://localhost:8000")
     SUPERUSER_EMAIL: str = Field(default="admin1@yopmail.com")
-    # Swagger Authentication
+    PROJECT_TITLE: str
+
+    # ::::::::::::: Swagger Authentication :::::::::::::
     SWAGGER_AUTH_USERNAME: str
     SWAGGER_AUTH_PASSWORD: str
-    PROJECT_TITLE: str
-    FORM_TITLE: str
+    JWT_ALGORITHM: str = Field(default="HS256")
+
+    # ::::::::::::: Token Expiry :::::::::::::
+    # Values in Days
+    AUTH_ACCESS_TOKEN_LIFELINE: int = Field(default=1)
+    AUTH_REFRESH_TOKEN_LIFELINE: int = Field(default=30)
+    # Values in Minutes
+    AUTH_VERIFY_EMAIL_TOKEN_LIFELINE: int = Field(default=60)
+    AUTH_RESET_PASSWORD_TOKEN_LIFELINE: int = Field(default=60)
 
     class Config:
         env_file = os.path.join(BASE_DIR, ".env")

@@ -52,7 +52,7 @@ def send_email(**kwargs):
         email = EmailMessage(
             subject,
             strip_tags(body),
-            f"{settings.FORM_TITLE}  <{sender}>",
+            f"{settings.EMAIL_FORM_NAME}  <{sender}>",
             recipients,
             bcc=bcc,
         )

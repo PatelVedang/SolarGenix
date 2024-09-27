@@ -1,4 +1,4 @@
-from django.db.models.signals import pre_delete, post_save
+from django.db.models.signals import pre_delete
 from django.dispatch import receiver
 from .models import Token, User
 from .google import Google
@@ -12,9 +12,3 @@ def revoke_google_access(sender, instance, **kwargs):
         google = Google()
         google.revoke_token(token.jti)
         token.hard_delete()
-
-
-@receiver(post_save, sender=User)
-def create_user_profile(sender, instance, created, **kwargs):
-    print("create_user_profile")
-    print(instance)
