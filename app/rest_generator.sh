@@ -58,8 +58,10 @@ python manage.py startapp "$PLURAL_UNDERSCORED"
 if ! grep -q "'$PLURAL_UNDERSCORED'" "$SETTINGS_FILE"; then
     echo "Task initiated: Adding app to INSTALLED_APPS..."
     # sed -i "/INSTALLED_APPS = \[/a\    '$PLURAL_UNDERSCORED'," "$SETTINGS_FILE"
-    sed -i "/# django apps/a\    '$PLURAL_UNDERSCORED'," "$SETTINGS_FILE"
+    # sed -i "/# django apps/a\    '$PLURAL_UNDERSCORED'," "$SETTINGS_FILE"
+    sed -i "/# django apps/a\    \"$PLURAL_UNDERSCORED\"," "$SETTINGS_FILE"
 fi
+
 
 # Add the app's URLs to the project's URLs
 if ! grep -q "'$PLURAL_UNDERSCORED.urls'" "$URLS_FILE"; then
@@ -394,6 +396,121 @@ class ${SINGULAR_CAPITALIZED_MODEL_TESTS}(BaseAPITestCase):
         self.set_response(self.client.delete(f"{self.url}111/"))
         self.match_error_response(404)
 
+    def create_sample_${APP_NAME}(self):
+        """
+        Utility function to create a set of sample ${APP_NAME} for tests.
+        """
+        records = [
+            {"name": "todo", "description": "First record"},
+            {"name": "folder", "description": "Second record"},
+            {"name": "file", "description": "Third record"},
+        ]
+        for record in records:
+            self.create_${APP_NAME}_via_orm(
+                name=record["name"], description=record["description"]
+            )
+
+    def test_get_${APP_NAME}_with_search_filter(self):
+        """
+        Test for filtering ${APP_NAME} by name.
+        """
+        self.login()
+
+        self.create_sample_${APP_NAME}()
+
+        # Search filter (search for "${APP_NAME}")
+        url_search = f"{self.url}?name=todo"
+        response_search = self.client.get(url_search)
+        self.status_code = status.HTTP_200_OK  # Set the expected status code
+        self.match_success_response(response_search.status_code)
+
+        response_data_search = response_search.json()
+        results_search = response_data_search["data"]["results"]
+
+        expected_names_search = ["todo"]
+        result_names_search = [${APP_NAME}["name"] for ${APP_NAME} in results_search]
+
+        print("Extracted Names from Search Results:", result_names_search)
+
+        self.assertListEqual(result_names_search, expected_names_search)
+
+    def test_get_${APP_NAME}_with_sort_ascending(self):
+        """
+        Test for sorting ${APP_NAME} by name in ascending order.
+        """
+        self.login()
+        self.create_sample_${APP_NAME}()
+
+        # Sort Ascending (by name)
+        url_sort_asc = f"{self.url}?sort=name"
+        response_sort_asc = self.client.get(url_sort_asc)
+        self.match_success_response(response_sort_asc.status_code)
+
+        response_data_sort_asc = response_sort_asc.json()
+        results_sort_asc = response_data_sort_asc["data"]["results"]
+
+        print("Search Results:", results_sort_asc)
+
+        expected_names_asc = ["file", "folder", "todo"]
+        result_names_sort_asc = [${APP_NAME}["name"] for ${APP_NAME} in results_sort_asc]
+        self.assertListEqual(result_names_sort_asc, expected_names_asc)
+
+    def test_get_${APP_NAME}_with_sort_descending(self):
+        """
+        Test for sorting ${APP_NAME} by name in descending order.
+        """
+        self.login()
+
+        self.create_sample_${APP_NAME}()
+
+        # Sort Descending (by name)
+        url_sort_desc = f"{self.url}?sort=-name"
+        response_sort_desc = self.client.get(url_sort_desc)
+        self.match_success_response(response_sort_desc.status_code)
+
+        response_data_sort_desc = response_sort_desc.json()
+        results_sort_desc = response_data_sort_desc["data"]["results"]
+
+        print("Search Results:", results_sort_desc)
+
+        expected_names_desc = ["todo", "folder", "file"]
+        result_names_sort_desc = [${APP_NAME}["name"] for ${APP_NAME} in results_sort_desc]
+        self.assertListEqual(result_names_sort_desc, expected_names_desc)
+
+    def test_get_${APP_NAME}_with_pagination(self):
+        """
+        Test for paginating ${APP_NAME}.
+        """
+        self.login()
+
+        self.create_sample_${APP_NAME}()
+
+        # Pagination (skip and limit)
+        url_pagination = f"{self.url}?paginate=2&page=1"
+        response_pagination = self.client.get(url_pagination)
+        self.match_success_response(response_pagination.status_code)
+
+        response_data_pagination = response_pagination.json()
+        results_pagination = response_data_pagination["data"]["results"]
+
+        expected_names_pagination = ["file", "folder"]
+        self.assertEqual(len(results_pagination), 2)
+        self.assertListEqual(
+            [${APP_NAME}["name"] for ${APP_NAME} in results_pagination], expected_names_pagination
+        )
+
+        # Pagination with skipping the first ${APP_NAME}
+        url_pagination_skip = f"{self.url}?paginate=1"
+        response_pagination_skip = self.client.get(url_pagination_skip)
+        self.match_success_response(response_pagination_skip.status_code)
+
+        response_data_skip = response_pagination_skip.json()
+        results_skip = response_data_skip["data"]["results"]
+
+        expected_names_skip = ["file"]  # Adjust if necessary based on sorting
+        self.assertListEqual(
+            [${APP_NAME}["name"] for ${APP_NAME} in results_skip], expected_names_skip
+        )
 
 EOL
 
