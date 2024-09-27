@@ -22,7 +22,6 @@ settings = load_settings()
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.1/howto/deployment/checklist/
 
@@ -41,20 +40,21 @@ ALLOWED_HOSTS = ["*"]
 # Application definition
 
 INSTALLED_APPS = [
-    "demos",
-    "users",
-    "todos",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    # installed
+    "drf_spectacular",
     "rest_framework",
-    "drf_yasg",
     "django_filters",
     "auth_api",
     "corsheaders",
+    # django apps
+    "users",
+    "todos",
 ]
 
 MIDDLEWARE = [
@@ -73,7 +73,10 @@ ROOT_URLCONF = "proj.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [os.path.join(BASE_DIR, "templates")],
+        "DIRS": [
+            os.path.join(BASE_DIR, "templates"),
+            os.path.join(BASE_DIR, "proj/templates"),
+        ],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -152,24 +155,48 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 # django_celery/settings.py
 
 
-# DRF yasg
-SWAGGER_SETTINGS = {
-    "USE_SESSION_AUTH": False,
-    "SECURITY_DEFINITIONS": {
-        "Bearer": {
-            "type": "apiKey",
-            "scheme": "bearer",
-            "in": "header",
-            "name": "Authorization",
+# # DRF yasg
+# SWAGGER_SETTINGS = {
+#     "USE_SESSION_AUTH": False,
+#     "SECURITY_DEFINITIONS": {
+#         "Bearer": {
+#             "type": "apiKey",
+#             "scheme": "bearer",
+#             "in": "header",
+#             "name": "Authorization",
+#         }
+#     },
+# }
+
+SPECTACULAR_SETTINGS = {
+    "TITLE": "DRF Boilerplate",
+    "DESCRIPTION": "DRF- Boilerplate",
+    "VERSION": "1.0.0",
+    "SERVE_INCLUDE_SCHEMA": False,  # Exclude schema from the public Swagger UI
+    "SCHEMA_PATH_PREFIX": "/api/",  # Adjust according to your path structure
+    "SECURITY": [
+        {
+            "basicAuth": []  # Enable Basic Auth in the API documentation
+        },
+    ],
+    "COMPONENTS": {
+        "securitySchemes": {
+            "basicAuth": {
+                "type": "http",
+                "scheme": "basic",
+            }
         }
     },
+    "SERVERS": [{"url": i} for i in settings.CSRF_TRUSTED_ORIGINS.split()],
 }
 
-# CSRF_TRUSTED_ORIGINS=settings.CSRF_TRUSTED_ORIGINS
-# CORS_ORIGIN_WHITELIST=settings.CORS_ORIGIN_WHITELIST
-# PDF_DOWNLOAD_ORIGIN=settings.PDF_DOWNLOAD_ORIGIN
+
+# CORS & CSRF allowed origins
+CSRF_TRUSTED_ORIGINS = settings.CSRF_TRUSTED_ORIGINS.split()
+CORS_ORIGIN_WHITELIST = settings.CORS_ORIGIN_WHITELIST.split()
 
 # CORS_ORIGIN_ALLOW_ALL = True
+CORS_ALLOW_ALL_ORIGINS = True
 
 # By pass http to https
 USE_X_FORWARDED_HOST = True
@@ -188,6 +215,7 @@ REST_FRAMEWORK = {
         "auth": AUTH_THROTTLING_LIMIT,
     },
     "DEFAULT_PAGINATION_CLASS": "utils.pagination.BasePagination",
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
 }
 
 # SIMPLE_JWT
@@ -293,3 +321,7 @@ SWAGGER_AUTH_PASSWORD = settings.SWAGGER_AUTH_PASSWORD
 # Token Lifespan
 AUTH_VERIFY_EMAIL_TOKEN_LIFELINE = settings.AUTH_VERIFY_EMAIL_TOKEN_LIFELINE
 AUTH_RESET_PASSWORD_TOKEN_LIFELINE = settings.AUTH_RESET_PASSWORD_TOKEN_LIFELINE
+
+
+# Create superuser
+SUPERUSER_EMAIL = settings.SUPERUSER_EMAIL

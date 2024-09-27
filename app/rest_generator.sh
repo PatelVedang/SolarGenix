@@ -39,7 +39,7 @@ NAMES_JSON=$(python ./scripts/name_generator.py "$APP_NAME")
 PLURAL_UNDERSCORED=$(echo $NAMES_JSON | jq -r '.plural_underscored')
 SINGULAR_CAPITALIZED=$(echo $NAMES_JSON | jq -r '.singular_capitalized')
 SINGULAR_CAPITALIZED_SERIALIZER=$(echo $NAMES_JSON | jq -r '.singular_capitalized')Serializer
-SINGULAR_CAPITALIZED_VIEWSET=$(echo $NAMES_JSON | jq -r '.singular_capitalized')Viewset
+SINGULAR_CAPITALIZED_VIEWSET=$(echo $NAMES_JSON | jq -r '.singular_capitalized')ViewSet
 SINGULAR_CAPITALIZED_MODEL_TESTS=$(echo $NAMES_JSON | jq -r '.singular_capitalized')ModelTests
 SINGULAR_CAPITALIZED_ADMIN=$(echo $NAMES_JSON | jq -r '.singular_capitalized')Admin
 PLURAL_DASHED=$(echo $NAMES_JSON | jq -r '.plural_dashed')
@@ -57,13 +57,14 @@ python manage.py startapp "$PLURAL_UNDERSCORED"
 # Add the app to INSTALLED_APPS
 if ! grep -q "'$PLURAL_UNDERSCORED'" "$SETTINGS_FILE"; then
     echo "Task initiated: Adding app to INSTALLED_APPS..."
-    sed -i "/INSTALLED_APPS = \[/a\    '$PLURAL_UNDERSCORED'," "$SETTINGS_FILE"
+    # sed -i "/INSTALLED_APPS = \[/a\    '$PLURAL_UNDERSCORED'," "$SETTINGS_FILE"
+    sed -i "/# django apps/a\    '$PLURAL_UNDERSCORED'," "$SETTINGS_FILE"
 fi
 
 # Add the app's URLs to the project's URLs
 if ! grep -q "'$PLURAL_UNDERSCORED.urls'" "$URLS_FILE"; then
     echo "Task initiated: Adding app URLs to project URLs..."
-    sed -i "/# IMPORT_NEW_ROUTE_HERE/a\                path('api/', include('$PLURAL_UNDERSCORED.urls'))," "$URLS_FILE"
+    sed -i "/# IMPORT_NEW_ROUTE_HERE/a\                path('', include('$PLURAL_UNDERSCORED.urls'))," "$URLS_FILE"
 fi
 
 # Generate models.py with various field types
@@ -79,22 +80,22 @@ class $SINGULAR_CAPITALIZED(BaseModel):
     price = models.DecimalField(max_digits=10, decimal_places=2)
     inventory = models.IntegerField()
     available = models.BooleanField(default=True)
-    published_date = models.DateField()
+    published_date = models.DateField(auto_now=True)
     updated_at = models.DateTimeField(auto_now=True)
     created_at = models.DateTimeField(auto_now_add=True)
-    rating = models.FloatField()
-    image = models.ImageField(upload_to='images/')
-    file = models.FileField(upload_to='files/')
-    url = models.URLField()
-    email = models.EmailField()
-    slug = models.SlugField()
+    rating = models.FloatField(default=1)
+    image = models.ImageField(upload_to='images/',null=True,blank=True)
+    file = models.FileField(upload_to='files/',null=True,blank=True)
+    url = models.URLField(default='http://test.com')
+    email = models.EmailField(default='test@yopmail.com')
+    slug = models.SlugField(default='test-slug')
     uuid = models.UUIDField(default=uuid.uuid4, editable=False)
-    ip_address = models.GenericIPAddressField()
-    big_integer = models.BigIntegerField()
-    positive_integer = models.PositiveIntegerField()
-    small_integer = models.SmallIntegerField()
-    duration = models.DurationField()
-    json_data = models.JSONField()
+    ip_address = models.GenericIPAddressField(default='127.0.0.1')
+    big_integer = models.BigIntegerField(default='0')
+    positive_integer = models.PositiveIntegerField(default='1')
+    small_integer = models.SmallIntegerField(default='0')
+    duration = models.DurationField(default='00:00:00')
+    json_data = models.JSONField(default=dict)
 
     def __str__(self):
         return self.name
@@ -104,10 +105,10 @@ EOL
 echo "Task initiated: Generating serializers.py..."
 cat <<EOL > "$PLURAL_UNDERSCORED/serializers.py"
 from rest_framework import serializers
-from proj.base_serializer import DynamicFieldsSerializer
+from proj.base_serializer import BaseModelSerializer
 from .models import $SINGULAR_CAPITALIZED
 
-class $SINGULAR_CAPITALIZED_SERIALIZER(DynamicFieldsSerializer):
+class $SINGULAR_CAPITALIZED_SERIALIZER(BaseModelSerializer):
     class Meta:
         model = $SINGULAR_CAPITALIZED
         fields = '__all__'
@@ -130,8 +131,8 @@ from utils.make_response import response
     extra_actions=["get_all"],
     method_details={
         "get_all": {
-            "operation_description": "Get all $PLURAL_SPACE_SEPRATED records without pagination",
-            "operation_summary": "Get all $PLURAL_SPACE_SEPRATED",
+            "description": "Get all $PLURAL_SPACE_SEPRATED records without pagination",
+            "summary": "Get all $PLURAL_SPACE_SEPRATED",
         },
     },
 )
