@@ -14,14 +14,15 @@ commitlint
 pillow
 coverage
 google-api-python-client
-django-ssl-smtp
 pydantic
 pydantic-settings
 pydantic[email]
 drf-spectacular
+django-smtp-ssl
 
 # dev
 ruff
-ipython
+ipython==8.27.0
 flake8
 flake8-pyproject
+django-smtp-ssl
