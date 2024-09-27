@@ -211,25 +211,27 @@ class TodoTest(BaseAPITestCase):
         self.set_response(self.client.delete(f"{self.url}111/"))
         self.match_error_response(404)
 
-    def create_sample_todos(self):
+    def create_sample_todo(self):
         """
-        Utility function to create a set of sample todos for tests.
+        Utility function to create a set of sample todo for tests.
         """
-        todos = [
-            {"name": "todo", "description": "First todo"},
-            {"name": "folder", "description": "Second todo"},
-            {"name": "file", "description": "Third todo"},
+        records = [
+            {"name": "todo", "description": "First record"},
+            {"name": "folder", "description": "Second record"},
+            {"name": "file", "description": "Third record"},
         ]
-        for todo in todos:
-            self.create_todo_via_orm(name=todo["name"], description=todo["description"])
+        for record in records:
+            self.create_todo_via_orm(
+                name=record["name"], description=record["description"]
+            )
 
-    def test_get_todos_with_search_filter(self):
+    def test_get_todo_with_search_filter(self):
         """
-        Test for filtering todos by name.
+        Test for filtering todo by name.
         """
         self.login()
 
-        self.create_sample_todos()
+        self.create_sample_todo()
 
         # Search filter (search for "todo")
         url_search = f"{self.url}?name=todo"
@@ -247,12 +249,12 @@ class TodoTest(BaseAPITestCase):
 
         self.assertListEqual(result_names_search, expected_names_search)
 
-    def test_get_todos_with_sort_ascending(self):
+    def test_get_todo_with_sort_ascending(self):
         """
-        Test for sorting todos by name in ascending order.
+        Test for sorting todo by name in ascending order.
         """
         self.login()
-        self.create_sample_todos()
+        self.create_sample_todo()
 
         # Sort Ascending (by name)
         url_sort_asc = f"{self.url}?sort=name"
@@ -270,13 +272,13 @@ class TodoTest(BaseAPITestCase):
         result_names_sort_asc = [todo["name"] for todo in results_sort_asc]
         self.assertListEqual(result_names_sort_asc, expected_names_asc)
 
-    def test_get_todos_with_sort_descending(self):
+    def test_get_todo_with_sort_descending(self):
         """
-        Test for sorting todos by name in descending order.
+        Test for sorting todo by name in descending order.
         """
         self.login()
 
-        self.create_sample_todos()
+        self.create_sample_todo()
 
         # Sort Descending (by name)
         url_sort_desc = f"{self.url}?sort=-name"
@@ -295,11 +297,11 @@ class TodoTest(BaseAPITestCase):
 
     def test_get_todos_with_pagination(self):
         """
-        Test for paginating todos.
+        Test for paginating todo.
         """
         self.login()
 
-        self.create_sample_todos()
+        self.create_sample_todo()
 
         # Pagination (skip and limit)
         url_pagination = f"{self.url}?paginate=2&page=1"
