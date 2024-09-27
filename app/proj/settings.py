@@ -31,7 +31,6 @@ SECRET_KEY = settings.SECRET_KEY
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = settings.DEBUG
-print(type(DEBUG), DEBUG)
 UNIT_TEST_USER_EMAIL = settings.UNIT_TEST_USER_EMAIL
 UNIT_TEST_USER_PASSWORD = settings.UNIT_TEST_USER_PASSWORD
 

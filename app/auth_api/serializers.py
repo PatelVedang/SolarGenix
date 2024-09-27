@@ -23,23 +23,18 @@ logger = logging.getLogger("django")
 # including checking for existing email, password validation, and sending a verification email.
 class UserRegistrationSerializer(BaseModelSerializer):
     password = serializers.CharField(style={"input_type": "password"}, write_only=True)
-    confirm_password = serializers.CharField(write_only=True, label="Confirm Password")
 
     class Meta:
         model = User
-        fields = ["email", "first_name", "last_name", "password", "confirm_password"]
+        fields = ["email", "first_name", "last_name", "password"]
 
     def validate(self, attrs):
         password = attrs.get("password")
-        confirm_password = attrs.pop("confirm_password")
         if User.objects.filter(email=attrs.get("email").lower()).exists():
             raise CustomValidationError("Email already exists")
 
         if not re.search(settings.PASSWORD_VALIDATE_REGEX, password):
             raise CustomValidationError(f"{settings.PASSWORD_VALIDATE_STRING}")
-
-        if password != confirm_password:
-            raise CustomValidationError("Passwords and Confirm Password does not match")
 
         return attrs
 
