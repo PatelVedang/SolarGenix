@@ -1,10 +1,10 @@
-from django.urls import reverse
-from auth_api.tests import BaseAPITestCase
 import json
 
+from auth_api.tests import BaseAPITestCase
+from django.urls import reverse
+from rest_framework import status
 
 from todos.models import Todo
-from rest_framework import status
 
 
 class TodoTest(BaseAPITestCase):
@@ -210,3 +210,120 @@ class TodoTest(BaseAPITestCase):
         self.login()
         self.set_response(self.client.delete(f"{self.url}111/"))
         self.match_error_response(404)
+
+    def create_sample_todos(self):
+        """
+        Utility function to create a set of sample todos for tests.
+        """
+        todos = [
+            {"name": "todo", "description": "First todo"},
+            {"name": "folder", "description": "Second todo"},
+            {"name": "file", "description": "Third todo"},
+        ]
+        for todo in todos:
+            self.create_todo_via_orm(name=todo["name"], description=todo["description"])
+
+    def test_get_todos_with_search_filter(self):
+        """
+        Test for filtering todos by name.
+        """
+        self.login()
+
+        self.create_sample_todos()
+
+        # Search filter (search for "todo")
+        url_search = f"{self.url}?name=todo"
+        response_search = self.client.get(url_search)
+        self.status_code = status.HTTP_200_OK  # Set the expected status code
+        self.match_success_response(response_search.status_code)
+
+        response_data_search = response_search.json()
+        results_search = response_data_search["data"]["results"]
+
+        expected_names_search = ["todo"]
+        result_names_search = [todo["name"] for todo in results_search]
+
+        print("Extracted Names from Search Results:", result_names_search)
+
+        self.assertListEqual(result_names_search, expected_names_search)
+
+    def test_get_todos_with_sort_ascending(self):
+        """
+        Test for sorting todos by name in ascending order.
+        """
+        self.login()
+        self.create_sample_todos()
+
+        # Sort Ascending (by name)
+        url_sort_asc = f"{self.url}?sort=name"
+        response_sort_asc = self.client.get(url_sort_asc)
+        self.match_success_response(response_sort_asc.status_code)
+
+        response_data_sort_asc = response_sort_asc.json()
+        results_sort_asc = response_data_sort_asc["data"]["results"]
+
+        print(
+            "Search Results:", results_sort_asc
+        )  # This will print the result in the console during the test run
+
+        expected_names_asc = ["file", "folder", "todo"]
+        result_names_sort_asc = [todo["name"] for todo in results_sort_asc]
+        self.assertListEqual(result_names_sort_asc, expected_names_asc)
+
+    def test_get_todos_with_sort_descending(self):
+        """
+        Test for sorting todos by name in descending order.
+        """
+        self.login()
+
+        self.create_sample_todos()
+
+        # Sort Descending (by name)
+        url_sort_desc = f"{self.url}?sort=-name"
+        response_sort_desc = self.client.get(url_sort_desc)
+        self.match_success_response(response_sort_desc.status_code)
+
+        response_data_sort_desc = response_sort_desc.json()
+        results_sort_desc = response_data_sort_desc["data"]["results"]
+        print(
+            "Search Results:", results_sort_desc
+        )  # This will print the result in the console during the test run
+
+        expected_names_desc = ["todo", "folder", "file"]
+        result_names_sort_desc = [todo["name"] for todo in results_sort_desc]
+        self.assertListEqual(result_names_sort_desc, expected_names_desc)
+
+    def test_get_todos_with_pagination(self):
+        """
+        Test for paginating todos.
+        """
+        self.login()
+
+        self.create_sample_todos()
+
+        # Pagination (skip and limit)
+        url_pagination = f"{self.url}?paginate=2&page=1"
+        response_pagination = self.client.get(url_pagination)
+        self.match_success_response(response_pagination.status_code)
+
+        response_data_pagination = response_pagination.json()
+        results_pagination = response_data_pagination["data"]["results"]
+
+        expected_names_pagination = ["file", "folder"]
+        self.assertEqual(len(results_pagination), 2)
+        self.assertListEqual(
+            [todo["name"] for todo in results_pagination], expected_names_pagination
+        )
+
+        # Pagination with skipping the first todo
+        url_pagination_skip = f"{self.url}?paginate=1"
+        response_pagination_skip = self.client.get(url_pagination_skip)
+        self.match_success_response(response_pagination_skip.status_code)
+
+        response_data_skip = response_pagination_skip.json()
+        results_skip = response_data_skip["data"]["results"]
+
+        expected_names_skip = ["file"]  # Adjust if necessary based on sorting
+        self.assertListEqual(
+            [todo["name"] for todo in results_skip], expected_names_skip
+        )

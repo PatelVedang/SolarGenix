@@ -58,5 +58,5 @@ handler404 = "proj.base_view.handler404"  # noqa
 handler500 = "proj.base_view.handler500"  # noqa
 
 admin.site.site_header = "ADMINISTRATION"
-admin.site.site_title = "Admin Portal"
-admin.site.index_title = "Welcome to Admin Portal"
+admin.site.site_title = settings.PROJECT_TITLE
+admin.site.index_title = f"Welcome to Admin Portal of {settings.PROJECT_TITLE}"
