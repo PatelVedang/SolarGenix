@@ -23,6 +23,7 @@ from drf_spectacular.views import (
     SpectacularSwaggerView,
 )
 from utils.swagger import swagger_auth_required
+from django.conf.urls import handler404, handler500
 
 urlpatterns = [
     path("admin/", admin.site.urls),
@@ -48,6 +49,13 @@ urlpatterns = [
         name="swagger-ui",
     ),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+
+
+# The lines `handler404 = 'proj.base_view.handler404'` and `handler500 = 'proj.base_view.handler500'`
+# in the Django URL configuration are setting custom error handlers for handling HTTP 404 (Page Not
+# Found) and HTTP 500 (Server Error) responses.
+handler404 = "proj.base_view.handler404"  # noqa
+handler500 = "proj.base_view.handler500"  # noqa
 
 admin.site.site_header = "ADMINISTRATION"
 admin.site.site_title = "Admin Portal"

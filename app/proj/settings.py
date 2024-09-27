@@ -22,7 +22,6 @@ settings = load_settings()
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.1/howto/deployment/checklist/
 
@@ -74,7 +73,10 @@ ROOT_URLCONF = "proj.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [os.path.join(BASE_DIR, "templates")],
+        "DIRS": [
+            os.path.join(BASE_DIR, "templates"),
+            os.path.join(BASE_DIR, "proj/templates"),
+        ],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -319,3 +321,7 @@ SWAGGER_AUTH_PASSWORD = settings.SWAGGER_AUTH_PASSWORD
 # Token Lifespan
 AUTH_VERIFY_EMAIL_TOKEN_LIFELINE = settings.AUTH_VERIFY_EMAIL_TOKEN_LIFELINE
 AUTH_RESET_PASSWORD_TOKEN_LIFELINE = settings.AUTH_RESET_PASSWORD_TOKEN_LIFELINE
+
+
+# Create superuser
+SUPERUSER_EMAIL = settings.SUPERUSER_EMAIL
