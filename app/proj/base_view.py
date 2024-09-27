@@ -1,3 +1,4 @@
+from django.shortcuts import render
 from django.utils.text import capfirst
 from rest_framework import status, viewsets
 from utils.make_response import response as Response
@@ -166,3 +167,35 @@ class BaseModelViewSet(viewsets.ModelViewSet):
             message=self.get_message(request, *args, **kwargs),
             status_code=status.HTTP_204_NO_CONTENT,
         )
+
+
+def handler404(request, exception):
+    """
+    The `handler404` function in Python returns a 404.html page with a status code of 404 for a given
+    request.
+
+    :param request: The `request` parameter in the `handler404` function is typically an HttpRequest
+    object that represents the incoming HTTP request from the client. It contains information about the
+    request, such as the requested URL, method (GET, POST, etc.), headers, and any data sent with the
+    request. This parameter
+    :param exception: The `exception` parameter in the `handler404` function is used to capture the
+    exception that triggered the 404 error. This parameter allows you to handle the exception and
+    customize the response accordingly when a 404 error occurs in your Django application
+    :return: The `handler404` function is returning a rendered '404.html' template with a status code of
+    404.
+    """
+    return render(request, "404.html", status=404)
+
+
+def handler500(request):
+    """
+    The `handler500` function in Python renders a '500.html' template with a status code of 500.
+
+    :param request: The `request` parameter in the `handler500` function is an object that represents
+    the HTTP request made by the client to the server. It contains information about the request such as
+    the URL, method, headers, and any data sent with the request. This parameter is typically passed to
+    view functions in
+    :return: The `handler500` function is returning a rendering of the '500.html' template with a status
+    code of 500.
+    """
+    return render(request, "500.html", status=500)
