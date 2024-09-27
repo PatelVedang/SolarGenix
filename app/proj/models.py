@@ -6,7 +6,7 @@ class NonDeleted(models.Manager):
         return super().get_queryset().filter(is_deleted=False)
 
 
-class BaseClass(models.Model):
+class BaseModel(models.Model):
     is_deleted = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True, null=True)
     updated_at = models.DateTimeField(auto_now=True)

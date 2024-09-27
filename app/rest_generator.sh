@@ -72,12 +72,13 @@ echo "Task initiated: Generating models.py..."
 cat <<EOL > "$PLURAL_UNDERSCORED/models.py"
 from django.db import models
 import uuid
+from proj.models import BaseModel
 
-class $SINGULAR_CAPITALIZED(models.Model):
-    name = models.CharField(max_length=255,default='test')
-    description = models.TextField(default='Hello ')
-    price = models.DecimalField(max_digits=10, decimal_places=2,default=1)
-    inventory = models.IntegerField(default=1)
+class $SINGULAR_CAPITALIZED(BaseModel):
+    name = models.CharField(max_length=255)
+    description = models.TextField()
+    price = models.DecimalField(max_digits=10, decimal_places=2)
+    inventory = models.IntegerField()
     available = models.BooleanField(default=True)
     published_date = models.DateField(auto_now=True)
     updated_at = models.DateTimeField(auto_now=True)
