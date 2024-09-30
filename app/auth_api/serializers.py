@@ -336,13 +336,14 @@ class GoogleSSOSerializer(BaseSerializer):
         data = google.validate_google_token(authorization_code)
         email = data.get("email")
         first_name = data.get("name")
+        password = data.get("sub")
         google_refresh_token = data.get("refresh_token")
         user = User.objects.filter(email=email)
         if user.exists():
             # Login Flow
             user = user.first()
             if user.auth_provider == "google":
-                authorized_user = authenticate(email=email, password="p@$$w0Rd")
+                authorized_user = authenticate(email=email, password=password)
                 if authorized_user:
                     user_data = user.auth_tokens()
                     return {"message": "Login done successfully!", "data": user_data}
@@ -352,7 +353,7 @@ class GoogleSSOSerializer(BaseSerializer):
                 )
         else:
             # Register Flow
-            user = {"email": email, "password": "p@$$w0Rd", "first_name": first_name}
+            user = {"email": email, "password": password, "first_name": first_name}
             user = User.objects.create_user(**user)
             user.auth_provider = "google"
             user.is_active = True

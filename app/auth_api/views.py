@@ -286,7 +286,7 @@ class LogoutView(APIView):
     },
 )
 class GoogleSSOView(APIView):
-    serializer_class = UserRegistrationSerializer
+    serializer_class = GoogleSSOSerializer
 
     def post(self, request):
         serializer = GoogleSSOSerializer(data=request.data)
