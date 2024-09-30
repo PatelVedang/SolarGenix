@@ -22,19 +22,41 @@ logger = logging.getLogger("django")
 # The `UserRegistrationSerializer` class handles user registration data validation and creation,
 # including checking for existing email, password validation, and sending a verification email.
 class UserRegistrationSerializer(BaseModelSerializer):
-    password = serializers.CharField(style={"input_type": "password"}, write_only=True)
+    # password = serializers.CharField(style={"input_type": "password"}, write_only=True)
+    password = serializers.CharField(
+        style={"input_type": "password"}, write_only=True, label="Password"
+    )
 
     class Meta:
         model = User
         fields = ["email", "first_name", "last_name", "password"]
 
     def validate(self, attrs):
+        """
+        Validates the user-provided password based on a custom regular expression pattern.
+
+        This function checks if the password meets the criteria defined by the
+        `PASSWORD_VALIDATE_REGEX` setting. If the password does not match the pattern,
+        a validation error is raised with a custom error message defined by
+        `PASSWORD_VALIDATE_STRING`.
+
+        Args:
+            data (dict): The data containing the password to validate.
+
+        Returns:
+            dict: The validated data if no errors are found.
+
+        Raises:
+            serializers.ValidationError: If the password does not match the custom regex pattern.
+        """
         password = attrs.get("password")
         if User.objects.filter(email=attrs.get("email").lower()).exists():
             raise CustomValidationError("Email already exists")
 
         if not re.search(settings.PASSWORD_VALIDATE_REGEX, password):
-            raise CustomValidationError(f"{settings.PASSWORD_VALIDATE_STRING}")
+            raise serializers.ValidationError(
+                {"password": f"{settings.PASSWORD_VALIDATE_STRING}__custom"}
+            )
 
         return attrs
 
