@@ -299,6 +299,11 @@ class TooManyRequestsErrorResponseSerializer(serializers.Serializer):
     message = serializers.CharField(default="Too Many Requests")
 
 
+class UnprocessableEntityResponseSerializer(serializers.Serializer):
+    message = serializers.CharField(default="Validation errors")
+    data = serializers.DictField(default={})
+
+
 def get_response_schema():
     """
     Returns a dictionary of response schemas for various HTTP status codes.
@@ -319,6 +324,10 @@ def get_response_schema():
         429: OpenApiResponse(
             response=TooManyRequestsErrorResponseSerializer,
             description="Too Many Requests",
+        ),
+        422: OpenApiResponse(
+            response=UnprocessableEntityResponseSerializer,
+            description="Unprocessable Entity",
         ),
         500: OpenApiResponse(
             response=InternalServerErrorResponseSerializer,
