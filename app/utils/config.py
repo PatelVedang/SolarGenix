@@ -46,7 +46,7 @@ class Settings(BaseSettings):
     GOOGLE_CLIENT_SECRET: str
 
     # ::::::::::::: Configs :::::::::::::
-    HOST_URL: str = Field(default="http://localhost:8000")
+    FRONTEND_URL: str = Field(default="http://localhost:8000")
     SUPERUSER_EMAIL: str = Field(default="admin1@yopmail.com")
     PROJECT_TITLE: str
 

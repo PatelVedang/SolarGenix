@@ -33,7 +33,7 @@ class Command(BaseCommand):
             "password": password,
             "recipients": [email],
             "html_template": "superuser_created",
-            "button_links": [f"{settings.HOST_URL}/admin/"],
+            "button_links": [f"{settings.FRONTEND_URL}/admin/"],
             "title": "Welcome on board!",
         }
 
