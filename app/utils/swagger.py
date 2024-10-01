@@ -281,22 +281,27 @@ class BadRequestResponseSerializer(serializers.Serializer):
 
 class UnauthorizedResponseSerializer(serializers.Serializer):
     message = serializers.CharField(default="Unauthorized")
+    data = serializers.DictField(default={})
 
 
 class ForbiddenResponseSerializer(serializers.Serializer):
     message = serializers.CharField(default="Not authenticated")
+    data = serializers.DictField(default={})
 
 
 class NotFoundResponseSerializer(serializers.Serializer):
     message = serializers.CharField(default="Not Found")
+    data = serializers.DictField(default={})
 
 
 class InternalServerErrorResponseSerializer(serializers.Serializer):
     message = serializers.CharField(default="Internal Server Error")
+    data = serializers.DictField(default={})
 
 
 class TooManyRequestsErrorResponseSerializer(serializers.Serializer):
     message = serializers.CharField(default="Too Many Requests")
+    data = serializers.DictField(default={})
 
 
 class UnprocessableEntityResponseSerializer(serializers.Serializer):
