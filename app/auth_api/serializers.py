@@ -23,6 +23,7 @@ logger = logging.getLogger("django")
 # including checking for existing email, password validation, and sending a verification email.
 class UserRegistrationSerializer(BaseModelSerializer):
     # password = serializers.CharField(style={"input_type": "password"}, write_only=True)
+    email = serializers.EmailField()
     password = serializers.CharField(
         style={"input_type": "password"}, write_only=True, label="Password"
     )
@@ -165,7 +166,7 @@ class ForgotPasswordSerializer(BaseSerializer):
         return attrs
 
 
-class ResendResetTokenSerializer(BaseSerializer):
+class PasswordResetTokenResendSerializer(BaseSerializer):
     email = serializers.EmailField(
         max_length=255, label="Test", error_messages={"invalid": "ddd"}
     )
