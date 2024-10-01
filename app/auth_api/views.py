@@ -12,8 +12,8 @@ from auth_api.serializers import (
     ForgotPasswordSerializer,
     GoogleSSOSerializer,
     LogoutSerializer,
+    PasswordResetTokenResendSerializer,
     RefreshTokenSerializer,
-    ResendResetTokenSerializer,
     ResendVerificationEmailSerializer,
     UserLoginSerializer,
     UserPasswordResetSerializer,
@@ -155,10 +155,10 @@ class ForgotPasswordView(APIView):
 class ResendResetTokenView(APIView):
     permission_classes = [AllowAny]
     throttle_classes = [custom_throttling.CustomAuthThrottle]
-    serializer_class = ResendResetTokenSerializer
+    serializer_class = PasswordResetTokenResendSerializer
 
     def post(self, request):
-        serializer = ResendResetTokenSerializer(data=request.data)
+        serializer = PasswordResetTokenResendSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         return response(
             data=serializer.data,
