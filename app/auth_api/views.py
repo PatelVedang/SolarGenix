@@ -12,7 +12,6 @@ from auth_api.serializers import (
     ForgotPasswordSerializer,
     GoogleSSOSerializer,
     LogoutSerializer,
-    PasswordResetTokenResendSerializer,
     RefreshTokenSerializer,
     ResendVerificationEmailSerializer,
     UserLoginSerializer,
@@ -152,21 +151,6 @@ class ForgotPasswordView(APIView):
         },
     },
 )
-class ResendResetTokenView(APIView):
-    permission_classes = [AllowAny]
-    throttle_classes = [custom_throttling.CustomAuthThrottle]
-    serializer_class = PasswordResetTokenResendSerializer
-
-    def post(self, request):
-        serializer = PasswordResetTokenResendSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        return response(
-            data=serializer.data,
-            status_code=status.HTTP_200_OK,
-            message=" Reset token mail sent successfully",
-        )
-
-
 @apply_swagger_tags(
     tags=["Auth"],
     method_details={
