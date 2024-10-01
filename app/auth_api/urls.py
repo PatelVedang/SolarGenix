@@ -6,7 +6,6 @@ from auth_api.views import (
     GoogleSSOView,
     LogoutView,
     RefreshTokenView,
-    ResendResetTokenView,
     ResendVerificationEmailView,
     UserLoginView,
     UserPasswordResetView,
@@ -34,11 +33,6 @@ urlpatterns = [
         "auth/reset-password/<str:token>",
         UserPasswordResetView.as_view(),
         name="reset-password",
-    ),
-    path(
-        "auth/resend-user-reset-token",
-        ResendResetTokenView.as_view(),
-        name="resend-user-reset-token",
     ),
     path("auth/refresh-token", RefreshTokenView.as_view(), name="refresh-token"),
     path(
