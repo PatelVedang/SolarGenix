@@ -73,7 +73,7 @@ class UserRegistrationSerializer(BaseModelSerializer):
             "user": user,
             "recipients": [user.email],
             "button_links": [
-                f"{settings.HOST_URL}/api/auth/verify-email/{verify_token}"
+                f"{settings.FRONTEND_URL}/api/auth/verify-email/{verify_token}"
             ],
             "html_template": "verify_email",
             "title": "Verify Your E-mail Address",
@@ -109,7 +109,7 @@ class UserLoginSerializer(BaseModelSerializer):
                     "user": user,
                     "recipients": [user.email],
                     "button_links": [
-                        f"{settings.HOST_URL}/api/auth/verify-email/{verify_token}"
+                        f"{settings.FRONTEND_URL}/api/auth/verify-email/{verify_token}"
                     ],
                     "html_template": "verify_email",
                     "title": "Verify Your E-mail Address",
@@ -154,7 +154,7 @@ class ForgotPasswordSerializer(BaseSerializer):
                 "recipients": [email],
                 "html_template": "forgot_password",
                 "button_links": [
-                    f"{settings.HOST_URL}/api/auth/reset-password/{reset_token}"
+                    f"{settings.FRONTEND_URL}/api/auth/reset-password/{reset_token}"
                 ],
                 "title": "Reset your password",
             }
@@ -185,7 +185,7 @@ class ResendResetTokenSerializer(BaseSerializer):
                 "recipients": [email],
                 "html_template": "resend_reset_password",
                 "button_links": [
-                    f"{settings.HOST_URL}/api/auth/reset-password/{token}"
+                    f"{settings.FRONTEND_URL}/api/auth/reset-password/{token}"
                 ],
                 "title": "Reset your password",
             }
@@ -290,7 +290,9 @@ class ResendVerificationEmailSerializer(BaseSerializer):
                 "subject": "Verify Your E-mail Address!",
                 "user": user,
                 "recipients": [user.email],
-                "button_links": [f"{settings.HOST_URL}/api/auth/verify-email/{token}"],
+                "button_links": [
+                    f"{settings.FRONTEND_URL}/api/auth/verify-email/{token}"
+                ],
                 "html_template": "verify_email",
                 "title": "Verify Your E-mail Address",
             }
@@ -336,13 +338,14 @@ class GoogleSSOSerializer(BaseSerializer):
         data = google.validate_google_token(authorization_code)
         email = data.get("email")
         first_name = data.get("name")
+        password = data.get("sub")
         google_refresh_token = data.get("refresh_token")
         user = User.objects.filter(email=email)
         if user.exists():
             # Login Flow
             user = user.first()
             if user.auth_provider == "google":
-                authorized_user = authenticate(email=email, password="p@$$w0Rd")
+                authorized_user = authenticate(email=email, password=password)
                 if authorized_user:
                     user_data = user.auth_tokens()
                     return {"message": "Login done successfully!", "data": user_data}
@@ -352,12 +355,11 @@ class GoogleSSOSerializer(BaseSerializer):
                 )
         else:
             # Register Flow
-            user = {"email": email, "password": "p@$$w0Rd", "first_name": first_name}
+            user = {"email": email, "password": password, "first_name": first_name}
             user = User.objects.create_user(**user)
             user.auth_provider = "google"
             user.is_active = True
             user.save()
-            # new_user = authenticate(email=email, password="p@$$w0Rd")
             if user:
                 user_data = user.auth_tokens()
                 SimpleToken.for_user(

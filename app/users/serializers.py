@@ -72,7 +72,7 @@ class UserSerializer(BaseModelSerializer):
                     "password": raw_password,
                     "recipients": [user.email],
                     "button_links": [
-                        f"{settings.HOST_URL}/api/auth/verify-email/{verify_token}"
+                        f"{settings.FRONTEND_URL}/api/auth/verify-email/{verify_token}"
                     ],
                     "html_template": "user_created_by_admin",
                     "title": "Verify Your E-mail Address",
