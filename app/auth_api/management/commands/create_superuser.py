@@ -1,9 +1,9 @@
-from django.core.management.base import BaseCommand
-from django.utils.crypto import get_random_string
-from django.conf import settings
 import string
 
 from auth_api.models import User
+from django.conf import settings
+from django.core.management.base import BaseCommand
+from django.utils.crypto import get_random_string
 from utils.email import send_email
 
 

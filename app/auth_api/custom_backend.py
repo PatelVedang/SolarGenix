@@ -1,5 +1,7 @@
 from django.contrib.auth.backends import ModelBackend
-from django.utils import timezone
+from django.utils.timezone import now
+
+from .models import User
 
 
 class LoginOnAuthBackend(ModelBackend):
@@ -23,12 +25,15 @@ class LoginOnAuthBackend(ModelBackend):
         there is an exception during the authentication process.
         """
         try:
-            user = super().authenticate(
-                request, email=email, password=password, **kwargs
-            )
-            if user is not None:
-                user.last_login = timezone.now()
+            # Fetch the user with the given username and check both is_active and is_deleted
+            user = User.objects.get(email=email, is_active=True, is_deleted=False)
+            # Use Django's built-in check_password method to verify the password
+            if user.check_password(password):
+                # Update last_login upon successful authentication
+                print(user.last_login)
+                user.last_login = now()
                 user.save()
-            return user
-        except Exception:
+                print(user.last_login)
+                return user
+        except User.DoesNotExist:
             return None

@@ -9,8 +9,6 @@ from django.db import models
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from proj.models import BaseModel
-from datetime import timedelta, datetime
-from django.utils import timezone
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.tokens import Token as BaseToken
 from utils.custom_exception import CustomValidationError as ValidationError
@@ -113,6 +111,7 @@ class User(AbstractUser, PermissionsMixin, BaseModel):
         _("active"),
         default=False,  # Override the default value
     )
+    is_email_verified = models.BooleanField(default=False)
     objects = UserManager()
 
     USERNAME_FIELD = "email"

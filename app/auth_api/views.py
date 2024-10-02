@@ -22,6 +22,7 @@ from auth_api.serializers import (
     VerifyEmailSerializer,
 )
 
+from .constants import AuthResponseConstants
 from .permissions import IsAuthenticated
 
 
@@ -46,7 +47,7 @@ class UserRegistrationView(APIView):
         return response(
             data=response_data,
             status_code=status.HTTP_201_CREATED,
-            message="Registration Done. Please Activate Your Account!",
+            message=AuthResponseConstants.REGISTRATION_SUCCESS,
         )
 
 
@@ -74,7 +75,7 @@ class UserLoginView(APIView):
                 "tokens": user.auth_tokens(),
             },
             status_code=status.HTTP_200_OK,
-            message="Login done successfully!",
+            message=AuthResponseConstants.LOGIN_SUCCESS,
         )
 
 
@@ -96,7 +97,7 @@ class UserProfileView(APIView):
         return response(
             data=serializer.data,
             status_code=status.HTTP_200_OK,
-            message="User found successfully",
+            message=AuthResponseConstants.USER_FOUND,
         )
 
 
@@ -163,7 +164,7 @@ class ResendResetTokenView(APIView):
         return response(
             data=serializer.data,
             status_code=status.HTTP_200_OK,
-            message=" Reset token mail sent successfully",
+            message=AuthResponseConstants.RESET_TOKEN_RESENT,
         )
 
 
@@ -233,7 +234,7 @@ class RefreshTokenView(TokenObtainPairView):
         return response(
             data=serializer.validated_data,
             status_code=status.HTTP_200_OK,
-            message="New token generated successfully",
+            message=AuthResponseConstants.NEW_TOKEN_GENERATED,
         )
 
 

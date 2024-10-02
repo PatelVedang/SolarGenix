@@ -209,6 +209,7 @@ AUTH_THROTTLING_LIMIT = os.environ.get(
 REST_FRAMEWORK = {
     "EXCEPTION_HANDLER": "utils.exception_handler.custom_exception_handler",
     "DEFAULT_AUTHENTICATION_CLASSES": (
+        "utils.authentication.CustomJWTAuthentication",
         "rest_framework_simplejwt.authentication.JWTAuthentication",
     ),
     "DEFAULT_THROTTLE_RATES": {
@@ -312,7 +313,7 @@ LOGGING = {
 
 AUTHENTICATION_BACKENDS = [
     "auth_api.custom_backend.LoginOnAuthBackend",  # Custom backend
-    "django.contrib.auth.backends.ModelBackend",  # Default backend
+    # "django.contrib.auth.backends.ModelBackend",  # Default backend
 ]
 
 # Swagger Authentication

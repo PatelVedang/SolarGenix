@@ -1,8 +1,10 @@
 from django.contrib import admin
 from django.contrib.admin.actions import delete_selected
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
-from .google import Google
+
 from auth_api.models import Token, User
+
+from .google import Google
 
 
 class SoftDeleteAdminMixin(admin.ModelAdmin):
@@ -48,6 +50,7 @@ class UserModelAdmin(BaseUserAdmin, SoftDeleteAdminMixin):
         "is_superuser",
         "auth_provider",
         "is_active",
+        "is_email_verified",
         "last_login",
         "is_deleted",
     ]
@@ -57,7 +60,15 @@ class UserModelAdmin(BaseUserAdmin, SoftDeleteAdminMixin):
         ("Personal info", {"fields": ["first_name"]}),
         (
             "Permissions",
-            {"fields": ["is_superuser", "is_staff", "is_active", "is_deleted"]},
+            {
+                "fields": [
+                    "is_superuser",
+                    "is_staff",
+                    "is_active",
+                    "is_email_verified",
+                    "is_deleted",
+                ]
+            },
         ),
         ("Important dates", {"fields": ["last_login"]}),
     ]

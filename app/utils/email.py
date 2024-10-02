@@ -1,6 +1,8 @@
 import logging
+import threading
 import traceback
 
+from auth_api.models import SimpleToken, TokenType, User
 from django.conf import settings
 from django.core.mail import EmailMessage
 from django.template.loader import render_to_string
@@ -87,3 +89,67 @@ def send_email(**kwargs):
         logger.error(str(e))
 
     return True
+
+
+class EmailService:
+    def __init__(self, user: User):
+        self.user = user
+
+    def send_email_async(self, context):
+        """Helper function to send email in a separate thread."""
+        thread = threading.Thread(target=send_email, kwargs=context)
+        thread.start()
+
+    def create_email_context(
+        self, subject, recipients, button_link, html_template, title
+    ):
+        """Creates a context dictionary for email sending."""
+        return {
+            "subject": subject,
+            "user": self.user,
+            "recipients": recipients,
+            "button_links": [button_link],
+            "html_template": html_template,
+            "title": title,
+        }
+
+    def send_verification_email(self):
+        verify_token = SimpleToken.for_user(
+            self.user,
+            TokenType.VERIFY_MAIL.value,
+            settings.AUTH_VERIFY_EMAIL_TOKEN_LIFELINE,
+        )
+        button_link = f"{settings.FRONTEND_URL}/api/auth/verify-email/{verify_token}"
+        context = self.create_email_context(
+            subject="Verify Your E-mail Address!",
+            recipients=[self.user.email],
+            button_link=button_link,
+            html_template="verify_email",
+            title="Verify Your E-mail Address",
+        )
+        self.send_email_async(context)
+
+    def send_password_reset_email(self, email: str):
+        reset_token = SimpleToken.for_user(
+            self.user,
+            TokenType.RESET.value,
+            settings.AUTH_RESET_PASSWORD_TOKEN_LIFELINE,
+        )
+        button_link = f"{settings.FRONTEND_URL}/api/auth/reset-password/{reset_token}"
+        context = self.create_email_context(
+            subject="Password Reset Request",
+            recipients=[email],
+            button_link=button_link,
+            html_template="forgot_password",
+            title="Reset your password",
+        )
+        self.send_email_async(context)
+
+    def send_password_update_confirmation(self):
+        context = self.create_email_context(
+            subject="Password Updated Successfully!",
+            recipients=[self.user.email],
+            html_template="resend_reset_password",
+            title="Password Updated Successfully",
+        )
+        self.send_email_async(context)
