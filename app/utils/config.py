@@ -62,6 +62,7 @@ class Settings(BaseSettings):
     # Values in Minutes
     AUTH_VERIFY_EMAIL_TOKEN_LIFELINE: int = Field(default=60)
     AUTH_RESET_PASSWORD_TOKEN_LIFELINE: int = Field(default=60)
+    OTP_EXPIRY_MINUTE: int = Field(default=1)
 
     class Config:
         env_file = os.path.join(BASE_DIR, ".env")

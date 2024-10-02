@@ -14,6 +14,7 @@ from auth_api.serializers import (
     LogoutSerializer,
     RefreshTokenSerializer,
     ResendVerificationEmailSerializer,
+    SendOTPSerializer,
     UserLoginSerializer,
     UserPasswordResetSerializer,
     UserProfileSerializer,
@@ -135,9 +136,7 @@ class ForgotPasswordView(APIView):
     serializer_class = ForgotPasswordSerializer
 
     def post(self, request):
-        serializer = ForgotPasswordSerializer(
-            data=request.data, context={"user": request.user}
-        )
+        serializer = ForgotPasswordSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         return response(status_code=status.HTTP_204_NO_CONTENT)
 
@@ -279,3 +278,13 @@ class GoogleSSOView(APIView):
         message = data.get("message")
         data = data.get("data")
         return response(status_code=status.HTTP_200_OK, message=message, data=data)
+
+
+class SendOTPView(APIView):
+    throttle_classes = [custom_throttling.CustomAuthThrottle]
+    serializer_class = SendOTPSerializer
+
+    def post(self, request):
+        serializer = SendOTPSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        return response(status_code=status.HTTP_204_NO_CONTENT)
