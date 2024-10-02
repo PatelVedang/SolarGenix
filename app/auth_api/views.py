@@ -20,6 +20,7 @@ from auth_api.serializers import (
     UserProfileSerializer,
     UserRegistrationSerializer,
     VerifyEmailSerializer,
+    VerifyOTPSerializer,
 )
 
 from .permissions import IsAuthenticated
@@ -280,11 +281,43 @@ class GoogleSSOView(APIView):
         return response(status_code=status.HTTP_200_OK, message=message, data=data)
 
 
+@apply_swagger_tags(
+    tags=["Auth"],
+    method_details={
+        "post": {
+            "description": "Send OTP",
+            "summary": "Dynamic POST method to send OTP to users",
+        },
+    },
+)
 class SendOTPView(APIView):
     throttle_classes = [custom_throttling.CustomAuthThrottle]
     serializer_class = SendOTPSerializer
 
     def post(self, request):
         serializer = SendOTPSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.data
+        return response(
+            data=data,
+            status_code=status.HTTP_200_OK,
+            message="Registration Done. Please Activate Your Account!",
+        )
+
+
+@apply_swagger_tags(
+    tags=["Auth"],
+    method_details={
+        "post": {
+            "description": "Verify API for OTP",
+            "summary": "Dynamic POST method for verifying & validate OTP",
+        },
+    },
+)
+class VerifyOTPView(APIView):
+    serializer_class = VerifyOTPSerializer
+
+    def post(self, request):
+        serializer = VerifyOTPSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         return response(status_code=status.HTTP_204_NO_CONTENT)
