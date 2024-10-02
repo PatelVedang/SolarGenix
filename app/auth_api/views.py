@@ -13,7 +13,6 @@ from auth_api.serializers import (
     GoogleSSOSerializer,
     LogoutSerializer,
     RefreshTokenSerializer,
-    ResendResetTokenSerializer,
     ResendVerificationEmailSerializer,
     UserLoginSerializer,
     UserPasswordResetSerializer,
@@ -153,21 +152,6 @@ class ForgotPasswordView(APIView):
         },
     },
 )
-class ResendResetTokenView(APIView):
-    permission_classes = [AllowAny]
-    throttle_classes = [custom_throttling.CustomAuthThrottle]
-    serializer_class = ResendResetTokenSerializer
-
-    def post(self, request):
-        serializer = ResendResetTokenSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        return response(
-            data=serializer.data,
-            status_code=status.HTTP_200_OK,
-            message=AuthResponseConstants.RESET_TOKEN_RESENT,
-        )
-
-
 @apply_swagger_tags(
     tags=["Auth"],
     method_details={

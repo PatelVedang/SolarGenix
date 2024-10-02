@@ -9,6 +9,7 @@ from django.db import models
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from proj.models import BaseModel
+from rest_framework.exceptions import AuthenticationFailed
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.tokens import Token as BaseToken
 from utils.custom_exception import CustomValidationError as ValidationError
@@ -61,13 +62,13 @@ class SimpleToken(BaseToken):
             )
         except jwt.ExpiredSignatureError as e:
             logger.error("Token has expired with error: %s", e)
-            raise ValidationError("Token has expired")
+            raise AuthenticationFailed("Token has expired")
         except jwt.DecodeError as e:
             logger.error("Invalid token with error: %s", e)
-            raise ValidationError("Invalid token")
+            raise AuthenticationFailed("Invalid token")
         except jwt.InvalidTokenError as e:
             logger.error("Invalid token with error: %s", e)
-            raise ValidationError("Invalid token")
+            raise AuthenticationFailed("Invalid token")
 
     @classmethod
     def validate_token(cls, token, token_type):
@@ -86,11 +87,11 @@ class SimpleToken(BaseToken):
             token = token.first()
             if token.is_expired():
                 token.hard_delete()
-                raise ValidationError("Token has expired")
+                raise AuthenticationFailed("Token has expired")
             payload["token_obj"] = token
             return payload
         else:
-            raise ValidationError("Invalid token")
+            raise AuthenticationFailed("Invalid token")
 
 
 # Create your models here.

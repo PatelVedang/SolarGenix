@@ -1,6 +1,5 @@
 import logging
 import re
-import threading
 
 from django.conf import settings
 from django.contrib.auth import authenticate
@@ -10,7 +9,7 @@ from rest_framework import serializers
 from rest_framework.exceptions import AuthenticationFailed
 from rest_framework_simplejwt.serializers import TokenRefreshSerializer
 from utils.custom_exception import CustomValidationError
-from utils.email import EmailService, send_email
+from utils.email import EmailService
 
 from auth_api.models import SimpleToken, Token, TokenType, User
 
@@ -24,6 +23,7 @@ logger = logging.getLogger("django")
 # including checking for existing email, password validation, and sending a verification email.
 class UserRegistrationSerializer(BaseModelSerializer):
     # password = serializers.CharField(style={"input_type": "password"}, write_only=True)
+    email = serializers.EmailField()
     password = serializers.CharField(
         style={"input_type": "password"}, write_only=True, label="Password"
     )
@@ -151,39 +151,6 @@ class ForgotPasswordSerializer(BaseSerializer):
 
         else:
             logger.error(f"Forgot password mail sent fail due to {email} not found")
-        return attrs
-
-
-class ResendResetTokenSerializer(BaseSerializer):
-    email = serializers.EmailField(
-        max_length=255, label="Test", error_messages={"invalid": "ddd"}
-    )
-
-    def validate(self, attrs):
-        email = attrs.get("email").lower()
-        user = User.objects.filter(email=email)
-        if user.exists():
-            user = user.first()
-            Token.objects.filter(user=user, token_type="reset").delete()
-            token = SimpleToken.for_user(
-                user, TokenType.RESET.value, settings.AUTH_RESET_PASSWORD_TOKEN_LIFELINE
-            )
-            context = {
-                "subject": "Resend Password Reset Request",
-                "user": user,
-                "recipients": [email],
-                "html_template": "resend_reset_password",
-                "button_links": [
-                    f"{settings.FRONTEND_URL}/api/auth/reset-password/{token}"
-                ],
-                "title": "Reset your password",
-            }
-            thread = threading.Thread(target=send_email, kwargs=context)
-            thread.start()
-        else:
-            logger.error(
-                f"Resend forgot password mail sent fail due to {email} not found"
-            )  # noqa: E501
         return attrs
 
 

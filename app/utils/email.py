@@ -40,7 +40,6 @@ def send_email(**kwargs):
 
     subject = kwargs.get("subject", "")
     body = kwargs.get("body", "")
-    sender = kwargs.get("sender")
     recipients = kwargs.get("recipients", [])
     bcc = kwargs.get("bcc", [])
     attachments = kwargs.get("attachments", [])
@@ -54,7 +53,7 @@ def send_email(**kwargs):
         email = EmailMessage(
             subject,
             strip_tags(body),
-            f"{settings.EMAIL_FORM_NAME}  <{sender}>",
+            f"{settings.EMAIL_FORM_NAME}  <{settings.EMAIL_HOST_USER}>",
             recipients,
             bcc=bcc,
         )
