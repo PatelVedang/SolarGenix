@@ -141,7 +141,7 @@ class ForgotPasswordSerializer(BaseSerializer):
 
     def validate(self, attrs):
         email = attrs.get("email").lower()
-        user = User.objects.filter(email=email)
+        user = User.objects.filter(email=email, is_active=True, is_deleted=False)
         if user.exists():
             user = user.first()
             Token.objects.filter(user=user, token_type="reset").delete()
