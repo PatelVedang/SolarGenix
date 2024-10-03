@@ -1,10 +1,13 @@
 import logging
+import random
 import re
 import threading
+from datetime import timedelta
 
 from django.conf import settings
 from django.contrib.auth import authenticate
 from django.contrib.auth.hashers import make_password
+from django.utils import timezone
 from proj.base_serializer import BaseModelSerializer, BaseSerializer
 from rest_framework import serializers
 from rest_framework.exceptions import AuthenticationFailed
@@ -174,13 +177,13 @@ class UserPasswordResetSerializer(BaseSerializer):
 
     def validate(self, attrs):
         password = attrs.get("password")
-        confirm_pasword = attrs.get("confirm_password")
+        confirm_password = attrs.get("confirm_password")
         token = self.context.get("token")
 
         if not re.search(settings.PASSWORD_VALIDATE_REGEX, attrs.get("password")):
             raise CustomValidationError(f"{settings.PASSWORD_VALIDATE_STRING}")
 
-        if password != confirm_pasword:
+        if password != confirm_password:
             raise CustomValidationError("Passwords do not match")
 
         payload = SimpleToken.validate_token(token, TokenType.RESET.value)
@@ -339,3 +342,47 @@ class GoogleSSOSerializer(BaseSerializer):
                     f"Google SSO failed for {email} after user creation due to authentication failed"
                 )
                 raise AuthenticationFailed("Authentication failed after user creation.")
+
+
+class SendOTPSerializer(BaseSerializer):
+    email = serializers.EmailField(
+        max_length=255, required=True, allow_blank=False, allow_null=False
+    )
+
+    def validate(self, attrs):
+        email = attrs.get("email").lower()
+        user = User.objects.filter(email=email)
+        if user.exists():
+            user = user.first()
+            # Delete any existing OTP tokens
+            Token.objects.filter(user=user, token_type=TokenType.OTP.value).delete()
+
+            # Generate the OTP
+            otp = random.randint(1000, 9999)
+
+            # Save the OTP in the Token model
+            Token.objects.create(
+                user=user,
+                jti=str(otp),  # Save OTP in the jti field
+                token_type=TokenType.OTP.value,
+                expire_at=timezone.now()
+                + timedelta(settings.OTP_EXPIRY_MINUTE),  # Set expiration time for OTP
+            )
+
+            # Prepare email context
+            context = {
+                "subject": "Your OTP Code",
+                "user": user,
+                "recipients": [email],
+                "html_template": "otp_email_template",  # Define your OTP email template
+                "otp": otp,  # Pass the OTP to the email template
+                "title": "Your One-Time Password (OTP)",
+            }
+
+            # Send the email in a separate thread
+            thread = threading.Thread(target=send_email, kwargs=context)
+            thread.start()
+        else:
+            logger.error(f"OTP sending failed, user with email {email} not found")
+
+        return attrs

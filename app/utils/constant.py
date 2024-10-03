@@ -179,6 +179,7 @@ class EmailTemplates:
             "resend_reset_password": self.resend_reset_password,
             "superuser_created": self.superuser_created,
             "user_created_by_admin": self.user_created_by_admin,
+            "otp_email_template": self.otp_email_template,
         }
         self.result = self.templates[template_name](**kwargs)
 
@@ -255,20 +256,19 @@ class EmailTemplates:
 
     def resend_reset_password(self, **kwargs):
         """
-        The function `resend_reset_password` generates an HTML email template for resetting a user's
-        password.
-        :return: the HTML content for a password reset email template, with personalized information such as
-        the user's first and last name, a message about the password reset request, and a button with a link
-        to reset the password.
+        The function `resend_reset_password` generates an HTML email template to notify the user
+        that their password has been successfully updated.
+        :return: the HTML content for a password update confirmation email, with personalized information such as
+        the user's first and last name, a message about the successful password update, and a link for future account management.
         """
         user = kwargs.get("user")
-        button_label = "Reset Password"
+        button_label = "Login"
         button_link = kwargs.get("button_links", "#")
 
         lines = [
             f"Hello {user.first_name} {user.last_name},",
-            "We received a request to reset your password. If you did not make this request, please ignore this email.",
-            "To reset your password, please click on the link below:",
+            "Your password has been successfully updated. If you did not make this change, please contact us immediately.",
+            "You can manage your account settings by login again, please click on the link below:",
         ]
 
         context = {
@@ -342,6 +342,32 @@ class EmailTemplates:
             "button_label": button_label,  # No button for this email
             "button_link": button_link[0],
             "verify_details": verify_details,
+        }
+        template = Template(self.html_str)
+        html_content = template.render(Context(context))
+        return html_content
+
+    def otp_email_template(self, **kwargs):
+        """
+        The `otp_email_template` function generates an HTML email template for sending a one-time password (OTP) to the user
+        for verifying their identity during the password reset process.
+        """
+        user = kwargs.get("user")
+        otp = kwargs.get("otp")
+        button_label = "Verify OTP"
+        button_link = kwargs.get("button_links", "#")
+
+        lines = [
+            f"Hello {user.first_name} {user.last_name},",
+            f"To reset your password, use the following OTP: {otp}.",
+            "To verify the OTP and continue with resetting your password, please click on the link below:",
+            "If you did not make this request, please ignore this email.",
+        ]
+
+        context = {
+            "lines": lines,
+            "button_label": button_label,
+            "button_link": button_link[0],
         }
         template = Template(self.html_str)
         html_content = template.render(Context(context))
