@@ -166,6 +166,9 @@ class ForgotPasswordSerializer(BaseSerializer):
             thread.start()
         else:
             logger.error(f"Forgot password mail sent fail due to {email} not found")
+            raise CustomValidationError(
+                f"Forgot password mail sent fail due to {email} not found"
+            )
         return attrs
 
 
@@ -273,6 +276,9 @@ class ResendVerificationEmailSerializer(BaseSerializer):
             thread.start()
         else:
             logger.error(f"Resend verification mail sent fail due to {email} not found")
+            raise CustomValidationError(
+                f"Resend verification mail sent fail due to {email} not found"
+            )
         return attrs
 
 
@@ -371,7 +377,7 @@ class SendOTPSerializer(BaseSerializer):
             reset_token = SimpleToken.for_user(
                 user,
                 TokenType.OTP.value,
-                settings.OTP_EXPIRY_MINUTE,
+                settings.OTP_EXPIRY_MINUTES,
                 str(otp),
             )
             print(reset_token.__dict__)
@@ -393,6 +399,9 @@ class SendOTPSerializer(BaseSerializer):
             thread.start()
         else:
             logger.error(f"OTP sending failed, user with email {email} not found")
+            raise CustomValidationError(
+                f"OTP sending failed, user with email {email} not found"
+            )
 
         return attrs
 
