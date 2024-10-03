@@ -7,6 +7,7 @@ from auth_api.views import (
     LogoutView,
     RefreshTokenView,
     ResendVerificationEmailView,
+    ResetPasswordOTP,
     SendOTPView,
     UserLoginView,
     UserPasswordResetView,
@@ -47,5 +48,8 @@ urlpatterns = [
     ),
     path("auth/logout", LogoutView.as_view(), name="login-view"),
     path("auth/send-otp", SendOTPView.as_view(), name="send-otp-view"),
-    path("auth/verify-otp/", VerifyOTPView.as_view(), name="verify-otp-view"),
+    path("auth/verify-otp", VerifyOTPView.as_view(), name="verify-otp-view"),
+    path(
+        "auth/reset-password-otp", ResetPasswordOTP.as_view(), name="reset-password-otp"
+    ),
 ]

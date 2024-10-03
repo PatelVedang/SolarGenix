@@ -14,6 +14,7 @@ from auth_api.serializers import (
     LogoutSerializer,
     RefreshTokenSerializer,
     ResendVerificationEmailSerializer,
+    ResetPasswordOTPSerializer,
     SendOTPSerializer,
     UserLoginSerializer,
     UserPasswordResetSerializer,
@@ -301,7 +302,7 @@ class SendOTPView(APIView):
         return response(
             data=data,
             status_code=status.HTTP_200_OK,
-            message="Registration Done. Please Activate Your Account!",
+            message="Successfully sent an OTP in email. Please check your inbox.",
         )
 
 
@@ -319,5 +320,23 @@ class VerifyOTPView(APIView):
 
     def post(self, request):
         serializer = VerifyOTPSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        return response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@apply_swagger_tags(
+    tags=["Auth"],
+    method_details={
+        "post": {
+            "description": "Reset Password using OTP",
+            "summary": "Post method for reset password using",
+        },
+    },
+)
+class ResetPasswordOTP(APIView):
+    serializer_class = ResetPasswordOTPSerializer
+
+    def post(self, request):
+        serializer = ResetPasswordOTPSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         return response(status_code=status.HTTP_204_NO_CONTENT)
