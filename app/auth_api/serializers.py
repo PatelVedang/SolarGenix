@@ -2,7 +2,6 @@ import logging
 import random
 import re
 import threading
-from datetime import timedelta
 
 from django.conf import settings
 from django.contrib.auth import authenticate
@@ -361,13 +360,15 @@ class SendOTPSerializer(BaseSerializer):
             otp = random.randint(1000, 9999)
 
             # Save the OTP in the Token model
-            Token.objects.create(
-                user=user,
-                jti=str(otp),  # Save OTP in the jti field
-                token_type=TokenType.OTP.value,
-                expire_at=timezone.now()
-                + timedelta(settings.OTP_EXPIRY_MINUTE),  # Set expiration time for OTP
+            reset_token = SimpleToken.for_user(
+                user,
+                TokenType.OTP.value,
+                settings.OTP_EXPIRY_MINUTE,
+                str(otp),
             )
+            print(reset_token.__dict__)
+            self.context["otp"] = otp
+            self.context["otp_expires"] = reset_token.lifetime
 
             # Prepare email context
             context = {
@@ -384,5 +385,43 @@ class SendOTPSerializer(BaseSerializer):
             thread.start()
         else:
             logger.error(f"OTP sending failed, user with email {email} not found")
+
+        return attrs
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        data["otp_expires"] = self.context.get("otp_expires")
+        data["otp"] = self.context.get("otp")
+        return data
+
+
+class VerifyOTPSerializer(BaseSerializer):
+    email = serializers.EmailField(
+        max_length=255, required=True, allow_blank=False, allow_null=False
+    )
+    otp = serializers.CharField(
+        max_length=6, required=True, allow_blank=False, allow_null=False
+    )
+
+    def validate(self, attrs):
+        email = attrs.get("email").lower()
+        otp = attrs.get("otp")
+        # Check if user with this email exists
+        try:
+            user = User.objects.get(email=email)
+            print(user)
+        except User.DoesNotExist:
+            raise serializers.ValidationError("Invalid email.")
+
+        # Get the OTP record from the Token table
+        try:
+            otp_obj = Token.objects.get(
+                user=user, jti=otp, token_type=TokenType.OTP.value
+            )
+        except Token.DoesNotExist:
+            raise CustomValidationError("Invalid OTP, please try with a new OTP")
+        # Check if OTP is expired
+        if timezone.now() >= otp_obj.expire_at:
+            raise CustomValidationError("OTP has expired.")
 
         return attrs

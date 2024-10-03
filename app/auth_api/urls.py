@@ -13,6 +13,7 @@ from auth_api.views import (
     UserProfileView,
     UserRegistrationView,
     VerifyEmailView,
+    VerifyOTPView,
 )
 
 urlpatterns = [
@@ -46,4 +47,5 @@ urlpatterns = [
     ),
     path("auth/logout", LogoutView.as_view(), name="login-view"),
     path("auth/send-otp", SendOTPView.as_view(), name="send-otp-view"),
+    path("auth/verify-otp/", VerifyOTPView.as_view(), name="verify-otp-view"),
 ]
