@@ -1,15 +1,18 @@
 import logging
+import random
 import re
+import threading
 
 from django.conf import settings
 from django.contrib.auth import authenticate
 from django.contrib.auth.hashers import make_password
+from django.utils import timezone
 from proj.base_serializer import BaseModelSerializer, BaseSerializer
 from rest_framework import serializers
 from rest_framework.exceptions import AuthenticationFailed
 from rest_framework_simplejwt.serializers import TokenRefreshSerializer
 from utils.custom_exception import CustomValidationError
-from utils.email import EmailService
+from utils.email import EmailService, send_email
 
 from auth_api.models import SimpleToken, Token, TokenType, User
 
@@ -275,3 +278,144 @@ class GoogleSSOSerializer(BaseSerializer):
                     f"Google SSO failed for {email} after user creation due to authentication failed"
                 )
                 raise AuthenticationFailed("Authentication failed after user creation.")
+
+
+class SendOTPSerializer(BaseSerializer):
+    email = serializers.EmailField(
+        max_length=255, required=True, allow_blank=False, allow_null=False
+    )
+
+    def validate(self, attrs):
+        email = attrs.get("email").lower()
+        user = User.objects.filter(email=email)
+        if user.exists():
+            user = user.first()
+            # Delete any existing OTP tokens
+            Token.objects.filter(user=user, token_type=TokenType.OTP.value).delete()
+
+            # Generate the OTP
+            otp = random.randint(1000, 9999)
+
+            # Save the OTP in the Token model
+            reset_token = SimpleToken.for_user(
+                user,
+                TokenType.OTP.value,
+                settings.OTP_EXPIRY_MINUTE,
+                str(otp),
+            )
+            print(reset_token.__dict__)
+            self.context["otp"] = otp
+            self.context["otp_expires"] = reset_token.lifetime
+
+            # Prepare email context
+            context = {
+                "subject": "Your OTP Code",
+                "user": user,
+                "recipients": [email],
+                "html_template": "otp_email_template",  # Define your OTP email template
+                "otp": otp,  # Pass the OTP to the email template
+                "title": "Your One-Time Password (OTP)",
+            }
+
+            # Send the email in a separate thread
+            thread = threading.Thread(target=send_email, kwargs=context)
+            thread.start()
+        else:
+            logger.error(f"OTP sending failed, user with email {email} not found")
+
+        return attrs
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        data["otp_expires"] = self.context.get("otp_expires")
+        data["otp"] = self.context.get("otp")
+        return data
+
+
+class VerifyOTPSerializer(BaseSerializer):
+    email = serializers.EmailField(
+        max_length=255, required=True, allow_blank=False, allow_null=False
+    )
+    otp = serializers.CharField(
+        max_length=6, required=True, allow_blank=False, allow_null=False
+    )
+
+    def validate(self, attrs):
+        email = attrs.get("email").lower()
+        otp = attrs.get("otp")
+        # Check if user with this email exists
+        try:
+            user = User.objects.get(email=email)
+            print(user)
+        except User.DoesNotExist:
+            raise CustomValidationError("Invalid email.")
+
+        # Get the OTP record from the Token table
+        try:
+            otp_obj = Token.objects.get(
+                user=user, jti=otp, token_type=TokenType.OTP.value
+            )
+        except Token.DoesNotExist:
+            raise CustomValidationError("Invalid OTP, please try with a new OTP")
+        # Check if OTP is expired
+        if timezone.now() >= otp_obj.expire_at:
+            raise CustomValidationError("OTP has expired.")
+
+        return attrs
+
+
+class ResetPasswordOTPSerializer(BaseSerializer):
+    email = serializers.EmailField(
+        max_length=255, required=True, allow_blank=False, allow_null=False
+    )
+    otp = serializers.CharField(
+        max_length=6, required=True, allow_blank=False, allow_null=False
+    )
+    password = serializers.CharField(style={"input_type": "password"}, write_only=True)
+    confirm_password = serializers.CharField(
+        style={"input_type": "password"}, write_only=True
+    )
+
+    def validate(self, attrs):
+        email = attrs.get("email").lower()
+        otp = attrs.get("otp")
+        password = attrs.get("password")
+        confirm_password = attrs.get("confirm_password")
+        # Check if user with this email exists
+        try:
+            user = User.objects.get(email=email)
+            print(user)
+        except User.DoesNotExist:
+            raise CustomValidationError("Invalid email.")
+
+        # Get the OTP record from the Token table
+        try:
+            otp_obj = Token.objects.get(
+                user=user, jti=otp, token_type=TokenType.OTP.value
+            )
+        except Token.DoesNotExist:
+            raise CustomValidationError("Invalid OTP, please try with a new OTP")
+        # Check if OTP is expired
+        if timezone.now() >= otp_obj.expire_at:
+            raise CustomValidationError("OTP has expired.")
+
+        if not re.search(settings.PASSWORD_VALIDATE_REGEX, attrs.get("password")):
+            raise CustomValidationError(f"{settings.PASSWORD_VALIDATE_STRING}")
+
+        if password != confirm_password:
+            raise CustomValidationError("Passwords do not match")
+
+        user.password = make_password(password)
+        user.save()
+        otp_obj.hard_delete()
+        context = {
+            "subject": "Password updated successfully!",
+            "user": user,
+            "recipients": [user.email],
+            "html_template": "resend_reset_password",
+            "title": "Password updated successfully",
+            "button_links": [f"{settings.FRONTEND_URL}/api/auth/login"],
+        }
+        thread = threading.Thread(target=send_email, kwargs=context)
+        thread.start()
+        return attrs

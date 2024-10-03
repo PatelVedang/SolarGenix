@@ -25,6 +25,7 @@ class TokenType(models.TextChoices):
     RESET = "reset", ("Reset")
     VERIFY_MAIL = "verify_mail", ("Verify Mail")
     GOOGLE = "google", ("Google")
+    OTP = "otp", ("Otp")
 
 
 class SimpleToken(BaseToken):
