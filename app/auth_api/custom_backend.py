@@ -1,6 +1,8 @@
 from django.contrib.auth.backends import ModelBackend
 from django.utils.timezone import now
+from rest_framework.exceptions import AuthenticationFailed
 
+from .constants import AuthResponseConstants
 from .models import User
 
 
@@ -25,15 +27,24 @@ class LoginOnAuthBackend(ModelBackend):
         there is an exception during the authentication process.
         """
         try:
-            # Fetch the user with the given username and check both is_active and is_deleted
+            # Attempt to retrieve an active, non-deleted user by email
+            # The 'is_active=True' ensures only active users are fetched
+            # The 'is_deleted=False' ensures the user hasn't been soft-deleted
             user = User.objects.get(email=email, is_active=True, is_deleted=False)
-            # Use Django's built-in check_password method to verify the password
-            if user.check_password(password):
-                # Update last_login upon successful authentication
-                print(user.last_login)
+
+            # Verify the provided password using Django's built-in password hashing system
+            # 'check_password' returns True if the password matches the hashed password in the database
+            if user.check_password(password) and user.is_email_verified:
+                # Update the 'last_login' field with the current timestamp upon successful authentication
                 user.last_login = now()
-                user.save()
-                print(user.last_login)
+                user.save()  # Save the updated 'last_login' field to the database
+
+                # Return the authenticated user object if password validation is successful
                 return user
+            else:
+                # Return None if the password does not match, indicating failed authentication
+                return None
         except User.DoesNotExist:
-            return None
+            # If no user is found with the given email, return an AuthenticationFailed exception
+            # The 'INVALID_CREDENTIALS' constant can hold a custom error message for invalid credentials
+            raise AuthenticationFailed(AuthResponseConstants.INVALID_CREDENTIALS)

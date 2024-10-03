@@ -62,26 +62,10 @@ class UserRegistrationSerializer(BaseModelSerializer):
 
     def create(self, validated_data):
         validated_data["email"] = validated_data["email"].lower()
-        print(validated_data)
         user = User.objects.create_user(**validated_data)
         user.save()
         email_service = EmailService(user)
         email_service.send_verification_email()
-        # verify_token = SimpleToken.for_user(
-        #     user, TokenType.VERIFY_MAIL.value, settings.AUTH_VERIFY_EMAIL_TOKEN_LIFELINE
-        # )
-        # context = {
-        #     "subject": "Verify Your E-mail Address!",
-        #     "user": user,
-        #     "recipients": [user.email],
-        #     "button_links": [
-        #         f"{settings.FRONTEND_URL}/api/auth/verify-email/{verify_token}"
-        #     ],
-        #     "html_template": "verify_email",
-        #     "title": "Verify Your E-mail Address",
-        # }
-        # thread = threading.Thread(target=send_email, kwargs=context)
-        # thread.start()
         return user
 
 
@@ -99,21 +83,11 @@ class UserLoginSerializer(BaseModelSerializer):
         if user is None:
             user = User.objects.filter(email=attrs.get("email")).first()
             if user:
-                if user.is_deleted:
-                    raise CustomValidationError(AuthResponseConstants.ACCOUNT_DELETED)
-                if not user.is_active:
-                    raise CustomValidationError(AuthResponseConstants.ACCOUNT_INACTIVE)
-                if (
-                    not user.is_email_verified
-                    and user.is_active
-                    and not user.is_deleted
-                ):
+                if not user.is_email_verified:
                     Token.objects.filter(user=user, token_type="verify_mail").delete()
                     email_service = EmailService(user)
                     email_service.send_verification_email()
-                    raise CustomValidationError(
-                        AuthResponseConstants.ACCOUNT_NOT_VERIFIED
-                    )
+                    return user
             raise AuthenticationFailed(AuthResponseConstants.INVALID_CREDENTIALS)
 
         return user
@@ -132,14 +106,11 @@ class ForgotPasswordSerializer(BaseSerializer):
 
     def validate(self, attrs):
         email = attrs.get("email").lower()
-        user = User.objects.filter(email=email).first()
+        user = User.objects.filter(
+            email=email, is_active=True, is_deleted=False
+        ).first()
         if user:
-            if user.is_deleted:
-                raise CustomValidationError(AuthResponseConstants.ACCOUNT_DELETED)
-            if not user.is_active:
-                raise CustomValidationError(AuthResponseConstants.ACCOUNT_INACTIVE)
-
-            if user.is_email_verified and user.is_active and not user.is_deleted:
+            if user.is_email_verified:
                 Token.objects.filter(user=user, token_type="reset").delete()
                 email_service = EmailService(user)
                 email_service.send_password_reset_email(email)
@@ -162,13 +133,13 @@ class UserPasswordResetSerializer(BaseSerializer):
 
     def validate(self, attrs):
         password = attrs.get("password")
-        confirm_pasword = attrs.get("confirm_password")
+        confirm_password = attrs.get("confirm_password")
         token = self.context.get("token")
 
         if not re.search(settings.PASSWORD_VALIDATE_REGEX, attrs.get("password")):
             raise CustomValidationError(f"{settings.PASSWORD_VALIDATE_STRING}")
 
-        if password != confirm_pasword:
+        if password != confirm_password:
             raise CustomValidationError(
                 AuthResponseConstants.PASSWORD_CONFIRMATION_MISMATCH
             )
@@ -181,15 +152,6 @@ class UserPasswordResetSerializer(BaseSerializer):
         token_obj.hard_delete()
         email_service = EmailService(user)
         email_service.send_password_update_confirmation()
-        # context = {
-        #     "subject": "Password updated successfully!",
-        #     "user": user,
-        #     "recipients": [user.email],
-        #     "html_template": "resend_reset_password",
-        #     "title": "Password updated successfully",
-        # }
-        # thread = threading.Thread(target=send_email, kwargs=context)
-        # thread.start()
         return attrs
 
 
@@ -239,24 +201,6 @@ class ResendVerificationEmailSerializer(BaseSerializer):
             Token.objects.filter(user=user, token_type="verify_mail").delete()
             email_service = EmailService(user)
             email_service.send_verification_email()
-
-            # token = SimpleToken.for_user(
-            #     user,
-            #     TokenType.VERIFY_MAIL.value,
-            #     settings.AUTH_VERIFY_EMAIL_TOKEN_LIFELINE,
-            # )
-            # context = {
-            #     "subject": "Verify Your E-mail Address!",
-            #     "user": user,
-            #     "recipients": [user.email],
-            #     "button_links": [
-            #         f"{settings.FRONTEND_URL}/api/auth/verify-email/{token}"
-            #     ],
-            #     "html_template": "verify_email",
-            #     "title": "Verify Your E-mail Address",
-            # }
-            # thread = threading.Thread(target=send_email, kwargs=context)
-            # thread.start()
         else:
             logger.error(f"Resend verification mail sent fail due to {email} not found")
         return attrs
@@ -275,7 +219,6 @@ class VerifyEmailSerializer(BaseSerializer):
             )
         token_obj = payload.get("token_obj")
         user = token_obj.user
-        user.is_active = True
         user.is_email_verified = True
         user.save()
         token_obj.hard_delete()

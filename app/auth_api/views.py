@@ -68,6 +68,12 @@ class UserLoginView(APIView):
         serializer = UserLoginSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.validated_data
+        if not user.is_email_verified:
+            return response(
+                data={},
+                status_code=status.HTTP_200_OK,
+                message=AuthResponseConstants.ACCOUNT_NOT_VERIFIED,
+            )
         return response(
             data={
                 "user": UserProfileSerializer(user).data,

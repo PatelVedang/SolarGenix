@@ -110,7 +110,7 @@ class User(AbstractUser, PermissionsMixin, BaseModel):
     )
     is_active = models.BooleanField(
         _("active"),
-        default=False,  # Override the default value
+        default=True,  # Override the default value
     )
     is_email_verified = models.BooleanField(default=False)
     objects = UserManager()
