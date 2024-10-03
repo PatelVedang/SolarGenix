@@ -411,7 +411,7 @@ class VerifyOTPSerializer(BaseSerializer):
             user = User.objects.get(email=email)
             print(user)
         except User.DoesNotExist:
-            raise serializers.ValidationError("Invalid email.")
+            raise CustomValidationError("Invalid email.")
 
         # Get the OTP record from the Token table
         try:
@@ -424,4 +424,61 @@ class VerifyOTPSerializer(BaseSerializer):
         if timezone.now() >= otp_obj.expire_at:
             raise CustomValidationError("OTP has expired.")
 
+        return attrs
+
+
+class ResetPasswordOTPSerializer(BaseSerializer):
+    email = serializers.EmailField(
+        max_length=255, required=True, allow_blank=False, allow_null=False
+    )
+    otp = serializers.CharField(
+        max_length=6, required=True, allow_blank=False, allow_null=False
+    )
+    password = serializers.CharField(style={"input_type": "password"}, write_only=True)
+    confirm_password = serializers.CharField(
+        style={"input_type": "password"}, write_only=True
+    )
+
+    def validate(self, attrs):
+        email = attrs.get("email").lower()
+        otp = attrs.get("otp")
+        password = attrs.get("password")
+        confirm_password = attrs.get("confirm_password")
+        # Check if user with this email exists
+        try:
+            user = User.objects.get(email=email)
+            print(user)
+        except User.DoesNotExist:
+            raise CustomValidationError("Invalid email.")
+
+        # Get the OTP record from the Token table
+        try:
+            otp_obj = Token.objects.get(
+                user=user, jti=otp, token_type=TokenType.OTP.value
+            )
+        except Token.DoesNotExist:
+            raise CustomValidationError("Invalid OTP, please try with a new OTP")
+        # Check if OTP is expired
+        if timezone.now() >= otp_obj.expire_at:
+            raise CustomValidationError("OTP has expired.")
+
+        if not re.search(settings.PASSWORD_VALIDATE_REGEX, attrs.get("password")):
+            raise CustomValidationError(f"{settings.PASSWORD_VALIDATE_STRING}")
+
+        if password != confirm_password:
+            raise CustomValidationError("Passwords do not match")
+
+        user.password = make_password(password)
+        user.save()
+        otp_obj.hard_delete()
+        context = {
+            "subject": "Password updated successfully!",
+            "user": user,
+            "recipients": [user.email],
+            "html_template": "resend_reset_password",
+            "title": "Password updated successfully",
+            "button_links": [f"{settings.FRONTEND_URL}/api/auth/login"],
+        }
+        thread = threading.Thread(target=send_email, kwargs=context)
+        thread.start()
         return attrs
