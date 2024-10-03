@@ -161,7 +161,10 @@ class UserPasswordResetSerializer(BaseSerializer):
 class RefreshTokenSerializer(TokenRefreshSerializer, BaseSerializer):
     def validate(self, attrs):
         token = attrs.get("refresh")
+        print("------------------------------------------------------------")
+        print(token)
         payload = SimpleToken.validate_token(token, TokenType.REFRESH.value)
+        print("-----------", payload)
         token_obj = payload.get("token_obj")
         user = token_obj.user
         token_obj.hard_delete()
@@ -230,8 +233,10 @@ class VerifyEmailSerializer(BaseSerializer):
 
 class LogoutSerializer(BaseSerializer):
     def validate(self, attrs):
-        jti = self.context["request"].auth["jti"]
-        Token.default.filter(jti=jti, user=self.context["request"].user).delete()
+        auth = self.context["request"].auth
+        if auth:
+            jti = auth["jti"]
+            Token.default.filter(jti=jti, user=self.context["request"].user).delete()
         return attrs
 
 

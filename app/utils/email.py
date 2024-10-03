@@ -103,7 +103,9 @@ class EmailService:
         self, subject, recipients, button_link, html_template, title
     ):
         """Creates a context dictionary for email sending."""
-        return {
+
+        print("context====", button_link, recipients)
+        context_dict = {
             "subject": subject,
             "user": self.user,
             "recipients": recipients,
@@ -111,6 +113,9 @@ class EmailService:
             "html_template": html_template,
             "title": title,
         }
+        if button_link is None:
+            context_dict.pop("button_links")
+        return context_dict
 
     def send_verification_email(self):
         verify_token = SimpleToken.for_user(
@@ -150,5 +155,6 @@ class EmailService:
             recipients=[self.user.email],
             html_template="resend_reset_password",
             title="Password Updated Successfully",
+            button_link=None,
         )
         self.send_email_async(context)

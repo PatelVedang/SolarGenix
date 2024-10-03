@@ -220,6 +220,7 @@ class RefreshTokenView(TokenObtainPairView):
     serializer_class = RefreshTokenSerializer
 
     def post(self, request):
+        print("-------------------------------------", request.data)
         serializer = RefreshTokenSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         return response(
@@ -260,7 +261,7 @@ class ResendVerificationEmailView(APIView):
 )
 class LogoutView(APIView):
     serializer_class = LogoutSerializer
-    permission_classes = [IsAuthenticated]
+    # permission_classes = [IsAuthenticated]
 
     def get(self, request):
         serializer = self.serializer_class(data={}, context={"request": request})
