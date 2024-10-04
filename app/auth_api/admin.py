@@ -53,6 +53,7 @@ class UserModelAdmin(BaseUserAdmin, SoftDeleteAdminMixin):
         "is_email_verified",
         "last_login",
         "is_deleted",
+        "is_default_password",
     ]
     list_filter = ["is_superuser"]
     fieldsets = [
