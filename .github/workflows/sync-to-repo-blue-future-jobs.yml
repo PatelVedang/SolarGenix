@@ -26,7 +26,7 @@ jobs:
     # Clone Repo Blue Future Jobslue Future Jobs  using GitHub token or SSH
     - name: Clone Repo Blue Future Jobslue Future Jobs
       run: |
-        git clone --branch DRF https://parimal-ts@github.com/technostacksgit/blue-future-backend-python-django.git
+        git clone --branch DRF https://${{ GITHUB_TOKEN }}@github.com/technostacksgit/blue-future-backend-python-django.git
         cd target-repo
         git checkout DRF
 
