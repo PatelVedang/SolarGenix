@@ -23,10 +23,10 @@ jobs:
         git config --global user.name "parimal-ts"
         git config --global user.email "parimal.patel@technostacks.com"
 
-    # Clone Repo B (Blue Future Jobs)
+    # Clone Repo B (Blue Future Jobs) using PAT_REPO_B
     - name: Clone Repo Blue Future Jobs
       run: |
-        git clone --branch DRF https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/technostacksgit/blue-future-backend-python-django.git target-repo
+        git clone --branch DRF https://x-access-token:${{ secrets.PAT_REPO_B }}@github.com/technostacksgit/blue-future-backend-python-django.git target-repo
 
     # Copy changes from Repo A to Repo B (excluding .git)
     - name: Copy Code from Repo A to Repo B
