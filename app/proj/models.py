@@ -1,4 +1,7 @@
+import string
+
 from django.db import models
+from django.utils.crypto import get_random_string
 
 
 class NonDeleted(models.Manager):
@@ -31,3 +34,9 @@ class BaseModel(models.Model):
     class Meta:
         abstract = True
         ordering = ("-created_at",)
+
+
+def generate_password():
+    """Generates a random password with letters, digits, and punctuation."""
+    allowed_chars = string.ascii_letters + string.digits + string.punctuation
+    return get_random_string(8, allowed_chars)
