@@ -138,6 +138,7 @@ class UserPasswordResetSerializer(BaseSerializer):
         password = attrs.get("password")
         confirm_password = attrs.get("confirm_password")
         token = self.context.get("token")
+        payload = SimpleToken.validate_token(token, TokenType.RESET.value)
 
         if not re.search(settings.PASSWORD_VALIDATE_REGEX, attrs.get("password")):
             raise CustomValidationError(f"{settings.PASSWORD_VALIDATE_STRING}")
@@ -147,7 +148,6 @@ class UserPasswordResetSerializer(BaseSerializer):
                 AuthResponseConstants.PASSWORD_CONFIRMATION_MISMATCH
             )
 
-        payload = SimpleToken.validate_token(token, TokenType.RESET.value)
         token_obj = payload.get("token_obj")
         user = token_obj.user
         user.password = make_password(password)
@@ -217,12 +217,7 @@ class VerifyEmailSerializer(BaseSerializer):
 
     def validate_token(self, value):
         payload = SimpleToken.decode(value)
-        try:
-            payload = SimpleToken.validate_token(value, TokenType.VERIFY_MAIL.value)
-        except Exception:
-            raise CustomValidationError(
-                AuthResponseConstants.EMAIL_VERIFICATION_LINK_EXPIRED
-            )
+        payload = SimpleToken.validate_token(value, TokenType.VERIFY_MAIL.value)
         token_obj = payload.get("token_obj")
         user = token_obj.user
         user.is_email_verified = True

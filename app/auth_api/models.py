@@ -12,7 +12,6 @@ from proj.models import BaseModel
 from rest_framework.exceptions import AuthenticationFailed
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.tokens import Token as BaseToken
-from utils.custom_exception import CustomValidationError as ValidationError
 
 from .managers import UserManager
 
@@ -76,7 +75,7 @@ class SimpleToken(BaseToken):
         payload = cls.decode(token)
         print("payload------------", payload)
         if payload["token_type"] != token_type:
-            raise ValidationError("Invalid token")
+            raise AuthenticationFailed("Invalid token")
         jti = payload["jti"]
         user_id = payload["user_id"]
         # user_obj = User.objects.filter(id=user_id).first()
