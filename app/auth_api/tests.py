@@ -74,18 +74,8 @@ class BaseAPITestCase(APITestCase):
             self.client.post(f"{self.prefix}/register", data=self._data, format="json")
         )
 
-    # def login(self, email=None, password=None):
-    #     self._data = {
-    #         "email": email or self.super_admin_email,
-    #         "password": password or self.super_admin_password,
-    #     }
-    #     # super_user = User.objects.get(email=self.)
-    #     self.set_response(
-    #         self.client.post(self.login_url, data=self._data, format="json")
-    #     )
-    #     self.client.credentials(
-    #         HTTP_AUTHORIZATION=f"Bearer {self._data.get('data',{}).get('access',{}).get('token','')}"
-    #     )
+    def get_user_by_email(self, email):
+        return User.objects.get(email=email)
 
     def login(self, email=None, password=None):
         self._data = {
@@ -226,6 +216,54 @@ class AuthTest(BaseAPITestCase):
         """
         self.login()
         self.match_success_response()
+
+    def test_login_unverified_user(self):
+        """
+        This test case attempts to log in a user with an unverified email and checks if it fails.
+        """
+        # Register a new user
+        self.register(email="unverifieduser@yopmail.com", password="Test@1234")
+
+        # Attempt to log in without verifying email
+        self.login(email="unverifieduser@yopmail.com", password="Test@1234")
+
+        self.match_error_response(200)
+
+    def test_login_deleted_user(self):
+        """
+        This test case attempts to log in a user who has been deleted and checks for a failure response.
+        """
+        # Register a user
+        self.register(email="deleteduser@yopmail.com", password="Test@1234")
+
+        # Soft delete the user (update the 'is_deleted' or 'is_active' flag)
+        user = self.get_user_by_email("deleteduser@yopmail.com")
+        user.is_deleted = True
+        user.save()
+
+        # Attempt to log in the deleted user
+        self.login(email="deleteduser@yopmail.com", password="Test@1234")
+
+        # Expect failure because the user is deleted
+        self.match_error_response(401)
+
+    def test_login_inactive_user(self):
+        """
+        This test case attempts to log in an inactive user and checks for a failure response.
+        """
+        # Register a user
+        self.register(email="inactiveuser@yopmail.com", password="Test@1234")
+
+        # Set user to inactive
+        user = self.get_user_by_email("inactiveuser@yopmail.com")
+        user.is_active = False
+        user.save()
+
+        # Attempt to log in the inactive user
+        self.login(email="inactiveuser@yopmail.com", password="Test@1234")
+
+        # Expect failure because the user is inactive
+        self.match_error_response(401)
 
     def test_login_with_wrong_mail(self):
         """
