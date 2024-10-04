@@ -33,6 +33,9 @@ class UserManager(BaseUserManager):
             raise ValueError("Superuser must have is_superuser=True.")
         return self.create_user(email, password, **extra_fields)
 
+    def get_queryset(self):
+        return super().get_queryset().filter(is_deleted=False)
+
 
 class NonDeleted(models.Manager):
     def get_queryset(self):

@@ -7,6 +7,7 @@ from utils.custom_filter import filter_model
 from utils.make_response import response
 from utils.swagger import apply_swagger_tags
 
+from .permission import CustomSuperAdminPermission
 from .serializers import UserSerializer
 
 
@@ -26,8 +27,20 @@ class UserViewSet(BaseModelViewSet):
 
     permission_classes = [IsAuthenticated]
 
+    def get_permissions(self):
+        # Customize permissions based on the action
+        if self.action == "destroy":
+            return [
+                CustomSuperAdminPermission(),
+            ]  # Replace with your custom permission class
+        return super().get_permissions()
+
     def get_queryset(self):
-        queryset = super().get_queryset()
+        queryset = (
+            User.objects.all()
+            if self.request.user.is_superuser
+            else User.objects.filter(id=self.request.user.id)
+        )
         query_params = self.request.query_params
         if query_params:
             # Apply filtering based on query parameters
