@@ -220,7 +220,6 @@ class RefreshTokenView(TokenObtainPairView):
     serializer_class = RefreshTokenSerializer
 
     def post(self, request):
-        print("-------------------------------------", request.data)
         serializer = RefreshTokenSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         return response(

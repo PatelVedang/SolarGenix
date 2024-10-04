@@ -244,9 +244,6 @@ class TodoTest(BaseAPITestCase):
 
         expected_names_search = ["todo"]
         result_names_search = [todo["name"] for todo in results_search]
-
-        print("Extracted Names from Search Results:", result_names_search)
-
         self.assertListEqual(result_names_search, expected_names_search)
 
     def test_get_todo_with_sort_ascending(self):
@@ -263,11 +260,6 @@ class TodoTest(BaseAPITestCase):
 
         response_data_sort_asc = response_sort_asc.json()
         results_sort_asc = response_data_sort_asc["data"]["results"]
-
-        print(
-            "Search Results:", results_sort_asc
-        )  # This will print the result in the console during the test run
-
         expected_names_asc = ["file", "folder", "todo"]
         result_names_sort_asc = [todo["name"] for todo in results_sort_asc]
         self.assertListEqual(result_names_sort_asc, expected_names_asc)
@@ -287,10 +279,6 @@ class TodoTest(BaseAPITestCase):
 
         response_data_sort_desc = response_sort_desc.json()
         results_sort_desc = response_data_sort_desc["data"]["results"]
-        print(
-            "Search Results:", results_sort_desc
-        )  # This will print the result in the console during the test run
-
         expected_names_desc = ["todo", "folder", "file"]
         result_names_sort_desc = [todo["name"] for todo in results_sort_desc]
         self.assertListEqual(result_names_sort_desc, expected_names_desc)

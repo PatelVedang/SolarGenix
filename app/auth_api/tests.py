@@ -57,7 +57,6 @@ class BaseAPITestCase(APITestCase):
         """
         It asserts that the status code is 401 and the status is False
         """
-        print("-------", self.status_code, "<----------")
         self.assertEqual(
             self.status_code,
             status_code if status_code else status.HTTP_400_BAD_REQUEST,
@@ -523,8 +522,6 @@ class AuthTest(BaseAPITestCase):
             "password": self.super_admin_password,
             "confirm_password": self.super_admin_password,
         }
-        print("---------------------------------------------------")
-        print(reset_token)
 
         self.set_response(
             self.client.post(
@@ -596,7 +593,6 @@ class AuthTest(BaseAPITestCase):
         self.send_verification_email()
         verify_token = SimpleToken.for_user(self.super_admin, "verify", 1)
         self.make_token_blacklist("verify")
-        print(verify_token, "<------------verify token")
         self.set_response(self.client.get(f"{self.prefix}/verify-email/{verify_token}"))
         self.match_success_response(401)  # current status code 400
 

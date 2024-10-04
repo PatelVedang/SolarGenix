@@ -73,7 +73,7 @@ class SimpleToken(BaseToken):
     @classmethod
     def validate_token(cls, token, token_type):
         payload = cls.decode(token)
-        print("payload------------", payload)
+
         if payload["token_type"] != token_type:
             raise AuthenticationFailed("Invalid token")
         jti = payload["jti"]
@@ -88,7 +88,6 @@ class SimpleToken(BaseToken):
         )
         if token.exists():
             token = token.first()
-            print()
             if token.is_expired() or not token.user.is_active or token.user.is_deleted:
                 token.hard_delete()
                 raise AuthenticationFailed("Token has expired")

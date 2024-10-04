@@ -10,10 +10,6 @@ class IsAuthenticated(BasePermission):
 
         if not request.user.is_active:
             return False
-        print("------------------------------")
-        print(request.auth)
-        print("------------------------------")
-
         payload = SimpleToken.decode(str(request.auth))
         if payload.get("token_type") != "access":
             return False

@@ -161,10 +161,7 @@ class UserPasswordResetSerializer(BaseSerializer):
 class RefreshTokenSerializer(TokenRefreshSerializer, BaseSerializer):
     def validate(self, attrs):
         token = attrs.get("refresh")
-        print("------------------------------------------------------------")
-        print(token)
         payload = SimpleToken.validate_token(token, TokenType.REFRESH.value)
-        print("-----------", payload)
         token_obj = payload.get("token_obj")
         user = token_obj.user
         token_obj.hard_delete()
@@ -303,7 +300,6 @@ class SendOTPSerializer(BaseSerializer):
                 settings.OTP_EXPIRY_MINUTE,
                 str(otp),
             )
-            print(reset_token.__dict__)
             self.context["otp"] = otp
             self.context["otp_expires"] = reset_token.lifetime
 
@@ -346,7 +342,6 @@ class VerifyOTPSerializer(BaseSerializer):
         # Check if user with this email exists
         try:
             user = User.objects.get(email=email)
-            print(user)
         except User.DoesNotExist:
             raise CustomValidationError("Invalid email.")
 
@@ -384,7 +379,6 @@ class ResetPasswordOTPSerializer(BaseSerializer):
         # Check if user with this email exists
         try:
             user = User.objects.get(email=email)
-            print(user)
         except User.DoesNotExist:
             raise CustomValidationError("Invalid email.")
 
