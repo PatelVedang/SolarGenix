@@ -1,0 +1,49 @@
+name: Sync to Repo Blue Future Jobslue Future Jobs
+
+on:
+  push:
+    branches:
+      - BETA
+  pull_request:
+    branches:
+      - BETA
+
+jobs:
+  sync_code:
+    runs-on: ubuntu-latest
+
+    steps:
+    # Checkout Repo DRF (current repository)
+    - name: Checkout current repository
+      uses: actions/checkout@v3
+
+    # Set up Git with your identity
+    - name: Set up Git
+      run: |
+        git config --global user.name "parimal-ts"
+        git config --global user.email "parimal.patel@technostacks.com"
+
+    # Clone Repo Blue Future Jobslue Future Jobs  using GitHub token or SSH
+    - name: Clone Repo Blue Future Jobslue Future Jobs
+      run: |
+        git clone --branch DRF https://github.com/technostacksgit/blue-future-backend-python-django.git
+        cd target-repo
+        git checkout DRF
+
+    # Copy changes from Repo DRF to Repo Blue Future Jobs
+    - name: Copy Code from Repo DRF to Repo Blue Future Jobs
+      run: |
+        rsync -av --exclude='.git/' ../source-repo/ ./  # Copy all files except .git
+
+    # Commit and push changes to Repo Blue Future Jobs
+    - name: Commit and Push Changes to Repo Blue Future Jobs
+      run: |
+        cd target-repo
+        git add .
+        git commit -m "feat:  Sync code from Repo DRF BETA branch"
+        git push origin DRF
+
+    # Optional: Clean up sensitive data (GitHub Token)
+    - name: Clean up
+      run: |
+        rm -rf target-repo
