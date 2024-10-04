@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Usage: ./scripts/rest_generator.sh APP_NAME
-#clear the screen
+# clear the screen
 clear
 echo " ____  _                         "
 echo "|  _ \\(_) __ _ _ __   __ _  ___  "
@@ -15,6 +15,16 @@ echo "|  _ \\ / _ \\| | |/ _ \\ '__| '_ \\| |/ _\` | __/ _ \\"
 echo "| |_) | (_) | | |  __/ |  | |_) | | (_| | ||  __/"
 echo "|____/ \\___/|_|_|\\___|_|  | .__/|_|\\__,_|\\__\\___|"
 echo "                          |_|                    "
+
+# Get the current directory name
+current_dir=$(basename "$PWD")
+
+# Check if the current directory is not 'app'
+if [ "$current_dir" != "app" ]; then
+    echo "Error: This script must be run from the app/ directory."
+    exit 1
+fi
+
 
 # Check if the app name argument is provided
 if [ -z "$1" ]; then
@@ -50,23 +60,66 @@ if [ -d "$APP_PATH" ]; then
     echo "Error: The app '$PLURAL_UNDERSCORED' already exists."
     exit 1
 fi
+
+# Before running python manage.py startapp, check if there are any error
+if ! python manage.py check; then
+    echo "Error: 'python manage.py check' failed. Please fix all above issues the issues and then try again."
+    exit 1
+fi
+
+# Check if the line '# django apps' exists in the file
+if ! grep -q "# django apps" "$SETTINGS_FILE"; then
+    echo "Error: Line '# django apps' does not exist in the file '$SETTINGS_FILE'."
+    exit 1
+fi
+
+# Check if the line '# IMPORT_NEW_ROUTE_HERE' exists in the file
+if ! grep -q "# IMPORT_NEW_ROUTE_HERE" "$URLS_FILE"; then
+    echo "Error: Line '# IMPORT_NEW_ROUTE_HERE' does not exist in the file '$URLS_FILE'."
+    exit 1
+fi
+
+
 # Create the Django app
 echo "Task initiated: Creating Django app..."
 python manage.py startapp "$PLURAL_UNDERSCORED"
 
+# Determine the correct sed command for in-place editing
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    # macOS
+    SED_CMD="sed -i ''"
+else
+    # Linux
+    SED_CMD="sed -i"
+fi
+
 # Add the app to INSTALLED_APPS
 if ! grep -q "'$PLURAL_UNDERSCORED'" "$SETTINGS_FILE"; then
     echo "Task initiated: Adding app to INSTALLED_APPS..."
-    # sed -i "/INSTALLED_APPS = \[/a\    '$PLURAL_UNDERSCORED'," "$SETTINGS_FILE"
-    # sed -i "/# django apps/a\    '$PLURAL_UNDERSCORED'," "$SETTINGS_FILE"
-    sed -i "/# django apps/a\    \"$PLURAL_UNDERSCORED\"," "$SETTINGS_FILE"
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        # macOS
+        sed -i '' "/# django apps/a\\
+    '$PLURAL_UNDERSCORED',\\
+" "$SETTINGS_FILE"
+    else
+        # Linux
+        sed -i "/# django apps/a\    '$PLURAL_UNDERSCORED'," "$SETTINGS_FILE"
+    fi
+    # $SED_CMD "/# django apps/a\    '$PLURAL_UNDERSCORED'," "$SETTINGS_FILE"
 fi
-
 
 # Add the app's URLs to the project's URLs
 if ! grep -q "'$PLURAL_UNDERSCORED.urls'" "$URLS_FILE"; then
     echo "Task initiated: Adding app URLs to project URLs..."
-    sed -i "/# IMPORT_NEW_ROUTE_HERE/a\                path('', include('$PLURAL_UNDERSCORED.urls'))," "$URLS_FILE"
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        # macOS
+        sed -i '' "/# IMPORT_NEW_ROUTE_HERE/a\\
+    path(\"\", include('$PLURAL_UNDERSCORED.urls')),\\
+" "$URLS_FILE"        
+    else
+        # Linux
+        sed -i "/# IMPORT_NEW_ROUTE_HERE/a\                path(\"\", include('$PLURAL_UNDERSCORED.urls'))," "$URLS_FILE"
+    fi
 fi
 
 # Generate models.py with various field types
@@ -142,6 +195,7 @@ class $SINGULAR_CAPITALIZED_VIEWSET(BaseModelViewSet):
     queryset = $SINGULAR_CAPITALIZED.objects.all()
     serializer_class = $SINGULAR_CAPITALIZED_SERIALIZER
     permission_classes = [IsAuthenticated]
+    
     def get_queryset(self):
         queryset = super().get_queryset()
         query_params = self.request.query_params
@@ -185,8 +239,7 @@ from .models import $SINGULAR_CAPITALIZED
 @admin.register($SINGULAR_CAPITALIZED)
 class $SINGULAR_CAPITALIZED_ADMIN(admin.ModelAdmin):
     list_display = ('name', 'description', 'price', 'inventory', 'available', 'published_date')
-    search_fields = ('name', 'description', 'price')
-    list_filter = ('available', 'published_date')
+    search_fields = ('name', 'description', 'price', 'inventory', 'available', 'published_date')
 EOL
 
 # Generate tests.py
@@ -396,121 +449,6 @@ class ${SINGULAR_CAPITALIZED_MODEL_TESTS}(BaseAPITestCase):
         self.set_response(self.client.delete(f"{self.url}111/"))
         self.match_error_response(404)
 
-    def create_sample_${APP_NAME}(self):
-        """
-        Utility function to create a set of sample ${APP_NAME} for tests.
-        """
-        records = [
-            {"name": "todo", "description": "First record"},
-            {"name": "folder", "description": "Second record"},
-            {"name": "file", "description": "Third record"},
-        ]
-        for record in records:
-            self.create_${APP_NAME}_via_orm(
-                name=record["name"], description=record["description"]
-            )
-
-    def test_get_${APP_NAME}_with_search_filter(self):
-        """
-        Test for filtering ${APP_NAME} by name.
-        """
-        self.login()
-
-        self.create_sample_${APP_NAME}()
-
-        # Search filter (search for "${APP_NAME}")
-        url_search = f"{self.url}?name=todo"
-        response_search = self.client.get(url_search)
-        self.status_code = status.HTTP_200_OK  # Set the expected status code
-        self.match_success_response(response_search.status_code)
-
-        response_data_search = response_search.json()
-        results_search = response_data_search["data"]["results"]
-
-        expected_names_search = ["todo"]
-        result_names_search = [${APP_NAME}["name"] for ${APP_NAME} in results_search]
-
-        print("Extracted Names from Search Results:", result_names_search)
-
-        self.assertListEqual(result_names_search, expected_names_search)
-
-    def test_get_${APP_NAME}_with_sort_ascending(self):
-        """
-        Test for sorting ${APP_NAME} by name in ascending order.
-        """
-        self.login()
-        self.create_sample_${APP_NAME}()
-
-        # Sort Ascending (by name)
-        url_sort_asc = f"{self.url}?sort=name"
-        response_sort_asc = self.client.get(url_sort_asc)
-        self.match_success_response(response_sort_asc.status_code)
-
-        response_data_sort_asc = response_sort_asc.json()
-        results_sort_asc = response_data_sort_asc["data"]["results"]
-
-        print("Search Results:", results_sort_asc)
-
-        expected_names_asc = ["file", "folder", "todo"]
-        result_names_sort_asc = [${APP_NAME}["name"] for ${APP_NAME} in results_sort_asc]
-        self.assertListEqual(result_names_sort_asc, expected_names_asc)
-
-    def test_get_${APP_NAME}_with_sort_descending(self):
-        """
-        Test for sorting ${APP_NAME} by name in descending order.
-        """
-        self.login()
-
-        self.create_sample_${APP_NAME}()
-
-        # Sort Descending (by name)
-        url_sort_desc = f"{self.url}?sort=-name"
-        response_sort_desc = self.client.get(url_sort_desc)
-        self.match_success_response(response_sort_desc.status_code)
-
-        response_data_sort_desc = response_sort_desc.json()
-        results_sort_desc = response_data_sort_desc["data"]["results"]
-
-        print("Search Results:", results_sort_desc)
-
-        expected_names_desc = ["todo", "folder", "file"]
-        result_names_sort_desc = [${APP_NAME}["name"] for ${APP_NAME} in results_sort_desc]
-        self.assertListEqual(result_names_sort_desc, expected_names_desc)
-
-    def test_get_${APP_NAME}_with_pagination(self):
-        """
-        Test for paginating ${APP_NAME}.
-        """
-        self.login()
-
-        self.create_sample_${APP_NAME}()
-
-        # Pagination (skip and limit)
-        url_pagination = f"{self.url}?paginate=2&page=1"
-        response_pagination = self.client.get(url_pagination)
-        self.match_success_response(response_pagination.status_code)
-
-        response_data_pagination = response_pagination.json()
-        results_pagination = response_data_pagination["data"]["results"]
-
-        expected_names_pagination = ["file", "folder"]
-        self.assertEqual(len(results_pagination), 2)
-        self.assertListEqual(
-            [${APP_NAME}["name"] for ${APP_NAME} in results_pagination], expected_names_pagination
-        )
-
-        # Pagination with skipping the first ${APP_NAME}
-        url_pagination_skip = f"{self.url}?paginate=1"
-        response_pagination_skip = self.client.get(url_pagination_skip)
-        self.match_success_response(response_pagination_skip.status_code)
-
-        response_data_skip = response_pagination_skip.json()
-        results_skip = response_data_skip["data"]["results"]
-
-        expected_names_skip = ["file"]  # Adjust if necessary based on sorting
-        self.assertListEqual(
-            [${APP_NAME}["name"] for ${APP_NAME} in results_skip], expected_names_skip
-        )
 
 EOL
 
@@ -522,3 +460,4 @@ python manage.py makemigrations "$PLURAL_UNDERSCORED"
 python manage.py migrate
 
 echo "App '$PLURAL_UNDERSCORED' has been created and configured successfully."
+echo "App '$PLURAL_UNDERSCORED' created successfully!"

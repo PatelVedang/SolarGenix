@@ -8,6 +8,7 @@ from django.contrib.auth import authenticate
 from django.contrib.auth.hashers import make_password
 from django.utils import timezone
 from proj.base_serializer import BaseModelSerializer, BaseSerializer
+from proj.models import generate_password  # Import the function
 from rest_framework import serializers
 from rest_framework.exceptions import AuthenticationFailed
 from rest_framework_simplejwt.serializers import TokenRefreshSerializer
@@ -165,6 +166,9 @@ class ForgotPasswordSerializer(BaseSerializer):
             thread.start()
         else:
             logger.error(f"Forgot password mail sent fail due to {email} not found")
+            raise CustomValidationError(
+                f"Forgot password mail sent fail due to {email} not found"
+            )
         return attrs
 
 
@@ -188,6 +192,7 @@ class UserPasswordResetSerializer(BaseSerializer):
         payload = SimpleToken.validate_token(token, TokenType.RESET.value)
         token_obj = payload.get("token_obj")
         user = token_obj.user
+        user.is_default_password = False
         user.password = make_password(password)
         user.save()
         token_obj.hard_delete()
@@ -238,6 +243,7 @@ class ChangePasswordSerializer(BaseSerializer):
     def create(self, validated_data):
         user = self.context["request"].user
         user.set_password(validated_data["new_password"])
+        user.is_default_password = False
         user.save()
         return user
 
@@ -270,6 +276,9 @@ class ResendVerificationEmailSerializer(BaseSerializer):
             thread.start()
         else:
             logger.error(f"Resend verification mail sent fail due to {email} not found")
+            raise CustomValidationError(
+                f"Resend verification mail sent fail due to {email} not found"
+            )
         return attrs
 
 
@@ -308,17 +317,19 @@ class GoogleSSOSerializer(BaseSerializer):
         data = google.validate_google_token(authorization_code)
         email = data.get("email")
         first_name = data.get("name")
-        password = data.get("sub")
+        password = generate_password()  # Use the same function
         google_refresh_token = data.get("refresh_token")
         user = User.objects.filter(email=email)
         if user.exists():
             # Login Flow
             user = user.first()
+            if not user.is_active or user.is_deleted:
+                raise AuthenticationFailed(
+                    "This account is either inactive or has been deleted."
+                )
             if user.auth_provider == "google":
-                authorized_user = authenticate(email=email, password=password)
-                if authorized_user:
-                    user_data = user.auth_tokens()
-                    return {"message": "Login done successfully!", "data": user_data}
+                user_data = user.auth_tokens()
+                return {"message": "Login done successfully!", "data": user_data}
             else:
                 raise AuthenticationFailed(
                     f"Please continue your login using {user.auth_provider}"
@@ -329,13 +340,16 @@ class GoogleSSOSerializer(BaseSerializer):
             user = User.objects.create_user(**user)
             user.auth_provider = "google"
             user.is_active = True
+            user.is_default_password = True
             user.save()
             if user:
-                user_data = user.auth_tokens()
-                SimpleToken.for_user(
-                    user, TokenType.GOOGLE.value, None, jti=google_refresh_token
-                )
-                return {"message": "Login done successfully!", "data": user_data}
+                authorized_user = authenticate(email=email, password=password)
+                if authorized_user:
+                    user_data = user.auth_tokens()
+                    SimpleToken.for_user(
+                        user, TokenType.GOOGLE.value, None, jti=google_refresh_token
+                    )
+                    return {"message": "Login done successfully!", "data": user_data}
             else:
                 logger.error(
                     f"Google SSO failed for {email} after user creation due to authentication failed"
@@ -363,7 +377,7 @@ class SendOTPSerializer(BaseSerializer):
             reset_token = SimpleToken.for_user(
                 user,
                 TokenType.OTP.value,
-                settings.OTP_EXPIRY_MINUTE,
+                settings.OTP_EXPIRY_MINUTES,
                 str(otp),
             )
             print(reset_token.__dict__)
@@ -385,6 +399,9 @@ class SendOTPSerializer(BaseSerializer):
             thread.start()
         else:
             logger.error(f"OTP sending failed, user with email {email} not found")
+            raise CustomValidationError(
+                f"OTP sending failed, user with email {email} not found"
+            )
 
         return attrs
 
@@ -469,6 +486,7 @@ class ResetPasswordOTPSerializer(BaseSerializer):
             raise CustomValidationError("Passwords do not match")
 
         user.password = make_password(password)
+        user.is_default_password = False
         user.save()
         otp_obj.hard_delete()
         context = {

@@ -1,18 +1,12 @@
-from django.core.management.base import BaseCommand
-from django.utils.crypto import get_random_string
-from django.conf import settings
-import string
-
 from auth_api.models import User
+from django.conf import settings
+from django.core.management.base import BaseCommand
+from proj.models import generate_password  # Import the function
 from utils.email import send_email
 
 
 class Command(BaseCommand):
     help = "Create a superuser with an automatically generated password and send credentials via email."
-
-    def generate_password(self):
-        allowed_chars = string.ascii_letters + string.digits + string.punctuation
-        return get_random_string(8, allowed_chars)
 
     def handle(self, *args, **options):
         email = settings.SUPERUSER_EMAIL
@@ -23,7 +17,7 @@ class Command(BaseCommand):
             )
             return
 
-        password = self.generate_password()
+        password = generate_password()
         superuser = User.objects.create_superuser(email, password)
 
         email_context = {

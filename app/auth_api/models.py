@@ -113,6 +113,7 @@ class User(AbstractUser, PermissionsMixin, BaseModel):
         _("active"),
         default=False,  # Override the default value
     )
+    is_default_password = models.BooleanField(default=False)
     objects = UserManager()
 
     USERNAME_FIELD = "email"
