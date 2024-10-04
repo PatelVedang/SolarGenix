@@ -90,7 +90,7 @@ class SimpleToken(BaseToken):
             if token.is_expired():
                 token.hard_delete()
                 raise AuthenticationFailed("Token has expired")
-            if token.user.is_active or token.user.is_deleted:
+            if not token.user.is_active or token.user.is_deleted:
                 raise AuthenticationFailed("Invalid token")
             payload["token_obj"] = token
             return payload
