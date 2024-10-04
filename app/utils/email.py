@@ -11,76 +11,38 @@ logger = logging.getLogger("django")
 
 
 def send_email(**kwargs):
-    """This function sends an email to the recipients with the given subject and body.
-    kwargs = {
-        "subject": "Subject of the email",
-        "body": "Body of the email",
-        "sender": "Sender of the email",
-        "recipients": ["
-            List of recipients
-        "],
-        "bcc": [
-            List of BCC recipients
-        ],
-        "attachments": [
-            {
-                "path": "Path to the attachment",
-                "name": "Name of the attachment",
-                "mime-type": "MIME type of the attachment"
-            }
-        ],
-        "html_template": "Name of the HTML template",
-        "html_string": "HTML content in the body",
-        "title": "Title of the email"
-    }
-    All fields are optional except for the recipients. If the HTML template is provided, the email will be sent with the HTML content in the body.
+    """
+    Sends an email with optional subject, body, recipients, attachments,
+    and HTML content using a template or string.
     """
 
-    subject = kwargs.get("subject", "")
-    body = kwargs.get("body", "")
-    recipients = kwargs.get("recipients", [])
-    bcc = kwargs.get("bcc", [])
-    attachments = kwargs.get("attachments", [])
-    html_template = kwargs.get("html_template", "")
-    html_string = kwargs.get("html_string", "")
-    title = kwargs.get("title", "")
-
-    logger.info("***************** SEND MAIL  *****************")
-    logger.info(f"Recipients: {recipients}")
     try:
         email = EmailMessage(
-            subject,
-            strip_tags(body),
-            f"{settings.EMAIL_FORM_NAME}  <{settings.EMAIL_HOST_USER}>",
-            recipients,
-            bcc=bcc,
+            kwargs.get("subject", ""),
+            strip_tags(kwargs.get("body", "")),
+            f"{settings.EMAIL_FORM_NAME} <{settings.EMAIL_HOST_USER}>",
+            kwargs.get("recipients", []),
+            bcc=kwargs.get("bcc", []),
         )
-        # Attachments
-        if attachments:
-            for attachment in attachments:
-                with open(attachment["path"], "rb") as file:
-                    email.attach(
-                        attachment["name"], file.read(), attachment["mime-type"]
-                    )  # HTML content in the body
 
-        # # HTML content in the body
-        if html_template:
-            template = EmailTemplates(html_template, **kwargs)
-            content = template.result
+        for attachment in kwargs.get("attachments", []):
+            with open(attachment["path"], "rb") as file:
+                email.attach(attachment["name"], file.read(), attachment["mime-type"])
 
-            # Prepare the final email content
-            context = {"content": content, "title": title}
-            html_message = render_to_string("email-template.html", context)
-            email.content_subtype = "html"
-            email.body = html_message
+        if html_template := kwargs.get("html_template", ""):
+            content = EmailTemplates(html_template, **kwargs).result
+            html_message = render_to_string(
+                "email-template.html",
+                {"content": content, "title": kwargs.get("title", "")},
+            )
+            email.body, email.content_subtype = html_message, "html"
 
-        if html_string:
-            html_message = html_string
-            email.content_subtype = "html"
-            email.body = html_message
-        # Send the email
+        elif html_string := kwargs.get("html_string", ""):
+            email.body, email.content_subtype = html_string, "html"
+
         email.send()
         print("Mail sent please check your inbox")
+
     except Exception as e:
         traceback.print_exc()
         logger.error(str(e))

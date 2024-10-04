@@ -57,11 +57,11 @@ class Settings(BaseSettings):
 
     # ::::::::::::: Token Expiry :::::::::::::
     # Values in Days
-    AUTH_ACCESS_TOKEN_LIFELINE: int = Field(default=1)
-    AUTH_REFRESH_TOKEN_LIFELINE: int = Field(default=30)
+    AUTH_ACCESS_TOKEN_DAYS: int = Field(default=1)
+    AUTH_REFRESH_TOKEN_DAYS: int = Field(default=30)
     # Values in Minutes
-    AUTH_VERIFY_EMAIL_TOKEN_LIFELINE: int = Field(default=60)
-    AUTH_RESET_PASSWORD_TOKEN_LIFELINE: int = Field(default=60)
+    AUTH_VERIFY_EMAIL_TOKEN_MINUTES: int = Field(default=60)
+    AUTH_RESET_PASSWORD_TOKEN_MINUTES: int = Field(default=60)
     OTP_EXPIRY_MINUTES: int = Field(default=1)
 
     class Config:
