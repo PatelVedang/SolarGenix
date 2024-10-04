@@ -1,4 +1,4 @@
-name: Sync to Repo Blue Future Jobslue Future Jobs
+name: Sync to Repo Blue Future Jobs
 
 on:
   push:
@@ -13,8 +13,8 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    # Checkout Repo DRF (current repository)
-    - name: Checkout current repository
+    # Checkout Repo A (current repository - BETA branch)
+    - name: Checkout Repo A
       uses: actions/checkout@v3
 
     # Set up Git with your identity
@@ -23,24 +23,22 @@ jobs:
         git config --global user.name "parimal-ts"
         git config --global user.email "parimal.patel@technostacks.com"
 
-    # Clone Repo Blue Future Jobslue Future Jobs  using GitHub token or SSH
-    - name: Clone Repo Blue Future Jobslue Future Jobs
+    # Clone Repo B (Blue Future Jobs)
+    - name: Clone Repo Blue Future Jobs
       run: |
-        git clone --branch DRF https://${{ GITHUB_TOKEN }}@github.com/technostacksgit/blue-future-backend-python-django.git
-        cd target-repo
-        git checkout DRF
+        git clone --branch DRF https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/technostacksgit/blue-future-backend-python-django.git target-repo
 
-    # Copy changes from Repo DRF to Repo Blue Future Jobs
-    - name: Copy Code from Repo DRF to Repo Blue Future Jobs
+    # Copy changes from Repo A to Repo B (excluding .git)
+    - name: Copy Code from Repo A to Repo B
       run: |
-        rsync -av --exclude='.git/' ../source-repo/ ./  # Copy all files except .git
+        rsync -av --exclude='.git/' ./ ./target-repo/  # Copy all files from Repo A to Repo B, excluding .git
 
-    # Commit and push changes to Repo Blue Future Jobs
-    - name: Commit and Push Changes to Repo Blue Future Jobs
+    # Commit and push changes to Repo B
+    - name: Commit and Push Changes to Repo B
       run: |
         cd target-repo
         git add .
-        git commit -m "feat:  Sync code from Repo DRF BETA branch"
+        git commit -m "feat: Sync code from Repo A BETA branch"
         git push origin DRF
 
     # Optional: Clean up sensitive data (GitHub Token)
