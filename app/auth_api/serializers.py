@@ -302,6 +302,14 @@ class VerifyEmailSerializer(BaseSerializer):
 
 
 class LogoutSerializer(BaseSerializer):
+    """
+    Serializer to handle user logout.
+
+    Fields:
+    - token: The refresh token to be used for logout.
+    - logout_all_devices: Set to 1 to logout from all devices except Oauth module, or 0 to logout only from the current device. Default is 0.
+    """
+
     token = serializers.CharField(write_only=True, required=True)
     logout_all_devices = serializers.IntegerField(default=0)
 
@@ -309,18 +317,26 @@ class LogoutSerializer(BaseSerializer):
         token = attrs.get("token")
         logout_all_devices = attrs.get("logout_all_devices", 0)
 
+        # Validate the provided refresh token
         payload = SimpleToken.validate_token(token, TokenType.REFRESH.value)
         token_obj = payload.get("token_obj")
         user = token_obj.user
+
+        # Initialize the data dictionary
+        data = {"user": user}
+
+        # If logout_all_devices is 0, delete only the current token (using its jti)
+        if logout_all_devices == 0:
+            data["jti"] = token_obj.jti  # Add jti to data
+            token_obj.delete()
+            Token.default.filter(user=data["user"], jti=data["jti"]).delete()
+
+        # Delete all tokens except Google tokens (executed regardless of condition)
         if logout_all_devices == 1:
-            # If logout_all_devices is 1, delete all tokens except Google tokens
-            Token.default.filter(user=user).exclude(
+            Token.default.filter(user=data["user"]).exclude(
                 token_type=TokenType.GOOGLE.value
             ).delete()
-        else:
-            # If logout_all_devices is 0, delete only the current token
-            token_obj.delete()
-        Token.default.filter(user=user).delete()
+
         return attrs
 
 
@@ -511,5 +527,4 @@ class ResetPasswordOTPSerializer(BaseSerializer):
             },
         )
         thread.start()
-
         return attrs
