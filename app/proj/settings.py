@@ -152,21 +152,7 @@ STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
 # https://docs.djangoproject.com/en/4.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
-# django_celery/settings.py
 
-
-# # DRF yasg
-# SWAGGER_SETTINGS = {
-#     "USE_SESSION_AUTH": False,
-#     "SECURITY_DEFINITIONS": {
-#         "Bearer": {
-#             "type": "apiKey",
-#             "scheme": "bearer",
-#             "in": "header",
-#             "name": "Authorization",
-#         }
-#     },
-# }
 
 SPECTACULAR_SETTINGS = {
     "TITLE": "DRF Boilerplate",
@@ -209,6 +195,7 @@ AUTH_THROTTLING_LIMIT = os.environ.get(
 REST_FRAMEWORK = {
     "EXCEPTION_HANDLER": "utils.exception_handler.custom_exception_handler",
     "DEFAULT_AUTHENTICATION_CLASSES": (
+        "utils.authentication.CustomJWTAuthentication",
         "rest_framework_simplejwt.authentication.JWTAuthentication",
     ),
     "DEFAULT_THROTTLE_RATES": {
@@ -245,8 +232,7 @@ EMAIL_HOST_USER = settings.EMAIL_HOST_USER
 EMAIL_HOST_PASSWORD = settings.EMAIL_HOST_PASSWORD
 EMAIL_FORM_NAME = settings.EMAIL_FORM_NAME
 
-# BUSINESS_EMAIL=os.environ.get('BUSINESS_EMAIL', env('BUSINESS_EMAIL'))
-# SUPPORT_EMAILS=os.environ.get('SUPPORT_EMAILS', env('SUPPORT_EMAILS')).split(" ")
+
 FRONTEND_URL = settings.FRONTEND_URL
 
 
@@ -312,7 +298,6 @@ LOGGING = {
 
 AUTHENTICATION_BACKENDS = [
     "auth_api.custom_backend.LoginOnAuthBackend",  # Custom backend
-    "django.contrib.auth.backends.ModelBackend",  # Default backend
 ]
 
 # Swagger Authentication
