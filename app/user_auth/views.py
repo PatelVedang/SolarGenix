@@ -1,3 +1,4 @@
+# from utils.permissions import IsTokenValid
 from rest_framework import status
 from rest_framework.permissions import AllowAny
 from rest_framework.views import APIView
@@ -6,8 +7,8 @@ from utils import custom_throttling
 from utils.make_response import response
 from utils.swagger import apply_swagger_tags
 
-# from utils.permissions import IsTokenValid
-from auth_api.serializers import (
+from .permissions import IsAuthenticated
+from .serializers import (
     ChangePasswordSerializer,
     ForgotPasswordSerializer,
     GoogleSSOSerializer,
@@ -23,8 +24,6 @@ from auth_api.serializers import (
     VerifyEmailSerializer,
     VerifyOTPSerializer,
 )
-
-from .permissions import IsAuthenticated
 
 
 @apply_swagger_tags(
