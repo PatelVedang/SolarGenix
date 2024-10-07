@@ -1,7 +1,7 @@
 import json
 from io import BytesIO
-from django.conf import settings
 
+from django.conf import settings
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import Client
 from django.urls import reverse
