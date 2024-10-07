@@ -33,11 +33,6 @@ class UserTestCase(BaseAPITestCase):
         # Create the user instance and return it
         return User.objects.create(**data)
 
-    # def create_user(self, **kwargs):
-    # self._data = self.temp_payload(**kwargs)
-    # print(self._data, "create_user>>>>>>>>>>>>>>>>>>>")
-    # self.set_response(self.client.post(self.url, self._data, format="multipart"))
-
     def test_create_users_with_authenticate(self):
         """
         The function `test_create_users_with_authenticate` creates a user with authentication
@@ -471,8 +466,6 @@ class UserTestCase(BaseAPITestCase):
         expected_first_names_search = ["Drake"]
         result_first_names_search = [user["first_name"] for user in results_search]
 
-        print("Extracted First Names from Search Results:", result_first_names_search)
-
         self.assertListEqual(result_first_names_search, expected_first_names_search)
 
     def test_get_users_with_sort_ascending(self):
@@ -492,8 +485,6 @@ class UserTestCase(BaseAPITestCase):
 
         response_data_sort_asc = response_sort_asc.json()
         results_sort_asc = response_data_sort_asc["data"]["results"]
-
-        print("Sort Results (Asc):", results_sort_asc)
 
         expected_first_names_asc = ["admin", "Drake", "Perry", "Roger"]
         result_first_names_sort_asc = [user["first_name"] for user in results_sort_asc]
@@ -515,8 +506,6 @@ class UserTestCase(BaseAPITestCase):
 
         response_data_sort_desc = response_sort_desc.json()
         results_sort_desc = response_data_sort_desc["data"]["results"]
-
-        print("Sort Results (Desc):", results_sort_desc)
 
         expected_first_names_desc = ["Roger", "Perry", "Drake", "admin"]
         result_first_names_sort_desc = [

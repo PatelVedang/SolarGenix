@@ -50,6 +50,7 @@ class UserModelAdmin(BaseUserAdmin, SoftDeleteAdminMixin):
         "is_superuser",
         "auth_provider",
         "is_active",
+        "is_email_verified",
         "last_login",
         "is_deleted",
         "is_default_password",
@@ -60,7 +61,15 @@ class UserModelAdmin(BaseUserAdmin, SoftDeleteAdminMixin):
         ("Personal info", {"fields": ["first_name"]}),
         (
             "Permissions",
-            {"fields": ["is_superuser", "is_staff", "is_active", "is_deleted"]},
+            {
+                "fields": [
+                    "is_superuser",
+                    "is_staff",
+                    "is_active",
+                    "is_email_verified",
+                    "is_deleted",
+                ]
+            },
         ),
         ("Important dates", {"fields": ["last_login"]}),
     ]
