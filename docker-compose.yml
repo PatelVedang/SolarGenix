@@ -21,6 +21,7 @@ services:
           - "8080:8080"
       volumes:
           - /var/run/docker.sock:/var/run/docker.sock
+          - ./letsencrypt:/letsencrypt  # Store ACME data in a folder at the root level
       networks:
           - web
 
@@ -35,7 +36,7 @@ services:
             - ./app:/app
         labels:
             - "traefik.enable=true"
-            - "traefik.http.routers.django.rule=Host(`drf-boilerplate.godeck.app`)"
+            - "traefik.http.routers.django.rule=Host(`<domain>`)"
             - "traefik.http.routers.django.entrypoints=websecure"
             - "traefik.http.routers.django.service=django"
             - "traefik.http.services.django.loadbalancer.server.port=8001"
@@ -44,33 +45,15 @@ services:
         networks:
             - web
 
-    redis:
-      image: redis:7.2.4-alpine
-      container_name: tmn_redis
-      networks:
-        - web
-
-    worker:
-        container_name: worker
-        build:
-          context: ./app
-        command: celery -A proj worker --pool=prefork --autoscale=10,50 --loglevel=info
-        volumes:
-          - ./app:/app
-        depends_on:
-          - redis
-        networks:
-          - web
-
     nginx:
         build:
           context: ./nginx
         container_name: nginx
         volumes:
-            - ./app/staticfiles:/usr/share/nginx/html/tmn/staticfiles
+            - ./app/staticfiles:/usr/share/nginx/html/drf/staticfiles
         labels:
             - "traefik.enable=true"
-            - "traefik.http.routers.nginx.rule=Host(`drf-boilerplate.godeck.app`) && PathPrefix(`/`)"
+            - "traefik.http.routers.nginx.rule=Host(`<domain>`) && PathPrefix(`/`)"
             - "traefik.http.routers.nginx.entrypoints=websecure"
             - "traefik.http.routers.nginx.tls.certresolver=myresolver"
         networks:
