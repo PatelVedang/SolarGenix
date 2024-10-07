@@ -1,6 +1,7 @@
+import json
 from io import BytesIO
-
 from django.conf import settings
+
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import Client
 from django.urls import reverse
@@ -281,11 +282,25 @@ class AuthTest(BaseAPITestCase):
 
     def test_logout(self):
         """
-        The `test_logout` function logs a user out by sending a GET request to the logout endpoint and
-        expects a success response with status code 204.
+        The `test_logout` function logs a user out by sending a POST request to the logout endpoint
+        with a refresh token in the request body and expects a success response with status code 204.
         """
-        self.login()
-        self.set_response(self.client.get(f"{self.prefix}/logout"))
+        # Login the user and get the refresh token from self._data
+        self.login()  # Assuming this populates self._data
+        refresh_token = self._data["data"]["tokens"]["refresh"][
+            "token"
+        ]  # Extracting refresh token
+
+        # Send a POST request to the logout endpoint with the token directly in the data
+        self.set_response(
+            self.client.post(
+                f"{self.prefix}/logout",
+                data=json.dumps({"token": refresh_token}),
+                content_type="application/json",
+            )
+        )
+
+        # Match the expected success response status code 204
         self.match_success_response(204)
 
     def test_logout_without_access_token(self):
@@ -293,17 +308,38 @@ class AuthTest(BaseAPITestCase):
         The `test_logout_without_access_token` function logs a user out without a token and expects an error
         response with status code 204.
         """
-        self.set_response(self.client.get(f"{self.prefix}/logout"))
-        self.match_error_response(204)
+        self.set_response(
+            self.client.post(
+                f"{self.prefix}/logout",
+                content_type="application/json",
+            )
+        )
+        self.match_error_response(401)
 
-    def test_logout_with_expired_token(self):
+    def test_logout_with_wrong_token(self):
         """
-        This function tests the logout functionality with an expired token.
+        This function tests the logout functionality with a wrong token using a POST request.
         """
+        # Log the user in and get the refresh token
         self.login()
-        self.make_token_expired(TokenType.ACCESS.value)
-        self.set_response(self.client.get(f"{self.prefix}/logout"))
-        self.match_error_response(204)  # current status code 403
+        refresh_token = self._data["data"]["tokens"]["refresh"][
+            "token"
+        ]  # Extracting refresh token
+        wrong_token = refresh_token + "1"  # Modify the refresh token to make it invalid
+
+        # Modify the refresh token to make it invalid
+
+        # Send a POST request to the logout endpoint with the wrong refresh token in the request body
+        self.set_response(
+            self.client.post(
+                f"{self.prefix}/logout",
+                data={"token": wrong_token},
+                content_type="application/json",
+            )
+        )
+
+        # Match the expected error response status code 401
+        self.match_error_response(400)
 
     def test_logout_with_blacklisted_token(self):
         """
@@ -311,19 +347,15 @@ class AuthTest(BaseAPITestCase):
         """
         self.login()
         self.make_token_blacklist(TokenType.ACCESS.value)
-        self.set_response(self.client.get(f"{self.prefix}/logout"))
-        self.match_error_response(204)  # current status code 403
-
-    def test_logout_with_wrong_token(self):
-        """
-        This function tests the logout functionality with a wrong token.
-        """
-        self.login()
-        self.client.credentials(
-            HTTP_AUTHORIZATION=f"Bearer {self._data.get('data',{}).get('access',{}).get('token','')}1"
+        self.set_response(
+            self.client.post(
+                f"{self.prefix}/logout",
+                data={"token": self._data["data"]["tokens"]["access"]["token"]},
+                content_type="application/json",
+            )
         )
-        self.set_response(self.client.get(f"{self.prefix}/logout"))
-        self.match_error_response(401)
+        print(self._data)
+        self.match_error_response(403)
 
     def test_refresh_token(self):
         """

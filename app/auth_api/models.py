@@ -166,7 +166,7 @@ class User(AbstractUser, PermissionsMixin, BaseModel):
 class Token(BaseModel):  # Inherits from BaseClass
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    jti = models.CharField(max_length=255, default=uuid.uuid4().hex)
+    jti = models.CharField(max_length=255)
     token = models.TextField(null=True, blank=True)
     token_type = models.CharField(max_length=15, choices=TokenType, default="access")
     expire_at = models.DateTimeField(blank=True, null=True)
