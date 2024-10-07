@@ -1,4 +1,3 @@
-# from utils.permissions import IsTokenValid
 from rest_framework import status
 from rest_framework.permissions import AllowAny
 from rest_framework.views import APIView
@@ -7,8 +6,8 @@ from utils import custom_throttling
 from utils.make_response import response
 from utils.swagger import apply_swagger_tags
 
-from .permissions import IsAuthenticated
-from .serializers import (
+# from utils.permissions import IsTokenValid
+from auth_api.serializers import (
     ChangePasswordSerializer,
     ForgotPasswordSerializer,
     GoogleSSOSerializer,
@@ -24,6 +23,9 @@ from .serializers import (
     VerifyEmailSerializer,
     VerifyOTPSerializer,
 )
+
+from .constants import AuthResponseConstants
+from .permissions import IsAuthenticated
 
 
 @apply_swagger_tags(
@@ -47,7 +49,7 @@ class UserRegistrationView(APIView):
         return response(
             data=response_data,
             status_code=status.HTTP_201_CREATED,
-            message="Registration Done. Please Activate Your Account!",
+            message=AuthResponseConstants.REGISTRATION_SUCCESS,
         )
 
 
@@ -69,13 +71,19 @@ class UserLoginView(APIView):
         serializer = UserLoginSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.validated_data
+        if not user.is_email_verified:
+            return response(
+                data={},
+                status_code=status.HTTP_200_OK,
+                message=AuthResponseConstants.ACCOUNT_NOT_VERIFIED,
+            )
         return response(
             data={
                 "user": UserProfileSerializer(user).data,
                 "tokens": user.auth_tokens(),
             },
             status_code=status.HTTP_200_OK,
-            message="Login done successfully!",
+            message=AuthResponseConstants.LOGIN_SUCCESS,
         )
 
 
@@ -97,7 +105,7 @@ class UserProfileView(APIView):
         return response(
             data=serializer.data,
             status_code=status.HTTP_200_OK,
-            message="User found successfully",
+            message=AuthResponseConstants.USER_FOUND,
         )
 
 
@@ -217,7 +225,7 @@ class RefreshTokenView(TokenObtainPairView):
         return response(
             data=serializer.validated_data,
             status_code=status.HTTP_200_OK,
-            message="New token generated successfully",
+            message=AuthResponseConstants.NEW_TOKEN_GENERATED,
         )
 
 
@@ -244,9 +252,9 @@ class ResendVerificationEmailView(APIView):
 @apply_swagger_tags(
     tags=["Auth"],
     method_details={
-        "get": {
+        "post": {
             "description": "Logout",
-            "summary": "Get method for logout",
+            "summary": "Post method for logout",
         },
     },
 )
@@ -254,8 +262,8 @@ class LogoutView(APIView):
     serializer_class = LogoutSerializer
     permission_classes = [IsAuthenticated]
 
-    def get(self, request):
-        serializer = self.serializer_class(data={}, context={"request": request})
+    def post(self, request):
+        serializer = LogoutSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         return response(status_code=status.HTTP_204_NO_CONTENT)
 

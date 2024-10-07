@@ -12,7 +12,6 @@ from proj.models import BaseModel
 from rest_framework.exceptions import AuthenticationFailed
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.tokens import Token as BaseToken
-from utils.custom_exception import CustomValidationError as ValidationError
 
 from .managers import UserManager
 
@@ -74,21 +73,25 @@ class SimpleToken(BaseToken):
     @classmethod
     def validate_token(cls, token, token_type):
         payload = cls.decode(token)
+
         if payload["token_type"] != token_type:
-            raise ValidationError("Invalid token")
+            raise AuthenticationFailed("Invalid token")
         jti = payload["jti"]
         user_id = payload["user_id"]
+        # user_obj = User.objects.filter(id=user_id).first()
+
         token = Token.objects.filter(
             jti=jti,
             user_id=user_id,
             token_type=token_type,
             is_blacklist_at__isnull=True,
-        )
-        if token.exists():
-            token = token.first()
+        ).first()
+        if token:
             if token.is_expired():
                 token.hard_delete()
                 raise AuthenticationFailed("Token has expired")
+            if not token.user.is_active or token.user.is_deleted:
+                raise AuthenticationFailed("Invalid token")
             payload["token_obj"] = token
             return payload
         else:
@@ -111,8 +114,9 @@ class User(AbstractUser, PermissionsMixin, BaseModel):
     )
     is_active = models.BooleanField(
         _("active"),
-        default=False,  # Override the default value
+        default=True,  # Override the default value
     )
+    is_email_verified = models.BooleanField(default=False)
     is_default_password = models.BooleanField(default=False)
     objects = UserManager()
 
@@ -163,7 +167,7 @@ class User(AbstractUser, PermissionsMixin, BaseModel):
 class Token(BaseModel):  # Inherits from BaseClass
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    jti = models.CharField(max_length=255, default=uuid.uuid4().hex)
+    jti = models.CharField(max_length=255)
     token = models.TextField(null=True, blank=True)
     token_type = models.CharField(max_length=15, choices=TokenType, default="access")
     expire_at = models.DateTimeField(blank=True, null=True)

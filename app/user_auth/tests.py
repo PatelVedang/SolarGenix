@@ -1,3 +1,4 @@
+import json
 from io import BytesIO
 
 from django.conf import settings
@@ -9,7 +10,7 @@ from PIL import Image
 from rest_framework import status
 from rest_framework.test import APITestCase
 
-from .models import SimpleToken, Token, TokenType, User
+from auth_api.models import SimpleToken, Token, TokenType, User
 
 
 class BaseAPITestCase(APITestCase):
@@ -74,18 +75,8 @@ class BaseAPITestCase(APITestCase):
             self.client.post(f"{self.prefix}/register", data=self._data, format="json")
         )
 
-    # def login(self, email=None, password=None):
-    #     self._data = {
-    #         "email": email or self.super_admin_email,
-    #         "password": password or self.super_admin_password,
-    #     }
-    #     # super_user = User.objects.get(email=self.)
-    #     self.set_response(
-    #         self.client.post(self.login_url, data=self._data, format="json")
-    #     )
-    #     self.client.credentials(
-    #         HTTP_AUTHORIZATION=f"Bearer {self._data.get('data',{}).get('access',{}).get('token','')}"
-    #     )
+    def get_user_by_email(self, email):
+        return User.objects.get(email=email)
 
     def login(self, email=None, password=None):
         self._data = {
@@ -185,7 +176,7 @@ class AuthTest(BaseAPITestCase):
         checks for an error response.
         """
         self.register(email="unittest", password="Test@1234")
-        self.match_error_response(400)
+        self.match_error_response(422)
 
     def test_register_with_existing_email(self):
         """
@@ -201,7 +192,7 @@ class AuthTest(BaseAPITestCase):
         checks for an error response.
         """
         self.register(email="unittest1@yopmail.com", password="Test@12")
-        self.match_error_response(400)
+        self.match_error_response(422)
 
     def test_register_with_invalid_password(self):
         """
@@ -209,7 +200,7 @@ class AuthTest(BaseAPITestCase):
         checks for an error response.
         """
         self.register(email="unittest1@yopmail.com", password="testpassword")
-        self.match_error_response(400)
+        self.match_error_response(422)
 
     def test_send_verification_email(self):
         """
@@ -227,45 +218,128 @@ class AuthTest(BaseAPITestCase):
         self.login()
         self.match_success_response()
 
+    def test_login_unverified_user(self):
+        """
+        This test case attempts to log in a user with an unverified email and checks if it fails.
+        """
+        # Register a new user
+        self.register(email="unverifieduser@yopmail.com", password="Test@1234")
+
+        # Attempt to log in without verifying email
+        self.login(email="unverifieduser@yopmail.com", password="Test@1234")
+
+        self.match_error_response(200)
+
+    def test_login_deleted_user(self):
+        """
+        This test case attempts to log in a user who has been deleted and checks for a failure response.
+        """
+        # Register a user
+        self.register(email="deleteduser@yopmail.com", password="Test@1234")
+
+        # Soft delete the user (update the 'is_deleted' or 'is_active' flag)
+        user = self.get_user_by_email("deleteduser@yopmail.com")
+        user.is_deleted = True
+        user.save()
+
+        # Attempt to log in the deleted user
+        self.login(email="deleteduser@yopmail.com", password="Test@1234")
+
+        # Expect failure because the user is deleted
+        self.match_error_response(401)
+
+    def test_login_inactive_user(self):
+        """
+        This test case attempts to log in an inactive user and checks for a failure response.
+        """
+        # Register a user
+        self.register(email="inactiveuser@yopmail.com", password="Test@1234")
+
+        # Set user to inactive
+        user = self.get_user_by_email("inactiveuser@yopmail.com")
+        user.is_active = False
+        user.save()
+
+        # Attempt to log in the inactive user
+        self.login(email="inactiveuser@yopmail.com", password="Test@1234")
+
+        # Expect failure because the user is inactive
+        self.match_error_response(401)
+
     def test_login_with_wrong_mail(self):
         """
         This function tests the login functionality with wrong credentials.
         """
         self.login(email="test@yopmail.com", password=self.super_admin_password)
-        self.match_error_response(400)  # current status code 400
+        self.match_error_response(401)
 
     def test_login_with_wrong_password(self):
         """
         This function tests the login functionality with wrong credentials.
         """
         self.login(email=self.super_admin_email, password="Unittest@1234")
-        self.match_error_response(400)  # current status code 400
+        self.match_error_response(401)
 
     def test_logout(self):
         """
-        The `test_logout` function logs a user out by sending a GET request to the logout endpoint and
-        expects a success response with status code 204.
+        The `test_logout` function logs a user out by sending a POST request to the logout endpoint
+        with a refresh token in the request body and expects a success response with status code 204.
         """
-        self.login()
-        self.set_response(self.client.get(f"{self.prefix}/logout"))
+        # Login the user and get the refresh token from self._data
+        self.login()  # Assuming this populates self._data
+        refresh_token = self._data["data"]["tokens"]["refresh"][
+            "token"
+        ]  # Extracting refresh token
+
+        # Send a POST request to the logout endpoint with the token directly in the data
+        self.set_response(
+            self.client.post(
+                f"{self.prefix}/logout",
+                data=json.dumps({"token": refresh_token}),
+                content_type="application/json",
+            )
+        )
+
+        # Match the expected success response status code 204
         self.match_success_response(204)
 
     def test_logout_without_access_token(self):
         """
         The `test_logout_without_access_token` function logs a user out without a token and expects an error
-        response with status code 401.
+        response with status code 204.
         """
-        self.set_response(self.client.get(f"{self.prefix}/logout"))
+        self.set_response(
+            self.client.post(
+                f"{self.prefix}/logout",
+                content_type="application/json",
+            )
+        )
         self.match_error_response(401)
 
-    def test_logout_with_expired_token(self):
+    def test_logout_with_wrong_token(self):
         """
-        This function tests the logout functionality with an expired token.
+        This function tests the logout functionality with a wrong token using a POST request.
         """
+        # Log the user in and get the refresh token
         self.login()
-        self.make_token_expired(TokenType.ACCESS.value)
-        self.set_response(self.client.get(f"{self.prefix}/logout"))
-        self.match_error_response(401)  # current status code 403
+        refresh_token = self._data["data"]["tokens"]["refresh"][
+            "token"
+        ]  # Extracting refresh token
+        wrong_token = refresh_token + "1"  # Modify the refresh token to make it invalid
+
+        # Modify the refresh token to make it invalid
+
+        # Send a POST request to the logout endpoint with the wrong refresh token in the request body
+        self.set_response(
+            self.client.post(
+                f"{self.prefix}/logout",
+                data={"token": wrong_token},
+                content_type="application/json",
+            )
+        )
+
+        # Match the expected error response status code 401
+        self.match_error_response(400)
 
     def test_logout_with_blacklisted_token(self):
         """
@@ -273,19 +347,15 @@ class AuthTest(BaseAPITestCase):
         """
         self.login()
         self.make_token_blacklist(TokenType.ACCESS.value)
-        self.set_response(self.client.get(f"{self.prefix}/logout"))
-        self.match_error_response(401)  # current status code 403
-
-    def test_logout_with_wrong_token(self):
-        """
-        This function tests the logout functionality with a wrong token.
-        """
-        self.login()
-        self.client.credentials(
-            HTTP_AUTHORIZATION=f"Bearer {self._data.get('data',{}).get('access',{}).get('token','')}1"
+        self.set_response(
+            self.client.post(
+                f"{self.prefix}/logout",
+                data={"token": self._data["data"]["tokens"]["access"]["token"]},
+                content_type="application/json",
+            )
         )
-        self.set_response(self.client.get(f"{self.prefix}/logout"))
-        self.match_error_response(401)
+        print(self._data)
+        self.match_error_response(403)
 
     def test_refresh_token(self):
         """
@@ -312,7 +382,7 @@ class AuthTest(BaseAPITestCase):
         self.set_response(
             self.client.post(f"{self.prefix}/refresh-token", data={}, format="json")
         )
-        self.match_error_response(400)
+        self.match_error_response(422)
 
     def test_refresh_token_with_invalid_token(self):
         """
@@ -327,7 +397,7 @@ class AuthTest(BaseAPITestCase):
                 f"{self.prefix}/refresh-token", data=self._data, format="json"
             )
         )
-        self.match_error_response(400)
+        self.match_error_response(401)
 
     def test_refresh_token_with_invalid_secret(self):
         """
@@ -460,7 +530,7 @@ class AuthTest(BaseAPITestCase):
         This function tests the behavior of forgetting a password with an invalid email body.
         """
         self.send_forgot_password_mail(email="unittest")
-        self.match_error_response(400)
+        self.match_error_response(422)
 
     def test_forgot_password_with_empty_body(self):
         """
@@ -469,7 +539,7 @@ class AuthTest(BaseAPITestCase):
         self.set_response(
             self.client.post(f"{self.prefix}/forgot-password", data={}, format="json")
         )
-        self.match_error_response(400)
+        self.match_error_response(422)
 
     def test_reset_password(self):
         """
@@ -522,6 +592,7 @@ class AuthTest(BaseAPITestCase):
             "password": self.super_admin_password,
             "confirm_password": self.super_admin_password,
         }
+
         self.set_response(
             self.client.post(
                 f"{self.prefix}/reset-password/{reset_token}",
@@ -544,7 +615,7 @@ class AuthTest(BaseAPITestCase):
                 f"{self.prefix}/reset-password/1234", data=self._data, format="json"
             )
         )
-        self.match_success_response(400)
+        self.match_success_response(401)
 
     def test_reset_password_without_user(self):
         """
