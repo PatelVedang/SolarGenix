@@ -328,14 +328,7 @@ class LogoutSerializer(BaseSerializer):
         # If logout_all_devices is 0, delete only the current token (using its jti)
         if logout_all_devices == 0:
             data["jti"] = token_obj.jti  # Add jti to data
-            token_obj.delete()
-            Token.default.filter(user=data["user"], jti=data["jti"]).delete()
-
-        # Delete all tokens except Google tokens (executed regardless of condition)
-        if logout_all_devices == 1:
-            Token.default.filter(user=data["user"]).exclude(
-                token_type=TokenType.GOOGLE.value
-            ).delete()
+        Token.default.filter(**data).exclude(token_type=TokenType.GOOGLE.value).delete()
 
         return attrs
 
