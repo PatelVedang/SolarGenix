@@ -1,49 +1,47 @@
-name: Sync to Repo Blue Future Jobslue Future Jobs
+# name: Sync to Repo Blue Future Jobs
 
-on:
-  push:
-    branches:
-      - BETA
-  pull_request:
-    branches:
-      - BETA
+# on:
+#   push:
+#     branches:
+#       - BETA
+#   pull_request:
+#     branches:
+#       - BETA
 
-jobs:
-  sync_code:
-    runs-on: ubuntu-latest
+# jobs:
+#   sync_code:
+#     runs-on: ubuntu-latest
 
-    steps:
-    # Checkout Repo DRF (current repository)
-    - name: Checkout current repository
-      uses: actions/checkout@v3
+#     steps:
+#     # Checkout Repo A (current repository - BETA branch)
+#     - name: Checkout Repo A
+#       uses: actions/checkout@v3
 
-    # Set up Git with your identity
-    - name: Set up Git
-      run: |
-        git config --global user.name "parimal-ts"
-        git config --global user.email "parimal.patel@technostacks.com"
+#     # Set up Git with your identity
+#     - name: Set up Git
+#       run: |
+#         git config --global user.name "parimal-ts"
+#         git config --global user.email "parimal.patel@technostacks.com"
 
-    # Clone Repo Blue Future Jobslue Future Jobs  using GitHub token or SSH
-    - name: Clone Repo Blue Future Jobslue Future Jobs
-      run: |
-        git clone --branch DRF https://parimal-ts@github.com/technostacksgit/blue-future-backend-python-django.git
-        cd target-repo
-        git checkout DRF
+#     # Clone Repo B (Blue Future Jobs) using PAT_REPO_B to push changes
+#     - name: Clone Repo Blue Future Jobs (Repo B)
+#       run: |
+#         git clone --branch DRF https://x-access-token:${{ secrets.PAT_REPO_B }}@github.com/technostacksgit/blue-future-backend-python-django.git target-repo
 
-    # Copy changes from Repo DRF to Repo Blue Future Jobs
-    - name: Copy Code from Repo DRF to Repo Blue Future Jobs
-      run: |
-        rsync -av --exclude='.git/' ../source-repo/ ./  # Copy all files except .git
+#     # Copy changes from Repo A to Repo B (excluding .git directory)
+#     - name: Copy Code from Repo A to Repo B
+#       run: |
+#         rsync -av --exclude='.git/' ./ ./target-repo/  # Copy all files from Repo A to Repo B, excluding .git
 
-    # Commit and push changes to Repo Blue Future Jobs
-    - name: Commit and Push Changes to Repo Blue Future Jobs
-      run: |
-        cd target-repo
-        git add .
-        git commit -m "feat:  Sync code from Repo DRF BETA branch"
-        git push origin DRF
+#     # Commit and push changes to Repo B (DRF branch)
+#     - name: Commit and Push Changes to Repo B
+#       run: |
+#         cd target-repo
+#         git add .
+#         git commit -m "feat: Sync code from Repo A BETA branch to Repo B DRF branch"
+#         git push origin DRF
 
-    # Optional: Clean up sensitive data (GitHub Token)
-    - name: Clean up
-      run: |
-        rm -rf target-repo
+#     # Optional: Clean up sensitive data (GitHub Token)
+#     - name: Clean up
+#       run: |
+#         rm -rf target-repo

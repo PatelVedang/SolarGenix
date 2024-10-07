@@ -252,18 +252,18 @@ class ResendVerificationEmailView(APIView):
 @apply_swagger_tags(
     tags=["Auth"],
     method_details={
-        "get": {
+        "post": {
             "description": "Logout",
-            "summary": "Get method for logout",
+            "summary": "Post method for logout",
         },
     },
 )
 class LogoutView(APIView):
+    permission_classes = [AllowAny]
     serializer_class = LogoutSerializer
-    # permission_classes = [IsAuthenticated]
 
-    def get(self, request):
-        serializer = self.serializer_class(data={}, context={"request": request})
+    def post(self, request):
+        serializer = LogoutSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         return response(status_code=status.HTTP_204_NO_CONTENT)
 
