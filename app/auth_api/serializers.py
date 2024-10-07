@@ -126,9 +126,6 @@ class ForgotPasswordSerializer(BaseSerializer):
 
         else:
             logger.error(f"Forgot password mail sent fail due to {email} not found")
-            raise CustomValidationError(
-                f"Forgot password mail sent fail due to {email} not found"
-            )
         return attrs
 
 

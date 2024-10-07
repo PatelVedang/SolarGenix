@@ -66,7 +66,6 @@ class EmailService:
     ):
         """Creates a context dictionary for email sending."""
 
-        print("context====", button_link, recipients)
         context_dict = {
             "subject": subject,
             "user": self.user,

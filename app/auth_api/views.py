@@ -259,8 +259,8 @@ class ResendVerificationEmailView(APIView):
     },
 )
 class LogoutView(APIView):
-    permission_classes = [AllowAny]
     serializer_class = LogoutSerializer
+    permission_classes = [IsAuthenticated]
 
     def post(self, request):
         serializer = LogoutSerializer(data=request.data)
