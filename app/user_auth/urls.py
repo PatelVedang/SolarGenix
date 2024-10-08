@@ -1,6 +1,6 @@
 from django.urls import path
 
-from auth_api.views import (
+from .views import (
     ChangePasswordView,
     ForgotPasswordView,
     GoogleSSOView,

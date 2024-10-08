@@ -10,7 +10,7 @@ from PIL import Image
 from rest_framework import status
 from rest_framework.test import APITestCase
 
-from auth_api.models import SimpleToken, Token, TokenType, User
+from .models import SimpleToken, Token, TokenType, User
 
 
 class BaseAPITestCase(APITestCase):

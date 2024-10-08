@@ -7,7 +7,7 @@ from utils.make_response import response
 from utils.swagger import apply_swagger_tags
 
 # from utils.permissions import IsTokenValid
-from auth_api.serializers import (
+from .serializers import (
     ChangePasswordSerializer,
     ForgotPasswordSerializer,
     GoogleSSOSerializer,
