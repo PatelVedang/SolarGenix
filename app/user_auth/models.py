@@ -161,7 +161,7 @@ class User(AbstractUser, PermissionsMixin, BaseModel):
         }
 
     class Meta:
-        app_label = "auth_api"
+        app_label = "user_auth"
 
 
 class Token(BaseModel):  # Inherits from BaseClass

@@ -27,11 +27,11 @@ class LoginOnAuthBackend(ModelBackend):
         there is an exception during the authentication process.
         """
         try:
+            email = email if email else kwargs.get("email", kwargs.get("username", ""))
             # Attempt to retrieve an active, non-deleted user by email
             # The 'is_active=True' ensures only active users are fetched
             # The 'is_deleted=False' ensures the user hasn't been soft-deleted
             user = User.objects.get(email=email, is_active=True, is_deleted=False)
-
             # Verify the provided password using Django's built-in password hashing system
             # 'check_password' returns True if the password matches the hashed password in the database
             if user.check_password(password) and user.is_email_verified:

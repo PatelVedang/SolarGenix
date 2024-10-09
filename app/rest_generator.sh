@@ -322,8 +322,7 @@ class ${SINGULAR_CAPITALIZED_MODEL_TESTS}(BaseAPITestCase):
         }
         with self.assertRaises(Exception):  # Expect failure due to invalid data
             self.create_${APP_NAME}_via_orm(**invalid_data)
-
-        self.match_error_response(400)
+            self.match_error_response(400)
 
     def test_get_${APP_NAME}(self):
         """
