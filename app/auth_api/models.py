@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 
 import jwt
 from django.conf import settings
-from django.contrib.auth.models import AbstractUser, PermissionsMixin
+from django.contrib.auth.models import AbstractUser, Group, Permission, PermissionsMixin
 from django.db import models
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
@@ -118,6 +118,18 @@ class User(AbstractUser, PermissionsMixin, BaseModel):
     )
     is_email_verified = models.BooleanField(default=False)
     is_default_password = models.BooleanField(default=False)
+    groups = models.ManyToManyField(
+        Group,
+        related_name="auth_api_user_set",  # Unique related name
+        blank=True,
+    )
+
+    # Override the user_permissions field
+    user_permissions = models.ManyToManyField(
+        Permission,
+        related_name="auth_api_user_permissions_set",  # Unique related name
+        blank=True,
+    )
     objects = UserManager()
 
     USERNAME_FIELD = "email"

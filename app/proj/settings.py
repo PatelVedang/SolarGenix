@@ -50,10 +50,10 @@ INSTALLED_APPS = [
     "drf_spectacular",
     "rest_framework",
     "django_filters",
-    # "auth_api",
-    "user_auth",
     "corsheaders",
     # django apps
+    "auth_api",
+    "user_auth",
     "users",
     "todos",
 ]
@@ -214,8 +214,8 @@ SIMPLE_JWT = {
     "SIGNING_KEY": settings.SECRET_KEY,
 }
 
-# AUTH_USER_MODEL = "auth_api.User"
-AUTH_USER_MODEL = "user_auth.User"
+AUTH_USER_MODEL = "auth_api.User"
+# AUTH_USER_MODEL = "user_auth.User"
 
 # Base url to serve media files
 MEDIA_URL = "/media/"
