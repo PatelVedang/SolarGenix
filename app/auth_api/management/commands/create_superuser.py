@@ -2,7 +2,7 @@ from auth_api.models import User
 from django.conf import settings
 from django.core.management.base import BaseCommand
 from proj.models import generate_password  # Import the function
-from utils.email import send_email
+from utils.email import EmailService
 
 
 class Command(BaseCommand):
@@ -20,18 +20,9 @@ class Command(BaseCommand):
         password = generate_password()
         superuser = User.objects.create_superuser(email, password)
 
-        email_context = {
-            "subject": "Admin created successfully!",
-            "user": superuser,
-            "email": email,
-            "password": password,
-            "recipients": [email],
-            "html_template": "superuser_created",
-            "button_links": [f"{settings.FRONTEND_URL}/admin/"],
-            "title": "Welcome on board!",
-        }
-
-        if not send_email(**email_context):
+        email_service = EmailService(superuser)
+        email_sent = email_service.send_email_superuser(password=password, email=email)
+        if not email_sent:
             self.stdout.write(
                 self.style.ERROR(
                     "Failed to send email for superuser creation. Rolling back."
