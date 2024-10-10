@@ -55,7 +55,6 @@ class UserSerializer(BaseModelSerializer):
             raise CustomValidationError("Error generating password")
 
         validated_data["password"] = raw_password
-        validated_data["is_active"] = False  # Activate the user
 
         try:
             user = User.objects.create_user(**validated_data)
