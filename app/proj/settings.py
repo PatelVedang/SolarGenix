@@ -299,8 +299,8 @@ LOGGING = {
 }
 
 AUTHENTICATION_BACKENDS = [
-    # "auth_api.custom_backend.LoginOnAuthBackend",  # Custom backend
-    "user_auth.custom_backend.LoginOnAuthBackend",  # Custom backend
+    "auth_api.custom_backend.LoginOnAuthBackend",  # Custom backend
+    # "user_auth.custom_backend.LoginOnAuthBackend",  # Custom backend
 ]
 
 # Swagger Authentication
