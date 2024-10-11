@@ -214,8 +214,8 @@ SIMPLE_JWT = {
     "SIGNING_KEY": settings.SECRET_KEY,
 }
 
-AUTH_USER_MODEL = "auth_api.User"
-# AUTH_USER_MODEL = "user_auth.User"
+# AUTH_USER_MODEL = "auth_api.User"
+AUTH_USER_MODEL = "user_auth.User"
 
 # Base url to serve media files
 MEDIA_URL = "/media/"
@@ -299,8 +299,8 @@ LOGGING = {
 }
 
 AUTHENTICATION_BACKENDS = [
-    "auth_api.custom_backend.LoginOnAuthBackend",  # Custom backend
-    # "user_auth.custom_backend.LoginOnAuthBackend",  # Custom backend
+    # "auth_api.custom_backend.LoginOnAuthBackend",  # Custom backend
+    "user_auth.custom_backend.LoginOnAuthBackend",  # Custom backend
 ]
 
 # Swagger Authentication

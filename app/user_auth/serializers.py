@@ -15,9 +15,9 @@ from rest_framework_simplejwt.serializers import TokenRefreshSerializer
 from utils.custom_exception import CustomValidationError
 from utils.email import EmailService, send_email
 
-from .models import SimpleToken, Token, TokenType, User
 from .constants import AuthResponseConstants
 from .google import Google
+from .models import SimpleToken, Token, TokenType, User
 
 logger = logging.getLogger("django")
 
@@ -447,3 +447,18 @@ class ResetPasswordOTPSerializer(BaseSerializer):
         )
         thread.start()
         return attrs
+
+
+class UserMigrationSerializer(BaseModelSerializer):
+    class Meta:
+        model = User
+        fields = "__all__"
+
+    def create(self, validated_data):
+        """
+        Override the create method to handle specific logic if needed,
+        such as preserving the hashed password from the old model.
+        """
+        # The password is already hashed, so we can safely reuse it.
+        user = User.objects.create(**validated_data)
+        return user

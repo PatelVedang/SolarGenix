@@ -448,3 +448,9 @@ class ResetPasswordOTPSerializer(BaseSerializer):
         )
         thread.start()
         return attrs
+
+
+class UserDataMigrationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        exclude = ["groups", "user_permissions"]  # Exclude sensitive fields
