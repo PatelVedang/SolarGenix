@@ -1,7 +1,8 @@
-from django.db.models import Q, QuerySet, Model, Field
-from django.http.request import QueryDict
-from typing import Type
 from ast import literal_eval
+from typing import Type
+
+from django.db.models import Field, Model, Q, QuerySet
+from django.http.request import QueryDict
 
 
 def filter_model(
@@ -40,16 +41,23 @@ def filter_model(
                 for f in model._meta.get_fields()
                 if isinstance(f, Field) and not f.is_relation
             ]
+
+        # Validate that each field exists in the model
+        valid_search_fields = [
+            field
+            for field in search_fields
+            if field in [f.name for f in model._meta.get_fields()]
+        ]
         search_q = Q()
-        for field in search_fields:
-            search_q |= Q(**{f"{field}__icontains": search_param})
+        for field in valid_search_fields:
+            search_q |= Q(**{f"{field}__icontains": search_param.strip()})
         filter_q &= search_q
 
     for key, value in query_params.items():
         if key not in ["sort", "search"]:
             field_parts = key.split("__")
             field = field_parts[0]
-            lookup_type = field_parts[1] if len(field_parts) > 1 else None
+            lookup_type = field_parts[-1] if len(field_parts) > 1 else None
 
             if any(f.name == field for f in model._meta.get_fields()):
                 # Add logic to handle nested lookups
@@ -80,6 +88,11 @@ def filter_model(
                         if isinstance(value, str) and value.startswith("[")
                         else value
                     )
+                    if lookup == "false":
+                        lookup = False
+                    elif lookup == "true":
+                        lookup = True
+
                     filter_q &= Q(**{filter_expr: lookup})
 
     if select_fields:
@@ -96,3 +109,5 @@ def filter_model(
 
     queryset = queryset.filter(filter_q)
     return queryset
+
+ 
