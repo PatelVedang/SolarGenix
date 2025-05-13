@@ -7,12 +7,12 @@ from rest_framework.exceptions import PermissionDenied
 from utils.custom_filter import filter_model
 from utils.make_response import response
 from utils.swagger import apply_swagger_tags
-
 from .permission import CustomSuperAdminOrOwnerDeletePermission
 from .serializers import UserSerializer ,UserExportSerializer
 from rest_framework.views import APIView
 import pandas as pd
-from django.http import HttpResponse
+from django.http import HttpResponse ,JsonResponse
+from drf_spectacular.utils import extend_schema, OpenApiParameter
 
 
 @apply_swagger_tags(
@@ -71,44 +71,72 @@ class UserViewSet(BaseModelViewSet):
 
 @apply_swagger_tags(
     tags=["Users"],
+    extra_actions=["get_all"],
     method_details={
         "get": {
             "description": "Users Exports",
             "summary": "GET method for Export all Users in CSV",
+            "parameters":["search" ,"search_fields"]
         },
     },
 )
 class ExportUserView(APIView):
-    """
-    ExportUserView is a Django REST Framework APIView that allows an admin user to export
-    all user data in CSV format.
-    Methods:
-        get(request, *args, **kwargs):
-            Handles GET requests to export user data. The method retrieves all user
-            records, serializes them using the UserExportSerializer, converts the
-            serialized data into a pandas DataFrame, and returns the data as a CSV
-            file in the HTTP response.
-    Permissions:
-        - IsAuthenticated: Ensures the user is authenticated.
-        - IsAdminUser: Ensures the user has admin privileges.
-    Returns:
-        HttpResponse: A response object containing the CSV file with user data.
-    """
 
     permission_classes = [IsAuthenticated, IsAdminUser]
 
+    @extend_schema(
+    summary="Export Users Data",
+    description="Export user data in CSV, JSON format using query parameters.",
+    parameters=[
+        OpenApiParameter(
+            name="export_fields",
+            description="Comma-separated list of fields to export (e.g. `email,is_active,date_joined`)",
+            required=False,
+            type=str,
+        ),
+        OpenApiParameter(
+            name="export_format",
+            description="Format to export data. Options: `csv`, `json`. Default is `csv`.",
+            required=False,
+            type=str,
+        ),
+    ],
+    responses={200: UserExportSerializer(many=True)},
+    )
     def get(self, request, *args, **kwargs):
 
-        users = User.objects.all()
-        serializer = UserExportSerializer(users, many=True)
-        user_data = serializer.data
+        export_fields = request.query_params.get("export_fields")
+        export_format = request.query_params.get("export_format", "csv").lower()
+        
+        default_fields = [
+            "id", "email", "is_email_verified", "is_default_password", "is_active",
+            "is_staff", "is_superuser", "is_deleted", "created_at", "updated_at",
+            "date_joined", "last_login"
+        ]
 
-        df = pd.DataFrame(user_data) # Convert to DataFrame
+        selected_fields = [field.strip() for field in export_fields.split(",") if field.strip() in default_fields] if export_fields else default_fields
 
-        # Prepare CSV response
-        response_data = HttpResponse(content_type="text/csv")
-        response_data["Content-Disposition"] = 'attachment; filename="users_export.csv"'
+        if not selected_fields:
+            return JsonResponse({"error": "No valid fields specified."}, status=400)
 
-        df.to_csv(path_or_buf=response_data, index=False)    # Instead of saving this CSV to a file, write it directly into the HTTP response body.
+        users = User.objects.all().values(*selected_fields)
 
-        return response_data
+        df = pd.DataFrame(users)
+
+        for field in df.columns:
+            if "date" in field or "time" in field:
+                df[field] = pd.to_datetime(df[field]).dt.strftime("%Y-%m-%d %H:%M:%S")
+
+        if export_format == "csv":
+            response = HttpResponse(content_type="text/csv")
+            response["Content-Disposition"] = 'attachment; filename="users_export.csv"'
+            df.to_csv(path_or_buf=response, index=False)
+            return response
+        
+        elif export_format == "json":
+            return JsonResponse(df.to_dict(orient="records"), safe=False)
+        else:
+            return JsonResponse({"error": "Invalid export format. Choose from csv, json."}, status=400)
+        
+
+

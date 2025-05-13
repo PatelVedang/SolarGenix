@@ -17,15 +17,13 @@ def filter_model(
 
     Returns:
         QuerySet[Model]: The filtered queryset.
-    """
+    """ 
 
     filter_q = Q()
     sorting = query_params.get("sort")
     select_fields = query_params.get("select")
     search_fields_param = query_params.get("search_fields")
-
-    # Handle search filter
-    search_param = query_params.get("search")
+    search_param = query_params.get("search")  # Handle search filter
 
     if search_param:
         if search_fields_param:

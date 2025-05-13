@@ -113,3 +113,4 @@ class UserExportSerializer(BaseModelSerializer):
             "date_joined",
             "last_login",
         ]
+        read_only_fields = ["id", "is_active"]
