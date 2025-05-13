@@ -94,3 +94,22 @@ class UserSerializer(BaseModelSerializer):
             raise ValidationError({"email": "This email is already in use."})
 
         return super().update(instance, validated_data)
+
+
+class UserExportSerializer(BaseModelSerializer):
+    class Meta:
+        model = User
+        fields = [
+            "id",
+            "email",
+            "is_email_verified",
+            "is_default_password",
+            "is_active",
+            "is_staff",
+            "is_superuser",
+            "is_deleted",
+            "created_at",
+            "updated_at",
+            "date_joined",
+            "last_login",
+        ]

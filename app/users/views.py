@@ -1,5 +1,6 @@
 from auth_api.models import User
 from auth_api.permissions import IsAuthenticated
+from rest_framework.permissions import IsAdminUser
 from proj.base_view import BaseModelViewSet
 from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied
@@ -8,7 +9,10 @@ from utils.make_response import response
 from utils.swagger import apply_swagger_tags
 
 from .permission import CustomSuperAdminOrOwnerDeletePermission
-from .serializers import UserSerializer
+from .serializers import UserSerializer ,UserExportSerializer
+from rest_framework.views import APIView
+import pandas as pd
+from django.http import HttpResponse
 
 
 @apply_swagger_tags(
@@ -64,3 +68,47 @@ class UserViewSet(BaseModelViewSet):
             message=self.get_message(request, *args, **kwargs),
             status_code=200,
         )
+
+@apply_swagger_tags(
+    tags=["Users"],
+    method_details={
+        "get": {
+            "description": "Users Exports",
+            "summary": "GET method for Export all Users in CSV",
+        },
+    },
+)
+class ExportUserView(APIView):
+    """
+    ExportUserView is a Django REST Framework APIView that allows an admin user to export
+    all user data in CSV format.
+    Methods:
+        get(request, *args, **kwargs):
+            Handles GET requests to export user data. The method retrieves all user
+            records, serializes them using the UserExportSerializer, converts the
+            serialized data into a pandas DataFrame, and returns the data as a CSV
+            file in the HTTP response.
+    Permissions:
+        - IsAuthenticated: Ensures the user is authenticated.
+        - IsAdminUser: Ensures the user has admin privileges.
+    Returns:
+        HttpResponse: A response object containing the CSV file with user data.
+    """
+
+    permission_classes = [IsAuthenticated, IsAdminUser]
+
+    def get(self, request, *args, **kwargs):
+
+        users = User.objects.all()
+        serializer = UserExportSerializer(users, many=True)
+        user_data = serializer.data
+
+        df = pd.DataFrame(user_data) # Convert to DataFrame
+
+        # Prepare CSV response
+        response_data = HttpResponse(content_type="text/csv")
+        response_data["Content-Disposition"] = 'attachment; filename="users_export.csv"'
+
+        df.to_csv(path_or_buf=response_data, index=False)    # Instead of saving this CSV to a file, write it directly into the HTTP response body.
+
+        return response_data
