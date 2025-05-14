@@ -13,7 +13,7 @@ from rest_framework.views import APIView
 import pandas as pd
 from django.http import HttpResponse ,JsonResponse
 from drf_spectacular.utils import extend_schema, OpenApiParameter
-
+from drf_spectacular.types import OpenApiTypes
 
 @apply_swagger_tags(
     tags=["Users"],
@@ -69,53 +69,39 @@ class UserViewSet(BaseModelViewSet):
             status_code=200,
         )
 
-@apply_swagger_tags(
-    tags=["Users"],
-    extra_actions=["get_all"],
-    method_details={
-        "get": {
-            "description": "Users Exports",
-            "summary": "GET method for Export all Users in CSV",
-            "parameters":["search" ,"search_fields"]
-        },
-    },
-)
-class ExportUserView(APIView):
-
-    permission_classes = [IsAuthenticated, IsAdminUser]
-
-    @extend_schema(
+    @extend_schema( 
     summary="Export Users Data",
-    description="Export user data in CSV, JSON format using query parameters.",
+    description="Export user data in CSV or JSON format using query parameters.",
     parameters=[
         OpenApiParameter(
             name="export_fields",
-            description="Comma-separated list of fields to export (e.g. `email,is_active,date_joined`)",
+            description=(
+                'Comma-separated list of fields to export. '
+                f'Available: {", ".join([field.name for field in queryset.model._meta.get_fields() if field.concrete and not field.many_to_many and not field.one_to_many])}'
+            ),
             required=False,
-            type=str,
+            type=OpenApiTypes.STR,
+            
         ),
         OpenApiParameter(
             name="export_format",
-            description="Format to export data. Options: `csv`, `json`. Default is `csv`.",
+            description="Format to export data",
             required=False,
-            type=str,
+            type=OpenApiTypes.STR,
+            enum=["csv", "json"], 
         ),
     ],
     responses={200: UserExportSerializer(many=True)},
     )
-    def get(self, request, *args, **kwargs):
-
-        export_fields = request.query_params.get("export_fields")
+    @action(methods=["GET"], detail=False, url_path="export-users" ,permission_classes=[IsAdminUser])
+    def export_users(self, request, *args, **kwargs):
+        export_fields = request.query_params.get("export_fields" ,"")
         export_format = request.query_params.get("export_format", "csv").lower()
         
-        default_fields = [
-            "id", "email", "is_email_verified", "is_default_password", "is_active",
-            "is_staff", "is_superuser", "is_deleted", "created_at", "updated_at",
-            "date_joined", "last_login"
-        ]
-
+        default_fields = [field.name for field in User._meta.get_fields() if field.concrete and not field.many_to_many and not field.one_to_many]
+        
         selected_fields = [field.strip() for field in export_fields.split(",") if field.strip() in default_fields] if export_fields else default_fields
-
+        
         if not selected_fields:
             return JsonResponse({"error": "No valid fields specified."}, status=400)
 
@@ -126,7 +112,7 @@ class ExportUserView(APIView):
         for field in df.columns:
             if "date" in field or "time" in field:
                 df[field] = pd.to_datetime(df[field]).dt.strftime("%Y-%m-%d %H:%M:%S")
-
+                
         if export_format == "csv":
             response = HttpResponse(content_type="text/csv")
             response["Content-Disposition"] = 'attachment; filename="users_export.csv"'
@@ -137,6 +123,4 @@ class ExportUserView(APIView):
             return JsonResponse(df.to_dict(orient="records"), safe=False)
         else:
             return JsonResponse({"error": "Invalid export format. Choose from csv, json."}, status=400)
-        
-
-
+            
