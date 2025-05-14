@@ -14,7 +14,7 @@ from rest_framework.exceptions import AuthenticationFailed
 from rest_framework_simplejwt.serializers import TokenRefreshSerializer
 from utils.custom_exception import CustomValidationError
 from utils.email import EmailService, send_email
-
+from auth_api.custom_backend import LoginOnAuthBackend 
 from auth_api.models import SimpleToken, Token, TokenType, User
 
 from .constants import AuthResponseConstants
@@ -83,8 +83,10 @@ class UserLoginSerializer(BaseModelSerializer):
     def validate(self, attrs):
         attrs["email"] = attrs["email"].lower()
         # Authenticate the user with provided credentials
-        user = authenticate(**attrs)
-        if user is None:
+
+        authenticated = LoginOnAuthBackend.authenticate(**attrs)
+        
+        if authenticated is None:
             user = User.objects.filter(email=attrs.get("email")).first()
             if user:
                 if not user.is_email_verified:
@@ -93,8 +95,10 @@ class UserLoginSerializer(BaseModelSerializer):
                     email_service.send_verification_email()
                     return user
             raise AuthenticationFailed(AuthResponseConstants.INVALID_CREDENTIALS)
+        
+        user, tokens = authenticated
 
-        return user
+        return {"user": user, "tokens": tokens}
 
 
 class UserProfileSerializer(BaseModelSerializer):

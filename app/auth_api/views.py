@@ -70,7 +70,11 @@ class UserLoginView(APIView):
     def post(self, request):
         serializer = UserLoginSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        user = serializer.validated_data
+        validated = serializer.validated_data
+        
+        user = validated.get("user")
+        tokens = validated.get("tokens")
+
         if not user.is_email_verified:
             return response(
                 data={},
@@ -80,7 +84,7 @@ class UserLoginView(APIView):
         return response(
             data={
                 "user": UserProfileSerializer(user).data,
-                "tokens": user.auth_tokens(),
+                "tokens": tokens,
             },
             status_code=status.HTTP_200_OK,
             message=AuthResponseConstants.LOGIN_SUCCESS,

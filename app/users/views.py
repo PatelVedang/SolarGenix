@@ -28,7 +28,7 @@ from drf_spectacular.types import OpenApiTypes
 class UserViewSet(BaseModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
-
+    
     permission_classes = [IsAuthenticated]
 
     def get_permissions(self):
