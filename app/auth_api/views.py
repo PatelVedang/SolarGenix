@@ -74,7 +74,7 @@ class UserLoginView(APIView):
         
         user = validated.get("user")
         tokens = validated.get("tokens")
-
+        
         if not user.is_email_verified:
             return response(
                 data={},

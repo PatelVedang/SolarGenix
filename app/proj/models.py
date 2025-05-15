@@ -40,3 +40,5 @@ def generate_password():
     """Generates a random password with letters, digits, and punctuation."""
     allowed_chars = string.ascii_letters + string.digits + string.punctuation
     return get_random_string(8, allowed_chars)
+
+
