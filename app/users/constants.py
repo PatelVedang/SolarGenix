@@ -6,5 +6,5 @@ class UserResponseConstants:
     EMAIL_ALREADY_EXISTS = "A user with this email already exists!"
     ERROR_GENERATING_PASS = "Error in generating password"
     ERROR_SENDING_EMAIL = "Error iN sending email"
-    
+        
     # fmt: on
