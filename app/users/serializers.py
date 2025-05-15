@@ -9,7 +9,7 @@ from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from utils.custom_exception import CustomValidationError
 from utils.email import send_email
-
+from users.constants import UserResponseConstants
 
 class UserSerializer(BaseModelSerializer):
     email = serializers.EmailField(
@@ -28,7 +28,7 @@ class UserSerializer(BaseModelSerializer):
         email = attrs.get("email").strip().lower()
 
         if User.objects.filter(email=email).exists():
-            raise CustomValidationError("A user with this email already exists!")
+            raise CustomValidationError(UserResponseConstants.EMAIL_ALREADY_EXISTS)
         return attrs
 
     @staticmethod
@@ -52,7 +52,7 @@ class UserSerializer(BaseModelSerializer):
         # Always generate a new password
         raw_password = self.generate_password()
         if not raw_password:
-            raise CustomValidationError("Error generating password")
+            raise CustomValidationError(UserResponseConstants.ERROR_GENERATING_PASS)
 
         validated_data["password"] = raw_password
         validated_data["is_active"] = False  # Activate the user
@@ -82,7 +82,7 @@ class UserSerializer(BaseModelSerializer):
 
             except Exception as e:
                 print(f"Error sending email: {e}")
-                raise CustomValidationError("Error sending email.")
+                raise CustomValidationError(UserResponseConstants.ERROR_SENDING_EMAIL)
 
             return user
         except Exception as e:
@@ -91,7 +91,7 @@ class UserSerializer(BaseModelSerializer):
     def update(self, instance, validated_data):
         email = validated_data.get("email", None)
         if email and User.objects.exclude(pk=instance.pk).filter(email=email).exists():
-            raise ValidationError({"email": "This email is already in use."})
+            raise ValidationError({"email": UserResponseConstants.EMAIL_ALREADY_EXISTS})
 
         return super().update(instance, validated_data)
 

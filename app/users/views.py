@@ -14,6 +14,7 @@ import pandas as pd
 from django.http import HttpResponse ,JsonResponse
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 from drf_spectacular.types import OpenApiTypes
+from users.constants import UserResponseConstants
 
 @apply_swagger_tags(
     tags=["Users"],
@@ -54,7 +55,7 @@ class UserViewSet(BaseModelViewSet):
     def create(self, request, *args, **kwargs):
         # Check if the user is a superuser
         if not request.user.is_superuser:
-            raise PermissionDenied("Only superusers can create users.")
+            raise PermissionDenied(UserResponseConstants.SUPERUSER_CAN_CREATE)
 
         # If superuser, proceed with the default create behavior
         return super().create(request, *args, **kwargs)
@@ -103,7 +104,7 @@ class UserViewSet(BaseModelViewSet):
         selected_fields = [field.strip() for field in export_fields.split(",") if field.strip() in default_fields] if export_fields else default_fields
         
         if not selected_fields:
-            return JsonResponse({"error": "No valid fields specified."}, status=400)
+            return JsonResponse({"error":UserResponseConstants.INVALID_FIELDS}, status=400)
 
         users = User.objects.all().values(*selected_fields)
 
@@ -122,5 +123,5 @@ class UserViewSet(BaseModelViewSet):
         elif export_format == "json":
             return JsonResponse(df.to_dict(orient="records"), safe=False)
         else:
-            return JsonResponse({"error": "Invalid export format. Choose from csv, json."}, status=400)
+            return JsonResponse({"error": UserResponseConstants.INVALID_EXPORT_FORMAT}, status=400)
             
