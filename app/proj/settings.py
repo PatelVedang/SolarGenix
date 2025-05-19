@@ -52,6 +52,7 @@ INSTALLED_APPS = [
     "django_filters",
     "auth_api",
     "corsheaders",
+    'django_celery_beat',
     # django apps
     "users",
     "todos",
@@ -313,3 +314,7 @@ OTP_EXPIRY_MINUTES = settings.OTP_EXPIRY_MINUTES
 PROJECT_TITLE = settings.PROJECT_TITLE
 SUPERUSER_EMAIL = settings.SUPERUSER_EMAIL
 
+# Celery
+CELERY_BROKER_URL = 'redis://localhost:6379/0'
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
