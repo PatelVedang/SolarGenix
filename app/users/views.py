@@ -15,6 +15,7 @@ from django.http import HttpResponse ,JsonResponse
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 from drf_spectacular.types import OpenApiTypes
 from users.constants import UserResponseConstants
+from utils.pagination import BasePagination
 
 @apply_swagger_tags(
     tags=["Users"],
@@ -31,7 +32,7 @@ class UserViewSet(BaseModelViewSet):
     serializer_class = UserSerializer
     
     permission_classes = [IsAuthenticated]
-
+    
     def get_permissions(self):
         # Customize permissions based on the action
         if self.action == "destroy":
@@ -82,25 +83,24 @@ class UserViewSet(BaseModelViewSet):
             ),
             required=False,
             type=OpenApiTypes.STR,
-            
         ),
         OpenApiParameter(
-            name="export_format",
-            description="Format to export data",
-            required=False,
+            name="export_format",   
+            description="Format to export data",    
+            required=False, 
             type=OpenApiTypes.STR,
-            enum=["csv", "json"], 
-        ),
-    ],
+            enum=["csv", "json"],   
+        ),  
+    ],  
     responses={200: UserExportSerializer(many=True)},
-    )
-    @action(methods=["GET"], detail=False, url_path="export-users" ,permission_classes=[IsAdminUser])
+    )   
+    @action(methods=["GET"], detail=False, url_path="export-users" ,permission_classes=[IsAdminUser] ,pagination_class=BasePagination)
     def export_users(self, request, *args, **kwargs):
         export_fields = request.query_params.get("export_fields" ,"")
         export_format = request.query_params.get("export_format", "csv").lower()
-        
+
         default_fields = [field.name for field in User._meta.get_fields() if field.concrete and not field.many_to_many and not field.one_to_many]
-        
+
         selected_fields = [field.strip() for field in export_fields.split(",") if field.strip() in default_fields] if export_fields else default_fields
         
         if not selected_fields:

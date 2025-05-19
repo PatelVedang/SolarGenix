@@ -73,7 +73,7 @@ def load_settings():
     env_file_path = os.path.join(BASE_DIR, ".env")
     if not os.path.isfile(env_file_path):
         raise FileNotFoundError(f"Missing required .env file at path: {env_file_path}")
-
+    
     try:
         settings = Settings()
         for field in settings.__fields__.keys():

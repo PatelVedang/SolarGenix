@@ -2,12 +2,13 @@ from django.shortcuts import render
 from django.utils.text import capfirst
 from rest_framework import status, viewsets
 from utils.make_response import response as Response
-
+from utils.pagination import BasePagination
 
 class BaseModelViewSet(viewsets.ModelViewSet):
     http_method_names = ["get", "post", "patch", "delete"]
     response_message = ""
     status_code = ""
+    pagination_class = BasePagination
 
     def get_model_name(self):
         """
