@@ -111,11 +111,12 @@ class EmailService:
         self.send_email_async(context)
 
     def send_password_update_confirmation(self):
+        button_link = f"{settings.FRONTEND_URL}/api/auth/login"
         context = self.create_email_context(
             subject="Password Updated Successfully!",
             recipients=[self.user.email],
             html_template="resend_reset_password",
             title="Password Updated Successfully",
-            button_link=None,
+            button_link=button_link,
         )
         self.send_email_async(context)

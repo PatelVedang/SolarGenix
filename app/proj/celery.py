@@ -12,6 +12,6 @@ app.autodiscover_tasks()
 app.conf.beat_schedule = {
     'clean-expired-tokens-daily': {
         'task': 'auth_api.tasks.clean_expired_tokens',
-        'schedule': crontab(minute=0, hour=0),  # every day at midnight
+        'schedule': crontab(minute=19, hour=8),  # every day at midnight
     },
 }

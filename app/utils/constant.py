@@ -217,6 +217,8 @@ class EmailTemplates:
         contact support if the password reset was not initiated by the user.
         """
         user = kwargs.get("user")
+        button_label = "Login"
+        button_link = kwargs.get("button_links", "#")
 
         lines = [
             f"Hello {user.first_name} {user.last_name},",
@@ -225,6 +227,8 @@ class EmailTemplates:
         ]
         context = {
             "lines": lines,
+            "button_label": button_label,
+            "button_link": button_link[0],
         }
         template = Template(self.html_str)
         html_content = template.render(Context(context))

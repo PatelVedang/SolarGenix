@@ -57,7 +57,7 @@ class UserViewSet(BaseModelViewSet):
         # Check if the user is a superuser
         if not request.user.is_superuser:
             raise PermissionDenied(UserResponseConstants.SUPERUSER_CAN_CREATE)
-
+        
         # If superuser, proceed with the default create behavior
         return super().create(request, *args, **kwargs)
 
