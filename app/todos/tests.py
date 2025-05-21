@@ -4,7 +4,7 @@ from auth_api.tests import BaseAPITestCase
 from django.urls import reverse
 from rest_framework import status
 
-from todos.models import Todo
+from core.models import Todo
 
 
 class TodoTest(BaseAPITestCase):

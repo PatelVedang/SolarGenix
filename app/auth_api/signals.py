@@ -1,6 +1,6 @@
 from django.db.models.signals import pre_delete
 from django.dispatch import receiver
-from .models import Token, User
+from core.models import Token, User
 from .google import Google
 
 

@@ -1,6 +1,6 @@
 from rest_framework.permissions import BasePermission
 
-from .models import SimpleToken, Token
+from core.models import SimpleToken, Token
 
 
 class IsAuthenticated(BasePermission):

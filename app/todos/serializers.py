@@ -1,6 +1,6 @@
 from proj.base_serializer import BaseModelSerializer
 
-from .models import Todo
+from core.models import Todo
 
 
 class TodoSerializer(BaseModelSerializer):

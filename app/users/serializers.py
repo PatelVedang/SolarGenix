@@ -2,7 +2,7 @@ import random
 import string
 import threading
 
-from auth_api.models import SimpleToken, TokenType, User
+from core.models import SimpleToken, TokenType, User
 from django.conf import settings
 from proj.base_serializer import BaseModelSerializer
 from rest_framework import serializers

@@ -47,15 +47,17 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     # installed
+    'core',
     "drf_spectacular",
     "rest_framework",
     "django_filters",
     "auth_api",
     "corsheaders",
     'django_celery_beat',
-    # django apps
+    # django apps   
     "users",
     "todos",
+    
 ]
 
 MIDDLEWARE = [
@@ -214,7 +216,10 @@ SIMPLE_JWT = {
     "SIGNING_KEY": settings.SECRET_KEY,
 }
 
-AUTH_USER_MODEL = "auth_api.User"
+
+# `AUTH_USER_MODEL = "core.User"` is a setting in Django that allows you to specify a custom user
+# model to use for authentication instead of the default `User` model provided by Django.
+AUTH_USER_MODEL = "core.User"
 
 # Base url to serve media files
 MEDIA_URL = "/media/"

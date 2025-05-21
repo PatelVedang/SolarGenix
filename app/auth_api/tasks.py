@@ -1,5 +1,5 @@
 from celery import shared_task
-from auth_api.models import Token  # replace with your actual token model
+from core.models import Token  # replace with your actual token model
 from django.utils import timezone
 
 @shared_task

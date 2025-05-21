@@ -2,7 +2,7 @@ import logging
 import threading
 import traceback
 
-from auth_api.models import SimpleToken, TokenType, User
+from core.models import SimpleToken, TokenType, User
 from django.conf import settings
 from django.core.mail import EmailMessage
 from django.template.loader import render_to_string

@@ -1,6 +1,6 @@
 from django.core.management.base import BaseCommand
 from django.utils import timezone
-from auth_api.models import Token  # Adjust if your model is elsewhere
+from core.models import Token  # Adjust if your model is elsewhere
 
 class Command(BaseCommand):
     help = "Delete all expired tokens from Token Model"

@@ -3,7 +3,7 @@ from django.utils.timezone import now
 from rest_framework.exceptions import AuthenticationFailed
 
 from .constants import AuthResponseConstants
-from .models import User
+from core.models import User
 
 
 class LoginOnAuthBackend(ModelBackend):

@@ -4,7 +4,6 @@ from rest_framework.decorators import action
 from utils.custom_filter import filter_model
 from utils.make_response import response
 from utils.swagger import apply_swagger_tags
-
 from .models import Todo
 from .serializers import TodoSerializer
 

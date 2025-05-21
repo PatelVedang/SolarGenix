@@ -15,7 +15,7 @@ from rest_framework_simplejwt.serializers import TokenRefreshSerializer
 from utils.custom_exception import CustomValidationError
 from utils.email import EmailService, send_email
 from auth_api.custom_backend import LoginOnAuthBackend 
-from auth_api.models import SimpleToken, Token, TokenType, User
+from core.models import SimpleToken, Token, TokenType, User
 
 from .constants import AuthResponseConstants
 from .google import Google
