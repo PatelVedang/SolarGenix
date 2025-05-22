@@ -4,7 +4,7 @@ from rest_framework.exceptions import AuthenticationFailed
 
 from .constants import AuthResponseConstants
 from core.models import User
-
+from core.services.token_service import TokenService
 
 class LoginOnAuthBackend(ModelBackend):
 
@@ -40,7 +40,7 @@ class LoginOnAuthBackend(ModelBackend):
                 user.last_login = now()
                 user.save()  # Save the updated 'last_login' field to the database
                 
-                tokens = user.auth_tokens()   # Generation of the Token
+                tokens = TokenService.auth_tokens(user)   # Generation of the Token
 
                 # Return the authenticated user object if password validation is successful
                 return user ,tokens

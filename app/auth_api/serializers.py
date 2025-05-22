@@ -15,10 +15,10 @@ from rest_framework_simplejwt.serializers import TokenRefreshSerializer
 from utils.custom_exception import CustomValidationError
 from utils.email import EmailService, send_email
 from auth_api.custom_backend import LoginOnAuthBackend 
-from core.models import SimpleToken, Token, TokenType, User
-
+from core.models import Token, TokenType, User
+from core.services.token_service import TokenService
 from .constants import AuthResponseConstants
-from .google import Google
+from core.services.google_service import Google
 
 logger = logging.getLogger("django")
 
@@ -143,7 +143,7 @@ class UserPasswordResetSerializer(BaseSerializer):
         password = attrs.get("password")
         confirm_password = attrs.get("confirm_password")
         token = self.context.get("token")
-        payload = SimpleToken.validate_token(token, TokenType.RESET.value)
+        payload = TokenService.validate_token(token, TokenType.RESET.value)
 
         if not re.search(settings.PASSWORD_VALIDATE_REGEX, attrs.get("password")):
             raise CustomValidationError(f"{settings.PASSWORD_VALIDATE_STRING}")
@@ -167,11 +167,11 @@ class UserPasswordResetSerializer(BaseSerializer):
 class RefreshTokenSerializer(TokenRefreshSerializer, BaseSerializer):
     def validate(self, attrs):
         token = attrs.get("refresh")
-        payload = SimpleToken.validate_token(token, TokenType.REFRESH.value)
+        payload = TokenService.validate_token(token, TokenType.REFRESH.value)
         token_obj = payload.get("token_obj")
         user = token_obj.user
         token_obj.hard_delete()
-        return user.auth_tokens()
+        return TokenService.auth_tokens(user)
 
 
 class ChangePasswordSerializer(BaseSerializer):
@@ -223,8 +223,8 @@ class VerifyEmailSerializer(BaseSerializer):
     token = serializers.CharField()
 
     def validate_token(self, value):
-        payload = SimpleToken.decode(value)
-        payload = SimpleToken.validate_token(value, TokenType.VERIFY_MAIL.value)
+        payload = TokenService.decode(value)
+        payload = TokenService.validate_token(value, TokenType.VERIFY_MAIL.value)
         token_obj = payload.get("token_obj")
         user = token_obj.user
         user.is_email_verified = True
@@ -250,7 +250,7 @@ class LogoutSerializer(BaseSerializer):
         logout_all_devices = attrs.get("logout_all_devices", 0)
 
         # Validate the provided refresh token
-        payload = SimpleToken.validate_token(token, TokenType.REFRESH.value)
+        payload = TokenService.validate_token(token, TokenType.REFRESH.value)
         token_obj = payload.get("token_obj")
         user = token_obj.user
 
@@ -285,7 +285,7 @@ class GoogleSSOSerializer(BaseSerializer):
                     "This account is either inactive or has been deleted."
                 )
             if user.auth_provider == "google":
-                user_data = user.auth_tokens()
+                user_data = TokenService.auth_tokens(user)
                 return {"message": "Login done successfully!", "data": user_data}
             else:
                 raise AuthenticationFailed(
@@ -303,8 +303,8 @@ class GoogleSSOSerializer(BaseSerializer):
             if user:
                 authorized_user = authenticate(email=email, password=password)
                 if authorized_user:
-                    user_data = user.auth_tokens()
-                    SimpleToken.for_user(
+                    user_data = TokenService.auth_tokens(user)
+                    TokenService.for_user(
                         user, TokenType.GOOGLE.value, None, jti=google_refresh_token
                     )
                     return {"message": "Login done successfully!", "data": user_data}
@@ -332,7 +332,7 @@ class SendOTPSerializer(BaseSerializer):
             otp = random.randint(1000, 9999)
 
             # Save the OTP in the Token model
-            reset_token = SimpleToken.for_user(
+            reset_token = TokenService.for_user(
                 user,
                 TokenType.OTP.value,
                 settings.OTP_EXPIRY_MINUTES,

@@ -4,7 +4,7 @@ from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 
 from core.models import Token, User
 
-from .google import Google
+from core.services.google_service import Google
 
 
 class SoftDeleteAdminMixin(admin.ModelAdmin):

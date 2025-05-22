@@ -1,7 +1,7 @@
 from django.db.models.signals import pre_delete
 from django.dispatch import receiver
 from core.models import Token, User
-from .google import Google
+from core.services.google_service import Google
 
 
 @receiver(pre_delete, sender=User)

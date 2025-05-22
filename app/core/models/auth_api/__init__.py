@@ -1,8 +1,7 @@
-from .auth import SimpleToken, Token, TokenType, User
+from .auth import Token, TokenType, User
 
 __all__ = [
     "User",
     "Token",
-    "SimpleToken",
     "TokenType",
 ]

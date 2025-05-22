@@ -10,8 +10,8 @@ from PIL import Image
 from rest_framework import status
 from rest_framework.test import APITestCase
 
-from core.models import SimpleToken, Token, TokenType, User
-
+from core.models import Token, TokenType, User
+from core.services.token_service import TokenService
 
 class BaseAPITestCase(APITestCase):
     client = Client()
@@ -547,7 +547,7 @@ class AuthTest(BaseAPITestCase):
         resets the password for a user in a test scenario.
         """
         self.send_forgot_password_mail()
-        reset_token = SimpleToken.for_user(self.super_admin, "reset", 1)
+        reset_token = TokenService.for_user(self.super_admin, "reset", 1)
         self._data = {
             "password": self.super_admin_password,
             "confirm_password": self.super_admin_password,
@@ -566,7 +566,7 @@ class AuthTest(BaseAPITestCase):
         This function tests the scenario where a blacklisted token is used to reset a password.
         """
         self.send_forgot_password_mail()
-        reset_token = SimpleToken.for_user(self.super_admin, "reset", 1)
+        reset_token = TokenService.for_user(self.super_admin, "reset", 1)
         self.make_token_blacklist("reset")
         self._data = {
             "password": self.super_admin_password,
@@ -586,7 +586,7 @@ class AuthTest(BaseAPITestCase):
         This function tests the scenario where an expired token is used to reset a password.
         """
         self.send_forgot_password_mail()
-        reset_token = SimpleToken.for_user(self.super_admin, "reset", 1)
+        reset_token = TokenService.for_user(self.super_admin, "reset", 1)
         self.make_token_expired("reset")
         self._data = {
             "password": self.super_admin_password,
@@ -622,7 +622,7 @@ class AuthTest(BaseAPITestCase):
         This function tests the scenario where a user does not exist.
         """
         self.send_forgot_password_mail()
-        reset_token = SimpleToken.for_user(self.super_admin, "reset", 1)
+        reset_token = TokenService.for_user(self.super_admin, "reset", 1)
         self.super_admin.delete()
         self._data = {
             "password": self.super_admin_password,
@@ -650,7 +650,7 @@ class AuthTest(BaseAPITestCase):
         The function `test_verify_email` verifies an email and checks for a successful response.
         """
         self.send_verification_email()
-        verify_token = SimpleToken.for_user(
+        verify_token = TokenService.for_user(
             self.super_admin, TokenType.VERIFY_MAIL.value, 1
         )
         self.set_response(self.client.get(f"{self.prefix}/verify-email/{verify_token}"))
@@ -661,7 +661,7 @@ class AuthTest(BaseAPITestCase):
         This function tests the scenario where a blacklisted token is used to verify an email.
         """
         self.send_verification_email()
-        verify_token = SimpleToken.for_user(self.super_admin, "verify", 1)
+        verify_token = TokenService.for_user(self.super_admin, "verify", 1)
         self.make_token_blacklist("verify")
         self.set_response(self.client.get(f"{self.prefix}/verify-email/{verify_token}"))
         self.match_success_response(401)  # current status code 400
@@ -671,7 +671,7 @@ class AuthTest(BaseAPITestCase):
         This function tests the scenario where an expired token is used to verify an email.
         """
         self.send_verification_email()
-        verify_token = SimpleToken.for_user(self.super_admin, "verify", 1)
+        verify_token = TokenService.for_user(self.super_admin, "verify", 1)
         self.make_token_expired("verify")
         self.set_response(self.client.get(f"{self.prefix}/verify-email/{verify_token}"))
         self.match_success_response(401)  # current status code 400

@@ -1,5 +1,4 @@
 import logging
-
 import requests
 from django.conf import settings
 from google.auth.transport import requests as google_requests
@@ -8,7 +7,6 @@ from rest_framework.exceptions import AuthenticationFailed
 from utils.custom_exception import CustomValidationError
 
 logger = logging.getLogger("django")
-
 
 class Google:
     def verify_auth_token(self, auth_token):
