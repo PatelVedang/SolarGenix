@@ -66,6 +66,14 @@ class Settings(BaseSettings):
 
     # CELERY_BROKER_URL: str = Field(default=None)
     
+    # ::::::::::::: Cognito :::::::::::::
+    AUTH_TYPE: str = Field(default="simplejwt")
+    COGNITO_REGION: str | None = Field(default=None)
+    COGNITO_USER_POOL_ID: str | None = Field(default=None)
+    COGNITO_CLIENT_ID: str | None = Field(default=None)
+    COGNITO_CLIENT_SECRET: str | None = Field(default=None)
+    COGNITO_DOMAIN: str | None = Field(default=None)
+    COGNITO_REDIRECT_URI: str | None = Field(default=None)
 
     class Config:
         env_file = os.path.join(BASE_DIR, ".env")
@@ -79,6 +87,8 @@ def load_settings():
     
     try:
         settings = Settings()
+        validate_auth_type(settings)
+
         for field in settings.__fields__.keys():
             if not getattr(settings, field):
                 # Assign default values if they are empty
@@ -92,3 +102,18 @@ def load_settings():
             message = error["msg"]
             print(f"  - {field}: {message}", "error")
         raise e
+
+
+def validate_auth_type(settings: Settings):
+    if settings.AUTH_TYPE == "cognito":
+        required_fields = [
+            "COGNITO_REGION",
+            "COGNITO_USER_POOL_ID",
+            "COGNITO_CLIENT_ID",
+            "COGNITO_CLIENT_SECRET",
+            "COGNITO_DOMAIN",
+            "COGNITO_REDIRECT_URI",
+        ]
+        missing = [field for field in required_fields if not getattr(settings, field)]
+        if missing:
+            raise ValueError(f"Missing required Cognito fields: {', '.join(missing)}")

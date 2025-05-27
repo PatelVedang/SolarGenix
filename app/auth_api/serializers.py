@@ -1,14 +1,19 @@
+from datetime import datetime, timedelta, timezone as dt_timezone
 import logging
 import random
 import re
 
+from app.core.models.auth_api.auth import AUTH_PROVIDER, SimpleToken
 from core.models import Token, TokenType, User
 from core.services.google_service import Google
 from core.services.token_service import TokenService
 from django.conf import settings
 from django.contrib.auth import authenticate
 from django.contrib.auth.hashers import make_password
+from django.db import IntegrityError
 from django.utils import timezone
+from jsonschema import ValidationError
+from auth_api.cognito import Cognito
 from proj.base_serializer import BaseModelSerializer, BaseSerializer
 from proj.models import generate_password  # Import the function
 from rest_framework import serializers
@@ -265,14 +270,27 @@ class LogoutSerializer(BaseSerializer):
         # Validate the provided refresh token
         payload = TokenService.validate_token(token, TokenType.REFRESH.value)
         token_obj = payload.get("token_obj")
+        try:
+            token_obj = Token.objects.select_related("user").get(token=token)
+        except Token.DoesNotExist:
+            raise serializers.ValidationError("Invalid token")
+
         user = token_obj.user
 
-        # Initialize the data dictionary
-        data = {"user": user}
+        if user.auth_provider == AUTH_PROVIDER.get("cognito"):
+            Cognito.logout_user(user)
+            return attrs
 
-        # If logout_all_devices is 0, delete only the current token (using its jti)
+        # For non-cognito, validate token and delete accordingly
+        payload = SimpleToken.validate_token(token, TokenType.REFRESH.value)
+        token_obj = payload.get(
+            "token_obj"
+        )  # this may be redundant if token_obj already fetched, but needed for validation
+
+        data = {"user": user}
         if logout_all_devices == 0:
-            data["jti"] = token_obj.jti  # Add jti to data
+            data["jti"] = token_obj.jti
+
         Token.default.filter(**data).exclude(token_type=TokenType.GOOGLE.value).delete()
 
         return attrs
@@ -492,4 +510,110 @@ class UserMigrationSerializer(BaseModelSerializer):
         """
         # The password is already hashed, so we can safely reuse it.
         user = User.objects.create(**validated_data)
+class CognitoSyncTokenSerializer(BaseSerializer):
+    code = serializers.CharField()
+
+    def validate(self, attrs):
+        code = attrs["code"]
+
+        try:
+            tokens = Cognito.exchange_code_for_tokens(code)
+        except Exception as e:
+            raise AuthenticationFailed(f"Failed to exchange code for tokens: {str(e)}")
+
+        access_token = tokens.get("access_token")
+        refresh_token = tokens.get("refresh_token")
+        id_token = tokens.get("id_token")
+
+        if not all([access_token, refresh_token, id_token]):
+            raise AuthenticationFailed("Missing tokens from Cognito response")
+
+        try:
+            access_payload = Cognito.decode_token(access_token)
+            id_token_payload = Cognito.decode_token(id_token)
+        except Exception as e:
+            raise AuthenticationFailed(f"Invalid Cognito token: {str(e)}")
+
+        email = id_token_payload.get("email")
+        user_sub = access_payload.get("sub")
+
+        if not email or not user_sub:
+            raise AuthenticationFailed("Cognito token missing required fields")
+
+        attrs.update(
+            {
+                "access_token": access_token,
+                "refresh_token": refresh_token,
+                "id_token": id_token,
+                "access_payload": access_payload,
+                "id_token_payload": id_token_payload,
+                "email": email,
+                "sub": user_sub,
+            }
+        )
+        return attrs
+
+    def save(self):
+        email = self.validated_data["email"]
+        access_token = self.validated_data["access_token"]
+        refresh_token = self.validated_data["refresh_token"]
+        id_token = self.validated_data["id_token"]
+        user_sub = self.validated_data["sub"]
+
+        access_payload = self.validated_data["access_payload"]
+        id_token_payload = self.validated_data["id_token_payload"]
+
+        try:
+            user, created = User.objects.get_or_create(
+                cognito_sub=user_sub,
+                defaults={
+                    "email": email,
+                    "is_email_verified": True,
+                    "auth_provider": AUTH_PROVIDER.get("cognito"),
+                },
+            )
+        except IntegrityError:
+            raise ValidationError(
+                {"email": f"A user with the email '{email}' already exists."}
+            )
+
+        if not created and user.email != email:
+            user.email = email
+            user.save(update_fields=["email"])
+
+        Token.objects.filter(
+            user=user,
+            token_type__in=[TokenType.ACCESS, TokenType.REFRESH, TokenType.ID_TOKEN],
+        ).delete()
+
+        Token.objects.bulk_create(
+            [
+                Token(
+                    user=user,
+                    jti=access_payload.get("jti", access_payload.get("sub")),
+                    token=access_token,
+                    token_type=TokenType.ACCESS,
+                    expire_at=datetime.fromtimestamp(
+                        access_payload["exp"], tz=dt_timezone.utc
+                    ),
+                ),
+                Token(
+                    user=user,
+                    jti="cognito_refresh",
+                    token=refresh_token,
+                    token_type=TokenType.REFRESH,
+                    expire_at=timezone.now() + timedelta(days=30),
+                ),
+                Token(
+                    user=user,
+                    jti=id_token_payload.get("jti", id_token_payload.get("sub")),
+                    token=id_token,
+                    token_type=TokenType.ID_TOKEN,
+                    expire_at=datetime.fromtimestamp(
+                        id_token_payload["exp"], tz=dt_timezone.utc
+                    ),
+                ),
+            ]
+        )
+
         return user

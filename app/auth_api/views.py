@@ -9,6 +9,7 @@ from utils.swagger import apply_swagger_tags
 # from utils.permissions import IsTokenValid
 from auth_api.serializers import (
     ChangePasswordSerializer,
+    CognitoSyncTokenSerializer,
     ForgotPasswordSerializer,
     GoogleSSOSerializer,
     LogoutSerializer,
@@ -338,3 +339,44 @@ class ResetPasswordOTP(APIView):
         serializer = ResetPasswordOTPSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         return response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@apply_swagger_tags(
+    tags=["Auth"],
+    method_details={
+        "get": {
+            "description": "Exchange Cognito code for tokens and sync user",
+            "summary": "GET method for Cognito token sync using code",
+        },
+    },
+)
+class CognitoSyncTokensView(APIView):
+    """
+    This view is called by Cognito after user login via the hosted UI.
+    It receives the `code` as a query param, exchanges it for tokens,
+    manages the user and tokens, and returns the relevant data.
+    """
+
+    serializer_class = CognitoSyncTokenSerializer
+
+    def get(self, request):
+        serializer = self.serializer_class(data=request.query_params)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save()
+
+        return response(
+            data={
+                "user": {
+                    "id": user.id,
+                    "email": user.email,
+                    "username": user.username,
+                },
+                "tokens": {
+                    "access_token": serializer.validated_data["access_token"],
+                    "refresh_token": serializer.validated_data["refresh_token"],
+                    "id_token": serializer.validated_data["id_token"],
+                },
+            },
+            message="Login successful via Cognito",
+            status_code=status.HTTP_200_OK,
+        )

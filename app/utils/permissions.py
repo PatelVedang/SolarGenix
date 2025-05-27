@@ -1,8 +1,10 @@
-# from auth_api.models import BlacklistToken, Token
-from core.models import Token
+import time
+from rest_framework.permissions import BasePermission
 from rest_framework.exceptions import AuthenticationFailed
 from rest_framework.permissions import BasePermission
 from rest_framework_simplejwt.tokens import UntypedToken
+from app.core.models.auth_api.auth import Token
+from auth_api.cognito import Cognito
 
 
 class IsTokenValid(BasePermission):
@@ -32,9 +34,19 @@ class IsTokenValid(BasePermission):
             raise AuthenticationFailed("Token is missing")
 
         try:
+            payload = Cognito.decode(token)
+            if payload.get("token_use") != "access":
+                raise AuthenticationFailed("Invalid Cognito token type")
+            if payload.get("exp") < int(time.time()):
+                raise AuthenticationFailed("Cognito token has expired")
+            return True
+        except Exception:
+            pass
+
+        try:
             Token.objects.get(token=token, is_deleted=False)
         except Token.DoesNotExist:
-            raise AuthenticationFailed("Token Does Not Exist")
+            raise AuthenticationFailed("Token does not exist")
         validated_token = UntypedToken(token)
         print(validated_token)
         # if BlacklistToken.objects.filter(jti=validated_token.get("jti")).exists():

@@ -1,16 +1,40 @@
+import time
 from rest_framework.permissions import BasePermission
 
-from core.models import Token
+from core.models import Token, SimpleToken
 from core.services.token_service import TokenService
+from auth_api.cognito import Cognito
+from rest_framework.exceptions import AuthenticationFailed
+
 
 class IsAuthenticated(BasePermission):
     def has_permission(self, request, view):
-        if not request.user or not request.user.is_authenticated:
+        user = request.user
+        auth = request.auth
+
+        if not user or not user.is_authenticated:
             return False
 
-        if not request.user.is_active:
+        if not user.is_active:
             return False
         payload = TokenService.decode(str(request.auth))
+
+        if getattr(user, "auth_provider", None) == "cognito":
+            try:
+                payload = Cognito.decode_token(str(auth))
+                if payload.get("token_use") != "access":
+                    return False
+                if payload.get("exp", 0) < time.time():
+                    return False
+            except Exception:
+                raise AuthenticationFailed("Invalid Cognito token")
+            return True
+
+        try:
+            payload = SimpleToken.decode(str(auth))
+        except Exception:
+            raise AuthenticationFailed("Invalid token")
+
         if payload.get("token_type") != "access":
             return False
 

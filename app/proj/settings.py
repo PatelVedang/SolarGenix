@@ -194,12 +194,25 @@ SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 AUTH_THROTTLING_LIMIT = os.environ.get(
     "AUTH_THROTTLING_LIMIT", os.getenv("AUTH_THROTTLING_LIMIT", "20/hour")
 )
-REST_FRAMEWORK = {
-    "EXCEPTION_HANDLER": "utils.exception_handler.custom_exception_handler",
-    "DEFAULT_AUTHENTICATION_CLASSES": (
+
+# Load auth config values
+AUTH_TYPE = settings.AUTH_TYPE
+
+# DRF config (depends on AUTH_TYPE)
+if AUTH_TYPE == "cognito":
+    DEFAULT_AUTH_CLASSES = ("utils.authentication.CognitoAuthentication",)
+    AUTH_BACKENDS = ("auth_api.custom_backend.CognitoBackend",)
+else:
+    DEFAULT_AUTH_CLASSES = (
         "utils.authentication.CustomJWTAuthentication",
         "rest_framework_simplejwt.authentication.JWTAuthentication",
-    ),
+    )
+    AUTH_BACKENDS = ("django.contrib.auth.backends.ModelBackend",)
+
+# Now define REST_FRAMEWORK in one go
+REST_FRAMEWORK = {
+    "EXCEPTION_HANDLER": "utils.exception_handler.custom_exception_handler",
+    "DEFAULT_AUTHENTICATION_CLASSES": DEFAULT_AUTH_CLASSES,
     "DEFAULT_THROTTLE_RATES": {
         "auth": AUTH_THROTTLING_LIMIT,
     },
@@ -219,6 +232,13 @@ SIMPLE_JWT = {
 # `AUTH_USER_MODEL = "core.User"` is a setting in Django that allows you to specify a custom user
 # model to use for authentication instead of the default `User` model provided by Django.
 AUTH_USER_MODEL = "core.User"
+# Cognito
+COGNITO_REGION = settings.COGNITO_REGION
+COGNITO_USER_POOL_ID = settings.COGNITO_USER_POOL_ID
+COGNITO_CLIENT_ID = settings.COGNITO_CLIENT_ID
+COGNITO_CLIENT_SECRET = settings.COGNITO_CLIENT_SECRET
+COGNITO_DOMAIN = settings.COGNITO_DOMAIN
+COGNITO_REDIRECT_URI = settings.COGNITO_REDIRECT_URI
 
 # Base url to serve media files
 MEDIA_URL = "/media/"
@@ -301,10 +321,7 @@ LOGGING = {
     },
 }
 
-AUTHENTICATION_BACKENDS = [
-    "django.contrib.auth.backends.ModelBackend",  # Default backend
-    "auth_api.custom_backend.LoginOnAuthBackend",  # Custom backend
-]
+AUTHENTICATION_BACKENDS = AUTH_BACKENDS
 
 # Swagger Authentication
 SWAGGER_AUTH_USERNAME = settings.SWAGGER_AUTH_USERNAME

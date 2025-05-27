@@ -15,6 +15,7 @@ from auth_api.views import (
     UserRegistrationView,
     VerifyEmailView,
     VerifyOTPView,
+    CognitoSyncTokensView,
 )
 
 urlpatterns = [
@@ -51,5 +52,10 @@ urlpatterns = [
     path("auth/verify-otp", VerifyOTPView.as_view(), name="verify-otp-view"),
     path(
         "auth/reset-password-otp", ResetPasswordOTP.as_view(), name="reset-password-otp"
+    ),
+    path(
+        "auth/cognito-sync-tokens",
+        CognitoSyncTokensView.as_view(),
+        name="cognito-sync-tokens",
     ),
 ]

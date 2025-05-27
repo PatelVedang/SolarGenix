@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 import jwt
 from auth_api.managers import UserManager
 from django.conf import settings
-from django.contrib.auth.models import AbstractUser, PermissionsMixin
+from django.contrib.auth.models import AbstractUser, PermissionsMixin, Group
 from django.db import models
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
@@ -13,6 +13,7 @@ from proj.models import BaseModel
 from rest_framework.exceptions import AuthenticationFailed
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.tokens import Token as BaseToken
+
 
 logger = logging.getLogger("django")
 
@@ -24,6 +25,7 @@ class TokenType(models.TextChoices):
     VERIFY_MAIL = "verify_mail", ("Verify Mail")
     GOOGLE = "google", ("Google")
     OTP = "otp", ("Otp")
+    ID_TOKEN = "id_token", ("Id Token")
 
 
 class SimpleToken(BaseToken):
@@ -40,7 +42,7 @@ class SimpleToken(BaseToken):
     def for_user(cls, user, token_type, lifetime, jti=None):
         token = cls(token_type=token_type, lifetime=lifetime)
         token["jti"] = jti or token["jti"]
-        token["user_id"] = str(user.id)
+        token["user_id"] = user.id
         if token_type not in ["access", "refresh"]:
             Token.default.filter(user=user, token_type=token_type).delete()
         Token.objects.create(
@@ -98,7 +100,7 @@ class SimpleToken(BaseToken):
 
 
 # Create your models here.
-AUTH_PROVIDER = {"google": "google", "email": "email"}
+AUTH_PROVIDER = {"google": "google", "email": "email", "cognito": "cognito"}
 
 
 class User(AbstractUser, PermissionsMixin, BaseModel):
@@ -117,6 +119,8 @@ class User(AbstractUser, PermissionsMixin, BaseModel):
     )
     is_email_verified = models.BooleanField(default=False)
     is_default_password = models.BooleanField(default=False)
+    cognito_sub = models.CharField(max_length=255, unique=True, null=True, blank=True)
+
     objects = UserManager()
 
     USERNAME_FIELD = "email"
@@ -166,7 +170,7 @@ class User(AbstractUser, PermissionsMixin, BaseModel):
 class Token(BaseModel):  # Inherits from BaseClass
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    jti = models.CharField(max_length=255)
+    jti = models.CharField(max_length=255, null=True, blank=True)
     token = models.TextField(null=True, blank=True)
     token_type = models.CharField(max_length=15, choices=TokenType, default="access")
     expire_at = models.DateTimeField(blank=True, null=True)
@@ -183,3 +187,15 @@ class Token(BaseModel):  # Inherits from BaseClass
     def blacklist(self):
         self.is_blacklist_at = timezone.now()
         self.save()
+
+
+class GroupProfile(models.Model):
+    group = models.OneToOneField(
+        Group, on_delete=models.CASCADE, related_name="profile"
+    )
+    redirect_url = models.URLField(
+        help_text="URL to redirect users of this group", default="/"
+    )
+
+    def __str__(self):
+        return f"{self.group.name} Profile"
