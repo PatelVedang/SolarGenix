@@ -1,9 +1,13 @@
 import logging
+
 import jwt
 import requests
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from rest_framework.exceptions import AuthenticationFailed
+
+from app.auth_api.constants import AuthResponseConstants
+
 from .models import Token
 
 User = get_user_model()
@@ -22,7 +26,9 @@ class Cognito:
                 token, options={"verify_signature": False}, algorithms=["RS256"]
             )
         except Exception as e:
-            raise AuthenticationFailed(f"Invalid token: {str(e)}")
+            raise AuthenticationFailed(
+                f"{AuthResponseConstants.INVALID_COGNITO_TOKEN}: {str(e)}"
+            )
 
     @staticmethod
     def exchange_code_for_tokens(code: str) -> dict:
@@ -39,7 +45,7 @@ class Cognito:
         cognito_token_url = f"{settings.COGNITO_DOMAIN}/oauth2/token"
         response = requests.post(cognito_token_url, data=data, headers=headers)
         if response.status_code != 200:
-            raise Exception("Token exchange failed")
+            raise Exception(AuthResponseConstants.COGNITO_TOKEN_EXCHANGE_FAILED)
         return response.json()
 
     @classmethod

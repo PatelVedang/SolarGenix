@@ -25,5 +25,5 @@ class AuthResponseConstants:
     INVALID_COGNITO_TOKEN = "Invalid Cognito token"
     MISSING_COGNITO_TOKENS = "Missing tokens from Cognito response"
     MISSING_COGNITO_FIELDS = "Cognito token missing required fields"
-
+    COGNITO_TOKEN_EXCHANGE_FAILED = "Token exchange failed"
     # fmt: on

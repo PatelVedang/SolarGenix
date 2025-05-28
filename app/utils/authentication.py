@@ -1,16 +1,16 @@
-from django.utils.translation import gettext as _
-from rest_framework.authentication import BaseAuthentication
-from rest_framework_simplejwt.authentication import JWTAuthentication
-from rest_framework.exceptions import AuthenticationFailed as DRFAuthenticationFailed
-from rest_framework_simplejwt.exceptions import AuthenticationFailed
-from auth_api.constants import AuthResponseConstants
-from django.conf import settings
-from jose import jwt, JWTError
 import requests
-from django.contrib.auth import get_user_model
-from jose.utils import base64url_decode
-from cryptography.hazmat.primitives.asymmetric import rsa
+from auth_api.constants import AuthResponseConstants
 from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives.asymmetric import rsa
+from django.conf import settings
+from django.contrib.auth import get_user_model
+from django.utils.translation import gettext as _
+from jose import JWTError, jwt
+from jose.utils import base64url_decode
+from rest_framework.authentication import BaseAuthentication
+from rest_framework.exceptions import AuthenticationFailed as DRFAuthenticationFailed
+from rest_framework_simplejwt.authentication import JWTAuthentication
+from rest_framework_simplejwt.exceptions import AuthenticationFailed
 
 User = get_user_model()
 
@@ -51,20 +51,25 @@ class CognitoAuthentication(BaseAuthentication):
             response = requests.get(jwks_url, verify=False)
             if response.status_code != 200:
                 raise DRFAuthenticationFailed(
-                    f"Failed to fetch JWKS from Cognito: {response.status_code}"
+                    AuthResponseConstants.INVALID_COGNITO_TOKEN
+                    + f": JWKS fetch failed ({response.status_code})"
                 )
 
             try:
                 jwks_data = response.json()
             except ValueError:
                 raise DRFAuthenticationFailed(
-                    "Invalid JSON returned from JWKS endpoint"
+                    AuthResponseConstants.INVALID_COGNITO_TOKEN
+                    + ": Invalid JSON from JWKS endpoint"
                 )
 
             keys = jwks_data.get("keys", [])
             key = next((k for k in keys if k.get("kid") == kid), None)
             if not key:
-                raise DRFAuthenticationFailed("Matching 'kid' not found in JWKS")
+                raise DRFAuthenticationFailed(
+                    AuthResponseConstants.INVALID_COGNITO_TOKEN
+                    + ": 'kid' not found in JWKS"
+                )
 
             # Decode base64url-encoded exponent and modulus as bytes
             e_bytes = base64url_decode(key["e"].encode("utf-8"))
@@ -88,4 +93,6 @@ class CognitoAuthentication(BaseAuthentication):
             return (user, token)
 
         except (JWTError, KeyError, StopIteration) as e:
-            raise DRFAuthenticationFailed(f"Invalid Cognito token: {str(e)}")
+            raise DRFAuthenticationFailed(
+                f"{AuthResponseConstants.INVALID_COGNITO_TOKEN}: {str(e)}"
+            )

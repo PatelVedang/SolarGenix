@@ -70,4 +70,4 @@ class CognitoBackend(ModelBackend):
         try:
             return User.objects.get(email=username, is_active=True, is_deleted=False)
         except User.DoesNotExist:
-            return None
+            raise AuthenticationFailed(AuthResponseConstants.INVALID_CREDENTIALS)
