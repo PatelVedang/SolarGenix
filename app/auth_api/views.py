@@ -377,6 +377,6 @@ class CognitoSyncTokensView(APIView):
                     "id_token": serializer.validated_data["id_token"],
                 },
             },
-            message="Login successful via Cognito",
+            message=AuthResponseConstants.LOGIN_SUCCESS,
             status_code=status.HTTP_200_OK,
         )

@@ -519,26 +519,30 @@ class CognitoSyncTokenSerializer(BaseSerializer):
         try:
             tokens = Cognito.exchange_code_for_tokens(code)
         except Exception as e:
-            raise AuthenticationFailed(f"Failed to exchange code for tokens: {str(e)}")
+            raise AuthenticationFailed(
+                f"{AuthResponseConstants.INVALID_COGNITO_TOKEN}: {str(e)}"
+            )
 
         access_token = tokens.get("access_token")
         refresh_token = tokens.get("refresh_token")
         id_token = tokens.get("id_token")
 
         if not all([access_token, refresh_token, id_token]):
-            raise AuthenticationFailed("Missing tokens from Cognito response")
+            raise AuthenticationFailed(AuthResponseConstants.MISSING_COGNITO_TOKENS)
 
         try:
             access_payload = Cognito.decode_token(access_token)
             id_token_payload = Cognito.decode_token(id_token)
         except Exception as e:
-            raise AuthenticationFailed(f"Invalid Cognito token: {str(e)}")
+            raise AuthenticationFailed(
+                f"{AuthResponseConstants.INVALID_COGNITO_TOKEN}: {str(e)}"
+            )
 
         email = id_token_payload.get("email")
         user_sub = access_payload.get("sub")
 
         if not email or not user_sub:
-            raise AuthenticationFailed("Cognito token missing required fields")
+            raise AuthenticationFailed(AuthResponseConstants.MISSING_COGNITO_FIELDS)
 
         attrs.update(
             {
@@ -574,7 +578,7 @@ class CognitoSyncTokenSerializer(BaseSerializer):
             )
         except IntegrityError:
             raise ValidationError(
-                {"email": f"A user with the email '{email}' already exists."}
+                {"email": f"{AuthResponseConstants.EMAIL_ALREADY_EXISTS}: {email}"}
             )
 
         if not created and user.email != email:
