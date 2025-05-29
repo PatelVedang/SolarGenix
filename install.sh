@@ -164,9 +164,13 @@ if [ "$create_db" == "y" ]; then
         sudo -i -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE $new_db TO $new_user;"
         echo "Altering the schema owner..."
         sudo -i -u postgres psql -d "$new_db" -c "ALTER SCHEMA public OWNER TO $new_user;"
+        # Allow user to create db
+        sudo -i -u postgres psql -c "ALTER USER $new_user CREATEDB;"
     elif [ "$OS" == "mac" ]; then
         createdb "$new_db"
         psql -c "GRANT ALL PRIVILEGES ON DATABASE $new_db TO $new_user;"
+        # Allow user to create db
+        psql -c "ALTER USER $new_user CREATEDB;"
     fi
 
     # Configure PostgreSQL for remote access
