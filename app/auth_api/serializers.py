@@ -1,7 +1,6 @@
 import logging
 import random
 import re
-import threading
 
 from django.conf import settings
 from django.contrib.auth import authenticate
@@ -13,7 +12,7 @@ from rest_framework import serializers
 from rest_framework.exceptions import AuthenticationFailed
 from rest_framework_simplejwt.serializers import TokenRefreshSerializer
 from utils.custom_exception import CustomValidationError
-from utils.email import EmailService, send_email
+from utils.email import EmailService
 
 from auth_api.models import SimpleToken, Token, TokenType, User
 
@@ -140,7 +139,6 @@ class UserPasswordResetSerializer(BaseSerializer):
         confirm_password = attrs.get("confirm_password")
         token = self.context.get("token")
         payload = SimpleToken.validate_token(token, TokenType.RESET.value)
-        print("=11==11==11", payload)
 
         if not re.search(settings.PASSWORD_VALIDATE_REGEX, attrs.get("password")):
             raise serializers.ValidationError(
@@ -324,10 +322,11 @@ class SendOTPSerializer(BaseSerializer):
 
     def validate(self, attrs):
         email = attrs.get("email").lower()
-        user = User.objects.filter(email=email)
-        if user.exists():
+        user = User.objects.filter(
+            email=email, is_active=True, is_deleted=False
+        ).first()
+        if user:
             if user.is_email_verified:
-                user = user.first()
                 # Delete any existing OTP tokens
                 Token.objects.filter(user=user, token_type=TokenType.OTP.value).delete()
 
@@ -344,19 +343,9 @@ class SendOTPSerializer(BaseSerializer):
                 self.context["otp"] = otp
                 self.context["otp_expires"] = reset_token.lifetime
 
-                # Prepare email context
-                # context = {
-                #     "subject": "Your OTP Code",
-                #     "user": user,
-                #     "recipients": [email],
-                #     "html_template": "otp_email_template",  # Define your OTP email template
-                #     "otp": otp,  # Pass the OTP to the email template
-                #     "title": "Your One-Time Password (OTP)",
-                # }
-
                 # Send the email in a separate thread
                 email_service = EmailService(user)
-                email_service.send_password_update_confirmation()
+                email_service.send_otp(otp=otp)
 
             else:
                 Token.objects.filter(user=user, token_type="verify_mail").delete()
@@ -452,17 +441,7 @@ class ResetPasswordOTPSerializer(BaseSerializer):
         user.is_default_password = False
         user.save()
         otp_obj.hard_delete()
+        email_service = EmailService(user)
+        email_service.send_password_update_confirmation()
 
-        thread = threading.Thread(
-            target=send_email,
-            kwargs={
-                "subject": "Password updated successfully!",
-                "user": user,
-                "recipients": [user.email],
-                "html_template": "resend_reset_password",
-                "title": "Password updated successfully",
-                "button_links": [f"{settings.FRONTEND_URL}/api/auth/login"],
-            },
-        )
-        thread.start()
         return attrs

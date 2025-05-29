@@ -37,6 +37,9 @@ def send_email(**kwargs):
             # Pass the dynamic data (full_name, button_link, etc.) to the template
             context = {
                 "full_name": kwargs.get("full_name", ""),
+                "otp": kwargs.get("otp", ""),
+                "password": kwargs.get("password", ""),
+                "email": kwargs.get("email", ""),
                 "button_link": button_link[0],
             }
             # Render the HTML template with the provided context
@@ -69,10 +72,18 @@ class EmailService:
         thread.start()
 
     def create_email_context(
-        self, subject, recipients, button_link, html_template, title, full_name
+        self,
+        subject,
+        recipients,
+        button_link,
+        html_template,
+        title,
+        full_name,
+        otp=None,
+        password=None,
+        email=None,
     ):
         """Creates a context dictionary for email sending."""
-
         context_dict = {
             "subject": subject,
             "user": self.user,
@@ -81,7 +92,19 @@ class EmailService:
             "html_template": html_template,
             "title": title,
             "full_name": full_name,  # Include full_name in context
+            "otp": otp,
+            "password": password,
+            "email": email,
         }
+        if otp:
+            context_dict["otp"] = otp
+
+        if password:
+            context_dict["password"] = password
+
+        if email:
+            context_dict["email"] = email
+
         if button_link is None:
             context_dict.pop("button_links")
         return context_dict
@@ -137,10 +160,67 @@ class EmailService:
         )
         self.send_email_async(context)
 
-    # def send_otp(self):
-    #     reset_token = SimpleToken.for_user(
-    #         user,
-    #         TokenType.OTP.value,
-    #         settings.OTP_EXPIRY_MINUTES,
-    #         str(otp),
-    #     )
+    def send_otp(self, otp):
+        full_name = f"{self.user.first_name} {self.user.last_name}"
+        button_link = f"{settings.FRONTEND_URL}/api/auth/reset-password-otp"
+        context = self.create_email_context(
+            subject="Your OTP code!",
+            recipients=[self.user.email],
+            html_template="send_otp",
+            title="Reset your password",
+            button_link=button_link,
+            full_name=full_name,
+            otp=otp,  # Pass the OTP to the email context
+        )
+
+        self.send_email_async(context)
+
+    def send_email_superuser(self, password, email):
+        try:
+            print(self.user.first_name)
+            full_name = self.user.first_name
+            button_link = f"{settings.FRONTEND_URL}/admin/"
+            email = self.user.email
+            context = self.create_email_context(
+                subject="Admin created successfully!",
+                recipients=[self.user.email],
+                html_template="superuser",
+                title="Welcome on board!",
+                button_link=button_link,
+                full_name=full_name,
+                password=password,  # Pass the password to the email context
+                email=email,
+            )
+
+            self.send_email_async(context)
+            return True
+        except Exception as e:
+            logger.error(f"Failed to send email for superuser creation: {e}")
+            return False
+
+    def send_verification_email_by_admin(self, password, email):
+        try:
+            verify_token = SimpleToken.for_user(
+                self.user,
+                TokenType.VERIFY_MAIL.value,
+                settings.AUTH_VERIFY_EMAIL_TOKEN_LIFELINE,
+            )
+            full_name = f"{self.user.first_name} {self.user.last_name}"
+            button_link = (
+                f"{settings.FRONTEND_URL}/api/auth/verify-email/{verify_token}"
+            )
+            context = self.create_email_context(
+                subject=f"Welcome to Our Community, {full_name}",
+                recipients=[self.user.email],
+                button_link=button_link,
+                html_template="create_user",
+                title="Verify Your E-mail Address",
+                full_name=full_name,
+                password=password,
+                email=email,
+            )
+            self.send_email_async(context)
+            return True
+        except Exception as e:
+            logger.error(f"Failed to send email {e}")
+            return False
