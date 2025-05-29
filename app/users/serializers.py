@@ -1,10 +1,14 @@
 import random
 import string
 
-from auth_api.models import User
+
+from django.conf import settings
 from proj.base_serializer import BaseModelSerializer
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
+
+# from auth_api.models import SimpleToken, TokenType, User
+from user_auth.models import SimpleToken, TokenType, User
 from utils.custom_exception import CustomValidationError
 from utils.email import EmailService
 

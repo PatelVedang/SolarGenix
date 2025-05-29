@@ -1,6 +1,7 @@
 import logging
 import random
 import re
+import threading
 
 from django.conf import settings
 from django.contrib.auth import authenticate
@@ -12,12 +13,11 @@ from rest_framework import serializers
 from rest_framework.exceptions import AuthenticationFailed
 from rest_framework_simplejwt.serializers import TokenRefreshSerializer
 from utils.custom_exception import CustomValidationError
-from utils.email import EmailService
-
-from auth_api.models import SimpleToken, Token, TokenType, User
+from utils.email import EmailService, send_email
 
 from .constants import AuthResponseConstants
 from .google import Google
+from .models import SimpleToken, Token, TokenType, User
 
 logger = logging.getLogger("django")
 
@@ -141,16 +141,13 @@ class UserPasswordResetSerializer(BaseSerializer):
         payload = SimpleToken.validate_token(token, TokenType.RESET.value)
 
         if not re.search(settings.PASSWORD_VALIDATE_REGEX, attrs.get("password")):
-            raise serializers.ValidationError(
-                {"password": f"{settings.PASSWORD_VALIDATE_STRING}__custom"}
-            )
+            raise CustomValidationError(f"{settings.PASSWORD_VALIDATE_STRING}")
 
         if password != confirm_password:
-            raise serializers.ValidationError(
-                {
-                    "confirm_password": f"{AuthResponseConstants.PASSWORD_CONFIRMATION_MISMATCH}__custom"
-                }
+            raise CustomValidationError(
+                AuthResponseConstants.PASSWORD_CONFIRMATION_MISMATCH
             )
+
         token_obj = payload.get("token_obj")
         user = token_obj.user
         user.is_default_password = False
@@ -187,9 +184,7 @@ class ChangePasswordSerializer(BaseSerializer):
         if not user.check_password(attrs["old_password"]):
             raise CustomValidationError(AuthResponseConstants.INCORRECT_OLD_PASSWORD)
         if not re.search(settings.PASSWORD_VALIDATE_REGEX, attrs["new_password"]):
-            raise serializers.ValidationError(
-                {"new_password": f"{settings.PASSWORD_VALIDATE_STRING}__custom"}
-            )
+            raise CustomValidationError(f"{settings.PASSWORD_VALIDATE_STRING}")
         return attrs
 
     def create(self, validated_data):
@@ -273,9 +268,7 @@ class GoogleSSOSerializer(BaseSerializer):
         google = Google()
         data = google.validate_google_token(authorization_code)
         email = data.get("email")
-        full_name = data.get("name")
-        first_name, last_name = (full_name.split(" ", 1) + [""])[:2]
-
+        first_name = data.get("name")
         password = generate_password()  # Use the same function
         google_refresh_token = data.get("refresh_token")
         user = User.objects.filter(email=email)
@@ -287,26 +280,15 @@ class GoogleSSOSerializer(BaseSerializer):
                     "This account is either inactive or has been deleted."
                 )
             if user.auth_provider == "google":
-                tokens = user.auth_tokens()
-                user_data = UserProfileSerializer(user).data
-                response_data = {
-                    "user": user_data,  # User profile data
-                    "tokens": tokens,  # Access and refresh tokens
-                }
-
-                return {"message": "Login done successfully!", "data": response_data}
+                user_data = user.auth_tokens()
+                return {"message": "Login done successfully!", "data": user_data}
             else:
                 raise AuthenticationFailed(
                     f"Please continue your login using {user.auth_provider}"
                 )
         else:
             # Register Flow
-            user = {
-                "email": email,
-                "password": password,
-                "first_name": first_name,
-                "last_name": last_name,
-            }
+            user = {"email": email, "password": password, "first_name": first_name}
             user = User.objects.create_user(**user)
             user.auth_provider = "google"
             user.is_active = True
@@ -316,19 +298,11 @@ class GoogleSSOSerializer(BaseSerializer):
             if user:
                 authorized_user = authenticate(email=email, password=password)
                 if authorized_user:
-                    tokens = user.auth_tokens()
-                    user_data = UserProfileSerializer(user).data
+                    user_data = user.auth_tokens()
                     SimpleToken.for_user(
                         user, TokenType.GOOGLE.value, None, jti=google_refresh_token
                     )
-                    response_data = {
-                        "user": user_data,  # User profile data
-                        "tokens": tokens,  # Access and refresh tokens
-                    }
-                    return {
-                        "message": "Login done successfully!",
-                        "data": response_data,
-                    }
+                    return {"message": "Login done successfully!", "data": user_data}
             else:
                 logger.error(
                     f"Google SSO failed for {email} after user creation due to authentication failed"
@@ -343,35 +317,38 @@ class SendOTPSerializer(BaseSerializer):
 
     def validate(self, attrs):
         email = attrs.get("email").lower()
-        user = User.objects.filter(
-            email=email, is_active=True, is_deleted=False
-        ).first()
-        if user:
-            if user.is_email_verified:
-                # Delete any existing OTP tokens
-                Token.objects.filter(user=user, token_type=TokenType.OTP.value).delete()
+        user = User.objects.filter(email=email)
+        if user.exists():
+            user = user.first()
+            # Delete any existing OTP tokens
+            Token.objects.filter(user=user, token_type=TokenType.OTP.value).delete()
 
-                # Generate the OTP
-                otp = random.randint(1000, 9999)
+            # Generate the OTP
+            otp = random.randint(1000, 9999)
 
-                # Save the OTP in the Token model
-                reset_token = SimpleToken.for_user(
-                    user,
-                    TokenType.OTP.value,
-                    settings.OTP_EXPIRY_MINUTES,
-                    str(otp),
-                )
-                self.context["otp"] = otp
-                self.context["otp_expires"] = reset_token.lifetime
+            # Save the OTP in the Token model
+            reset_token = SimpleToken.for_user(
+                user,
+                TokenType.OTP.value,
+                settings.OTP_EXPIRY_MINUTES,
+                str(otp),
+            )
+            self.context["otp"] = otp
+            self.context["otp_expires"] = reset_token.lifetime
 
-                # Send the email in a separate thread
-                email_service = EmailService(user)
-                email_service.send_otp(otp=otp)
+            # Prepare email context
+            context = {
+                "subject": "Your OTP Code",
+                "user": user,
+                "recipients": [email],
+                "html_template": "otp_email_template",  # Define your OTP email template
+                "otp": otp,  # Pass the OTP to the email template
+                "title": "Your One-Time Password (OTP)",
+            }
 
-            else:
-                Token.objects.filter(user=user, token_type="verify_mail").delete()
-                email_service = EmailService(user)
-                email_service.send_verification_email()
+            # Send the email in a separate thread
+            thread = threading.Thread(target=send_email, kwargs=context)
+            thread.start()
         else:
             logger.error(f"OTP sending failed, user with email {email} not found")
             raise CustomValidationError(
@@ -447,28 +424,41 @@ class ResetPasswordOTPSerializer(BaseSerializer):
 
         # Validate password format and match
         if not re.search(settings.PASSWORD_VALIDATE_REGEX, password):
-            raise serializers.ValidationError(
-                {"password": f"{settings.PASSWORD_VALIDATE_STRING}__custom"}
-            )
+            raise CustomValidationError(f"{settings.PASSWORD_VALIDATE_STRING}")
         if password != confirm_password:
-            raise serializers.ValidationError(
-                {
-                    "confirm_password": f"{AuthResponseConstants.PASSWORD_CONFIRMATION_MISMATCH}__custom"
-                }
-            )
+            raise CustomValidationError("Passwords do not match")
 
         # Update user password and send success email
         user.password = make_password(password)
         user.is_default_password = False
         user.save()
         otp_obj.hard_delete()
-        email_service = EmailService(user)
-        email_service.send_password_update_confirmation()
 
+        thread = threading.Thread(
+            target=send_email,
+            kwargs={
+                "subject": "Password updated successfully!",
+                "user": user,
+                "recipients": [user.email],
+                "html_template": "resend_reset_password",
+                "title": "Password updated successfully",
+                "button_links": [f"{settings.FRONTEND_URL}/api/auth/login"],
+            },
+        )
+        thread.start()
         return attrs
 
 
-class UserDataMigrationSerializer(serializers.ModelSerializer):
+class UserMigrationSerializer(BaseModelSerializer):
     class Meta:
         model = User
-        exclude = ["groups", "user_permissions"]  # Exclude sensitive fields
+        fields = "__all__"
+
+    def create(self, validated_data):
+        """
+        Override the create method to handle specific logic if needed,
+        such as preserving the hashed password from the old model.
+        """
+        # The password is already hashed, so we can safely reuse it.
+        user = User.objects.create(**validated_data)
+        return user

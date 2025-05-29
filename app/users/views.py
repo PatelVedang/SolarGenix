@@ -1,8 +1,11 @@
-from auth_api.models import User
-from auth_api.permissions import IsAuthenticated
+# from auth_api.models import User
 from proj.base_view import BaseModelViewSet
 from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied
+from user_auth.models import User
+
+# from auth_api.permissions import IsAuthenticated
+from user_auth.permissions import IsAuthenticated
 from utils.custom_filter import filter_model
 from utils.make_response import response
 from utils.swagger import apply_swagger_tags
