@@ -142,13 +142,16 @@ class UserPasswordResetSerializer(BaseSerializer):
         payload = SimpleToken.validate_token(token, TokenType.RESET.value)
 
         if not re.search(settings.PASSWORD_VALIDATE_REGEX, attrs.get("password")):
-            raise CustomValidationError(f"{settings.PASSWORD_VALIDATE_STRING}")
-
-        if password != confirm_password:
-            raise CustomValidationError(
-                AuthResponseConstants.PASSWORD_CONFIRMATION_MISMATCH
+            raise serializers.ValidationError(
+                {"password": f"{settings.PASSWORD_VALIDATE_STRING}__custom"}
             )
 
+        if password != confirm_password:
+            raise serializers.ValidationError(
+                {
+                    "confirm_password": f"{AuthResponseConstants.PASSWORD_CONFIRMATION_MISMATCH}__custom"
+                }
+            )
         token_obj = payload.get("token_obj")
         user = token_obj.user
         user.is_default_password = False
@@ -185,7 +188,9 @@ class ChangePasswordSerializer(BaseSerializer):
         if not user.check_password(attrs["old_password"]):
             raise CustomValidationError(AuthResponseConstants.INCORRECT_OLD_PASSWORD)
         if not re.search(settings.PASSWORD_VALIDATE_REGEX, attrs["new_password"]):
-            raise CustomValidationError(f"{settings.PASSWORD_VALIDATE_STRING}")
+            raise serializers.ValidationError(
+                {"new_password": f"{settings.PASSWORD_VALIDATE_STRING}__custom"}
+            )
         return attrs
 
     def create(self, validated_data):
@@ -425,9 +430,15 @@ class ResetPasswordOTPSerializer(BaseSerializer):
 
         # Validate password format and match
         if not re.search(settings.PASSWORD_VALIDATE_REGEX, password):
-            raise CustomValidationError(f"{settings.PASSWORD_VALIDATE_STRING}")
+            raise serializers.ValidationError(
+                {"password": f"{settings.PASSWORD_VALIDATE_STRING}__custom"}
+            )
         if password != confirm_password:
-            raise CustomValidationError("Passwords do not match")
+            raise serializers.ValidationError(
+                {
+                    "confirm_password": f"{AuthResponseConstants.PASSWORD_CONFIRMATION_MISMATCH}__custom"
+                }
+            )
 
         # Update user password and send success email
         user.password = make_password(password)
