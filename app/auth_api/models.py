@@ -41,7 +41,7 @@ class SimpleToken(BaseToken):
     def for_user(cls, user, token_type, lifetime, jti=None):
         token = cls(token_type=token_type, lifetime=lifetime)
         token["jti"] = jti or token["jti"]
-        token["user_id"] = user.id
+        token["user_id"] = str(user.id)
         if token_type not in ["access", "refresh"]:
             Token.default.filter(user=user, token_type=token_type).delete()
         Token.objects.create(
@@ -165,7 +165,6 @@ class User(AbstractUser, PermissionsMixin, BaseModel):
 
 
 class Token(BaseModel):  # Inherits from BaseClass
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     jti = models.CharField(max_length=255)
     token = models.TextField(null=True, blank=True)
