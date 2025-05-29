@@ -140,6 +140,7 @@ class UserPasswordResetSerializer(BaseSerializer):
         confirm_password = attrs.get("confirm_password")
         token = self.context.get("token")
         payload = SimpleToken.validate_token(token, TokenType.RESET.value)
+        print("=11==11==11", payload)
 
         if not re.search(settings.PASSWORD_VALIDATE_REGEX, attrs.get("password")):
             raise serializers.ValidationError(
@@ -325,36 +326,42 @@ class SendOTPSerializer(BaseSerializer):
         email = attrs.get("email").lower()
         user = User.objects.filter(email=email)
         if user.exists():
-            user = user.first()
-            # Delete any existing OTP tokens
-            Token.objects.filter(user=user, token_type=TokenType.OTP.value).delete()
+            if user.is_email_verified:
+                user = user.first()
+                # Delete any existing OTP tokens
+                Token.objects.filter(user=user, token_type=TokenType.OTP.value).delete()
 
-            # Generate the OTP
-            otp = random.randint(1000, 9999)
+                # Generate the OTP
+                otp = random.randint(1000, 9999)
 
-            # Save the OTP in the Token model
-            reset_token = SimpleToken.for_user(
-                user,
-                TokenType.OTP.value,
-                settings.OTP_EXPIRY_MINUTES,
-                str(otp),
-            )
-            self.context["otp"] = otp
-            self.context["otp_expires"] = reset_token.lifetime
+                # Save the OTP in the Token model
+                reset_token = SimpleToken.for_user(
+                    user,
+                    TokenType.OTP.value,
+                    settings.OTP_EXPIRY_MINUTES,
+                    str(otp),
+                )
+                self.context["otp"] = otp
+                self.context["otp_expires"] = reset_token.lifetime
 
-            # Prepare email context
-            context = {
-                "subject": "Your OTP Code",
-                "user": user,
-                "recipients": [email],
-                "html_template": "otp_email_template",  # Define your OTP email template
-                "otp": otp,  # Pass the OTP to the email template
-                "title": "Your One-Time Password (OTP)",
-            }
+                # Prepare email context
+                # context = {
+                #     "subject": "Your OTP Code",
+                #     "user": user,
+                #     "recipients": [email],
+                #     "html_template": "otp_email_template",  # Define your OTP email template
+                #     "otp": otp,  # Pass the OTP to the email template
+                #     "title": "Your One-Time Password (OTP)",
+                # }
 
-            # Send the email in a separate thread
-            thread = threading.Thread(target=send_email, kwargs=context)
-            thread.start()
+                # Send the email in a separate thread
+                email_service = EmailService(user)
+                email_service.send_password_update_confirmation()
+
+            else:
+                Token.objects.filter(user=user, token_type="verify_mail").delete()
+                email_service = EmailService(user)
+                email_service.send_verification_email()
         else:
             logger.error(f"OTP sending failed, user with email {email} not found")
             raise CustomValidationError(
