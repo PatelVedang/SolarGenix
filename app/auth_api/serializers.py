@@ -273,7 +273,9 @@ class GoogleSSOSerializer(BaseSerializer):
         google = Google()
         data = google.validate_google_token(authorization_code)
         email = data.get("email")
-        first_name = data.get("name")
+        full_name = data.get("name")
+        first_name, last_name = (full_name.split(" ", 1) + [""])[:2]
+
         password = generate_password()  # Use the same function
         google_refresh_token = data.get("refresh_token")
         user = User.objects.filter(email=email)
@@ -285,15 +287,26 @@ class GoogleSSOSerializer(BaseSerializer):
                     "This account is either inactive or has been deleted."
                 )
             if user.auth_provider == "google":
-                user_data = user.auth_tokens()
-                return {"message": "Login done successfully!", "data": user_data}
+                tokens = user.auth_tokens()
+                user_data = UserProfileSerializer(user).data
+                response_data = {
+                    "user": user_data,  # User profile data
+                    "tokens": tokens,  # Access and refresh tokens
+                }
+
+                return {"message": "Login done successfully!", "data": response_data}
             else:
                 raise AuthenticationFailed(
                     f"Please continue your login using {user.auth_provider}"
                 )
         else:
             # Register Flow
-            user = {"email": email, "password": password, "first_name": first_name}
+            user = {
+                "email": email,
+                "password": password,
+                "first_name": first_name,
+                "last_name": last_name,
+            }
             user = User.objects.create_user(**user)
             user.auth_provider = "google"
             user.is_active = True
@@ -303,11 +316,19 @@ class GoogleSSOSerializer(BaseSerializer):
             if user:
                 authorized_user = authenticate(email=email, password=password)
                 if authorized_user:
-                    user_data = user.auth_tokens()
+                    tokens = user.auth_tokens()
+                    user_data = UserProfileSerializer(user).data
                     SimpleToken.for_user(
                         user, TokenType.GOOGLE.value, None, jti=google_refresh_token
                     )
-                    return {"message": "Login done successfully!", "data": user_data}
+                    response_data = {
+                        "user": user_data,  # User profile data
+                        "tokens": tokens,  # Access and refresh tokens
+                    }
+                    return {
+                        "message": "Login done successfully!",
+                        "data": response_data,
+                    }
             else:
                 logger.error(
                     f"Google SSO failed for {email} after user creation due to authentication failed"
