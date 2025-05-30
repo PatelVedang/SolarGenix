@@ -1,11 +1,17 @@
 import re
 
-from core.models import User
 from auth_api.tests import BaseAPITestCase
+from core.models import User
 from django.conf import settings
 from django.db import IntegrityError
 from django.urls import reverse
 from rest_framework import status
+
+# from auth_api.models import User
+from user_auth.models import User
+
+# from auth_api.tests import BaseAPITestCase
+from user_auth.tests import BaseAPITestCase
 
 
 class UserTestCase(BaseAPITestCase):

@@ -1,5 +1,5 @@
 import string
-
+import uuid
 from django.db import models
 from django.utils.crypto import get_random_string
 
@@ -10,6 +10,7 @@ class NonDeleted(models.Manager):
 
 
 class BaseModel(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     is_deleted = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True, null=True)
     updated_at = models.DateTimeField(auto_now=True)

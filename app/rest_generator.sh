@@ -177,7 +177,7 @@ from utils.custom_filter import filter_model
 from proj.base_view import BaseModelViewSet
 from .models import $SINGULAR_CAPITALIZED
 from .serializers import $SINGULAR_CAPITALIZED_SERIALIZER
-from auth_api.permissions import IsAuthenticated
+from user_auth.permissions import IsAuthenticated
 from rest_framework.decorators import action
 from utils.make_response import response
 
@@ -255,8 +255,8 @@ from rest_framework.test import APITestCase, APIClient
 from django.core.files.uploadedfile import SimpleUploadedFile
 from rest_framework import status
 from .models import $SINGULAR_CAPITALIZED
-from auth_api.models import User
-from auth_api.tests import BaseAPITestCase
+from user_auth.models import User
+from user_auth.tests import BaseAPITestCase
 
 
 
@@ -322,8 +322,7 @@ class ${SINGULAR_CAPITALIZED_MODEL_TESTS}(BaseAPITestCase):
         }
         with self.assertRaises(Exception):  # Expect failure due to invalid data
             self.create_${APP_NAME}_via_orm(**invalid_data)
-
-        self.match_error_response(400)
+            self.match_error_response(400)
 
     def test_get_${APP_NAME}(self):
         """

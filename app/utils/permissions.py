@@ -1,7 +1,8 @@
-from rest_framework.permissions import BasePermission
+# from auth_api.models import BlacklistToken, Token
+from core.models import Token
 from rest_framework.exceptions import AuthenticationFailed
+from rest_framework.permissions import BasePermission
 from rest_framework_simplejwt.tokens import UntypedToken
-from core.models import Token, BlacklistToken
 
 
 class IsTokenValid(BasePermission):
@@ -35,7 +36,8 @@ class IsTokenValid(BasePermission):
         except Token.DoesNotExist:
             raise AuthenticationFailed("Token Does Not Exist")
         validated_token = UntypedToken(token)
-        if BlacklistToken.objects.filter(jti=validated_token.get("jti")).exists():
-            raise AuthenticationFailed("Token has been blacklisted")
+        print(validated_token)
+        # if BlacklistToken.objects.filter(jti=validated_token.get("jti")).exists():
+        #     raise AuthenticationFailed("Token has been blacklisted")
 
         return True

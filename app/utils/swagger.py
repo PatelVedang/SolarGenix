@@ -274,6 +274,11 @@ from rest_framework import serializers
 
 
 # Define response serializers for different status codes
+class SuccessResponseSerializer(serializers.Serializer):
+    message = serializers.CharField(default="Request was successful")
+    data = serializers.DictField(default={})
+
+
 class BadRequestResponseSerializer(serializers.Serializer):
     message = serializers.CharField(default="Bad request")
     data = serializers.DictField(default={})
@@ -314,6 +319,9 @@ def get_response_schema():
     Returns a dictionary of response schemas for various HTTP status codes.
     """
     return {
+        200: OpenApiResponse(
+            response=SuccessResponseSerializer, description="Request was successful"
+        ),
         400: OpenApiResponse(
             response=BadRequestResponseSerializer, description="Bad request"
         ),
