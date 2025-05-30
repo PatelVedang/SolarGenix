@@ -147,6 +147,9 @@ class User(AbstractUser, PermissionsMixin, BaseModel):
         access_token = refresh_token.access_token
         jti = access_token["jti"]
         refresh_token["jti"] = jti
+        
+        # ------------ Add Here logic for the delete expire token ---------------------
+    
         Token.objects.bulk_create(
             [
                 Token(

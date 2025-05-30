@@ -202,7 +202,7 @@ REST_FRAMEWORK = {
     "DEFAULT_THROTTLE_RATES": {
         "auth": AUTH_THROTTLING_LIMIT,
     },
-    "DEFAULT_PAGINATION_CLASS": "utils.pagination.BasePagination",
+    # "DEFAULT_PAGINATION_CLASS": "utils.pagination.BasePagination",
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
 }
 
