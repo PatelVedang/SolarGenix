@@ -40,8 +40,12 @@ class LoginOnAuthBackend(ModelBackend):
                 user.last_login = now()
                 user.save()  # Save the updated 'last_login' field to the database
                 
-                tokens = user.auth_tokens()   # Generation of the Token
-
+                try: 
+                    tokens = user.auth_tokens()   # Generation of the Token
+                except Exception:
+                    # If token generation fails, raise an AuthenticationFailed exception
+                    raise AuthenticationFailed(AuthResponseConstants.TOKEN_GENERATION_FAILED)
+                    
                 # Return the authenticated user object if password validation is successful
                 return user ,tokens
             else:

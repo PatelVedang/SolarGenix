@@ -21,4 +21,5 @@ class AuthResponseConstants:
     FORGOT_PASSWORD_EMAIL_SENT = "If this email is associated with an account, a password reset link has been sent."
     LOGIN_UNVERIFIED_EMAIL = "Your email is not verified. A new verification email has been dispatched. Please verify your email to log in."
     FORGOT_PASSWORD_UNVERIFIED_EMAIL = "Your email is not verified. A new verification email has been dispatched. Please verify your email to reset your password."
+    TOKEN_GENERATION_FAILED="Token generation failed. Please try again later."
     # fmt: on

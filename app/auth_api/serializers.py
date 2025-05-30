@@ -75,30 +75,39 @@ class UserRegistrationSerializer(BaseModelSerializer):
 
 class UserLoginSerializer(BaseModelSerializer):
     email = serializers.EmailField(max_length=255)
-
+    password = serializers.CharField(
+        write_only=True
+    )
     class Meta:
         model = User
-        fields = ["email", "password"]
+        fields = ["email","password"]
 
     def validate(self, attrs):
-        attrs["email"] = attrs["email"].lower()
-        # Authenticate the user with provided credentials
+        # Authenticate the user with provided credentials\
+        email = attrs.pop("email", "").lower()
+        password = attrs.pop("password", "")
 
-        authenticated = LoginOnAuthBackend.authenticate(**attrs)
-        
+        authenticated = LoginOnAuthBackend.authenticate(email=email, password=password)
+        # If authentication fails, authenticated will be None
         if authenticated is None:
-            user = User.objects.filter(email=attrs.get("email")).first()
+            user = User.objects.filter(email=email).first()
             if user:
                 if not user.is_email_verified:
                     Token.objects.filter(user=user, token_type="verify_mail").delete()
                     email_service = EmailService(user)
                     email_service.send_verification_email()
+                    raise AuthenticationFailed(
+                        AuthResponseConstants.LOGIN_UNVERIFIED_EMAIL
+                    )
                     return user
             raise AuthenticationFailed(AuthResponseConstants.INVALID_CREDENTIALS)
         
         user, tokens = authenticated
-
-        return {"user": user, "tokens": tokens}
+        attrs["user"] = UserProfileSerializer(user).data
+        attrs["tokens"] = tokens
+        return attrs
+    
+    
 
 
 class UserProfileSerializer(BaseModelSerializer):
