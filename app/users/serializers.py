@@ -10,8 +10,9 @@ from rest_framework.exceptions import ValidationError
 # from auth_api.models import SimpleToken, TokenType, User
 from user_auth.models import SimpleToken, TokenType, User
 from utils.custom_exception import CustomValidationError
-from utils.email import EmailService
-
+from utils.email import EmailService, send_email
+from users.constants import UserResponseConstants
+import threading
 
 class UserSerializer(BaseModelSerializer):
     email = serializers.EmailField(
@@ -30,7 +31,7 @@ class UserSerializer(BaseModelSerializer):
         email = attrs.get("email").strip().lower()
 
         if User.objects.filter(email=email).exists():
-            raise CustomValidationError("A user with this email already exists!")
+            raise CustomValidationError(UserResponseConstants.EMAIL_ALREADY_EXISTS)
         return attrs
 
     @staticmethod
@@ -54,35 +55,46 @@ class UserSerializer(BaseModelSerializer):
         # Always generate a new password
         raw_password = self.generate_password()
         if not raw_password:
-            raise CustomValidationError("Error generating password")
-
+            raise CustomValidationError(UserResponseConstants.ERROR_GENERATING_PASS)
+ 
         validated_data["password"] = raw_password
-        validated_data["is_active"] = True  # Activate the user
-
-
+        validated_data["is_active"] = False  # Activate the user
+ 
         try:
             user = User.objects.create_user(**validated_data)
-            user.save()
-            email_service = EmailService(user)
-            email_sent = email_service.send_verification_email_by_admin(
-                password=raw_password, email=user.email
-            )
-            if not email_sent:
-                self.stdout.write(
-                    self.style.ERROR(
-                        "Failed to send email for user creation. Rolling back."
-                    )
-                )
-                return
-
-            return user
         except Exception as e:
             raise CustomValidationError(str(e))
+        # Send email with the generated password
+        try:
+            verify_token = SimpleToken.for_user(
+                user,
+                TokenType.VERIFY_MAIL.value,
+                settings.AUTH_VERIFY_EMAIL_TOKEN_LIFELINE,
+            )
+            context = {
+                "subject": f"Welcome to Our Community, {user.first_name}!",
+                "user": user,
+                "password": raw_password,
+                "recipients": [user.email],
+                "button_links": [
+                    f"{settings.FRONTEND_URL}/api/auth/verify-email/{verify_token}"
+                ],
+                "html_template": "user_created_by_admin",
+                "title": "Verify Your E-mail Address",
+            }
+            thread = threading.Thread(target=send_email, kwargs=context)
+            thread.start()
+
+        except Exception as e:
+            print(f"Error sending email: {e}")
+            raise CustomValidationError(UserResponseConstants.ERROR_SENDING_EMAIL)
+ 
+        return user
 
     def update(self, instance, validated_data):
         email = validated_data.get("email", None)
         if email and User.objects.exclude(pk=instance.pk).filter(email=email).exists():
-            raise ValidationError({"email": "This email is already in use."})
+            raise ValidationError({"email": UserResponseConstants.EMAIL_ALREADY_EXISTS})
 
         return super().update(instance, validated_data)
 

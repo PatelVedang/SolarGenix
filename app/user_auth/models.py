@@ -41,7 +41,7 @@ class SimpleToken(BaseToken):
     def for_user(cls, user, token_type, lifetime, jti=None):
         token = cls(token_type=token_type, lifetime=lifetime)
         token["jti"] = jti or token["jti"]
-        token["user_id"] = user.id
+        token["user_id"] = str(user.id)
         if token_type not in ["access", "refresh"]:
             Token.default.filter(user=user, token_type=token_type).delete()
         Token.objects.create(
