@@ -15,6 +15,7 @@
 # """
 
 from django.conf import settings
+from django.conf.urls import handler404, handler500
 from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path
@@ -23,7 +24,6 @@ from drf_spectacular.views import (
     SpectacularSwaggerView,
 )
 from utils.swagger import swagger_auth_required
-from django.conf.urls import handler404, handler500
 
 urlpatterns = [
     path("admin/", admin.site.urls),
@@ -32,7 +32,8 @@ urlpatterns = [
         include(
             [
                 # IMPORT_NEW_ROUTE_HERE
-                path("", include("auth_api.urls")),
+                # path("", include("auth_api.urls")),
+                path("", include("user_auth.urls")),
                 path("", include("users.urls")),
                 path("", include("todos.urls")),
             ]
