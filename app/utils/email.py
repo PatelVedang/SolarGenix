@@ -2,6 +2,8 @@ import logging
 import threading
 import traceback
 
+from core.models import TokenType, User
+from core.services.token_service import TokenService
 from django.conf import settings
 from django.core.mail import EmailMessage
 from django.template.loader import render_to_string
@@ -114,7 +116,7 @@ class EmailService:
         return context_dict
 
     def send_verification_email(self):
-        verify_token = SimpleToken.for_user(
+        verify_token = TokenService.for_user(
             self.user,
             TokenType.VERIFY_MAIL.value,
             settings.AUTH_VERIFY_EMAIL_TOKEN_LIFELINE,
@@ -132,7 +134,7 @@ class EmailService:
         self.send_email_async(context)
 
     def send_password_reset_email(self, email: str):
-        reset_token = SimpleToken.for_user(
+        reset_token = TokenService.for_user(
             self.user,
             TokenType.RESET.value,
             settings.AUTH_RESET_PASSWORD_TOKEN_LIFELINE,
@@ -151,8 +153,8 @@ class EmailService:
         self.send_email_async(context)
 
     def send_password_update_confirmation(self):
-        full_name = f"{self.user.first_name} {self.user.last_name}"
         button_link = f"{settings.FRONTEND_URL}/api/auth/login"
+        full_name = f"{self.user.first_name} {self.user.last_name}"
 
         context = self.create_email_context(
             subject="Password Updated Successfully!",

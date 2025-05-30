@@ -2,8 +2,9 @@ from django.contrib import admin
 from django.contrib.admin.actions import delete_selected
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 
-from .google import Google
-from .models import Token, User
+from core.models import Token, User
+
+from core.services.google_service import Google
 
 
 class SoftDeleteAdminMixin(admin.ModelAdmin):

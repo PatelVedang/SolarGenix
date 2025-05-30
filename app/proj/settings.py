@@ -47,10 +47,12 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     # installed
+    "core",
     "drf_spectacular",
     "rest_framework",
     "django_filters",
     "corsheaders",
+    "django_celery_beat",
     # django apps
     "auth_api",
     "user_auth",
@@ -214,8 +216,10 @@ SIMPLE_JWT = {
     "SIGNING_KEY": settings.SECRET_KEY,
 }
 
-# AUTH_USER_MODEL = "auth_api.User"
-AUTH_USER_MODEL = "user_auth.User"
+
+# `AUTH_USER_MODEL = "core.User"` is a setting in Django that allows you to specify a custom user
+# model to use for authentication instead of the default `User` model provided by Django.
+AUTH_USER_MODEL = "core.User"
 
 # Base url to serve media files
 MEDIA_URL = "/media/"
@@ -316,3 +320,7 @@ OTP_EXPIRY_MINUTES = settings.OTP_EXPIRY_MINUTES
 PROJECT_TITLE = settings.PROJECT_TITLE
 SUPERUSER_EMAIL = settings.SUPERUSER_EMAIL
 
+# Celery
+CELERY_BROKER_URL = settings.CELERY_BROKER_URL
+CELERY_ACCEPT_CONTENT = ["json"]
+CELERY_TASK_SERIALIZER = "json"

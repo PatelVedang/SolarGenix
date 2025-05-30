@@ -1,5 +1,7 @@
 import re
 
+from auth_api.tests import BaseAPITestCase
+from core.models import User
 from django.conf import settings
 from django.db import IntegrityError
 from django.urls import reverse

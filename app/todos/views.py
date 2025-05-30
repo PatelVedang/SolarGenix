@@ -5,8 +5,7 @@ from user_auth.permissions import IsAuthenticated
 from utils.custom_filter import filter_model
 from utils.make_response import response
 from utils.swagger import apply_swagger_tags
-
-from .models import Todo
+from core.models import Todo
 from .serializers import TodoSerializer
 
 

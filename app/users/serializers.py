@@ -1,7 +1,8 @@
 import random
 import string
 
-
+from core.models import TokenType, User
+from core.services.token_service import TokenService
 from django.conf import settings
 from proj.base_serializer import BaseModelSerializer
 from rest_framework import serializers

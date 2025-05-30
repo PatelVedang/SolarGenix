@@ -1,4 +1,4 @@
-from auth_api.models import User
+from core.models import User
 from auth_api.permissions import IsAuthenticated
 from rest_framework.permissions import IsAdminUser
 from proj.base_view import BaseModelViewSet
@@ -61,7 +61,7 @@ class UserViewSet(BaseModelViewSet):
         # Check if the user is a superuser
         if not request.user.is_superuser:
             raise PermissionDenied(UserResponseConstants.SUPERUSER_CAN_CREATE)
-
+        
         # If superuser, proceed with the default create behavior
         return super().create(request, *args, **kwargs)
 
@@ -74,9 +74,9 @@ class UserViewSet(BaseModelViewSet):
             message=self.get_message(request, *args, **kwargs),
             status_code=200,
         )
-
-    @extend_schema( 
-    summary="Export Users Data",
+        
+    @extend_schema(                      
+    summary="Export Users Data",    
     description="Export user data in CSV or JSON format using query parameters.",
     parameters=[
         OpenApiParameter(

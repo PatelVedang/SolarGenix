@@ -3,8 +3,8 @@ from django.utils.timezone import now
 from rest_framework.exceptions import AuthenticationFailed
 
 from .constants import AuthResponseConstants
-from .models import User
-
+from core.models import User
+from core.services.token_service import TokenService
 
 class LoginOnAuthBackend(ModelBackend):
 
@@ -39,13 +39,11 @@ class LoginOnAuthBackend(ModelBackend):
                 # Update the 'last_login' field with the current timestamp upon successful authentication
                 user.last_login = now()
                 user.save()  # Save the updated 'last_login' field to the database
-                
                 try: 
-                    tokens = user.auth_tokens()   # Generation of the Token
+                    tokens = TokenService.auth_tokens(user)   # Generation of the Token
                 except Exception:
                     # If token generation fails, raise an AuthenticationFailed exception
                     raise AuthenticationFailed(AuthResponseConstants.TOKEN_GENERATION_FAILED)
-                    
                 # Return the authenticated user object if password validation is successful
                 return user ,tokens
             else:

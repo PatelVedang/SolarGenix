@@ -1,7 +1,7 @@
 from rest_framework.permissions import BasePermission
 
-from .models import SimpleToken, Token
-
+from core.models import Token
+from core.services.token_service import TokenService
 
 class IsAuthenticated(BasePermission):
     def has_permission(self, request, view):
@@ -10,7 +10,7 @@ class IsAuthenticated(BasePermission):
 
         if not request.user.is_active:
             return False
-        payload = SimpleToken.decode(str(request.auth))
+        payload = TokenService.decode(str(request.auth))
         if payload.get("token_type") != "access":
             return False
 

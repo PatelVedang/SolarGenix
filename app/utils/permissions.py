@@ -1,8 +1,8 @@
 # from auth_api.models import BlacklistToken, Token
+from core.models import Token
 from rest_framework.exceptions import AuthenticationFailed
 from rest_framework.permissions import BasePermission
 from rest_framework_simplejwt.tokens import UntypedToken
-from user_auth.models import Token
 
 
 class IsTokenValid(BasePermission):

@@ -86,7 +86,7 @@ class BaseModelViewSet(viewsets.ModelViewSet):
 
         if fields:
             fields = tuple(field.strip() for field in fields.split(","))
-
+                                        
         paginate_queryset = self.paginate_queryset(self.get_queryset())
         serializer = self.get_serializer(paginate_queryset, many=True, fields=fields)
         pagination_serializer = self.get_paginated_response(serializer.data)

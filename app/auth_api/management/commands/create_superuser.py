@@ -1,4 +1,4 @@
-from auth_api.models import User
+from core.models import User
 from django.conf import settings
 from django.core.management.base import BaseCommand
 from proj.models import generate_password  # Import the function

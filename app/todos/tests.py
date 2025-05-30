@@ -1,12 +1,9 @@
 import json
 
+from core.models import Todo
 from django.urls import reverse
 from rest_framework import status
-
-# from auth_api.tests import BaseAPITestCase
 from user_auth.tests import BaseAPITestCase
-
-from todos.models import Todo
 
 
 class TodoTest(BaseAPITestCase):
