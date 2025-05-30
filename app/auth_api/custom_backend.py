@@ -7,7 +7,8 @@ from .models import User
 
 
 class LoginOnAuthBackend(ModelBackend):
-    def authenticate(self, request, email=None, password=None, **kwargs):
+
+    def authenticate(request=None, email=None, password=None, **kwargs):
         """
         This function authenticates a user with the provided email and password, updating the last login
         time if successful.
@@ -38,9 +39,15 @@ class LoginOnAuthBackend(ModelBackend):
                 # Update the 'last_login' field with the current timestamp upon successful authentication
                 user.last_login = now()
                 user.save()  # Save the updated 'last_login' field to the database
-
+                
+                try: 
+                    tokens = user.auth_tokens()   # Generation of the Token
+                except Exception:
+                    # If token generation fails, raise an AuthenticationFailed exception
+                    raise AuthenticationFailed(AuthResponseConstants.TOKEN_GENERATION_FAILED)
+                    
                 # Return the authenticated user object if password validation is successful
-                return user
+                return user ,tokens
             else:
                 # Return None if the password does not match, indicating failed authentication
                 return None

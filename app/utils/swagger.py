@@ -508,7 +508,7 @@ def apply_swagger_tags(**kwargs):
 
 def swagger_auth_required(view_func):
     """
-    Custom decorator to force Basic Auth for Swagger UI access.
+    Custom decorator to force Basic Auth for Swagger UI access. 
     """
 
     @wraps(view_func)
