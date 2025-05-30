@@ -4,6 +4,7 @@ import django.db.models.deletion
 import django.db.models.manager
 import django.utils.timezone
 import uuid
+from django.conf import settings
 from django.db import migrations, models
 
 
@@ -35,23 +36,23 @@ class Migration(migrations.Migration):
                 ('is_active', models.BooleanField(default=True, verbose_name='active')),
                 ('is_email_verified', models.BooleanField(default=False)),
                 ('is_default_password', models.BooleanField(default=False)),
-                ('groups', models.ManyToManyField(blank=True, related_name='auth_api_user_set', to='auth.group')),
-                ('user_permissions', models.ManyToManyField(blank=True, related_name='auth_api_user_permissions_set', to='auth.permission')),
+                ('groups', models.ManyToManyField(blank=True, help_text='The groups this user belongs to. A user will get all permissions granted to each of their groups.', related_name='user_set', related_query_name='user', to='auth.group', verbose_name='groups')),
+                ('user_permissions', models.ManyToManyField(blank=True, help_text='Specific permissions for this user.', related_name='user_set', related_query_name='user', to='auth.permission', verbose_name='user permissions')),
             ],
         ),
         migrations.CreateModel(
             name='Token',
             fields=[
-                ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
                 ('is_deleted', models.BooleanField(default=False)),
                 ('created_at', models.DateTimeField(auto_now_add=True, null=True)),
                 ('updated_at', models.DateTimeField(auto_now=True)),
+                ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
                 ('jti', models.CharField(max_length=255)),
                 ('token', models.TextField(blank=True, null=True)),
                 ('token_type', models.CharField(choices=[('access', 'Access'), ('refresh', 'Refresh'), ('reset', 'Reset'), ('verify_mail', 'Verify Mail'), ('google', 'Google'), ('otp', 'Otp')], default='access', max_length=15)),
                 ('expire_at', models.DateTimeField(blank=True, null=True)),
                 ('is_blacklist_at', models.DateTimeField(blank=True, null=True)),
-                ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='auth_api.user')),
+                ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL)),
             ],
             options={
                 'ordering': ('-created_at',),

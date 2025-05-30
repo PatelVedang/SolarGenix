@@ -1,15 +1,18 @@
 import random
 import string
-import threading
 
-from auth_api.models import SimpleToken, TokenType, User
+
 from django.conf import settings
 from proj.base_serializer import BaseModelSerializer
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
+
+# from auth_api.models import SimpleToken, TokenType, User
+from user_auth.models import SimpleToken, TokenType, User
 from utils.custom_exception import CustomValidationError
-from utils.email import send_email
+from utils.email import EmailService, send_email
 from users.constants import UserResponseConstants
+import threading
 
 class UserSerializer(BaseModelSerializer):
     email = serializers.EmailField(
@@ -53,40 +56,40 @@ class UserSerializer(BaseModelSerializer):
         raw_password = self.generate_password()
         if not raw_password:
             raise CustomValidationError(UserResponseConstants.ERROR_GENERATING_PASS)
-
+ 
         validated_data["password"] = raw_password
         validated_data["is_active"] = False  # Activate the user
-
+ 
         try:
             user = User.objects.create_user(**validated_data)
-            # Send email with the generated password
-            try:
-                verify_token = SimpleToken.for_user(
-                    user,
-                    TokenType.VERIFY_MAIL.value,
-                    settings.AUTH_VERIFY_EMAIL_TOKEN_LIFELINE,
-                )
-                context = {
-                    "subject": f"Welcome to Our Community, {user.first_name}!",
-                    "user": user,
-                    "password": raw_password,
-                    "recipients": [user.email],
-                    "button_links": [
-                        f"{settings.FRONTEND_URL}/api/auth/verify-email/{verify_token}"
-                    ],
-                    "html_template": "user_created_by_admin",
-                    "title": "Verify Your E-mail Address",
-                }
-                thread = threading.Thread(target=send_email, kwargs=context)
-                thread.start()
-
-            except Exception as e:
-                print(f"Error sending email: {e}")
-                raise CustomValidationError(UserResponseConstants.ERROR_SENDING_EMAIL)
-
-            return user
         except Exception as e:
             raise CustomValidationError(str(e))
+        # Send email with the generated password
+        try:
+            verify_token = SimpleToken.for_user(
+                user,
+                TokenType.VERIFY_MAIL.value,
+                settings.AUTH_VERIFY_EMAIL_TOKEN_LIFELINE,
+            )
+            context = {
+                "subject": f"Welcome to Our Community, {user.first_name}!",
+                "user": user,
+                "password": raw_password,
+                "recipients": [user.email],
+                "button_links": [
+                    f"{settings.FRONTEND_URL}/api/auth/verify-email/{verify_token}"
+                ],
+                "html_template": "user_created_by_admin",
+                "title": "Verify Your E-mail Address",
+            }
+            thread = threading.Thread(target=send_email, kwargs=context)
+            thread.start()
+
+        except Exception as e:
+            print(f"Error sending email: {e}")
+            raise CustomValidationError(UserResponseConstants.ERROR_SENDING_EMAIL)
+ 
+        return user
 
     def update(self, instance, validated_data):
         email = validated_data.get("email", None)

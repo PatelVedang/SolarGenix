@@ -7,7 +7,7 @@ from utils.make_response import response
 from utils.swagger import apply_swagger_tags
 
 # from utils.permissions import IsTokenValid
-from auth_api.serializers import (
+from .serializers import (
     ChangePasswordSerializer,
     ForgotPasswordSerializer,
     GoogleSSOSerializer,
@@ -70,10 +70,18 @@ class UserLoginView(APIView):
     def post(self, request):
         serializer = UserLoginSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-    
-        
+        user = serializer.validated_data
+        if not user.is_email_verified:
+            return response(
+                data={},
+                status_code=status.HTTP_200_OK,
+                message=AuthResponseConstants.ACCOUNT_NOT_VERIFIED,
+            )
         return response(
-            data=serializer.validated_data,
+            data={
+                "user": UserProfileSerializer(user).data,
+                "tokens": user.auth_tokens(),
+            },
             status_code=status.HTTP_200_OK,
             message=AuthResponseConstants.LOGIN_SUCCESS,
         )
