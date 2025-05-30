@@ -26,6 +26,6 @@ class Todo(BaseModel):
     small_integer = models.SmallIntegerField()
     duration = models.DurationField()
     json_data = models.JSONField()
-
+                    
     def __str__(self):
         return self.name

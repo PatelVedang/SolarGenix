@@ -2,6 +2,9 @@ import logging
 import random
 import re
 
+from core.models import Token, TokenType, User
+from core.services.google_service import Google
+from core.services.token_service import TokenService
 from django.conf import settings
 from django.contrib.auth import authenticate
 from django.contrib.auth.hashers import make_password
@@ -13,11 +16,10 @@ from rest_framework.exceptions import AuthenticationFailed
 from rest_framework_simplejwt.serializers import TokenRefreshSerializer
 from utils.custom_exception import CustomValidationError
 from utils.email import EmailService, send_email
-from auth_api.custom_backend import LoginOnAuthBackend 
-from core.models import Token, TokenType, User
-from core.services.token_service import TokenService
+
+from auth_api.custom_backend import LoginOnAuthBackend
+
 from .constants import AuthResponseConstants
-from core.services.google_service import Google
 
 logger = logging.getLogger("django")
 
@@ -88,6 +90,7 @@ class UserLoginSerializer(BaseModelSerializer):
 
         authenticated = LoginOnAuthBackend.authenticate(email=email, password=password)
         # If authentication fails, authenticated will be None
+
         if authenticated is None:
             user = User.objects.filter(email=email).first()
             if user:
@@ -100,7 +103,7 @@ class UserLoginSerializer(BaseModelSerializer):
                     )
                     return user
             raise AuthenticationFailed(AuthResponseConstants.INVALID_CREDENTIALS)
-        
+
         user, tokens = authenticated
         attrs["user"] = UserProfileSerializer(user).data
         attrs["tokens"] = tokens
