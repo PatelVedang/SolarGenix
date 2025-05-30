@@ -1,7 +1,7 @@
-from auth_api.constants import AuthResponseConstants
 from django.utils.translation import gettext as _
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework_simplejwt.exceptions import AuthenticationFailed
+from user_auth.constants import AuthResponseConstants
 
 
 class CustomJWTAuthentication(JWTAuthentication):

@@ -5,14 +5,6 @@
   xmlns:o="urn:schemas-microsoft-com:office:office"
 >
   <head>
-    <!--[if gte mso 9]>
-      <xml>
-        <o:OfficeDocumentSettings>
-          <o:AllowPNG />
-          <o:PixelsPerInch>96</o:PixelsPerInch>
-        </o:OfficeDocumentSettings>
-      </xml>
-    <![endif]-->
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="x-apple-disable-message-reformatting" />
@@ -252,16 +244,6 @@
                     background-color: transparent;
                   "
                 >
-                  <!--[if (mso)|(IE)]>
-                                          <table width="100%" cellpadding="0" cellspacing="0" border="0">
-                                             <tr>
-                                                <td style="padding: 0px;background-color: transparent;" align="center">
-                                                   <table cellpadding="0" cellspacing="0" border="0" style="width:600px;">
-                                                      <tr style="background-color: #ffffff;">
-                                                         <![endif]-->
-                  <!--[if (mso)|(IE)]>
-                                                         <td align="center" width="600" style="width: 600px;padding: 0px;border-top: 0px solid transparent;border-left: 0px solid transparent;border-right: 0px solid transparent;border-bottom: 0px solid transparent;" valign="top">
-                                                            <![endif]-->
                   <div
                     class="u-col u-col-100"
                     style="
@@ -536,16 +518,6 @@
                       <!--<![endif]-->
                     </div>
                   </div>
-                  <!--[if (mso)|(IE)]>
-                                                         </td>
-                                                         <![endif]-->
-                  <!--[if (mso)|(IE)]>
-                                                      </tr>
-                                                   </table>
-                                                </td>
-                                             </tr>
-                                          </table>
-                                          <![endif]-->
                 </div>
               </div>
             </div>
@@ -574,16 +546,6 @@
                     background-color: transparent;
                   "
                 >
-                  <!--[if (mso)|(IE)]>
-                                          <table width="100%" cellpadding="0" cellspacing="0" border="0">
-                                             <tr>
-                                                <td style="padding: 0px;background-color: transparent;" align="center">
-                                                   <table cellpadding="0" cellspacing="0" border="0" style="width:600px;">
-                                                      <tr style="background-color: #ffffff;">
-                                                         <![endif]-->
-                  <!--[if (mso)|(IE)]>
-                                                         <td align="center" width="600" style="width: 600px;padding: 0px;border-top: 0px solid transparent;border-left: 0px solid transparent;border-right: 0px solid transparent;border-bottom: 0px solid transparent;" valign="top">
-                                                            <![endif]-->
                   <div
                     class="u-col u-col-100"
                     style="
@@ -606,7 +568,143 @@
                           border-bottom: 0px solid transparent;
                         "
                       >
-                        {{content}}
+                        <table
+        style="font-family: 'Poppins', sans-serif"
+        role="presentation"
+        cellpadding="0"
+        cellspacing="0"
+        width="100%"
+        border="0"
+        >
+        <tbody>
+            <tr>
+            <td
+                style="
+                overflow-wrap: break-word;
+                word-break: break-word;
+                padding: 33px 55px 30px 55px;
+                font-family: 'Poppins', sans-serif;
+                "
+                align="left"
+            >
+                <div
+                style="
+                    font-size: 14px;
+                    line-height: 160%;
+                    text-align: center;
+                    word-wrap: break-word;
+                "
+                >
+                {%for line in lines%}
+                <p style="font-size: 14px; line-height: 160%">
+                    <span style="font-size: 22px; line-height: 35.2px"
+                    >{{line}}
+                    </span>
+                </p>
+                {% endfor %}
+                </div>
+            </td>
+            </tr>
+        </tbody>
+        </table>
+        {% if button_label %}
+        <table
+        style="font-family: 'Poppins', sans-serif"
+        role="presentation"
+        cellpadding="0"
+        cellspacing="0"
+        width="100%"
+        border="0"
+        >
+        <tbody>
+            <tr>
+            <td
+                style="
+                overflow-wrap: break-word;
+                word-break: break-word;
+                padding: 10px;
+                font-family: 'Poppins', sans-serif;
+                "
+                align="left"
+            >
+                <div align="center">
+                <a
+                    href="{{button_link}}"
+                    target="_blank"
+                    class="v-button"
+                    style="
+                    box-sizing: border-box;
+                    display: inline-block;
+                    font-family: 'Poppins', sans-serif;
+                    text-decoration: none;
+                    -webkit-text-size-adjust: none;
+                    text-align: center;
+                    color: #ffffff;
+                    background-color: #ff6600;
+                    border-radius: 4px;
+                    -webkit-border-radius: 4px;
+                    -moz-border-radius: 4px;
+                    width: auto;
+                    max-width: 100%;
+                    overflow-wrap: break-word;
+                    word-break: break-word;
+                    word-wrap: break-word;
+                    mso-border-alt: none;
+                    font-size: 14px;
+                    "
+                >
+                    <span
+                    style="display: block; padding: 14px 44px 13px; line-height: 120%"
+                    ><span style="font-size: 16px; line-height: 19.2px"
+                        ><strong
+                        ><span
+                            style="
+                            line-height: 19.2px;
+                            font-size: 16px;
+                            text-transform: uppercase;
+                            "
+                            >{{button_label}}</span
+                        ></strong
+                        >
+                    </span>
+                    </span>
+                </a>
+                </div>
+            </td>
+            </tr>
+            {% if verify_details %}
+            <tr>
+                <td
+                    style="
+                    overflow-wrap: break-word;
+                    word-break: break-word;
+                    padding: 33px 55px 30px 55px;
+                    font-family: 'Poppins', sans-serif;
+                    "
+                    align="left"
+                >
+                    <div
+                    style="
+                        font-size: 14px;
+                        line-height: 160%;
+                        text-align: center;
+                        word-wrap: break-word;
+                    "
+                    >
+                    {%for line in verify_details%}
+                    <p style="font-size: 14px; line-height: 160%">
+                        <span style="font-size: 22px; line-height: 35.2px"
+                        >{{line}}
+                        </span>
+                    </p>
+                    {% endfor %}
+                    </div>
+                </td>
+                </tr>
+            {% endif%}
+        </tbody>
+        </table>
+        {% endif %}
                         <table
                           style="font-family: 'Poppins', sans-serif"
                           role="presentation"
@@ -662,16 +760,6 @@
                       <!--<![endif]-->
                     </div>
                   </div>
-                  <!--[if (mso)|(IE)]>
-                                                         </td>
-                                                         <![endif]-->
-                  <!--[if (mso)|(IE)]>
-                                                      </tr>
-                                                   </table>
-                                                </td>
-                                             </tr>
-                                          </table>
-                                          <![endif]-->
                 </div>
               </div>
             </div>
@@ -700,16 +788,6 @@
                     background-color: transparent;
                   "
                 >
-                  <!--[if (mso)|(IE)]>
-                                          <table width="100%" cellpadding="0" cellspacing="0" border="0">
-                                             <tr>
-                                                <td style="padding: 0px;background-color: transparent;" align="center">
-                                                   <table cellpadding="0" cellspacing="0" border="0" style="width:600px;">
-                                                      <tr style="background-color: #e5eaf5;">
-                                                         <![endif]-->
-                  <!--[if (mso)|(IE)]>
-                                                         <td align="center" width="600" style="width: 600px;padding: 0px;border-top: 0px solid transparent;border-left: 0px solid transparent;border-right: 0px solid transparent;border-bottom: 0px solid transparent;" valign="top">
-                                                            <![endif]-->
                   <div
                     class="u-col u-col-100"
                     style="
@@ -1073,12 +1151,6 @@
                                         </tr>
                                       </tbody>
                                     </table>
-                                    <!--[if (mso)|(IE)]>
-                                                                                                      </td>
-                                                                                                      <![endif]-->
-                                    <!--[if (mso)|(IE)]>
-                                                                                                      <td width="32" style="width:32px; padding-right: 0px;" valign="top">
-                                                                                                         <![endif]-->
                                     <table
                                       align="left"
                                       border="0"
@@ -1137,16 +1209,6 @@
                                         </tr>
                                       </tbody>
                                     </table>
-                                    <!--[if (mso)|(IE)]>
-                                                                                                      </td>
-                                                                                                      <![endif]-->
-                                    <!--[if (mso)|(IE)]>
-                                                                                                   </tr>
-                                                                                                </table>
-                                                                                             </td>
-                                                                                          </tr>
-                                                                                       </table>
-                                                                                       <![endif]-->
                                   </div>
                                 </div>
                               </td>
@@ -1158,16 +1220,6 @@
                       <!--<![endif]-->
                     </div>
                   </div>
-                  <!--[if (mso)|(IE)]>
-                                                         </td>
-                                                         <![endif]-->
-                  <!--[if (mso)|(IE)]>
-                                                      </tr>
-                                                   </table>
-                                                </td>
-                                             </tr>
-                                          </table>
-                                          <![endif]-->
                 </div>
               </div>
             </div>
@@ -1196,16 +1248,6 @@
                     background-color: transparent;
                   "
                 >
-                  <!--[if (mso)|(IE)]>
-                                          <table width="100%" cellpadding="0" cellspacing="0" border="0">
-                                             <tr>
-                                                <td style="padding: 0px;background-color: transparent;" align="center">
-                                                   <table cellpadding="0" cellspacing="0" border="0" style="width:600px;">
-                                                      <tr style="background-color: #003399;">
-                                                         <![endif]-->
-                  <!--[if (mso)|(IE)]>
-                                                         <td align="center" width="600" style="width: 600px;padding: 0px;border-top: 0px solid transparent;border-left: 0px solid transparent;border-right: 0px solid transparent;border-bottom: 0px solid transparent;" valign="top">
-                                                            <![endif]-->
                   <div
                     class="u-col u-col-100"
                     style="
@@ -1277,33 +1319,13 @@
                       <!--<![endif]-->
                     </div>
                   </div>
-                  <!--[if (mso)|(IE)]>
-                                                         </td>
-                                                         <![endif]-->
-                  <!--[if (mso)|(IE)]>
-                                                      </tr>
-                                                   </table>
-                                                </td>
-                                             </tr>
-                                          </table>
-                                          <![endif]-->
+                 
                 </div>
               </div>
             </div>
-            <!--[if (mso)|(IE)]>
-                              </td>
-                           </tr>
-                        </table>
-                        <![endif]-->
           </td>
         </tr>
       </tbody>
     </table>
-    <!--[if mso]>
-         </div>
-         <![endif]-->
-    <!--[if IE]>
-      </div>
-      <![endif]-->
   </body>
 </html>
