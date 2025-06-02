@@ -9,3 +9,7 @@ class AuthApiConfig(AppConfig):
 
     def ready(self):
         importlib.import_module(f"{self.name}.signals")
+        from auth_api import scheduler
+
+        scheduler.start()
+

@@ -9,7 +9,7 @@ from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
 # from auth_api.models import SimpleToken, TokenType, User
-from user_auth.models import SimpleToken, TokenType, User
+from core.models import SimpleToken, TokenType, User
 from utils.custom_exception import CustomValidationError
 from utils.email import EmailService, send_email
 from users.constants import UserResponseConstants

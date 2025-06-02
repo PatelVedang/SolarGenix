@@ -3,7 +3,7 @@ import json
 from core.models import Todo
 from django.urls import reverse
 from rest_framework import status
-from user_auth.tests import BaseAPITestCase
+from auth_api.tests import BaseAPITestCase
 
 
 class TodoTest(BaseAPITestCase):

@@ -64,7 +64,7 @@ class Settings(BaseSettings):
     AUTH_RESET_PASSWORD_TOKEN_MINUTES: int = Field(default=60)
     OTP_EXPIRY_MINUTES: int = Field(default=1)
 
-    CELERY_BROKER_URL: str = Field(default=None)
+    # CELERY_BROKER_URL: str = Field(default=None)
     
 
     class Config:
