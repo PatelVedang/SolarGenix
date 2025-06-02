@@ -33,7 +33,7 @@ urlpatterns = [
             [
                 # IMPORT_NEW_ROUTE_HERE
                 # path("", include("auth_api.urls")),
-                path("", include("user_auth.urls")),
+                path("", include("auth_api.urls")),
                 path("", include("users.urls")),
                 path("", include("todos.urls")),
             ]

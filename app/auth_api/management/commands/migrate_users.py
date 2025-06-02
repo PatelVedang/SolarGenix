@@ -1,20 +1,19 @@
 import logging
 
-from auth_api.models import User as AuthApiUser
+from core.models import User 
 from auth_api.serializers import UserDataMigrationSerializer
 from django.core.management.base import BaseCommand
-from user_auth.models import User as UserAuthUser
 
 logger = logging.getLogger("django")
 
 
 class Command(BaseCommand):
-    help = "Transfer users from auth_api.User to user_auth.User using DRF serializer"
+    help = "Transfer users from auth_api.User to auth_api.User using DRF serializer"
 
     def handle(self, *args, **kwargs):
         try:
             # Get all users from the old auth_api.User model
-            auth_api_users = AuthApiUser.objects.all()
+            auth_api_users = User.objects.all()
             auth_api_serialize_data = UserDataMigrationSerializer(
                 auth_api_users, many=True
             )
@@ -30,7 +29,7 @@ class Command(BaseCommand):
 
                 # Serialize the data
                 self.stdout.write(self.style.NOTICE(f"{auth_api_user}"))
-                user_obj = UserAuthUser.objects.create(**auth_api_user)
+                user_obj = User.objects.create(**auth_api_user)
 
                 self.stdout.write(
                     self.style.SUCCESS(f"Successfully migrated user: {user_obj.email}")

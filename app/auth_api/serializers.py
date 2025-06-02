@@ -478,3 +478,19 @@ class UserDataMigrationSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         exclude = ["groups", "user_permissions"]  # Exclude sensitive fields
+
+
+
+class UserMigrationSerializer(BaseModelSerializer):
+    class Meta:
+        model = User
+        fields = "__all__"
+
+    def create(self, validated_data):
+        """
+        Override the create method to handle specific logic if needed,
+        such as preserving the hashed password from the old model.
+        """
+        # The password is already hashed, so we can safely reuse it.
+        user = User.objects.create(**validated_data)
+        return user

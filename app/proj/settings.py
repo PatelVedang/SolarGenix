@@ -52,10 +52,9 @@ INSTALLED_APPS = [
     "rest_framework",
     "django_filters",
     "corsheaders",
-    "django_celery_beat",
+    # "django_celery_beat",
     # django apps
     "auth_api",
-    "user_auth",
     "users",
     "todos",
 ]
@@ -304,7 +303,7 @@ LOGGING = {
 
 AUTHENTICATION_BACKENDS = [
     # "auth_api.custom_backend.LoginOnAuthBackend",  # Custom backend
-    "user_auth.custom_backend.LoginOnAuthBackend",  # Custom backend
+    "auth_api.custom_backend.LoginOnAuthBackend",  # Custom backend
 ]
 
 # Swagger Authentication
@@ -320,7 +319,7 @@ OTP_EXPIRY_MINUTES = settings.OTP_EXPIRY_MINUTES
 PROJECT_TITLE = settings.PROJECT_TITLE
 SUPERUSER_EMAIL = settings.SUPERUSER_EMAIL
 
-# Celery
-CELERY_BROKER_URL = settings.CELERY_BROKER_URL
-CELERY_ACCEPT_CONTENT = ["json"]
-CELERY_TASK_SERIALIZER = "json"
+# # Celery
+# CELERY_BROKER_URL = settings.CELERY_BROKER_URL
+# CELERY_ACCEPT_CONTENT = ["json"]
+# CELERY_TASK_SERIALIZER = "json"
