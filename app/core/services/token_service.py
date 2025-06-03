@@ -1,5 +1,6 @@
 import logging
 from datetime import datetime, timedelta
+
 import jwt
 from core.models import Token
 from django.conf import settings
@@ -12,7 +13,6 @@ logger = logging.getLogger("django")
 
 
 class TokenService(BaseToken):
-
     def __init__(self, token_type=None, lifetime=None, *args, **kwargs):
         self.token_type = token_type
         self.lifetime = (
@@ -26,7 +26,7 @@ class TokenService(BaseToken):
     def for_user(cls, user, token_type, lifetime, jti=None):
         token = cls(token_type=token_type, lifetime=lifetime)
         token["jti"] = jti or token["jti"]
-        token["user_id"] = user.id
+        token["user_id"] = str(user.id)
         if token_type not in ["access", "refresh"]:
             Token.default.filter(user=user, token_type=token_type).delete()
         Token.objects.create(
@@ -54,7 +54,7 @@ class TokenService(BaseToken):
         except jwt.InvalidTokenError as e:
             logger.error("Invalid token with error: %s", e)
             raise AuthenticationFailed("Invalid token")
-    
+
     @classmethod
     def validate_token(cls, token, token_type):
         payload = cls.decode(token)
@@ -81,14 +81,14 @@ class TokenService(BaseToken):
             return payload
         else:
             raise AuthenticationFailed("Invalid token")
-        
+
     @classmethod
-    def auth_tokens(cls ,user):
+    def auth_tokens(cls, user):
         refresh_token = RefreshToken.for_user(user)
         access_token = refresh_token.access_token
         jti = access_token["jti"]
         refresh_token["jti"] = jti
-    
+
         Token.objects.bulk_create(
             [
                 Token(

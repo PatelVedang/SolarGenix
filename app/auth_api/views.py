@@ -70,7 +70,6 @@ class UserLoginView(APIView):
     def post(self, request):
         serializer = UserLoginSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-    
         
         return response(
             data=serializer.validated_data,

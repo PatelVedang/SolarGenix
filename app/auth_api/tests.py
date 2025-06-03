@@ -1,6 +1,8 @@
 import json
 from io import BytesIO
 
+from core.models import Token, TokenType, User
+from core.services.token_service import TokenService
 from django.conf import settings
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import Client
@@ -10,8 +12,6 @@ from PIL import Image
 from rest_framework import status
 from rest_framework.test import APITestCase
 
-from core.models import Token, TokenType, User
-from core.services.token_service import TokenService
 
 class BaseAPITestCase(APITestCase):
     client = Client()
@@ -97,6 +97,8 @@ class BaseAPITestCase(APITestCase):
             .get("access", {})
             .get("token", "")
         )
+
+        # Set the token in the client's credentials for authenticated requests (so it will be used in subsequent requests)
         self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {token}")
 
     def send_forgot_password_mail(self, email=None):
@@ -167,7 +169,7 @@ class AuthTest(BaseAPITestCase):
         """
         The function `test_register` registers a user and checks for a successful response.
         """
-        self.register(email="unittest1@yopmail.com", password="Test@1234")
+        self.register(email="ronak001@yopmail.com", password="Test@1234")
         self.match_success_response(201)
 
     def test_register_with_invalid_email(self):

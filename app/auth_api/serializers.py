@@ -15,7 +15,7 @@ from rest_framework import serializers
 from rest_framework.exceptions import AuthenticationFailed
 from rest_framework_simplejwt.serializers import TokenRefreshSerializer
 from utils.custom_exception import CustomValidationError
-from utils.email import EmailService, send_email
+from utils.email import EmailService
 
 from auth_api.custom_backend import LoginOnAuthBackend
 
@@ -76,12 +76,11 @@ class UserRegistrationSerializer(BaseModelSerializer):
 
 class UserLoginSerializer(BaseModelSerializer):
     email = serializers.EmailField(max_length=255)
-    password = serializers.CharField(
-        write_only=True
-    )
+    password = serializers.CharField(write_only=True)
+
     class Meta:
         model = User
-        fields = ["email","password"]
+        fields = ["email", "password"]
 
     def validate(self, attrs):
         # Authenticate the user with provided credentials\
@@ -108,8 +107,6 @@ class UserLoginSerializer(BaseModelSerializer):
         attrs["user"] = UserProfileSerializer(user).data
         attrs["tokens"] = tokens
         return attrs
-    
-    
 
 
 class UserProfileSerializer(BaseModelSerializer):
@@ -481,7 +478,6 @@ class UserDataMigrationSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         exclude = ["groups", "user_permissions"]  # Exclude sensitive fields
-
 
 
 class UserMigrationSerializer(BaseModelSerializer):
