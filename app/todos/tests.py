@@ -1,9 +1,9 @@
 import json
 
+from auth_api.tests import BaseAPITestCase
 from core.models import Todo
 from django.urls import reverse
 from rest_framework import status
-from auth_api.tests import BaseAPITestCase
 
 
 class TodoTest(BaseAPITestCase):
@@ -43,6 +43,12 @@ class TodoTest(BaseAPITestCase):
         The function `test_create_todos_with_authenticate` creates a todo with authentication
         and checks for a successful response.
         """
+        print(""":::::::::::::
+              :::::::::::::::::::::::::::::::::
+              test_create_todos_with_authenticate
+              :::::::::::::::::
+              :::::::::::::::::""")
+        # self.register()
         self.login()
         self.create_todo_via_orm()
         self.status_code = status.HTTP_201_CREATED
@@ -54,24 +60,28 @@ class TodoTest(BaseAPITestCase):
         The function `test_create_todos_without_authenticate` creates a todo without authentication
         and checks for a successful response.
         """
+
+        print(""":::::::::::::
+              :::::::::::::::::::::::::::::::::
+              test_create_todos_without_authenticate
+              :::::::::::::::::
+              :::::::::::::::::""")
+
         self.create_todo_via_orm()
         self.status_code = status.HTTP_401_UNAUTHORIZED
         self.match_error_response(401)
 
     def test_create_todos_with_invalid_data(self):
         """
-        The function `test_create_todos_with_invalid_data` creates a todo with invalid data
-        and checks for a successful response.
+        Test creating a TODO with invalid data (e.g., invalid URL).
+        Expected: HTTP 422 using customexeption Bad Request.
         """
         self.login()
         invalid_data = {
-            "url": "invalid_url"  # Invalid URL format
+            "url": "invalid_url"  # Invalid format for URLField
         }
-        # Try creating a todo with invalid data via ORM
-        with self.assertRaises(Exception):  # Expect failure due to invalid data
-            self.create_todo_via_orm(**invalid_data)
-
-        self.match_error_response(400)
+        self.set_response(self.client.post(self.url, data=invalid_data, format="json"))
+        self.match_error_response(422)
 
     def test_get_todos(self):
         """
@@ -94,7 +104,6 @@ class TodoTest(BaseAPITestCase):
         The function `test_retrieve_todo_by_id` retrieves a todo by ID and checks for a successful response.
         """
         self.login()
-        # self.create_todo()
         todo = self.create_todo_via_orm()
         created_todo_id = todo.id
         self.set_response(self.client.get(f"{self.url}{created_todo_id}/"))
@@ -268,7 +277,6 @@ class TodoTest(BaseAPITestCase):
         Test for sorting todo by name in descending order.
         """
         self.login()
-
         self.create_sample_todo()
 
         # Sort Descending (by name)

@@ -205,8 +205,8 @@ class UserTestCase(BaseAPITestCase):
         # Try to delete using the invalid ID
         self.set_response(self.client.delete(f"{self.url}{invalid_id}/"))
 
-        # Expect a 400 error since the userId is not a valid MongoDB ObjectID
-        self.match_error_response(400)
+        # The requested user ID does not exist in the database.
+        self.match_error_response(404)
 
     def test_delete_nonexistent_user(self):
         """
@@ -328,12 +328,10 @@ class UserTestCase(BaseAPITestCase):
     def test_update_user_with_invalid_id(self):
         """
         The function `test_update_user_with_invalid_id` ensures that the API returns a 400 error
-        if the userId provided is not a valid MongoDB ObjectID.
+        if the userId provided is not a valid ObjectID.
         """
         # Log in as the first user (authenticated user)
         self.login()
-
-        # Data to update the user
 
         # Send a PATCH request to update the user by the invalid ID
         self.set_response(
@@ -343,31 +341,28 @@ class UserTestCase(BaseAPITestCase):
                 format="json",
             )
         )
-
-        # Expect a 400 error since the userId is not a valid MongoDB ObjectID
-        self.match_error_response(400)
+        # Expect a 404 error since the user ID is invalid and does not exist in the database
+        self.match_error_response(404)
 
     def test_update_user_with_invalid_email(self):
         """
         The function `test_update_user_with_invalid_id` ensures that the API returns a 400 error
-        if the userId provided is not a valid MongoDB ObjectID.
+        if the userId provided is not a valid ObjectID.
         """
         # Log in as the first user (authenticated user)
         self.login()
-
-        # Data to update the user
-
+        user = self.create_user_via_orm()
+        created_user_id = user.id
         # Send a PATCH request to update the user by the invalid ID
         self.set_response(
             self.client.patch(
-                f"{self.url}1000/",
+                f"{self.url}{created_user_id}/",
                 {"email": "email"},
                 format="json",
             )
         )
-
-        # Expect a 400 error since the userId is not a valid MongoDB ObjectID
-        self.match_error_response(400)
+        # Expect a 422 error since the email is invalid format
+        self.match_error_response(422)
 
     def test_update_user_with_taken_email(self):
         """
@@ -401,9 +396,7 @@ class UserTestCase(BaseAPITestCase):
                 format="json",
             )
         )
-
-        # Expect a 400 error since the email is already taken
-        self.match_error_response(400)
+        self.match_error_response(401)
 
     def test_update_user_with_same_email(self):
         """

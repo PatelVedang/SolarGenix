@@ -97,7 +97,6 @@ class BaseAPITestCase(APITestCase):
             .get("access", {})
             .get("token", "")
         )
-
         # Set the token in the client's credentials for authenticated requests (so it will be used in subsequent requests)
         self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {token}")
 
@@ -230,7 +229,7 @@ class AuthTest(BaseAPITestCase):
         # Attempt to log in without verifying email
         self.login(email="unverifieduser@yopmail.com", password="Test@1234")
 
-        self.match_error_response(200)
+        self.match_error_response(401)
 
     def test_login_deleted_user(self):
         """
@@ -341,7 +340,7 @@ class AuthTest(BaseAPITestCase):
         )
 
         # Match the expected error response status code 401
-        self.match_error_response(400)
+        self.match_error_response(401)
 
     def test_logout_with_blacklisted_token(self):
         """

@@ -4,6 +4,7 @@ from rest_framework import status, viewsets
 from utils.make_response import response as Response
 from utils.pagination import BasePagination
 
+
 class BaseModelViewSet(viewsets.ModelViewSet):
     http_method_names = ["get", "post", "patch", "delete"]
     response_message = ""
@@ -86,7 +87,7 @@ class BaseModelViewSet(viewsets.ModelViewSet):
 
         if fields:
             fields = tuple(field.strip() for field in fields.split(","))
-                                        
+
         paginate_queryset = self.paginate_queryset(self.get_queryset())
         serializer = self.get_serializer(paginate_queryset, many=True, fields=fields)
         pagination_serializer = self.get_paginated_response(serializer.data)
@@ -142,13 +143,13 @@ class BaseModelViewSet(viewsets.ModelViewSet):
         :return: The `partial_update` method is being overridden to return a custom response. It calls
         the parent class method `partial_update` and then constructs a new Response object with the data
         from the parent method, a custom message obtained from `self.get_message`, and a status code of
-        206. This custom response is what is being returned by the `partial_update` method.
+        200. This custom response is what is being returned by the `partial_update` method.
         """
         response = super().partial_update(request, *args, **kwargs)
         return Response(
             data=response.data,
             message=self.get_message(request, *args, **kwargs),
-            status_code=206,
+            status_code=200,
         )
 
     def destroy(self, request, *args, **kwargs):
