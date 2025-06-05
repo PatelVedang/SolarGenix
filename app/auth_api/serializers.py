@@ -641,7 +641,6 @@ class CognitoSyncTokenSerializer(BaseSerializer):
 
     def sync_user_groups(self, user, groups):
         user.groups.clear()
-        groups = ["Manager"]
         for group_name in groups:
             group, _ = Group.objects.get_or_create(name=group_name)
             user.groups.add(group)
