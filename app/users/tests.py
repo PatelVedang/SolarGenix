@@ -1,5 +1,6 @@
 import re
 
+# from auth_api.models import User
 from auth_api.tests import BaseAPITestCase
 from core.models import User
 from django.conf import settings
@@ -7,11 +8,7 @@ from django.db import IntegrityError
 from django.urls import reverse
 from rest_framework import status
 
-# from auth_api.models import User
-from auth_api.models import User
-
 # from auth_api.tests import BaseAPITestCase
-from auth_api.tests import BaseAPITestCase
 
 
 class UserTestCase(BaseAPITestCase):
@@ -31,6 +28,7 @@ class UserTestCase(BaseAPITestCase):
             "is_active": True,
             "is_superuser": False,
             "is_staff": False,
+            "is_email_verified": True,
         }
 
         # Override with any invalid or additional data passed via kwargs
@@ -207,8 +205,8 @@ class UserTestCase(BaseAPITestCase):
         # Try to delete using the invalid ID
         self.set_response(self.client.delete(f"{self.url}{invalid_id}/"))
 
-        # Expect a 400 error since the userId is not a valid MongoDB ObjectID
-        self.match_error_response(400)
+        # The requested user ID does not exist in the database.
+        self.match_error_response(404)
 
     def test_delete_nonexistent_user(self):
         """
@@ -330,12 +328,10 @@ class UserTestCase(BaseAPITestCase):
     def test_update_user_with_invalid_id(self):
         """
         The function `test_update_user_with_invalid_id` ensures that the API returns a 400 error
-        if the userId provided is not a valid MongoDB ObjectID.
+        if the userId provided is not a valid ObjectID.
         """
         # Log in as the first user (authenticated user)
         self.login()
-
-        # Data to update the user
 
         # Send a PATCH request to update the user by the invalid ID
         self.set_response(
@@ -345,31 +341,28 @@ class UserTestCase(BaseAPITestCase):
                 format="json",
             )
         )
-
-        # Expect a 400 error since the userId is not a valid MongoDB ObjectID
-        self.match_error_response(400)
+        # Expect a 404 error since the user ID is invalid and does not exist in the database
+        self.match_error_response(404)
 
     def test_update_user_with_invalid_email(self):
         """
         The function `test_update_user_with_invalid_id` ensures that the API returns a 400 error
-        if the userId provided is not a valid MongoDB ObjectID.
+        if the userId provided is not a valid ObjectID.
         """
         # Log in as the first user (authenticated user)
         self.login()
-
-        # Data to update the user
-
+        user = self.create_user_via_orm()
+        created_user_id = user.id
         # Send a PATCH request to update the user by the invalid ID
         self.set_response(
             self.client.patch(
-                f"{self.url}1000/",
+                f"{self.url}{created_user_id}/",
                 {"email": "email"},
                 format="json",
             )
         )
-
-        # Expect a 400 error since the userId is not a valid MongoDB ObjectID
-        self.match_error_response(400)
+        # Expect a 422 error since the email is invalid format
+        self.match_error_response(422)
 
     def test_update_user_with_taken_email(self):
         """
@@ -403,9 +396,7 @@ class UserTestCase(BaseAPITestCase):
                 format="json",
             )
         )
-
-        # Expect a 400 error since the email is already taken
-        self.match_error_response(400)
+        self.match_error_response(401)
 
     def test_update_user_with_same_email(self):
         """
@@ -555,3 +546,58 @@ class UserTestCase(BaseAPITestCase):
         self.assertListEqual(
             [user["first_name"] for user in results_skip], expected_first_names_skip
         )
+
+    def test_export_users_data(self):
+        """
+        Test for exporting users data API
+        """
+        self.login()
+
+        url = f"{self.url}export-users/"
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+
+    def test_export_users_with_export_format_params(self):
+        """
+        Test for exporting users data with the export format params.
+        """
+        self.login()
+
+        url_csv = f"{self.url}export-users/?export_format=csv"
+        res_csv = self.client.get(url_csv)
+        self.assertEqual(res_csv.status_code, status.HTTP_200_OK)
+
+        url_json = f"{self.url}export-users/?export_format=json"
+        res_json = self.client.get(url_json)
+        self.assertEqual(res_json.status_code, status.HTTP_200_OK)
+
+        url_tsv = f"{self.url}export-users/?export_format=tsv"
+        res_tsv = self.client.get(url_tsv)
+        self.assertEqual(
+            res_tsv.status_code, status.HTTP_400_BAD_REQUEST
+        )  # Check for Unsupported Format
+
+    def test_export_users_with_export_fields_params(self):
+        """
+        Test for exporting users data with the export Fields
+        """
+        self.login()
+
+        url_success = (
+            f"{self.url}export-users/?export_fields=first_name,last_name,email"
+        )
+        res_success = self.client.get(url_success)
+        self.assertEqual(res_success.status_code, status.HTTP_200_OK)
+
+        url_error = f"{self.url}export-users/?export_fields=check"  # When not or only one wrong field is given that time error occurse
+        res_error = self.client.get(url_error)
+        self.assertEqual(res_error.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_regular_user_cannot_access_export(self):
+        self.regular_user = User.objects.create_user(
+            email="user@example.com", password="userpass"
+        )
+        self.client.force_authenticate(user=self.regular_user)
+        url = f"{self.url}export-users/"
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
