@@ -3,6 +3,7 @@ import uuid
 from datetime import datetime, timedelta
 
 import jwt
+from auth_api.managers import UserManager
 from django.conf import settings
 from django.contrib.auth.models import AbstractUser, PermissionsMixin
 from django.db import models
@@ -12,8 +13,6 @@ from proj.models import BaseModel
 from rest_framework.exceptions import AuthenticationFailed
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.tokens import Token as BaseToken
-
-from auth_api.managers import UserManager
 
 logger = logging.getLogger("django")
 

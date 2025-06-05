@@ -302,7 +302,7 @@ LOGGING = {
 }
 
 AUTHENTICATION_BACKENDS = [
-    # "auth_api.custom_backend.LoginOnAuthBackend",  # Custom backend
+    "django.contrib.auth.backends.ModelBackend",  # Default backend
     "auth_api.custom_backend.LoginOnAuthBackend",  # Custom backend
 ]
 
