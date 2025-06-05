@@ -181,3 +181,17 @@ class Cognito:
             logger.warning(f"[Cognito] Group '{group_name}' not found for deletion.")
         except Exception as e:
             raise Exception(f"Failed to delete group '{group_name}' in Cognito: {e}")
+
+    def delete_user(self, username: str):
+        """Deletes a user from AWS Cognito."""
+        try:
+            self.client.admin_delete_user(
+                UserPoolId=settings.COGNITO_USER_POOL_ID,
+                Username=username,
+            )
+            logger.info(f"[Cognito] Deleted user '{username}' from Cognito.")
+        except self.client.exceptions.UserNotFoundException:
+            logger.warning(f"[Cognito] User '{username}' not found for deletion.")
+        except Exception as e:
+            logger.error(f"[Cognito] Failed to delete user '{username}': {e}")
+            raise Exception(f"Failed to delete user '{username}' in Cognito: {e}")

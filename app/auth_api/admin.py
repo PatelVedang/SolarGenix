@@ -222,6 +222,36 @@ class UserModelAdmin(BaseUserAdmin, SoftDeleteAdminMixin):
         extra["groups"] = Group.objects.all()
         return super().changelist_view(request, extra_context=extra)
 
+    def delete_model(self, request, obj):
+        if obj.auth_provider == "cognito":
+            try:
+                Cognito().delete_user(obj.email)
+                self.message_user(request, f"User '{obj.email}' deleted from Cognito.")
+            except Exception as e:
+                self.message_user(
+                    request,
+                    f"Error deleting Cognito user '{obj.email}': {str(e)}",
+                    level=messages.ERROR,
+                )
+        super().delete_model(request, obj)
+
+    def delete_queryset(self, request, queryset):
+        cognito = Cognito()
+        for obj in queryset:
+            if obj.auth_provider == "cognito":
+                try:
+                    cognito.delete_user(obj.email)
+                    self.message_user(
+                        request, f"User '{obj.email}' deleted from Cognito."
+                    )
+                except Exception as e:
+                    self.message_user(
+                        request,
+                        f"Error deleting Cognito user '{obj.email}': {str(e)}",
+                        level=messages.ERROR,
+                    )
+        super().delete_queryset(request, queryset)
+
 
 admin.site.register(User, UserModelAdmin)
 
