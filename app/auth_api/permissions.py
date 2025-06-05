@@ -54,3 +54,21 @@ class IsAuthenticated(BasePermission):
             return False
 
         return True
+
+
+class IsManager(BasePermission):
+    def has_permission(self, request, view):
+        return (
+            request.user
+            and request.user.is_authenticated
+            and request.user.groups.filter(name="Manager").exists()
+        )
+
+
+class IsEmployee(BasePermission):
+    def has_permission(self, request, view):
+        return (
+            request.user
+            and request.user.is_authenticated
+            and request.user.groups.filter(name="Employee").exists()
+        )

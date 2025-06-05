@@ -68,12 +68,14 @@ class Settings(BaseSettings):
     
     # ::::::::::::: Cognito :::::::::::::
     AUTH_TYPE: str = Field(default="simplejwt")
-    COGNITO_REGION: str | None = Field(default=None)
+    AWS_REGION: str | None = Field(default=None)
     COGNITO_USER_POOL_ID: str | None = Field(default=None)
     COGNITO_CLIENT_ID: str | None = Field(default=None)
     COGNITO_CLIENT_SECRET: str | None = Field(default=None)
     COGNITO_DOMAIN: str | None = Field(default=None)
     COGNITO_REDIRECT_URI: str | None = Field(default=None)
+    AWS_ACCESS_KEY_ID: str | None = Field(default=None)
+    AWS_SECRET_ACCESS_KEY: str | None = Field(default=None)
 
     class Config:
         env_file = os.path.join(BASE_DIR, ".env")
@@ -107,12 +109,14 @@ def load_settings():
 def validate_auth_type(settings: Settings):
     if settings.AUTH_TYPE == "cognito":
         required_fields = [
-            "COGNITO_REGION",
+            "AWS_REGION",
             "COGNITO_USER_POOL_ID",
             "COGNITO_CLIENT_ID",
             "COGNITO_CLIENT_SECRET",
             "COGNITO_DOMAIN",
             "COGNITO_REDIRECT_URI",
+            "AWS_ACCESS_KEY_ID",
+            "AWS_SECRET_ACCESS_KEY",
         ]
         missing = [field for field in required_fields if not getattr(settings, field)]
         if missing:

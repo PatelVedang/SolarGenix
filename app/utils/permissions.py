@@ -34,7 +34,7 @@ class IsTokenValid(BasePermission):
             raise AuthenticationFailed("Token is missing")
 
         try:
-            payload = Cognito.decode(token)
+            payload = Cognito.decode_token(token)
             if payload.get("token_use") != "access":
                 raise AuthenticationFailed("Invalid Cognito token type")
             if payload.get("exp") < int(time.time()):

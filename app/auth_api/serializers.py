@@ -1,7 +1,9 @@
-from datetime import datetime, timedelta, timezone as dt_timezone
 import logging
 import random
 import re
+import threading
+from datetime import datetime, timedelta
+from datetime import timezone as dt_timezone
 
 from app.core.models.auth_api.auth import AUTH_PROVIDER, SimpleToken
 from core.models import Token, TokenType, User
@@ -10,10 +12,9 @@ from core.services.token_service import TokenService
 from django.conf import settings
 from django.contrib.auth import authenticate
 from django.contrib.auth.hashers import make_password
-from django.db import IntegrityError
+from django.contrib.auth.models import Group
+from django.db import transaction
 from django.utils import timezone
-from jsonschema import ValidationError
-from auth_api.cognito import Cognito
 from proj.base_serializer import BaseModelSerializer, BaseSerializer
 from proj.models import generate_password  # Import the function
 from rest_framework import serializers
@@ -21,7 +22,7 @@ from rest_framework.exceptions import AuthenticationFailed
 from rest_framework_simplejwt.serializers import TokenRefreshSerializer
 from utils.custom_exception import CustomValidationError
 from utils.email import EmailService
-
+from auth_api.cognito import Cognito
 from auth_api.custom_backend import LoginOnAuthBackend
 
 from .constants import AuthResponseConstants
@@ -533,6 +534,9 @@ class CognitoSyncTokenSerializer(BaseSerializer):
         try:
             access_payload = Cognito.decode_token(access_token)
             id_token_payload = Cognito.decode_token(id_token)
+            groups = access_payload.get("cognito:groups", [])
+            attrs["groups"] = groups
+
         except Exception as e:
             raise AuthenticationFailed(
                 f"{AuthResponseConstants.INVALID_COGNITO_TOKEN}: {str(e)}"
@@ -567,28 +571,41 @@ class CognitoSyncTokenSerializer(BaseSerializer):
         access_payload = self.validated_data["access_payload"]
         id_token_payload = self.validated_data["id_token_payload"]
 
-        try:
-            user, created = User.objects.get_or_create(
-                cognito_sub=user_sub,
-                defaults={
-                    "email": email,
-                    "is_email_verified": True,
-                    "auth_provider": AUTH_PROVIDER.get("cognito"),
-                },
-            )
-        except IntegrityError:
-            raise ValidationError(
-                {"email": f"{AuthResponseConstants.EMAIL_ALREADY_EXISTS}: {email}"}
-            )
+        with transaction.atomic():
+            user = User.objects.filter(cognito_sub=user_sub).first()
 
-        if not created and user.email != email:
-            user.email = email
-            user.save(update_fields=["email"])
+            if not user:
+                user = User.objects.filter(email=email).first()
 
-        Token.objects.filter(
-            user=user,
-            token_type__in=[TokenType.ACCESS, TokenType.REFRESH, TokenType.ID_TOKEN],
-        ).delete()
+                if user:
+                    user.cognito_sub = user_sub
+                    user.auth_provider = AUTH_PROVIDER.get("cognito")
+                    user.is_email_verified = True
+                    user.save(
+                        update_fields=[
+                            "cognito_sub",
+                            "auth_provider",
+                            "is_email_verified",
+                        ]
+                    )
+                else:
+                    user = User.objects.create(
+                        email=email,
+                        cognito_sub=user_sub,
+                        auth_provider=AUTH_PROVIDER.get("cognito"),
+                        is_email_verified=True,
+                    )
+
+            Token.objects.filter(
+                user=user,
+                token_type__in=[
+                    TokenType.ACCESS,
+                    TokenType.REFRESH,
+                    TokenType.ID_TOKEN,
+                ],
+            ).delete()
+
+        self.sync_user_groups(user, self.validated_data.get("groups", []))
 
         Token.objects.bulk_create(
             [
@@ -621,3 +638,53 @@ class CognitoSyncTokenSerializer(BaseSerializer):
         )
 
         return user
+
+    def sync_user_groups(self, user, groups):
+        user.groups.clear()
+        groups = ["Manager"]
+        for group_name in groups:
+            group, _ = Group.objects.get_or_create(name=group_name)
+            user.groups.add(group)
+
+
+class CreateCognitoGroupSerializer(serializers.ModelSerializer):
+    name = serializers.CharField()
+    description = serializers.CharField(
+        write_only=True, required=False, allow_blank=True
+    )
+    precedence = serializers.IntegerField(write_only=True, required=False)
+    role_arn = serializers.CharField(write_only=True, required=False, allow_blank=True)
+
+    class Meta:
+        model = Group
+        fields = ["name", "description", "precedence", "role_arn"]
+
+    def create(self, validated_data):
+        name = validated_data.pop("name", None)
+        description = validated_data.pop("description", "")
+        precedence = validated_data.pop("precedence", 0)
+        role_arn = validated_data.pop("role_arn", None)
+
+        with transaction.atomic():
+            group, created = Group.objects.get_or_create(name=name)
+            cognito = Cognito()
+            try:
+                try:
+                    cognito.get_group(group.name)
+                    logger.info(
+                        f"Group '{group.name}' already exists in Cognito, skipping creation."
+                    )
+                except Exception:
+                    cognito.create_group(
+                        group_name=group.name,
+                        description=description,
+                        precedence=precedence,
+                        role_arn=role_arn,
+                    )
+            except Exception as e:
+                transaction.set_rollback(True)
+                raise serializers.ValidationError(
+                    f"Failed to create or sync group in Cognito: {str(e)}"
+                )
+
+        return group

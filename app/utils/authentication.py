@@ -1,3 +1,4 @@
+import certifi
 import requests
 from auth_api.constants import AuthResponseConstants
 from cryptography.hazmat.backends import default_backend
@@ -48,7 +49,7 @@ class CognitoAuthentication(BaseAuthentication):
             COGNITO_ISSUER = f"https://cognito-idp.ap-south-1.amazonaws.com/{settings.COGNITO_USER_POOL_ID}"
             jwks_url = f"{COGNITO_ISSUER}/.well-known/jwks.json"
 
-            response = requests.get(jwks_url, verify=False)
+            response = requests.get(jwks_url, verify=certifi.where())
             if response.status_code != 200:
                 raise DRFAuthenticationFailed(
                     AuthResponseConstants.INVALID_COGNITO_TOKEN

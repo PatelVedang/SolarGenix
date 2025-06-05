@@ -2,6 +2,7 @@ from django.urls import path
 
 from auth_api.views import (
     ChangePasswordView,
+    CreateCognitoGroupAPIView,
     ForgotPasswordView,
     GoogleSSOView,
     LogoutView,
@@ -57,5 +58,10 @@ urlpatterns = [
         "auth/cognito-sync-tokens",
         CognitoSyncTokensView.as_view(),
         name="cognito-sync-tokens",
+    ),
+    path(
+        "auth/cognito/create-group",
+        CreateCognitoGroupAPIView.as_view(),
+        name="create-cognito-group",
     ),
 ]
