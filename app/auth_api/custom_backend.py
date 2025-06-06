@@ -1,13 +1,13 @@
+from core.models import User
+from core.services.token_service import TokenService
 from django.contrib.auth.backends import ModelBackend
 from django.utils.timezone import now
 from rest_framework.exceptions import AuthenticationFailed
 
 from .constants import AuthResponseConstants
-from core.models import User
-from core.services.token_service import TokenService
+
 
 class LoginOnAuthBackend(ModelBackend):
-
     def authenticate(request=None, email=None, password=None, **kwargs):
         """
         This function authenticates a user with the provided email and password, updating the last login
@@ -29,23 +29,22 @@ class LoginOnAuthBackend(ModelBackend):
         """
         try:
             email = email if email else kwargs.get("email", kwargs.get("username", ""))
-            # Attempt to retrieve an active, non-deleted user by email
-            # The 'is_active=True' ensures only active users are fetched
-            # The 'is_deleted=False' ensures the user hasn't been soft-deleted
+
             user = User.objects.get(email=email, is_active=True, is_deleted=False)
-            # Verify the provided password using Django's built-in password hashing system
-            # 'check_password' returns True if the password matches the hashed password in the database
+
             if user.check_password(password) and user.is_email_verified:
                 # Update the 'last_login' field with the current timestamp upon successful authentication
                 user.last_login = now()
                 user.save()  # Save the updated 'last_login' field to the database
-                try: 
-                    tokens = TokenService.auth_tokens(user)   # Generation of the Token
+                try:
+                    tokens = TokenService.auth_tokens(user)  # Generation of the Token
                 except Exception:
                     # If token generation fails, raise an AuthenticationFailed exception
-                    raise AuthenticationFailed(AuthResponseConstants.TOKEN_GENERATION_FAILED)
+                    raise AuthenticationFailed(
+                        AuthResponseConstants.TOKEN_GENERATION_FAILED
+                    )
                 # Return the authenticated user object if password validation is successful
-                return user ,tokens
+                return user, tokens
             else:
                 # Return None if the password does not match, indicating failed authentication
                 return None

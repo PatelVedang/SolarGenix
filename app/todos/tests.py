@@ -43,11 +43,6 @@ class TodoTest(BaseAPITestCase):
         The function `test_create_todos_with_authenticate` creates a todo with authentication
         and checks for a successful response.
         """
-        print(""":::::::::::::
-              :::::::::::::::::::::::::::::::::
-              test_create_todos_with_authenticate
-              :::::::::::::::::
-              :::::::::::::::::""")
         # self.register()
         self.login()
         self.create_todo_via_orm()
@@ -60,12 +55,6 @@ class TodoTest(BaseAPITestCase):
         The function `test_create_todos_without_authenticate` creates a todo without authentication
         and checks for a successful response.
         """
-
-        print(""":::::::::::::
-              :::::::::::::::::::::::::::::::::
-              test_create_todos_without_authenticate
-              :::::::::::::::::
-              :::::::::::::::::""")
 
         self.create_todo_via_orm()
         self.status_code = status.HTTP_401_UNAUTHORIZED
