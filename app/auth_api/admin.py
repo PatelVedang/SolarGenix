@@ -1,4 +1,5 @@
 from app.auth_api.cognito import Cognito
+from app.core.models.auth_api.auth import GroupProfile
 from core.models import Token, User
 from core.services.google_service import Google
 from django.contrib import admin
@@ -268,12 +269,18 @@ class TokenAdmin(admin.ModelAdmin):
     search_fields = ("user__email", "jti")
 
 
+class GroupProfileInline(admin.StackedInline):
+    model = GroupProfile
+    extra = 0
+
+
 admin.site.unregister(Group)
 
 
 class GroupAdmin(admin.ModelAdmin):
     list_display = ["name"]
     search_fields = ["name"]
+    inlines = [GroupProfileInline]
 
     def save_model(self, request, obj, form, change):
         if getattr(settings, "AUTH_TYPE", "").lower() == "cognito":

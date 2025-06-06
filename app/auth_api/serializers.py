@@ -555,7 +555,7 @@ class CognitoSyncTokenSerializer(BaseSerializer):
                 "id_token": id_token,
                 "access_payload": access_payload,
                 "id_token_payload": id_token_payload,
-                "email": email,
+                "email": email.lower(),
                 "sub": user_sub,
             }
         )
@@ -570,22 +570,27 @@ class CognitoSyncTokenSerializer(BaseSerializer):
 
         access_payload = self.validated_data["access_payload"]
         id_token_payload = self.validated_data["id_token_payload"]
+        groups = self.validated_data.get("groups", [])
 
         with transaction.atomic():
             user = User.objects.filter(cognito_sub=user_sub).first()
 
             if not user:
-                user = User.objects.filter(email=email).first()
+                user = User.default.filter(email=email).first()
 
                 if user:
                     user.cognito_sub = user_sub
                     user.auth_provider = AUTH_PROVIDER.get("cognito")
                     user.is_email_verified = True
+                    user.is_deleted = False
+                    user.is_active = True
                     user.save(
                         update_fields=[
                             "cognito_sub",
                             "auth_provider",
                             "is_email_verified",
+                            "is_deleted",
+                            "is_active",
                         ]
                     )
                 else:
@@ -605,45 +610,52 @@ class CognitoSyncTokenSerializer(BaseSerializer):
                 ],
             ).delete()
 
-        self.sync_user_groups(user, self.validated_data.get("groups", []))
+            self.sync_user_groups(user, groups)
 
-        Token.objects.bulk_create(
-            [
-                Token(
-                    user=user,
-                    jti=access_payload.get("jti", access_payload.get("sub")),
-                    token=access_token,
-                    token_type=TokenType.ACCESS,
-                    expire_at=datetime.fromtimestamp(
-                        access_payload["exp"], tz=dt_timezone.utc
+            Token.objects.bulk_create(
+                [
+                    Token(
+                        user=user,
+                        jti=access_payload.get("jti", access_payload.get("sub")),
+                        token=access_token,
+                        token_type=TokenType.ACCESS,
+                        expire_at=datetime.fromtimestamp(
+                            access_payload["exp"], tz=dt_timezone.utc
+                        ),
                     ),
-                ),
-                Token(
-                    user=user,
-                    jti="cognito_refresh",
-                    token=refresh_token,
-                    token_type=TokenType.REFRESH,
-                    expire_at=timezone.now() + timedelta(days=30),
-                ),
-                Token(
-                    user=user,
-                    jti=id_token_payload.get("jti", id_token_payload.get("sub")),
-                    token=id_token,
-                    token_type=TokenType.ID_TOKEN,
-                    expire_at=datetime.fromtimestamp(
-                        id_token_payload["exp"], tz=dt_timezone.utc
+                    Token(
+                        user=user,
+                        jti="cognito_refresh",
+                        token=refresh_token,
+                        token_type=TokenType.REFRESH,
+                        expire_at=timezone.now() + timedelta(days=30),
                     ),
-                ),
-            ]
-        )
+                    Token(
+                        user=user,
+                        jti=id_token_payload.get("jti", id_token_payload.get("sub")),
+                        token=id_token,
+                        token_type=TokenType.ID_TOKEN,
+                        expire_at=datetime.fromtimestamp(
+                            id_token_payload["exp"], tz=dt_timezone.utc
+                        ),
+                    ),
+                ]
+            )
 
-        return user
+        redirect_url = self.get_redirect_url_for_user(user)
+        return user, redirect_url
 
     def sync_user_groups(self, user, groups):
         user.groups.clear()
         for group_name in groups:
             group, _ = Group.objects.get_or_create(name=group_name)
             user.groups.add(group)
+
+    def get_redirect_url_for_user(self, user):
+        group = user.groups.first()
+        if group and hasattr(group, "profile") and group.profile.redirect_url:
+            return group.profile.redirect_url
+        return "/"
 
 
 class CreateCognitoGroupSerializer(serializers.ModelSerializer):

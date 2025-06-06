@@ -363,7 +363,7 @@ class CognitoSyncTokensView(APIView):
     def get(self, request):
         serializer = self.serializer_class(data=request.query_params)
         serializer.is_valid(raise_exception=True)
-        user = serializer.save()
+        user, redirect_url = serializer.save()
 
         return response(
             data={
@@ -377,6 +377,7 @@ class CognitoSyncTokensView(APIView):
                     "refresh_token": serializer.validated_data["refresh_token"],
                     "id_token": serializer.validated_data["id_token"],
                 },
+                "redirect_url": redirect_url,
             },
             message=AuthResponseConstants.LOGIN_SUCCESS,
             status_code=status.HTTP_200_OK,
