@@ -10,8 +10,8 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from rest_framework.exceptions import AuthenticationFailed
 
+from core.models.auth_api.auth import Token
 from auth_api.constants import AuthResponseConstants
-from .models import Token
 
 User = get_user_model()
 logger = logging.getLogger(__name__)

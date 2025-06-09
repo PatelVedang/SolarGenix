@@ -5,7 +5,7 @@ from rest_framework.permissions import BasePermission
 
 from core.models import Token, SimpleToken
 from core.services.token_service import TokenService
-from app.auth_api.constants import AuthResponseConstants
+from auth_api.constants import AuthResponseConstants
 from auth_api.cognito import Cognito
 
 

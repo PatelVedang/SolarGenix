@@ -1,11 +1,10 @@
 import logging
 import random
 import re
-import threading
 from datetime import datetime, timedelta
 from datetime import timezone as dt_timezone
 
-from app.core.models.auth_api.auth import AUTH_PROVIDER, SimpleToken
+from core.models.auth_api.auth import AUTH_PROVIDER, SimpleToken
 from core.models import Token, TokenType, User
 from core.services.google_service import Google
 from core.services.token_service import TokenService
@@ -510,7 +509,9 @@ class UserMigrationSerializer(BaseModelSerializer):
         such as preserving the hashed password from the old model.
         """
         # The password is already hashed, so we can safely reuse it.
-        user = User.objects.create(**validated_data)
+        User.objects.create(**validated_data)
+
+
 class CognitoSyncTokenSerializer(BaseSerializer):
     code = serializers.CharField()
 

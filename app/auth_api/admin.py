@@ -1,11 +1,10 @@
-from app.auth_api.cognito import Cognito
-from app.core.models.auth_api.auth import GroupProfile
+from auth_api.cognito import Cognito
+from core.models.auth_api.auth import GroupProfile
 from core.models import Token, User
 from core.services.google_service import Google
 from django.contrib import admin
 from django import forms
-from django.contrib import admin, messages
-from django.contrib.admin.actions import delete_selected
+from django.contrib import messages
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.models import Group
 from django.db import transaction
@@ -99,12 +98,14 @@ class UserModelAdmin(BaseUserAdmin, SoftDeleteAdminMixin):
     def get_queryset(self, request):
         # Use the unfiltered manager in admin
         return self.model.default.all()
+
     actions = ["soft_delete", "soft_delete_recover", "assign_group_to_selected_users"]
 
     list_display = [
         "id",
-        "email",
+        "username",
         "first_name",
+        "email",
         "is_superuser",
         "auth_provider",
         "is_active",
