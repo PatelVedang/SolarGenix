@@ -9,6 +9,8 @@ from utils.swagger import apply_swagger_tags
 # from utils.permissions import IsTokenValid
 from auth_api.serializers import (
     ChangePasswordSerializer,
+    CognitoSyncTokenSerializer,
+    CreateCognitoGroupSerializer,
     ForgotPasswordSerializer,
     GoogleSSOSerializer,
     LogoutSerializer,
@@ -338,3 +340,80 @@ class ResetPasswordOTP(APIView):
         serializer = ResetPasswordOTPSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         return response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@apply_swagger_tags(
+    tags=["Auth"],
+    method_details={
+        "get": {
+            "description": "Exchange Cognito code for tokens and sync user",
+            "summary": "GET method for Cognito token sync using code",
+        },
+    },
+)
+class CognitoSyncTokensView(APIView):
+    """
+    This view is called by Cognito after user login via the hosted UI.
+    It receives the `code` as a query param, exchanges it for tokens,
+    manages the user and tokens, and returns the relevant data.
+    """
+
+    serializer_class = CognitoSyncTokenSerializer
+
+    def get(self, request):
+        serializer = self.serializer_class(data=request.query_params)
+        serializer.is_valid(raise_exception=True)
+        user, redirect_url = serializer.save()
+
+        return response(
+            data={
+                "user": {
+                    "id": user.id,
+                    "email": user.email,
+                    "username": user.username,
+                },
+                "tokens": {
+                    "access_token": serializer.validated_data["access_token"],
+                    "refresh_token": serializer.validated_data["refresh_token"],
+                    "id_token": serializer.validated_data["id_token"],
+                },
+                "redirect_url": redirect_url,
+            },
+            message=AuthResponseConstants.LOGIN_SUCCESS,
+            status_code=status.HTTP_200_OK,
+        )
+
+
+@apply_swagger_tags(
+    tags=["Auth"],
+    method_details={
+        "post": {
+            "description": "Create a new group in both Django and AWS Cognito",
+            "summary": "POST method to create group in Django and sync with Cognito",
+        }
+    },
+)
+class CreateCognitoGroupAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = CreateCognitoGroupSerializer
+
+    def post(self, request):
+        serializer = self.serializer_class(data=request.data)
+        if serializer.is_valid():
+            try:
+                group = serializer.save()
+                return response(
+                    data={"group_name": group.name},
+                    message=f"Group '{group.name}' created successfully in both Django and Cognito.",
+                    status_code=status.HTTP_201_CREATED,
+                )
+            except Exception as e:
+                return response(
+                    message=f"Failed to create group: {str(e)}",
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                )
+        return response(
+            data=serializer.errors,
+            message="Validation failed.",
+            status_code=status.HTTP_400_BAD_REQUEST,
+        )

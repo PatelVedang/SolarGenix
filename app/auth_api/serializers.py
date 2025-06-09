@@ -1,13 +1,18 @@
 import logging
 import random
 import re
+from datetime import datetime, timedelta
+from datetime import timezone as dt_timezone
 
+from core.models.auth_api.auth import AUTH_PROVIDER, SimpleToken
 from core.models import Token, TokenType, User
 from core.services.google_service import Google
 from core.services.token_service import TokenService
 from django.conf import settings
 from django.contrib.auth import authenticate
 from django.contrib.auth.hashers import make_password
+from django.contrib.auth.models import Group
+from django.db import transaction
 from django.utils import timezone
 from proj.base_serializer import BaseModelSerializer, BaseSerializer
 from proj.models import generate_password  # Import the function
@@ -16,7 +21,7 @@ from rest_framework.exceptions import AuthenticationFailed
 from rest_framework_simplejwt.serializers import TokenRefreshSerializer
 from utils.custom_exception import CustomValidationError
 from utils.email import EmailService
-
+from auth_api.cognito import Cognito
 from auth_api.custom_backend import LoginOnAuthBackend
 
 from .constants import AuthResponseConstants
@@ -265,14 +270,27 @@ class LogoutSerializer(BaseSerializer):
         # Validate the provided refresh token
         payload = TokenService.validate_token(token, TokenType.REFRESH.value)
         token_obj = payload.get("token_obj")
+        try:
+            token_obj = Token.objects.select_related("user").get(token=token)
+        except Token.DoesNotExist:
+            raise serializers.ValidationError("Invalid token")
+
         user = token_obj.user
 
-        # Initialize the data dictionary
-        data = {"user": user}
+        if user.auth_provider == AUTH_PROVIDER.get("cognito"):
+            Cognito.logout_user(user)
+            return attrs
 
-        # If logout_all_devices is 0, delete only the current token (using its jti)
+        # For non-cognito, validate token and delete accordingly
+        payload = SimpleToken.validate_token(token, TokenType.REFRESH.value)
+        token_obj = payload.get(
+            "token_obj"
+        )  # this may be redundant if token_obj already fetched, but needed for validation
+
+        data = {"user": user}
         if logout_all_devices == 0:
-            data["jti"] = token_obj.jti  # Add jti to data
+            data["jti"] = token_obj.jti
+
         Token.default.filter(**data).exclude(token_type=TokenType.GOOGLE.value).delete()
 
         return attrs
@@ -491,5 +509,194 @@ class UserMigrationSerializer(BaseModelSerializer):
         such as preserving the hashed password from the old model.
         """
         # The password is already hashed, so we can safely reuse it.
-        user = User.objects.create(**validated_data)
-        return user
+        User.objects.create(**validated_data)
+
+
+class CognitoSyncTokenSerializer(BaseSerializer):
+    code = serializers.CharField()
+
+    def validate(self, attrs):
+        code = attrs["code"]
+
+        try:
+            tokens = Cognito.exchange_code_for_tokens(code)
+        except Exception as e:
+            raise AuthenticationFailed(
+                f"{AuthResponseConstants.INVALID_COGNITO_TOKEN}: {str(e)}"
+            )
+
+        access_token = tokens.get("access_token")
+        refresh_token = tokens.get("refresh_token")
+        id_token = tokens.get("id_token")
+
+        if not all([access_token, refresh_token, id_token]):
+            raise AuthenticationFailed(AuthResponseConstants.MISSING_COGNITO_TOKENS)
+
+        try:
+            access_payload = Cognito.decode_token(access_token)
+            id_token_payload = Cognito.decode_token(id_token)
+            groups = access_payload.get("cognito:groups", [])
+            attrs["groups"] = groups
+
+        except Exception as e:
+            raise AuthenticationFailed(
+                f"{AuthResponseConstants.INVALID_COGNITO_TOKEN}: {str(e)}"
+            )
+
+        email = id_token_payload.get("email")
+        user_sub = access_payload.get("sub")
+
+        if not email or not user_sub:
+            raise AuthenticationFailed(AuthResponseConstants.MISSING_COGNITO_FIELDS)
+
+        attrs.update(
+            {
+                "access_token": access_token,
+                "refresh_token": refresh_token,
+                "id_token": id_token,
+                "access_payload": access_payload,
+                "id_token_payload": id_token_payload,
+                "email": email.lower(),
+                "sub": user_sub,
+            }
+        )
+        return attrs
+
+    def save(self):
+        email = self.validated_data["email"]
+        access_token = self.validated_data["access_token"]
+        refresh_token = self.validated_data["refresh_token"]
+        id_token = self.validated_data["id_token"]
+        user_sub = self.validated_data["sub"]
+
+        access_payload = self.validated_data["access_payload"]
+        id_token_payload = self.validated_data["id_token_payload"]
+        groups = self.validated_data.get("groups", [])
+
+        with transaction.atomic():
+            user = User.objects.filter(cognito_sub=user_sub).first()
+
+            if not user:
+                user = User.default.filter(email=email).first()
+
+                if user:
+                    user.cognito_sub = user_sub
+                    user.auth_provider = AUTH_PROVIDER.get("cognito")
+                    user.is_email_verified = True
+                    user.is_deleted = False
+                    user.is_active = True
+                    user.save(
+                        update_fields=[
+                            "cognito_sub",
+                            "auth_provider",
+                            "is_email_verified",
+                            "is_deleted",
+                            "is_active",
+                        ]
+                    )
+                else:
+                    user = User.objects.create(
+                        email=email,
+                        cognito_sub=user_sub,
+                        auth_provider=AUTH_PROVIDER.get("cognito"),
+                        is_email_verified=True,
+                    )
+
+            Token.objects.filter(
+                user=user,
+                token_type__in=[
+                    TokenType.ACCESS,
+                    TokenType.REFRESH,
+                    TokenType.ID_TOKEN,
+                ],
+            ).delete()
+
+            self.sync_user_groups(user, groups)
+
+            Token.objects.bulk_create(
+                [
+                    Token(
+                        user=user,
+                        jti=access_payload.get("jti", access_payload.get("sub")),
+                        token=access_token,
+                        token_type=TokenType.ACCESS,
+                        expire_at=datetime.fromtimestamp(
+                            access_payload["exp"], tz=dt_timezone.utc
+                        ),
+                    ),
+                    Token(
+                        user=user,
+                        jti="cognito_refresh",
+                        token=refresh_token,
+                        token_type=TokenType.REFRESH,
+                        expire_at=timezone.now() + timedelta(days=30),
+                    ),
+                    Token(
+                        user=user,
+                        jti=id_token_payload.get("jti", id_token_payload.get("sub")),
+                        token=id_token,
+                        token_type=TokenType.ID_TOKEN,
+                        expire_at=datetime.fromtimestamp(
+                            id_token_payload["exp"], tz=dt_timezone.utc
+                        ),
+                    ),
+                ]
+            )
+
+        redirect_url = self.get_redirect_url_for_user(user)
+        return user, redirect_url
+
+    def sync_user_groups(self, user, groups):
+        user.groups.clear()
+        for group_name in groups:
+            group, _ = Group.objects.get_or_create(name=group_name)
+            user.groups.add(group)
+
+    def get_redirect_url_for_user(self, user):
+        group = user.groups.first()
+        if group and hasattr(group, "profile") and group.profile.redirect_url:
+            return group.profile.redirect_url
+        return "/"
+
+
+class CreateCognitoGroupSerializer(serializers.ModelSerializer):
+    name = serializers.CharField()
+    description = serializers.CharField(
+        write_only=True, required=False, allow_blank=True
+    )
+    precedence = serializers.IntegerField(write_only=True, required=False)
+    role_arn = serializers.CharField(write_only=True, required=False, allow_blank=True)
+
+    class Meta:
+        model = Group
+        fields = ["name", "description", "precedence", "role_arn"]
+
+    def create(self, validated_data):
+        name = validated_data.pop("name", None)
+        description = validated_data.pop("description", "")
+        precedence = validated_data.pop("precedence", 0)
+        role_arn = validated_data.pop("role_arn", None)
+
+        with transaction.atomic():
+            group, created = Group.objects.get_or_create(name=name)
+            cognito = Cognito()
+            try:
+                try:
+                    cognito.get_group(group.name)
+                    logger.info(
+                        f"Group '{group.name}' already exists in Cognito, skipping creation."
+                    )
+                except Exception:
+                    cognito.create_group(
+                        group_name=group.name,
+                        description=description,
+                        precedence=precedence,
+                        role_arn=role_arn,
+                    )
+            except Exception as e:
+                transaction.set_rollback(True)
+                raise serializers.ValidationError(
+                    f"Failed to create or sync group in Cognito: {str(e)}"
+                )
+
+        return group
