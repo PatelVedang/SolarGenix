@@ -66,6 +66,6 @@ urlpatterns = [
         CreateCognitoGroupAPIView.as_view(),
         name="create-cognito-group",
     ),
-    path("auth/2fa/setup/", User2FASetupView.as_view(), name="user-2fa-setup"),
-    path("auth/2fa/verify/", User2FAVerifyView.as_view(), name="user-2fa-verify"),
+    path("auth/2fa/setup", User2FASetupView.as_view(), name="user-2fa-setup"),
+    path("auth/2fa/verify", User2FAVerifyView.as_view(), name="user-2fa-verify"),
 ]

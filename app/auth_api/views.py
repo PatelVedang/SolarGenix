@@ -73,10 +73,12 @@ class UserLoginView(APIView):
     permission_classes = []
 
     def post(self, request):
-        serializer = UserLoginSerializer(data=request.data)
+        serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
-        
-        user = serializer.validated_data
+
+        validated_data = serializer.validated_data
+        user = validated_data["user"]  # This is now a User instance
+
         if not user.is_email_verified:
             return response(
                 data={},
@@ -88,14 +90,16 @@ class UserLoginView(APIView):
             return response(
                 data={
                     "requires_2fa": True,
-                    "user_id": user.id,
+                    "user_id": str(user.id),
                 },
                 status_code=status.HTTP_200_OK,
                 message="Two-factor authentication required",
             )
 
+        validated_data["user"] = UserProfileSerializer(user).data
+
         return response(
-            data=serializer.validated_data,
+            data=validated_data,
             status_code=status.HTTP_200_OK,
             message=AuthResponseConstants.LOGIN_SUCCESS,
         )
@@ -437,7 +441,8 @@ class CreateCognitoGroupAPIView(APIView):
             data=serializer.errors,
             message="Validation failed.",
             status_code=status.HTTP_400_BAD_REQUEST,
-)
+        )
+
 
 @apply_swagger_tags(
     tags=["Auth"],

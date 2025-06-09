@@ -101,16 +101,15 @@ class UserLoginSerializer(BaseModelSerializer):
             if user:
                 if not user.is_email_verified:
                     Token.objects.filter(user=user, token_type="verify_mail").delete()
-                    email_service = EmailService(user)
-                    email_service.send_verification_email()
+                    EmailService(user).send_verification_email()
                     raise AuthenticationFailed(
                         AuthResponseConstants.LOGIN_UNVERIFIED_EMAIL
                     )
-                    return user
             raise AuthenticationFailed(AuthResponseConstants.INVALID_CREDENTIALS)
 
         user, tokens = authenticated
-        attrs["user"] = UserProfileSerializer(user).data
+        # Return the actual user instance along with the serialized data
+        attrs["user"] = user
         attrs["tokens"] = tokens
         return attrs
 
@@ -701,10 +700,10 @@ class CreateCognitoGroupSerializer(serializers.ModelSerializer):
                 )
 
         return group
-        user = User.objects.create(**validated_data)
-        return user
+
+
 class User2FASetupSerializer(serializers.Serializer):
-    user_id = serializers.IntegerField()
+    user_id = serializers.UUIDField()
 
     def validate_user_id(self, value):
         try:
@@ -729,7 +728,7 @@ class User2FASetupSerializer(serializers.Serializer):
 
 
 class User2FAVerifySerializer(serializers.Serializer):
-    user_id = serializers.IntegerField()
+    user_id = serializers.UUIDField()
     code = serializers.CharField(max_length=6)
 
     def validate(self, attrs):
