@@ -26,4 +26,8 @@ class AuthResponseConstants:
     MISSING_COGNITO_TOKENS = "Missing tokens from Cognito response"
     MISSING_COGNITO_FIELDS = "Cognito token missing required fields"
     COGNITO_TOKEN_EXCHANGE_FAILED = "Token exchange failed"
+    TWO_FA_REQUIRED = "Two-factor authentication required"
+    TWO_FA_SETUP_SUCCESS = "Scan QR to configure Google Authenticator"
+    TWO_FA_VERIFICATION_FAILED = "Invalid TOTP code"
+
     # fmt: on

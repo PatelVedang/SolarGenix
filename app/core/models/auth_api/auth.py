@@ -1,14 +1,13 @@
+from datetime import datetime, timedelta
 import logging
 import uuid
-from datetime import datetime, timedelta
-
 import jwt
-from auth_api.managers import UserManager
 from django.conf import settings
 from django.contrib.auth.models import AbstractUser, PermissionsMixin, Group
 from django.db import models
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
+from auth_api.managers import UserManager
 from proj.models import BaseModel
 from rest_framework.exceptions import AuthenticationFailed
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -120,6 +119,7 @@ class User(AbstractUser, PermissionsMixin, BaseModel):
     is_email_verified = models.BooleanField(default=False)
     is_default_password = models.BooleanField(default=False)
     cognito_sub = models.CharField(max_length=255, unique=True, null=True, blank=True)
+    totp_secret = models.CharField(max_length=64, null=True, blank=True)
 
     objects = UserManager()
 

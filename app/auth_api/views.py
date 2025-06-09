@@ -1,3 +1,4 @@
+from django.conf import settings
 from rest_framework import status
 from rest_framework.permissions import AllowAny
 from rest_framework.views import APIView
@@ -18,6 +19,8 @@ from auth_api.serializers import (
     ResendVerificationEmailSerializer,
     ResetPasswordOTPSerializer,
     SendOTPSerializer,
+    User2FASetupSerializer,
+    User2FAVerifySerializer,
     UserLoginSerializer,
     UserPasswordResetSerializer,
     UserProfileSerializer,
@@ -59,8 +62,8 @@ class UserRegistrationView(APIView):
     tags=["Auth"],
     method_details={
         "post": {
-            "description": "Login API",
-            "summary": "Dynamic POST method for user login",
+            "description": "Login API with 2FA support",
+            "summary": "Dynamic POST method for user login with optional 2FA step",
         },
     },
 )
@@ -70,11 +73,33 @@ class UserLoginView(APIView):
     permission_classes = []
 
     def post(self, request):
-        serializer = UserLoginSerializer(data=request.data)
+        serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
-        
+
+        validated_data = serializer.validated_data
+        user = validated_data["user"]  # This is now a User instance
+
+        if not user.is_email_verified:
+            return response(
+                data={},
+                status_code=status.HTTP_200_OK,
+                message=AuthResponseConstants.ACCOUNT_NOT_VERIFIED,
+            )
+
+        if settings.ENABLE_2FA:
+            return response(
+                data={
+                    "requires_2fa": True,
+                    "user_id": str(user.id),
+                },
+                status_code=status.HTTP_200_OK,
+                message="Two-factor authentication required",
+            )
+
+        validated_data["user"] = UserProfileSerializer(user).data
+
         return response(
-            data=serializer.validated_data,
+            data=validated_data,
             status_code=status.HTTP_200_OK,
             message=AuthResponseConstants.LOGIN_SUCCESS,
         )
@@ -416,4 +441,53 @@ class CreateCognitoGroupAPIView(APIView):
             data=serializer.errors,
             message="Validation failed.",
             status_code=status.HTTP_400_BAD_REQUEST,
+        )
+
+
+@apply_swagger_tags(
+    tags=["Auth"],
+    method_details={
+        "post": {
+            "description": "Setup 2FA using TOTP",
+            "summary": "Generate TOTP secret and QR code for Google Authenticator",
+        },
+    },
+)
+class User2FASetupView(APIView):
+    permission_classes = [AllowAny]
+    serializer_class = User2FASetupSerializer
+
+    def post(self, request):
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.save()
+        return response(data=data, message=AuthResponseConstants.TWO_FA_SETUP_SUCCESS)
+
+
+@apply_swagger_tags(
+    tags=["Auth"],
+    method_details={
+        "post": {
+            "description": "Verify 2FA TOTP code",
+            "summary": "Verify TOTP code and complete login",
+        },
+    },
+)
+class User2FAVerifyView(APIView):
+    throttle_classes = [custom_throttling.CustomAuthThrottle]
+    serializer_class = User2FAVerifySerializer
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.validated_data["user"]
+
+        return response(
+            data={
+                "user": UserProfileSerializer(user).data,
+                "tokens": user.auth_tokens(),
+            },
+            status_code=status.HTTP_200_OK,
+            message=AuthResponseConstants.LOGIN_SUCCESS,
         )

@@ -14,6 +14,7 @@ from django.contrib.auth.hashers import make_password
 from django.contrib.auth.models import Group
 from django.db import transaction
 from django.utils import timezone
+from auth_api.totp_service import TOTPService
 from proj.base_serializer import BaseModelSerializer, BaseSerializer
 from proj.models import generate_password  # Import the function
 from rest_framework import serializers
@@ -100,16 +101,15 @@ class UserLoginSerializer(BaseModelSerializer):
             if user:
                 if not user.is_email_verified:
                     Token.objects.filter(user=user, token_type="verify_mail").delete()
-                    email_service = EmailService(user)
-                    email_service.send_verification_email()
+                    EmailService(user).send_verification_email()
                     raise AuthenticationFailed(
                         AuthResponseConstants.LOGIN_UNVERIFIED_EMAIL
                     )
-                    return user
             raise AuthenticationFailed(AuthResponseConstants.INVALID_CREDENTIALS)
 
         user, tokens = authenticated
-        attrs["user"] = UserProfileSerializer(user).data
+        # Return the actual user instance along with the serialized data
+        attrs["user"] = user
         attrs["tokens"] = tokens
         return attrs
 
@@ -700,3 +700,49 @@ class CreateCognitoGroupSerializer(serializers.ModelSerializer):
                 )
 
         return group
+
+
+class User2FASetupSerializer(serializers.Serializer):
+    user_id = serializers.UUIDField()
+
+    def validate_user_id(self, value):
+        try:
+            user = User.objects.get(id=value)
+        except User.DoesNotExist:
+            raise serializers.ValidationError("User not found")
+
+        if not user.is_email_verified:
+            raise serializers.ValidationError("Email not verified")
+
+        self.context["user"] = user  # store it for use in create()
+        return value
+
+    def create(self, validated_data):
+        user = self.context["user"]
+        totp_service = TOTPService(user)
+        totp_service.generate_secret()
+        return {
+            "qr_code": totp_service.generate_qr_code_url(),
+            "otp_uri": totp_service.get_provisioning_uri(),
+        }
+
+
+class User2FAVerifySerializer(serializers.Serializer):
+    user_id = serializers.UUIDField()
+    code = serializers.CharField(max_length=6)
+
+    def validate(self, attrs):
+        user_id = attrs.get("user_id")
+        code = attrs.get("code")
+
+        try:
+            user = User.objects.get(id=user_id)
+        except User.DoesNotExist:
+            raise serializers.ValidationError("User not found.")
+
+        totp_service = TOTPService(user)
+        if not totp_service.verify_code(code):
+            raise serializers.ValidationError("Invalid 2FA code.")
+
+        attrs["user"] = user
+        return attrs

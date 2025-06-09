@@ -65,7 +65,7 @@ class Settings(BaseSettings):
     OTP_EXPIRY_MINUTES: int = Field(default=1)
 
     # CELERY_BROKER_URL: str = Field(default=None)
-    
+
     # ::::::::::::: Cognito :::::::::::::
     AUTH_TYPE: str = Field(default="simplejwt")
     AWS_REGION: str | None = Field(default=None)
@@ -76,6 +76,7 @@ class Settings(BaseSettings):
     COGNITO_REDIRECT_URI: str | None = Field(default=None)
     AWS_ACCESS_KEY_ID: str | None = Field(default=None)
     AWS_SECRET_ACCESS_KEY: str | None = Field(default=None)
+    ENABLE_2FA: bool = Field(default=0)
 
     class Config:
         env_file = os.path.join(BASE_DIR, ".env")
@@ -86,7 +87,7 @@ def load_settings():
     env_file_path = os.path.join(BASE_DIR, ".env")
     if not os.path.isfile(env_file_path):
         raise FileNotFoundError(f"Missing required .env file at path: {env_file_path}")
-    
+
     try:
         settings = Settings()
         validate_auth_type(settings)
