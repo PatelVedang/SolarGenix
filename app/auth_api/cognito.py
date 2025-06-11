@@ -1,3 +1,6 @@
+import base64
+import hashlib
+import hmac
 import logging
 import re
 import traceback
@@ -6,11 +9,11 @@ import boto3
 import jwt
 import requests
 from botocore.exceptions import ClientError
+from core.models.auth_api.auth import Token
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from rest_framework.exceptions import AuthenticationFailed
 
-from core.models.auth_api.auth import Token
 from auth_api.constants import AuthResponseConstants
 
 User = get_user_model()
@@ -79,7 +82,7 @@ class Cognito:
                 "Invalid group name. Allowed characters: letters, numbers, and _+=,.@-"
             )
 
-    def add_user_to_group(self, username: str, group_name: str) -> bool:
+    def add_user_to_role(self, username: str, group_name: str) -> bool:
         """Adds a user to a Cognito group."""
         self._validate_group_name(group_name)
 
@@ -99,7 +102,7 @@ class Cognito:
             logger.error(f"[Cognito] Unexpected error: {e}\n{traceback.format_exc()}")
             return False
 
-    def create_group(
+    def create_role(
         self,
         group_name: str,
         description: str = "",
@@ -153,14 +156,15 @@ class Cognito:
             logger.error(f"[Cognito] Unexpected error: {e}\n{traceback.format_exc()}")
             return []
 
-    def remove_user_from_group(self, username: str, group_name: str):
+    def remove_user_from_role(self, username: str, group_name: str):
         """Removes a user from a specified Cognito group."""
         try:
-            self.client.admin_remove_user_from_group(
+            response = self.client.admin_remove_user_from_group(
                 UserPoolId=settings.COGNITO_USER_POOL_ID,
                 Username=username,
                 GroupName=group_name,
             )
+            return response
         except self.client.exceptions.UserNotFoundException:
             raise Exception(f"User '{username}' not found in Cognito.")
         except self.client.exceptions.ResourceNotFoundException:
@@ -195,3 +199,91 @@ class Cognito:
         except Exception as e:
             logger.error(f"[Cognito] Failed to delete user '{username}': {e}")
             raise Exception(f"Failed to delete user '{username}' in Cognito: {e}")
+
+    def login(self, username: str, password: str) -> dict:
+        """
+        Authenticates a user with Cognito and returns tokens.
+        """
+        try:
+            auth_params = {
+                "USERNAME": username,
+                "PASSWORD": password,
+            }
+            if (
+                hasattr(settings, "COGNITO_CLIENT_SECRET")
+                and settings.COGNITO_CLIENT_SECRET
+            ):
+                auth_params["SECRET_HASH"] = self.get_secret_hash(username)
+            response = self.client.initiate_auth(
+                ClientId=settings.COGNITO_CLIENT_ID,
+                AuthFlow="USER_PASSWORD_AUTH",
+                AuthParameters=auth_params,
+            )
+            return response["AuthenticationResult"]
+        except ClientError as e:
+            code = e.response["Error"]["Code"]
+            if code == "NotAuthorizedException":
+                raise Exception("Incorrect username or password.")
+            if code == "UserNotConfirmedException":
+                raise Exception("User is not confirmed.")
+            raise Exception(f"Failed to login user '{username}' in Cognito: {e}")
+        except Exception as e:
+            raise Exception(f"Failed to login user '{username}' in Cognito: {e}")
+
+    def get_secret_hash(self, username):
+        message = username + settings.COGNITO_CLIENT_ID
+        dig = hmac.new(
+            str(settings.COGNITO_CLIENT_SECRET).encode("utf-8"),
+            msg=message.encode("utf-8"),
+            digestmod=hashlib.sha256,
+        ).digest()
+        return base64.b64encode(dig).decode()
+
+    def sign_up(self, username: str, password: str, user_attributes=None):
+        """
+        Registers a new user in Cognito.
+        """
+        if user_attributes is None:
+            user_attributes = [{"Name": "email", "Value": username}]
+        params = {
+            "ClientId": settings.COGNITO_CLIENT_ID,
+            "Username": username,
+            "Password": password,
+            "UserAttributes": user_attributes,
+        }
+        # Add SECRET_HASH if client secret is set
+        if (
+            hasattr(settings, "COGNITO_CLIENT_SECRET")
+            and settings.COGNITO_CLIENT_SECRET
+        ):
+            params["SecretHash"] = self.get_secret_hash(username)
+        try:
+            return self.client.sign_up(**params)
+        except Exception as e:
+            raise Exception(f"Failed to sign up user '{username}' in Cognito: {e}")
+
+    def admin_confirm_sign_up(self, username: str):
+        """
+        Confirms a Cognito user registration as an admin (bypasses OTP).
+        """
+        try:
+            return self.client.admin_confirm_sign_up(
+                UserPoolId=settings.COGNITO_USER_POOL_ID,
+                Username=username,
+            )
+        except Exception as e:
+            raise Exception(f"Failed to confirm user '{username}' in Cognito: {e}")
+
+    def admin_get_user(self, username: str):
+        """
+        Gets a user from Cognito User Pool.
+        """
+        try:
+            return self.client.admin_get_user(
+                UserPoolId=settings.COGNITO_USER_POOL_ID,
+                Username=username,
+            )
+        except self.client.exceptions.UserNotFoundException:
+            raise Exception(f"User '{username}' not found in Cognito.")
+        except Exception as e:
+            raise Exception(f"Failed to get user '{username}' in Cognito: {e}")

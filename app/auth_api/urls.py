@@ -2,7 +2,7 @@ from django.urls import path
 
 from auth_api.views import (
     ChangePasswordView,
-    CreateCognitoGroupAPIView,
+    CreateCognitoRoleAPIView,
     ForgotPasswordView,
     GoogleSSOView,
     LogoutView,
@@ -62,8 +62,8 @@ urlpatterns = [
         name="cognito-sync-tokens",
     ),
     path(
-        "auth/cognito/create-group",
-        CreateCognitoGroupAPIView.as_view(),
+        "auth/cognito/create-role",
+        CreateCognitoRoleAPIView.as_view(),
         name="create-cognito-group",
     ),
     path("auth/2fa/setup", User2FASetupView.as_view(), name="user-2fa-setup"),

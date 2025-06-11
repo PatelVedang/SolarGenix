@@ -1,12 +1,12 @@
 import time
 
+from core.models import SimpleToken, Token
+from django.conf import settings
 from rest_framework.exceptions import AuthenticationFailed
 from rest_framework.permissions import BasePermission
 
-from core.models import Token, SimpleToken
-from core.services.token_service import TokenService
-from auth_api.constants import AuthResponseConstants
 from auth_api.cognito import Cognito
+from auth_api.constants import AuthResponseConstants
 
 
 class IsAuthenticated(BasePermission):
@@ -19,9 +19,10 @@ class IsAuthenticated(BasePermission):
 
         if not user.is_active:
             return False
-        payload = TokenService.decode(str(request.auth))
 
-        if getattr(user, "auth_provider", None) == "cognito":
+        auth_type = getattr(settings, "AUTH_TYPE", "simplejwt").lower()
+
+        if auth_type == "cognito":
             try:
                 payload = Cognito.decode_token(str(auth))
                 if payload.get("token_use") != "access":
