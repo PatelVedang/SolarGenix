@@ -22,6 +22,11 @@ settings = load_settings()
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+
+LOG_DIR = os.path.join(BASE_DIR, "logs")
+os.makedirs(LOG_DIR, exist_ok=True)
+
+
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.1/howto/deployment/checklist/
 
@@ -263,43 +268,124 @@ if not os.path.exists(f"{BASE_DIR}/logs/error.log"):
     f.close()
 
 # Logging
+# LOGGING = {
+#     "version": 1,
+#     "disable_existing_loggers": False if DEBUG else True,
+#     "handlers": {
+#         "info": {
+#             "level": "INFO",
+#             "class": "logging.handlers.RotatingFileHandler",
+#             "filename": f"{BASE_DIR}/logs/info.log",
+#             "maxBytes": 30 * 1024 * 1024,  # 30M Log Size
+#             "backupCount": 10,
+#             "formatter": "info",
+#         },
+#         "error": {
+#             "level": "ERROR",
+#             "class": "logging.handlers.RotatingFileHandler",
+#             "filename": f"{BASE_DIR}/logs/error.log",
+#             "maxBytes": 30 * 1024 * 1024,  # 30M Log Size
+#             "backupCount": 5,
+#             "formatter": "error",
+#         },
+#     },
+#     "loggers": {
+#         "django": {
+#             "handlers": ["info", "error"],
+#             "level": "INFO",
+#             "propagate": True,
+#         },
+#     },
+#     "formatters": {
+#         "info": {
+#             "format": "%(levelname)s %(asctime)s %(module)s %(lineno)s %(message)s",
+#         },
+#         "error": {
+#             "format": "%(asctime)s [%(module)s | %(levelname)s] %(message)s @ %(pathname)s : %(lineno)d : %(funcName)s",
+#         },
+#     },
+# }
+
+# LOGGING Configuration
+
+from utils.logger import (
+    IgnoreDjangoInternalErrorsFilter,
+    SlackFormatter,
+    SlackLogHandler,
+    TZFormatter,
+    utc_tz,
+)
+
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False if DEBUG else True,
-    "handlers": {
-        "info": {
-            "level": "INFO",
-            "class": "logging.handlers.RotatingFileHandler",
-            "filename": f"{BASE_DIR}/logs/info.log",
-            "maxBytes": 30 * 1024 * 1024,  # 30M Log Size
-            "backupCount": 10,
-            "formatter": "info",
-        },
-        "error": {
-            "level": "ERROR",
-            "class": "logging.handlers.RotatingFileHandler",
-            "filename": f"{BASE_DIR}/logs/error.log",
-            "maxBytes": 30 * 1024 * 1024,  # 30M Log Size
-            "backupCount": 5,
-            "formatter": "error",
-        },
-    },
-    "loggers": {
-        "django": {
-            "handlers": ["info", "error"],
-            "level": "INFO",
-            "propagate": True,
+    "filters": {
+        "ignore_django_internal": {
+            "()": IgnoreDjangoInternalErrorsFilter,
         },
     },
     "formatters": {
         "info": {
-            "format": "%(levelname)s %(asctime)s %(module)s %(lineno)s %(message)s",
+            "()": TZFormatter,
+            "fmt": "[UTC] %(asctime)s - %(levelname)s - %(message)s",
+            "datefmt": "%Y-%m-%d %H:%M:%S",
+            "tz": utc_tz,
         },
         "error": {
-            "format": "%(asctime)s [%(module)s | %(levelname)s] %(message)s @ %(pathname)s : %(lineno)d : %(funcName)s",
+            "()": TZFormatter,
+            "fmt": "[UTC] %(asctime)s [%(module)s | %(levelname)s] %(message)s @ %(pathname)s : %(lineno)d : %(funcName)s",
+            "datefmt": "%Y-%m-%d %H:%M:%S",
+            "tz": utc_tz,
+        },
+        "slack": {
+            "()": SlackFormatter,
+            "fmt": "",
+            "datefmt": "%Y-%m-%d %H:%M:%S",
+            "tz": utc_tz,
+        },
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "level": "INFO",
+            "formatter": "info",
+        },
+        "info_file": {
+            "class": "logging.handlers.RotatingFileHandler",
+            "level": "INFO",
+            "filename": os.path.join(LOG_DIR, "info.log"),
+            "maxBytes": 30 * 1024 * 1024,  # 30 MB
+            "backupCount": 10,
+            "formatter": "info",
+        },
+        "error_file": {
+            "class": "logging.handlers.RotatingFileHandler",
+            "level": "ERROR",
+            "filename": os.path.join(LOG_DIR, "error.log"),
+            "maxBytes": 30 * 1024 * 1024,  # 30 MB
+            "backupCount": 5,
+            "formatter": "error",
+        },
+        "slack": {
+            "()": SlackLogHandler,
+            "level": "WARNING",
+            "webhook_url": settings.SLACK_BASIC_URL,
+            "formatter": "slack",
+            "filters": ["ignore_django_internal"],
+        }
+        if settings.SLACK_BASIC_URL
+        else {},
+    },
+    "loggers": {
+        "django": {
+            "handlers": ["console", "info_file", "error_file"]
+            + (["slack"] if settings.SLACK_BASIC_URL else []),
+            "level": "INFO",
+            "propagate": True,
         },
     },
 }
+
 
 AUTHENTICATION_BACKENDS = [
     "django.contrib.auth.backends.ModelBackend",  # Default backend

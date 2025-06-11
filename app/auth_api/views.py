@@ -1,3 +1,5 @@
+import logging
+
 from rest_framework import status
 from rest_framework.permissions import AllowAny
 from rest_framework.views import APIView
@@ -26,6 +28,8 @@ from auth_api.serializers import (
 
 from .constants import AuthResponseConstants
 from .permissions import IsAuthenticated
+
+logger = logging.getLogger("django")
 
 
 @apply_swagger_tags(
@@ -70,7 +74,7 @@ class UserLoginView(APIView):
     def post(self, request):
         serializer = UserLoginSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        
+
         return response(
             data=serializer.validated_data,
             status_code=status.HTTP_200_OK,

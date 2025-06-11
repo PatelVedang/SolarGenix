@@ -17,9 +17,8 @@ from rest_framework_simplejwt.serializers import TokenRefreshSerializer
 from utils.custom_exception import CustomValidationError
 from utils.email import EmailService
 
+from auth_api.constants import AuthResponseConstants
 from auth_api.custom_backend import LoginOnAuthBackend
-
-from .constants import AuthResponseConstants
 
 logger = logging.getLogger("django")
 

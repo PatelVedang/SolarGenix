@@ -65,7 +65,10 @@ class Settings(BaseSettings):
     OTP_EXPIRY_MINUTES: int = Field(default=1)
 
     # CELERY_BROKER_URL: str = Field(default=None)
-    
+
+    # ::::::::::::::: SLACK :::::::::::::::
+    SLACK_BASIC_URL: str
+    DJANGO_RUNTIME_ENVIRONMENT: str = Field(default="Local")
 
     class Config:
         env_file = os.path.join(BASE_DIR, ".env")
@@ -76,7 +79,7 @@ def load_settings():
     env_file_path = os.path.join(BASE_DIR, ".env")
     if not os.path.isfile(env_file_path):
         raise FileNotFoundError(f"Missing required .env file at path: {env_file_path}")
-    
+
     try:
         settings = Settings()
         for field in settings.__fields__.keys():

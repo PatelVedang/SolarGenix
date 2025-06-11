@@ -33,6 +33,7 @@ def custom_exception_handler(exc, context):
         }
         res = exception_handler(exc, context)
         logger.error(str(exc))
+
         if exception_class in handlers:
             message = handlers[exception_class](exc, context, res)
         else:
@@ -55,6 +56,7 @@ def custom_exception_handler(exc, context):
         return response(data={}, status_code=res.status_code, message=message)
     except Exception as e:
         logger.error(str(e))
+
         return response(data={}, status_code=500, message="Something went wrong.")
 
 
