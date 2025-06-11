@@ -58,3 +58,22 @@ class LoginOnAuthBackend(ModelBackend):
             # The 'INVALID_CREDENTIALS' constant can hold a custom error message for invalid credentials
 
             raise AuthenticationFailed(AuthResponseConstants.INVALID_CREDENTIALS)
+
+
+class CognitoBackend(ModelBackend):
+    """
+    Authenticate a user using AWS Cognito after token has already been validated.
+    Only checks if the user exists locally and is active.
+    """
+
+    def authenticate(self, request, username=None, **kwargs):
+        """
+        Called after Cognito token is validated. Just return the user if they exist.
+        """
+        if username is None:
+            return None
+
+        try:
+            return User.objects.get(email=username, is_active=True, is_deleted=False)
+        except User.DoesNotExist:
+            raise AuthenticationFailed(AuthResponseConstants.INVALID_CREDENTIALS)
