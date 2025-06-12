@@ -2,6 +2,7 @@ from django.urls import path
 
 from auth_api.views import (
     ChangePasswordView,
+    CreateCognitoGroupAPIView,
     ForgotPasswordView,
     GoogleSSOView,
     LogoutView,
@@ -9,12 +10,15 @@ from auth_api.views import (
     ResendVerificationEmailView,
     ResetPasswordOTP,
     SendOTPView,
+    User2FASetupView,
+    User2FAVerifyView,
     UserLoginView,
     UserPasswordResetView,
     UserProfileView,
     UserRegistrationView,
     VerifyEmailView,
     VerifyOTPView,
+    CognitoSyncTokensView,
 )
 
 urlpatterns = [
@@ -52,4 +56,16 @@ urlpatterns = [
     path(
         "auth/reset-password-otp", ResetPasswordOTP.as_view(), name="reset-password-otp"
     ),
+    path(
+        "auth/cognito-sync-tokens",
+        CognitoSyncTokensView.as_view(),
+        name="cognito-sync-tokens",
+    ),
+    path(
+        "auth/cognito/create-group",
+        CreateCognitoGroupAPIView.as_view(),
+        name="create-cognito-group",
+    ),
+    path("auth/2fa/setup", User2FASetupView.as_view(), name="user-2fa-setup"),
+    path("auth/2fa/verify", User2FAVerifyView.as_view(), name="user-2fa-verify"),
 ]
