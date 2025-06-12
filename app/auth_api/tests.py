@@ -1,10 +1,12 @@
 import json
+import urllib.parse
 from io import BytesIO
 
-from auth_api.cognito import Cognito
+import pyotp
 from core.models import Token, TokenType, User
 from core.services.token_service import TokenService
 from django.conf import settings
+from django.contrib.auth.models import Group
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import Client
 from django.urls import reverse
@@ -12,7 +14,9 @@ from django.utils import timezone
 from PIL import Image
 from rest_framework import status
 from rest_framework.test import APITestCase
-from django.contrib.auth.models import Group
+
+from auth_api.cognito import Cognito
+from auth_api.totp_service import TOTPService
 
 
 class BaseAPITestCase(APITestCase):
@@ -822,3 +826,36 @@ class CognitoIntegrationTest(BaseAPITestCase):
             self.assertTrue(True)
         except Exception as e:
             self.skipTest(f"Skipping due to AWS permissions: {e}")
+
+
+class TOTPServiceTestCase(APITestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(
+            email="totpuser@yopmail.com", password="Test@1234"
+        )
+        self.totp_service = TOTPService(self.user)
+
+    def test_generate_secret(self):
+        secret = self.totp_service.generate_secret()
+        self.assertTrue(secret)
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.totp_secret, secret)
+
+    def test_get_provisioning_uri(self):
+        self.totp_service.generate_secret()
+        uri = self.totp_service.get_provisioning_uri()
+        encoded_email = urllib.parse.quote(self.user.email)
+        self.assertIn(encoded_email, uri)
+        self.assertTrue(uri.startswith("otpauth://totp/"))
+
+    def test_generate_qr_code_url(self):
+        self.totp_service.generate_secret()
+        qr_url = self.totp_service.generate_qr_code_url()
+        self.assertTrue(qr_url.startswith("data:image/png;base64,"))
+
+    def test_verify_code(self):
+        secret = self.totp_service.generate_secret()
+        totp = pyotp.TOTP(secret)
+        code = totp.now()
+        self.assertTrue(self.totp_service.verify_code(code))
+        self.assertFalse(self.totp_service.verify_code("000000"))
