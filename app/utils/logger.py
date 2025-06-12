@@ -5,8 +5,9 @@ from logging import FileHandler
 
 from slack_sdk.webhook import WebhookClient
 
-
 # --- UTC Timezone Class ---
+
+
 class UTCTimezone(tzinfo):
     def utcoffset(self, dt):
         return timedelta(hours=0)
@@ -48,13 +49,19 @@ class SlackFormatter(TZFormatter):
 
         # Format timestamp
         timestamp = self.formatTime(record, self.datefmt)
+
+        # Use origin info if available; fall back to standard
+        origin_file = getattr(record, "origin_file", record.pathname)
+        origin_func = getattr(record, "origin_func", record.funcName)
+        origin_line = getattr(record, "origin_line", record.lineno)
+
         # Build the message components
         message_parts = [
             f"{risk_icon} *RISK LEVEL*: {record.levelname}",
             f":clock1: *Timestamp [UTC]*: {timestamp}",
-            f":file_folder: *File*: {record.pathname}",
-            f":triangular_ruler: *Function*: {record.funcName}",
-            f":1234: *Line*: {record.lineno}",
+            f":file_folder: *File*: {origin_file}",
+            f":triangular_ruler: *Function*: {origin_func}",
+            f":1234: *Line*: {origin_line}",
             f":memo: *Message*:\n```{record.getMessage()}```",
         ]
 

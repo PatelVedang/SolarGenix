@@ -183,7 +183,6 @@ SPECTACULAR_SETTINGS = {
     "SERVERS": [{"url": i} for i in settings.CSRF_TRUSTED_ORIGINS.split()],
 }
 
-
 # CORS & CSRF allowed origins
 CSRF_TRUSTED_ORIGINS = settings.CSRF_TRUSTED_ORIGINS.split()
 CORS_ORIGIN_WHITELIST = settings.CORS_ORIGIN_WHITELIST.split()
@@ -385,6 +384,14 @@ LOGGING = {
             "maxBytes": 30 * 1024 * 1024,  # 30 MB
             "backupCount": 5,
             "formatter": "error",
+        },
+        "warning_file": {
+            "class": "logging.handlers.RotatingFileHandler",
+            "level": "WARNING",
+            "filename": os.path.join(LOG_DIR, "warning.log"),
+            "maxBytes": 30 * 1024 * 1024,
+            "backupCount": 3,
+            "formatter": "info",
         },
         "slack": {
             "()": SlackLogHandler,
