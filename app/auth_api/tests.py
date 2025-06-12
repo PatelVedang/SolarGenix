@@ -713,7 +713,7 @@ class CognitoIntegrationTest(BaseAPITestCase):
             email=self.email, defaults={"password": self.password}
         )
 
-    def test_add_group_api(self):
+    def test_create_role_api(self):
         """
         Test the API endpoint for adding a group using access token.
         """
@@ -802,7 +802,7 @@ class CognitoIntegrationTest(BaseAPITestCase):
         except Exception as e:
             print(f"Could not verify group removal: {e}")
 
-    def test_cognito_delete_group(self):
+    def test_cognito_delete_role(self):
         """
         Test deleting a Cognito group.
         """
