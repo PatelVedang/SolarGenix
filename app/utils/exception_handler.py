@@ -15,30 +15,92 @@ def custom_exception_handler(exc, context):
     The function `custom_exception_handler` handles custom exceptions by mapping them to specific
     handlers and returning a response with the appropriate status code and message.
 
-    :param exc: The `exc` parameter is the exception object that was raised. It contains information
+    :param exc: The `exc` parameter is the exception object that was raised. It contains
+    information
     about the exception, such as its type, message, and traceback
-    :param context: The `context` parameter in the `custom_exception_handler` function is a dictionary
-    that contains information about the current request and view that raised the exception. It typically
+    :param context: The `context` parameter in the `custom_exception_handler` function is a
+    dictionary
+    that contains information about the current request and view that raised the exception. It
+    typically
     includes the following keys:
     :return: a response object.
     """
     try:
         traceback.print_exc()
         exception_class = exc.__class__.__name__
+
+        # Extract last traceback frame (where exception was raised)
+        tb = exc.__traceback__
+        while tb.tb_next:
+            tb = tb.tb_next  # Go to the last frame
+
+        frame = tb.tb_frame
+        origin_file = frame.f_code.co_filename
+        origin_func = frame.f_code.co_name
+        origin_line = tb.tb_lineno
+
         handlers = {
             "NotAuthenticated": _handler_authentication_error,
             "InvalidToken": _handler_invalid_token_error,
             "ValidationError": _handler_validation_error,
             "AuthenticationFailed": _handler_authentication_failed_error,
+            "CustomValidationError": _handler_validation_error,
         }
+        view_name = (
+            context.get("view").__class__.__name__
+            if context.get("view")
+            else "UnknownView"
+        )
+        request = context.get("request")
+        user = getattr(request, "user", None)
+        path = getattr(request, "path", "unknown path")
         res = exception_handler(exc, context)
-        logger.error(str(exc))
 
         if exception_class in handlers:
             message = handlers[exception_class](exc, context, res)
         else:
             # if there is no handler is present
             message = str(exc)
+
+        extra_dict = {
+            "origin_file": origin_file,
+            "origin_func": origin_func,
+            "origin_line": origin_line,
+        }
+        # Level-wise logging
+        if exception_class == "ValidationError":
+            logger.warning(
+                f"[{view_name}] Validation failed at {path}: {message}",
+                extra=extra_dict,
+            )
+        elif exception_class == "NotAuthenticated":
+            logger.warning(
+                f"[{view_name}] Authentication required at {path}", extra=extra_dict
+            )
+        elif exception_class == "AuthenticationFailed":
+            logger.error(
+                f"[{view_name}] Authentication failed for user {user} at {path}: {message}",
+                extra=extra_dict,
+            )
+        elif exception_class == "InvalidToken":
+            logger.error(
+                f"[{view_name}] Invalid token used at {path}", extra=extra_dict
+            )
+        elif exception_class == "CustomValidationError":
+            logger.warning(
+                f"[{view_name}] Validation failed at {path}: {message}",
+                extra=extra_dict,
+            )
+        else:
+            logger.critical(
+                f"[{view_name}] Unhandled exception at {path}: {message}",
+                extra=extra_dict,
+            )
+
+        logger.debug(
+            f"Exception class: {exception_class}, User: {user}, Path: {path}",
+            extra=extra_dict,
+        )
 
         print(">" * 30, " " * 15, "Exception message start", " " * 15, "<" * 30)
         print("\n\n", message, "\n\n")

@@ -62,6 +62,7 @@ class UserRegistrationSerializer(BaseModelSerializer):
             raise serializers.ValidationError(
                 {"password": f"{settings.PASSWORD_VALIDATE_STRING}__custom"}
             )
+
         return attrs
 
     def create(self, validated_data):
@@ -96,6 +97,7 @@ class UserLoginSerializer(BaseModelSerializer):
                     Token.objects.filter(user=user, token_type="verify_mail").delete()
                     email_service = EmailService(user)
                     email_service.send_verification_email()
+                    # logger.error(f"Login failed for {email} due to unverified email.")
                     raise AuthenticationFailed(
                         AuthResponseConstants.LOGIN_UNVERIFIED_EMAIL
                     )
@@ -129,7 +131,6 @@ class ForgotPasswordSerializer(BaseSerializer):
                 Token.objects.filter(user=user, token_type="reset").delete()
                 email_service = EmailService(user)
                 email_service.send_password_reset_email(email)
-
             else:
                 Token.objects.filter(user=user, token_type="verify_mail").delete()
                 email_service = EmailService(user)
@@ -224,7 +225,7 @@ class ResendVerificationEmailSerializer(BaseSerializer):
             email_service = EmailService(user)
             email_service.send_verification_email()
         else:
-            logger.error(f"Resend verification mail sent fail due to {email} not found")
+            # logger.error(f"Resend verification mail sent fail due to {email} not found")
             raise CustomValidationError(
                 f"Resend verification mail sent fail due to {email} not found"
             )
@@ -335,10 +336,12 @@ class GoogleSSOSerializer(BaseSerializer):
                         "data": response_data,
                     }
             else:
-                logger.error(
+                # logger.error(
+                #     f"Google SSO failed for {email} after user creation due to authentication failed"
+                # )
+                raise AuthenticationFailed(
                     f"Google SSO failed for {email} after user creation due to authentication failed"
                 )
-                raise AuthenticationFailed("Authentication failed after user creation.")
 
 
 class SendOTPSerializer(BaseSerializer):
@@ -378,7 +381,7 @@ class SendOTPSerializer(BaseSerializer):
                 email_service = EmailService(user)
                 email_service.send_verification_email()
         else:
-            logger.error(f"OTP sending failed, user with email {email} not found")
+            # logger.error(f"OTP sending failed, user with email {email} not found")
             raise CustomValidationError(
                 f"OTP sending failed, user with email {email} not found"
             )
