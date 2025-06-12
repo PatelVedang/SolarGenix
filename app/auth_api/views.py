@@ -13,7 +13,7 @@ from utils.swagger import apply_swagger_tags
 from auth_api.serializers import (
     ChangePasswordSerializer,
     CognitoSyncTokenSerializer,
-    CreateCognitoGroupSerializer,
+    CreateCognitoRoleSerializer,
     ForgotPasswordSerializer,
     GoogleSSOSerializer,
     LogoutSerializer,
@@ -422,9 +422,9 @@ class CognitoSyncTokensView(APIView):
         }
     },
 )
-class CreateCognitoGroupAPIView(APIView):
+class CreateCognitoRoleAPIView(APIView):
     permission_classes = [IsAuthenticated]
-    serializer_class = CreateCognitoGroupSerializer
+    serializer_class = CreateCognitoRoleSerializer
 
     def post(self, request):
         serializer = self.serializer_class(data=request.data)

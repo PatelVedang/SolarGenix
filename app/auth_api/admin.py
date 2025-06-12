@@ -1,15 +1,15 @@
-from auth_api.cognito import Cognito
-from core.models.auth_api.auth import GroupProfile
 from core.models import Token, User
+from core.models.auth_api.auth import GroupProfile
 from core.services.google_service import Google
-from django.contrib import admin
 from django import forms
-from django.contrib import messages
+from django.conf import settings
+from django.contrib import admin, messages
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.models import Group
 from django.db import transaction
 from django.shortcuts import render
-from django.conf import settings
+
+from auth_api.cognito import Cognito
 
 # class SoftDeleteAdminMixin(admin.ModelAdmin):
 #     actions = ["soft_delete", "soft_delete_recover"]
@@ -156,7 +156,7 @@ class UserModelAdmin(BaseUserAdmin, SoftDeleteAdminMixin):
                     cognito = Cognito()
                     for group_name in cognito.list_user_groups(username):
                         try:
-                            cognito.remove_user_from_group(username, group_name)
+                            cognito.remove_user_from_role(username, group_name)
                         except Exception as e:
                             self.message_user(
                                 request,
@@ -165,7 +165,7 @@ class UserModelAdmin(BaseUserAdmin, SoftDeleteAdminMixin):
                             )
                     for group in obj.groups.all():
                         try:
-                            cognito.add_user_to_group(
+                            cognito.add_user_to_role(
                                 username, clean_group_name(group.name)
                             )
                         except Exception as e:
@@ -194,7 +194,7 @@ class UserModelAdmin(BaseUserAdmin, SoftDeleteAdminMixin):
                     user.groups.add(group)
                     if user.auth_provider == "cognito":
                         try:
-                            cognito.add_user_to_group(user.email, clean_name)
+                            cognito.add_user_to_role(user.email, clean_name)
                             added_users += 1
                         except Exception as e:
                             errors.append(f"User {user.email}: {str(e)}")
@@ -295,7 +295,7 @@ class GroupAdmin(admin.ModelAdmin):
                         users_in_old_group = old_group.user_set.all()
                         cognito.delete_group(old_name)
                         try:
-                            cognito.create_group(clean_name)
+                            cognito.create_role(clean_name)
                             self.message_user(
                                 request,
                                 f"Group renamed in Cognito: '{old_name}' → '{clean_name}'",
@@ -312,7 +312,7 @@ class GroupAdmin(admin.ModelAdmin):
                         for user in users_in_old_group:
                             if user.auth_provider == "cognito":
                                 try:
-                                    cognito.add_user_to_group(user.email, clean_name)
+                                    cognito.add_user_to_role(user.email, clean_name)
                                 except Exception as e:
                                     self.message_user(
                                         request,
@@ -321,7 +321,7 @@ class GroupAdmin(admin.ModelAdmin):
                                     )
                 else:
                     try:
-                        cognito.create_group(clean_name)
+                        cognito.create_role(clean_name)
                         self.message_user(
                             request, f"Cognito group '{clean_name}' created."
                         )

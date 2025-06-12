@@ -4,8 +4,8 @@ import re
 from datetime import datetime, timedelta
 from datetime import timezone as dt_timezone
 
-from core.models.auth_api.auth import AUTH_PROVIDER, SimpleToken
 from core.models import Token, TokenType, User
+from core.models.auth_api.auth import AUTH_PROVIDER, SimpleToken
 from core.services.google_service import Google
 from core.services.token_service import TokenService
 from django.conf import settings
@@ -14,7 +14,6 @@ from django.contrib.auth.hashers import make_password
 from django.contrib.auth.models import Group
 from django.db import transaction
 from django.utils import timezone
-from auth_api.totp_service import TOTPService
 from proj.base_serializer import BaseModelSerializer, BaseSerializer
 from proj.models import generate_password  # Import the function
 from rest_framework import serializers
@@ -25,6 +24,7 @@ from utils.email import EmailService
 from auth_api.constants import AuthResponseConstants
 from auth_api.cognito import Cognito
 from auth_api.custom_backend import LoginOnAuthBackend
+from auth_api.totp_service import TOTPService
 
 logger = logging.getLogger("django")
 
@@ -661,7 +661,7 @@ class CognitoSyncTokenSerializer(BaseSerializer):
         return "/"
 
 
-class CreateCognitoGroupSerializer(serializers.ModelSerializer):
+class CreateCognitoRoleSerializer(serializers.ModelSerializer):
     name = serializers.CharField()
     description = serializers.CharField(
         write_only=True, required=False, allow_blank=True
@@ -689,7 +689,7 @@ class CreateCognitoGroupSerializer(serializers.ModelSerializer):
                         f"Group '{group.name}' already exists in Cognito, skipping creation."
                     )
                 except Exception:
-                    cognito.create_group(
+                    cognito.create_role(
                         group_name=group.name,
                         description=description,
                         precedence=precedence,

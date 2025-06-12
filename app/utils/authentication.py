@@ -46,7 +46,7 @@ class CognitoAuthentication(BaseAuthentication):
                 raise DRFAuthenticationFailed("Missing 'kid' in token header")
 
             # Build issuer and JWKS URL based on user pool ID
-            COGNITO_ISSUER = f"https://cognito-idp.ap-south-1.amazonaws.com/{settings.COGNITO_USER_POOL_ID}"
+            COGNITO_ISSUER = f"https://cognito-idp.{settings.AWS_REGION}.amazonaws.com/{settings.COGNITO_USER_POOL_ID}"
             jwks_url = f"{COGNITO_ISSUER}/.well-known/jwks.json"
 
             response = requests.get(jwks_url, verify=certifi.where())
