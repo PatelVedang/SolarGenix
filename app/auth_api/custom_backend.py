@@ -1,3 +1,5 @@
+import logging
+
 from core.models import User
 from core.services.token_service import TokenService
 from django.contrib.auth.backends import ModelBackend
@@ -5,6 +7,8 @@ from django.utils.timezone import now
 from rest_framework.exceptions import AuthenticationFailed
 
 from .constants import AuthResponseConstants
+
+logger = logging.getLogger("django")
 
 
 class LoginOnAuthBackend(ModelBackend):
@@ -48,9 +52,7 @@ class LoginOnAuthBackend(ModelBackend):
             else:
                 # Return None if the password does not match, indicating failed authentication
                 return None
-        except User.DoesNotExist:
-            # If no user is found with the given email, return an AuthenticationFailed exception
-            # The 'INVALID_CREDENTIALS' constant can hold a custom error message for invalid credentials
+        except User.DoesNotExist:   
             raise AuthenticationFailed(AuthResponseConstants.INVALID_CREDENTIALS)
 
 

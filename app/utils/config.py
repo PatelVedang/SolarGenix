@@ -66,6 +66,11 @@ class Settings(BaseSettings):
 
     # CELERY_BROKER_URL: str = Field(default=None)
 
+
+    # ::::::::::::::: SLACK :::::::::::::::
+    SLACK_BASIC_URL: str
+    DJANGO_RUNTIME_ENVIRONMENT: str = Field(default="Local")
+
     # ::::::::::::: Cognito :::::::::::::
     AUTH_TYPE: str = Field(default="simplejwt")
     AWS_REGION: str | None = Field(default=None)
