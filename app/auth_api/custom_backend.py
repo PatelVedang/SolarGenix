@@ -52,7 +52,7 @@ class LoginOnAuthBackend(ModelBackend):
             else:
                 # Return None if the password does not match, indicating failed authentication
                 return None
-        except User.DoesNotExist:   
+        except User.DoesNotExist:
             raise AuthenticationFailed(AuthResponseConstants.INVALID_CREDENTIALS)
 
 

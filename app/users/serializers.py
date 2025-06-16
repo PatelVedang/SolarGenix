@@ -1,19 +1,17 @@
 import random
 import string
+import threading
 
-from core.models import TokenType, User
-from core.services.token_service import TokenService
+# from auth_api.models import SimpleToken, TokenType, User
+from core.models import SimpleToken, TokenType, User
 from django.conf import settings
 from proj.base_serializer import BaseModelSerializer
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
-
-# from auth_api.models import SimpleToken, TokenType, User
-from core.models import SimpleToken, TokenType, User
-from utils.custom_exception import CustomValidationError
-from utils.email import EmailService, send_email
 from users.constants import UserResponseConstants
-import threading
+from utils.custom_exception import CustomValidationError
+from utils.email import send_email
+
 
 class UserSerializer(BaseModelSerializer):
     email = serializers.EmailField(
@@ -57,10 +55,10 @@ class UserSerializer(BaseModelSerializer):
         raw_password = self.generate_password()
         if not raw_password:
             raise CustomValidationError(UserResponseConstants.ERROR_GENERATING_PASS)
- 
+
         validated_data["password"] = raw_password
         validated_data["is_active"] = False  # Activate the user
- 
+
         try:
             user = User.objects.create_user(**validated_data)
         except Exception as e:
@@ -89,7 +87,7 @@ class UserSerializer(BaseModelSerializer):
         except Exception as e:
             print(f"Error sending email: {e}")
             raise CustomValidationError(UserResponseConstants.ERROR_SENDING_EMAIL)
- 
+
         return user
 
     def update(self, instance, validated_data):

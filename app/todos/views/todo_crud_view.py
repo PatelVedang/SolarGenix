@@ -1,12 +1,13 @@
 # from auth_api.permissions import IsAuthenticated
+from auth_api.permissions import IsAuthenticated
+from core.models import Todo
 from proj.base_view import BaseModelViewSet
 from rest_framework.decorators import action
-from auth_api.permissions import IsAuthenticated
 from utils.custom_filter import filter_model
 from utils.make_response import response
 from utils.swagger import apply_swagger_tags
-from core.models import Todo
-from .serializers import TodoSerializer
+
+from todos.serializers import TodoSerializer
 
 
 @apply_swagger_tags(
@@ -36,6 +37,7 @@ class TodoViewSet(BaseModelViewSet):
     def get_all(self, request, *args, **kwargs):
         self.pagination_class = None
         serializer = self.get_serializer(self.get_queryset(), many=True)
+
         return response(
             data=serializer.data,
             message=self.get_message(request, *args, **kwargs),
