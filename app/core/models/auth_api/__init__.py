@@ -1,8 +1,10 @@
-from .auth import Token, TokenType, User ,SimpleToken
+# Add New Imports
+from .auth import SimpleToken, Token, TokenType, User
 
 __all__ = [
     "User",
     "Token",
     "TokenType",
-    "SimpleToken"
+    "SimpleToken",
+    # Add New Model below
 ]

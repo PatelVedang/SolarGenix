@@ -1,18 +1,18 @@
-from datetime import datetime, timedelta
 import logging
 import uuid
+from datetime import datetime, timedelta
+
 import jwt
+from auth_api.managers import UserManager
 from django.conf import settings
-from django.contrib.auth.models import AbstractUser, PermissionsMixin, Group
+from django.contrib.auth.models import AbstractUser, Group, PermissionsMixin
 from django.db import models
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
-from auth_api.managers import UserManager
 from proj.models import BaseModel
 from rest_framework.exceptions import AuthenticationFailed
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.tokens import Token as BaseToken
-
 
 logger = logging.getLogger("django")
 
