@@ -561,8 +561,6 @@ class ${SINGULAR_CAPITALIZED_MODEL_TESTS}(BaseAPITestCase):
         self.login()
         self.set_response(self.client.delete(f"{self.url}111/"))
         self.match_error_response(404)
-
-
 EOL
 
 # Ensure settings file is saved and changes are applied
