@@ -16,7 +16,7 @@ from rest_framework import status
 from rest_framework.test import APITestCase
 
 from auth_api.cognito import Cognito
-from auth_api.totp_service import TOTPService
+from auth_api.services.totp_service import TOTPService
 
 
 class BaseAPITestCase(APITestCase):
@@ -830,18 +830,21 @@ class CognitoIntegrationTest(BaseAPITestCase):
 
 class TOTPServiceTestCase(APITestCase):
     def setUp(self):
+        """Initializes the test case by creating a user and an instance of TOTPService."""
         self.user = User.objects.create_user(
             email="totpuser@yopmail.com", password="Test@1234"
         )
         self.totp_service = TOTPService(self.user)
 
     def test_generate_secret(self):
+        """Tests the generation of a TOTP secret and verifies it is saved to the user."""
         secret = self.totp_service.generate_secret()
         self.assertTrue(secret)
         self.user.refresh_from_db()
         self.assertEqual(self.user.totp_secret, secret)
 
     def test_get_provisioning_uri(self):
+        """Tests the generation of a provisioning URI for TOTP."""
         self.totp_service.generate_secret()
         uri = self.totp_service.get_provisioning_uri()
         encoded_email = urllib.parse.quote(self.user.email)
@@ -849,11 +852,13 @@ class TOTPServiceTestCase(APITestCase):
         self.assertTrue(uri.startswith("otpauth://totp/"))
 
     def test_generate_qr_code_url(self):
+        """Tests the generation of a QR code URL for TOTP."""
         self.totp_service.generate_secret()
         qr_url = self.totp_service.generate_qr_code_url()
         self.assertTrue(qr_url.startswith("data:image/png;base64,"))
 
     def test_verify_code(self):
+        """Tests the verification of a TOTP code."""
         secret = self.totp_service.generate_secret()
         totp = pyotp.TOTP(secret)
         code = totp.now()

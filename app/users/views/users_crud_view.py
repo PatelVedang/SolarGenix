@@ -27,6 +27,30 @@ from utils.swagger import apply_swagger_tags
     },
 )
 class UserViewSet(BaseModelViewSet):
+    """
+    A viewset for managing User objects with CRUD operations, custom permissions, and export functionality.
+
+    Features:
+    - Restricts access to user data based on authentication and user roles.
+    - Superusers can view and create all users; regular users can only view their own data.
+    - Custom permission for deleting users (superadmin or owner only).
+    - Supports filtering users via query parameters.
+    - Provides an endpoint to retrieve all users without pagination.
+    - Allows exporting user data in CSV or JSON format with selectable fields (admin only).
+
+    Endpoints:
+    - list/retrieve/update/destroy: Standard DRF actions with custom permission logic.
+    - create: Only superusers can create new users.
+    - get_all: GET /users/get_all/ — Returns all users without pagination.
+    - export_users: GET /users/export-users/ — Exports user data in CSV or JSON (admin only).
+
+    Customizations:
+    - get_permissions: Applies custom delete permission.
+    - get_queryset: Filters queryset based on user role and query parameters.
+    - create: Restricts creation to superusers.
+    - get_all: Returns all users without pagination.
+    - export_users: Exports user data with selectable fields and format.
+    """
     queryset = User.objects.all()
     serializer_class = UserSerializer
 
@@ -41,6 +65,16 @@ class UserViewSet(BaseModelViewSet):
         return super().get_permissions()
 
     def get_queryset(self):
+        """
+        Returns a queryset of User objects based on the requesting user's permissions and optional query parameters.
+
+        - If the requesting user is a superuser, returns all User objects.
+        - Otherwise, returns only the User object corresponding to the requesting user.
+        - If query parameters are present, applies additional filtering using the `filter_model` function.
+
+        Returns:
+            QuerySet: A Django QuerySet of filtered User objects.
+        """
         queryset = (
             User.objects.all()
             if self.request.user.is_superuser
@@ -62,6 +96,7 @@ class UserViewSet(BaseModelViewSet):
 
     @action(methods=["GET"], detail=False, url_path="get_all")
     def get_all(self, request, *args, **kwargs):
+        """Get all user records without pagination."""
         self.pagination_class = None
         serializer = self.get_serializer(self.get_queryset(), many=True)
         return response(
@@ -101,6 +136,7 @@ class UserViewSet(BaseModelViewSet):
         pagination_class=BasePagination,
     )
     def export_users(self, request, *args, **kwargs):
+        """Export user data in CSV or JSON format."""
         service = ExportUsersService()
         response_data = service.post_execute(request)
 

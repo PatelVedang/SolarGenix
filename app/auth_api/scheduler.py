@@ -10,8 +10,19 @@ logger = logging.getLogger("django")
 
 
 def start():
+    """
+    Starts the background scheduler to periodically clean expired tokens.
+
+    This function initializes a BackgroundScheduler, schedules the `clean_expired_tokens`
+    job to run daily at midnight UTC, and starts the scheduler. It also ensures that the
+    scheduler is shut down cleanly when the application exits.
+
+    Raises:
+        Exception: If the scheduler fails to start or shut down properly.
+    """
+
     scheduler = BackgroundScheduler()
-        
+
     # Run the job every day at midnight UTC
     scheduler.add_job(
         clean_expired_tokens,

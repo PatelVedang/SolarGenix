@@ -18,7 +18,7 @@ def filter_model(
 
     Returns:
         QuerySet[Model]: The filtered queryset.
-    """ 
+    """
 
     filter_q = Q()
     sorting = query_params.get("sort")
@@ -65,6 +65,7 @@ def filter_model(
                 else:
                     filter_expr = f"{field}__{lookup_type}" if lookup_type else field
 
+                # Handle different lookup types (not_in is custom case where we want to exclude values)
                 if lookup_type == "not_in":
                     filter_expr = f"{field}__in"
                     lookup = [val.strip() for val in value.split(",") if val.strip()]
@@ -107,5 +108,3 @@ def filter_model(
 
     queryset = queryset.filter(filter_q)
     return queryset
-
- 

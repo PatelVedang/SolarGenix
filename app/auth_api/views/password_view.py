@@ -29,6 +29,22 @@ logger = logging.getLogger("django")
     },
 )
 class ChangePasswordView(APIView):
+    """
+    API view for handling user password change requests.
+
+    This view allows authenticated users to change their password by submitting the required data.
+    It uses the `ChangePasswordSerializer` to validate and process the password change.
+
+    Methods:
+        post(request):
+            Handles POST requests to change the user's password.
+            Expects the request data to contain the necessary fields as defined in the serializer.
+            Returns HTTP 204 No Content on successful password change.
+
+    Permissions:
+        Only accessible to authenticated users.
+    """
+
     permission_classes = [IsAuthenticated]
     serializer_class = ChangePasswordSerializer
 
@@ -51,6 +67,20 @@ class ChangePasswordView(APIView):
     },
 )
 class ForgotPasswordView(APIView):
+    """
+    API view to handle forgot password requests.
+
+    This view accepts POST requests with user data (typically an email address)
+    to initiate the password reset process. It uses a custom throttle class to
+    limit request rates and validates input using the ForgotPasswordSerializer.
+
+    Methods:
+        post(request):
+            Validates the provided data and, if valid, initiates the password
+            reset process (such as sending a reset email). Returns HTTP 204 No Content
+            on success.
+    """
+
     throttle_classes = [custom_throttling.CustomAuthThrottle]
     serializer_class = ForgotPasswordSerializer
 
@@ -79,15 +109,23 @@ class ForgotPasswordView(APIView):
     },
 )
 class UserPasswordResetView(APIView):
+    """
+    API view to handle user password reset requests.
+
+    This view allows unauthenticated users to reset their password using a provided token.
+    It applies custom throttling and uses the `UserPasswordResetSerializer` to validate the request data.
+
+    Methods:
+        post(request, token): Validates the password reset data and processes the password reset.
+            - Parameters:
+                request (Request): The HTTP request object containing the new password data.
+                token (str): The password reset token.
+            - Returns:
+                HTTP 204 No Content on successful password reset.
+    """
     permission_classes = [AllowAny]
     throttle_classes = [custom_throttling.CustomAuthThrottle]
     serializer_class = UserPasswordResetSerializer
-
-    """
-    This endpoint is used to reset a user's password.
-    The password reset process will only be completed if the password provided matches the password validation .
-    Upon successful password reset, the user's password will be updated, allowing them to login using the new password.
-    """
 
     def post(self, request, token):
         serializer = UserPasswordResetSerializer(

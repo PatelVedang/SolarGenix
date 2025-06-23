@@ -594,6 +594,7 @@ class UserTestCase(BaseAPITestCase):
         self.assertEqual(res_error.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_regular_user_cannot_access_export(self):
+        """Test to ensure that a regular user cannot access the export users endpoint."""
         self.regular_user = User.objects.create_user(
             email="user@example.com", password="userpass"
         )

@@ -1,13 +1,37 @@
 import time
-from rest_framework.permissions import BasePermission
+
+from auth_api.cognito import Cognito
 from rest_framework.exceptions import AuthenticationFailed
 from rest_framework.permissions import BasePermission
 from rest_framework_simplejwt.tokens import UntypedToken
+
 from app.core.models.auth_api.auth import Token
-from auth_api.cognito import Cognito
 
 
 class IsTokenValid(BasePermission):
+    """
+    Custom DRF permission class to validate authentication tokens from incoming requests.
+
+    This permission checks for a valid Bearer token in the Authorization header, or alternatively
+    looks for token values in request data or URL kwargs. It supports validation for both AWS Cognito
+    JWT tokens and custom Token model tokens.
+
+    Token validation steps:
+    1. Attempt to extract a Bearer token from the Authorization header.
+    2. If not found, search for known token types in request data.
+    3. If still not found, check for a 'token' in the URL kwargs.
+    4. Raise AuthenticationFailed if no token is found.
+    5. If a token is found, attempt to decode and validate it as a Cognito JWT access token.
+    6. If Cognito validation fails, check for existence in the custom Token model.
+    7. Raise AuthenticationFailed if the token does not exist or is invalid.
+
+    Returns:
+        bool: True if a valid token is found and passes validation, otherwise raises AuthenticationFailed.
+
+    Raises:
+        AuthenticationFailed: If the token is missing, invalid, expired, or blacklisted.
+    """
+
     def has_permission(self, request, view):
         token = None
 

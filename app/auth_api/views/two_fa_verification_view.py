@@ -29,6 +29,21 @@ logger = logging.getLogger("django")
     },
 )
 class User2FASetupView(APIView):
+    """
+    View for handling user 2FA (Two-Factor Authentication) setup requests.
+
+    This view allows users to initiate the setup process for two-factor authentication.
+    It accepts POST requests with the necessary data, validates the input using
+    `User2FASetupSerializer`, and returns a success response upon successful setup.
+
+    Methods:
+        post(request):
+            Handles POST requests to set up 2FA for a user. Validates the input data,
+            saves the setup information, and returns a success message.
+
+    Permissions:
+        AllowAny: This view is accessible to any user (authenticated or not).
+    """
     permission_classes = [AllowAny]
     serializer_class = User2FASetupSerializer
 
@@ -49,6 +64,24 @@ class User2FASetupView(APIView):
     },
 )
 class User2FAVerifyView(APIView):
+    """
+    API endpoint for verifying a user's two-factor authentication (2FA) code using TOTP.
+
+    POST:
+        Verifies the provided 2FA code for a user. Expects the request data to contain the necessary
+        fields as defined by the `User2FAVerifySerializer`. If verification is successful, returns
+        a success response with HTTP 200 status and a login success message.
+
+    Permissions:
+        - AllowAny: This endpoint is accessible without authentication.
+
+    Throttling:
+        - CustomAuthThrottle: Applies custom throttling to prevent abuse.
+
+    Returns:
+        - 200 OK: If the 2FA code is valid and verification succeeds.
+        - Appropriate error response if verification fails.
+    """
     throttle_classes = [custom_throttling.CustomAuthThrottle]
     serializer_class = User2FAVerifySerializer
     permission_classes = [AllowAny]

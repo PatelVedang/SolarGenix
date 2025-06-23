@@ -1,9 +1,11 @@
-from django.contrib import admin
 from core.models import Todo
+from django.contrib import admin
 
 
 @admin.register(Todo)
 class TodoAdmin(admin.ModelAdmin):
+    """Admin interface for managing Todo items."""
+
     list_display = (
         "name",
         "description",

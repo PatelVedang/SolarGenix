@@ -10,6 +10,27 @@ class NonDeleted(models.Manager):
 
 
 class BaseModel(models.Model):
+    """
+    Abstract base model providing soft delete functionality and timestamp fields.
+
+    Attributes:
+        id (UUIDField): Primary key, unique identifier for each record.
+        is_deleted (BooleanField): Indicates if the record is soft-deleted.
+        created_at (DateTimeField): Timestamp when the record was created.
+        updated_at (DateTimeField): Timestamp when the record was last updated.
+        default (Manager): Default model manager.
+        objects (NonDeleted): Custom manager that filters out soft-deleted records.
+
+    Methods:
+        delete(*args, **kwargs): Soft deletes the record by setting is_deleted to True.
+        soft_delete(): Alias for delete(), soft deletes the record.
+        restore(): Restores a soft-deleted record by setting is_deleted to False.
+        hard_delete(): Permanently deletes the record from the database.
+
+    Meta:
+        abstract (bool): Indicates that this model is abstract and should not be used to create any database table.
+        ordering (tuple): Default ordering for querysets, newest records first.
+    """
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     is_deleted = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True, null=True)

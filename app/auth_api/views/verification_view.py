@@ -29,6 +29,22 @@ logger = logging.getLogger("django")
     },
 )
 class VerifyEmailView(APIView):
+    """
+    API view for verifying user email addresses.
+
+    This view accepts a verification token as a URL parameter and validates it using the VerifyEmailSerializer.
+    If the token is valid, it returns a 204 No Content response.
+
+    Methods:
+        get(request, token): Validates the provided email verification token.
+
+    Permissions:
+        AllowAny: No authentication required.
+
+    Throttling:
+        CustomAuthThrottle: Applies custom throttling to prevent abuse.
+    """
+
     permission_classes = [AllowAny]
     throttle_classes = [custom_throttling.CustomAuthThrottle]
 
@@ -48,6 +64,20 @@ class VerifyEmailView(APIView):
     },
 )
 class ResendVerificationEmailView(APIView):
+    """
+    API view to handle resending of verification emails.
+
+    This view accepts a POST request with user data, validates the input using
+    the ResendVerificationEmailSerializer, and triggers the process to resend
+    a verification email if the data is valid. Throttling is applied to prevent
+    abuse, and the endpoint is accessible to unauthenticated users.
+
+    Methods:
+        post(request): Validates the request data and initiates the resend
+                       verification email process. Returns HTTP 204 No Content
+                       on success.
+    """
+
     throttle_classes = [custom_throttling.CustomAuthThrottle]
     permission_classes = [AllowAny]
     serializer_class = ResendVerificationEmailSerializer
@@ -68,6 +98,24 @@ class ResendVerificationEmailView(APIView):
     },
 )
 class SendOTPView(APIView):
+    """
+    API view to handle sending OTP (One-Time Password) to user's email.
+
+    This view accepts POST requests with user data, validates the input using
+    SendOTPSerializer, and, upon successful validation, triggers the process
+    to send an OTP to the user's email address. The response includes the
+    validated data and a success message.
+
+    Attributes:
+        throttle_classes (list): List of throttle classes applied to the view.
+        serializer_class (Serializer): Serializer class used for input validation.
+
+    Methods:
+        post(request):
+            Handles POST requests to send an OTP to the user's email.
+            Validates the request data and returns a response indicating
+            the OTP has been sent.
+    """
     throttle_classes = [custom_throttling.CustomAuthThrottle]
     serializer_class = SendOTPSerializer
 
@@ -92,6 +140,18 @@ class SendOTPView(APIView):
     },
 )
 class VerifyOTPView(APIView):
+    """
+    API view for verifying OTP (One-Time Password).
+
+    This view handles POST requests to verify an OTP provided by the user.
+    It uses the `VerifyOTPSerializer` to validate the input data.
+    If the data is valid, it returns a 204 No Content response.
+
+    Methods:
+        post(request):
+            Validates the OTP using the serializer and returns an appropriate response.
+    """
+
     serializer_class = VerifyOTPSerializer
 
     def post(self, request):
@@ -110,6 +170,17 @@ class VerifyOTPView(APIView):
     },
 )
 class ResetPasswordOTP(APIView):
+    """
+    API view for handling password reset via OTP (One-Time Password).
+
+    This view accepts a POST request with the required data to initiate a password reset process using an OTP.
+    It validates the input using the `ResetPasswordOTPSerializer`. If the data is valid, it returns a 204 No Content response.
+
+    Methods:
+        post(request):
+            Validates the request data using `ResetPasswordOTPSerializer` and returns a 204 status code on success.
+    """
+
     serializer_class = ResetPasswordOTPSerializer
 
     def post(self, request):

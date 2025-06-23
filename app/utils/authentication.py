@@ -17,6 +17,18 @@ User = get_user_model()
 
 
 class CustomJWTAuthentication(JWTAuthentication):
+    """
+    Custom JWT authentication class that extends the base JWTAuthentication.
+    Overrides:
+        get_user(validated_token):
+            Retrieves the user associated with the validated JWT token.
+            Raises an AuthenticationFailed exception if the user is marked as deleted.
+    Raises:
+        AuthenticationFailed: If the user is marked as deleted.
+    Returns:
+        User instance if authentication is successful and the user is not deleted.
+    """
+ 
     def get_user(self, validated_token):
         user = super().get_user(validated_token)
 
@@ -30,6 +42,25 @@ class CustomJWTAuthentication(JWTAuthentication):
 
 
 class CognitoAuthentication(BaseAuthentication):
+    """
+    Custom authentication class for Django REST Framework that validates JWT tokens issued by AWS Cognito.
+
+    This class performs the following steps:
+    1. Extracts the Bearer token from the Authorization header.
+    2. Validates the token format and structure.
+    3. Retrieves the JWT header and extracts the 'kid' (key ID).
+    4. Fetches the JSON Web Key Set (JWKS) from the Cognito user pool to obtain the public key.
+    5. Decodes and verifies the JWT signature using the public key.
+    6. Validates the token's audience and issuer claims.
+    7. Retrieves or creates a User object based on the Cognito 'sub' claim.
+
+    Raises:
+        DRFAuthenticationFailed: If the token is missing, malformed, invalid, or verification fails at any step.
+
+    Returns:
+        tuple: (user, token) if authentication is successful; otherwise, returns None.
+    """
+
     def authenticate(self, request):
         token = request.headers.get("Authorization")
         if not token or not token.startswith("Bearer "):
@@ -40,7 +71,9 @@ class CognitoAuthentication(BaseAuthentication):
             return None
 
         try:
-            header = jwt.get_unverified_header(token)
+            header = jwt.get_unverified_header(
+                token
+            )  # Get the JWT header without verifying the signature
             kid = header.get("kid")
             if not kid:
                 raise DRFAuthenticationFailed("Missing 'kid' in token header")
@@ -49,7 +82,10 @@ class CognitoAuthentication(BaseAuthentication):
             COGNITO_ISSUER = f"https://cognito-idp.{settings.AWS_REGION}.amazonaws.com/{settings.COGNITO_USER_POOL_ID}"
             jwks_url = f"{COGNITO_ISSUER}/.well-known/jwks.json"
 
-            response = requests.get(jwks_url, verify=certifi.where())
+            response = requests.get(
+                jwks_url, verify=certifi.where()
+            )  # Use certifi to verify SSL certificates
+
             if response.status_code != 200:
                 raise DRFAuthenticationFailed(
                     AuthResponseConstants.INVALID_COGNITO_TOKEN
