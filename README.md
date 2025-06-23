@@ -30,6 +30,7 @@ The `filter_model` function is a utility designed to filter a Django `QuerySet` 
   - [Example 2: Sort and Select](#example-2-sort-and-select)
   - [Example 3: Complex Filtering with ForeignKey](#example-3-complex-filtering-with-foreignkey)
   - [Example 4: Exclude Using `not_in`](#example-4-exclude-using-not_in)
+- [.gitignore](#gitignore)
 - [Notes](#notes)
 
 ## Function Signature
@@ -234,6 +235,15 @@ GET /api/orders/?status=completed&customer__id=5&order_date__lte=2023-01-01
 GET /api/products/?category__id__not_in=3,4,5
 ```
 - **Action**: Excludes products where `category__id` is 3, 4, or 5.
+
+## .gitignore
+```.gitignore
+**/scripts/
+.cz.toml
+setup.ps1
+.pre-commit-config.yaml
+```
+- **Note**: Before pushing code to production(before first commit and push to origin), ensure that all non-essential files and directories (such as scripts/) are properly listed in the .gitignore file to prevent them from being included in the production environment.
 
 ## Notes
 
