@@ -24,6 +24,22 @@ class TokenService(BaseToken):
 
     @classmethod
     def for_user(cls, user, token_type, lifetime, jti=None):
+        """
+        Generates and stores a token for a given user.
+
+        Args:
+            user (User): The user instance for whom the token is being generated.
+            token_type (str): The type of token to generate (e.g., "access", "refresh", or custom types).
+            lifetime (timedelta): The duration for which the token is valid.
+            jti (str, optional): The JWT ID for the token. If not provided, a new one is generated.
+
+        Returns:
+            Token: The generated token instance.
+
+        Side Effects:
+            - Deletes existing tokens of the same custom type for the user (if token_type is not "access" or "refresh").
+            - Creates and stores a new token in the database.
+        """
         token = cls(token_type=token_type, lifetime=lifetime)
         token["jti"] = jti or token["jti"]
         token["user_id"] = str(user.id)
@@ -41,6 +57,21 @@ class TokenService(BaseToken):
 
     @classmethod
     def decode(cls, token):
+        """
+        Decodes a JWT token using the application's secret key.
+
+        Attempts to decode the provided JWT token with the HS256 algorithm.
+        Raises an AuthenticationFailed exception if the token is expired, invalid, or cannot be decoded.
+
+        Args:
+            token (str): The JWT token to decode.
+
+        Returns:
+            dict: The decoded payload of the JWT token.
+
+        Raises:
+            AuthenticationFailed: If the token is expired, invalid, or cannot be decoded.
+        """
         try:
             return jwt.decode(
                 token, settings.SECRET_KEY, algorithms=["HS256"], verify=True
@@ -57,6 +88,19 @@ class TokenService(BaseToken):
 
     @classmethod
     def validate_token(cls, token, token_type):
+        """
+        Validates a given token by decoding its payload, checking its type, and ensuring it exists and is valid in the database.
+
+        Args:
+            token (str): The JWT token string to be validated.
+            token_type (str): The expected type of the token (e.g., 'access', 'refresh').
+
+        Returns:
+            dict: The decoded payload of the token with an additional "token_obj" key containing the Token instance.
+
+        Raises:
+            AuthenticationFailed: If the token is invalid, expired, blacklisted, or associated with an inactive or deleted user.
+        """
         payload = cls.decode(token)
 
         if payload["token_type"] != token_type:
@@ -84,6 +128,23 @@ class TokenService(BaseToken):
 
     @classmethod
     def auth_tokens(cls, user):
+        """
+        Generates and stores authentication tokens (access and refresh) for a given user.
+
+        This method creates JWT access and refresh tokens for the specified user, saves their metadata
+        (including user, token type, unique identifier (jti), and expiration time) in the Token model,
+        and returns the tokens along with their expiration timestamps.
+
+        Args:
+            user (User): The user instance for whom the tokens are being generated.
+
+        Returns:
+            dict: A dictionary containing the access and refresh tokens and their expiration times.
+                Example:
+                    {
+                        "access": {"token": "<access_token>", "expires": <access_expiry_timestamp>},
+                        "refresh": {"token": "<refresh_token>", "expires": <refresh_expiry_timestamp>},
+        """
         refresh_token = RefreshToken.for_user(user)
         access_token = refresh_token.access_token
         jti = access_token["jti"]

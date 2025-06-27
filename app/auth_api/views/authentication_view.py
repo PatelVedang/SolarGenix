@@ -29,6 +29,16 @@ logger = logging.getLogger("django")
     },
 )
 class UserLoginView(APIView):
+    """
+    UserLoginView handles user authentication via POST requests.
+
+    This view applies custom throttling to limit login attempts and uses the UserLoginSerializer
+    for validating login credentials. On successful authentication, it returns a response with
+    user data and a success message.
+
+    Methods:
+        post(request): Authenticates the user with provided credentials and returns a success response.
+    """
     throttle_classes = [custom_throttling.CustomAuthThrottle]
     serializer_class = UserLoginSerializer
     permission_classes = []
@@ -53,6 +63,17 @@ class UserLoginView(APIView):
     },
 )
 class UserRegistrationView(APIView):
+    """
+    API view for user registration.
+
+    This view handles POST requests to register a new user. It applies custom authentication throttling
+    and uses the `UserRegistrationSerializer` for validating input data. Upon receiving a POST request,
+    it delegates the registration logic to the `UserRegisterViewService`, and returns a response with
+    the registration result, HTTP 201 status code, and a success message.
+
+    Methods:
+        post(request): Handles user registration via POST request.
+    """
     throttle_classes = [custom_throttling.CustomAuthThrottle]
     serializer_class = UserRegistrationSerializer
 
@@ -76,6 +97,22 @@ class UserRegistrationView(APIView):
     },
 )
 class UserProfileView(APIView):
+    """
+    UserProfileView handles retrieval of the authenticated user's profile information.
+
+    Methods:
+        get(request):
+            Returns the serialized profile data of the currently authenticated user.
+
+    Permissions:
+        - Requires the user to be authenticated.
+
+    Throttling:
+        - Applies custom authentication throttling via CustomAuthThrottle.
+
+    Responses:
+        - 200 OK: Returns the user's profile data with a success message.
+    """
     permission_classes = [IsAuthenticated]
     throttle_classes = [custom_throttling.CustomAuthThrottle]
 
@@ -98,6 +135,16 @@ class UserProfileView(APIView):
     },
 )
 class LogoutView(APIView):
+    """
+    Handles user logout requests.
+
+    This view accepts POST requests from authenticated users to log them out of the system.
+    It uses the `LogoutSerializer` to validate the request data and requires the user to be authenticated.
+    Upon successful logout, it returns a 204 No Content response.
+
+    Methods:
+        post(request): Logs out the authenticated user after validating the request data.
+    """
     serializer_class = LogoutSerializer
     permission_classes = [IsAuthenticated]
 

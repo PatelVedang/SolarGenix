@@ -32,7 +32,6 @@ urlpatterns = [
         include(
             [
                 # IMPORT_NEW_ROUTE_HERE
-                # path("", include("auth_api.urls")),
                 path("", include("auth_api.urls")),
                 path("", include("users.urls")),
                 path("", include("todos.urls")),
@@ -52,9 +51,9 @@ urlpatterns = [
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
 
-'''The lines `handler404 = 'proj.base_view.handler404'` and `handler500 = 'proj.base_view.handler500'`
+"""The lines `handler404 = 'proj.base_view.handler404'` and `handler500 = 'proj.base_view.handler500'`
 in the Django URL configuration are setting custom error handlers for handling HTTP 404 (Page Not
-Found) and HTTP 500 (Server Error) responses.'''
+Found) and HTTP 500 (Server Error) responses."""
 handler404 = "proj.base_view.handler404"  # noqa
 handler500 = "proj.base_view.handler500"  # noqa
 

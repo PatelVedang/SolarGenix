@@ -6,6 +6,16 @@ from auth_api.serializers import CognitoSyncTokenSerializer, CreateCognitoRoleSe
 
 
 class CognitoSyncTokensViewService:
+    """
+    Service class for handling synchronization of Cognito tokens and preparing user authentication responses.
+    Methods:
+        post_execute(request):
+            Handles the POST request to synchronize Cognito tokens. Validates the incoming data using
+            CognitoSyncTokenSerializer, saves the user and redirect URL, and returns a formatted response.
+        prepare_response(user, serializer, redirect_url):
+            Prepares and returns a response containing user information, Cognito tokens, and a redirect URL.
+    """
+    
     def post_execute(self, request):
         serializer = CognitoSyncTokenSerializer(data=request.query_params)
         serializer.is_valid(raise_exception=True)
@@ -34,6 +44,17 @@ class CognitoSyncTokensViewService:
 
 
 class CreateCognitoRoleAPIViewService:
+    """
+    Service class for handling the creation of Cognito groups and their corresponding Django model instances.
+
+    Methods:
+        post_execute(request):
+            Handles the POST request to create a new Cognito group and its Django model representation.
+            Validates the incoming request data using CreateCognitoRoleSerializer.
+            On successful validation and creation, returns a success response with the group name.
+            Handles exceptions during group creation and returns an error response if any issues occur.
+            Returns validation errors if the input data is invalid.
+    """
     def post_execute(self, request):
         serializer = CreateCognitoRoleSerializer(data=request.data)
         if serializer.is_valid():

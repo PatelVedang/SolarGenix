@@ -39,12 +39,12 @@ def custom_exception_handler(exc, context):
         origin_func = frame.f_code.co_name
         origin_line = tb.tb_lineno
 
+        # Prepare extra dictionary for logging for extract the exact location of the exception
         extra_dict = {
             "origin_file": origin_file,
             "origin_func": origin_func,
             "origin_line": origin_line,
         }
-
 
         handlers = {
             "NotAuthenticated": _handler_authentication_error,
@@ -68,8 +68,7 @@ def custom_exception_handler(exc, context):
         else:
             message = str(exc)
 
-
-        # Level-wise logging
+        # Level-wise logging based on exception class (also handdele the slack channel)
         if exception_class == "ValidationError":
             logger.warning(
                 f"[{view_name}] Validation failed at {path}: {message}",
@@ -117,7 +116,6 @@ def custom_exception_handler(exc, context):
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                 message="validation errors",
             )
-
 
         return response(data={}, status_code=res.status_code, message=message)
 

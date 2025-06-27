@@ -29,11 +29,14 @@ logger = logging.getLogger("django")
 )
 class CognitoSyncTokensView(APIView):
     """
-    This view is called by Cognito after user login via the hosted UI.
-    It receives the `code` as a query param, exchanges it for tokens,
-    manages the user and tokens, and returns the relevant data.
+    APIView for synchronizing Cognito tokens.
+    This view handles GET requests to synchronize tokens with AWS Cognito.
+    It uses the `CognitoSyncTokenSerializer` for serialization and delegates
+    the main logic to `CognitoSyncTokensViewService`.
+    Methods:
+        get(request): Handles GET requests and returns the response from the service layer.
     """
-
+ 
     serializer_class = CognitoSyncTokenSerializer
 
     def get(self, request):
@@ -52,6 +55,16 @@ class CognitoSyncTokensView(APIView):
     },
 )
 class CreateCognitoRoleAPIView(APIView):
+    """
+    API view for creating a Cognito role.
+    This view handles POST requests to create a new Cognito role using the provided serializer.
+    It requires the user to be authenticated.
+    Methods:
+        post(request):
+            Handles the creation of a Cognito role by delegating to the CreateCognitoRoleAPIViewService.
+            Returns the response data from the service.
+    """
+     
     permission_classes = [IsAuthenticated]
     serializer_class = CreateCognitoRoleSerializer
 

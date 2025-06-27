@@ -2,25 +2,43 @@ import logging
 import threading
 import traceback
 
-from core.models import TokenType, User 
+# from auth_api.models import TokenType, User
+from core.models import TokenType, User
 from core.services.token_service import TokenService
 from django.conf import settings
 from django.core.mail import EmailMessage
 from django.template.loader import render_to_string
 from django.utils.html import strip_tags
 
-# from auth_api.models import SimpleToken, TokenType, User
-from core.models import SimpleToken, TokenType, User
-from utils.constant import EmailTemplates
-
-
 logger = logging.getLogger("django")
 
 
 def send_email(**kwargs):
     """
-    Sends an email with optional subject, body, recipients, attachments,
-    and HTML content using a template or string.
+    Sends an email with optional HTML content, attachments, and dynamic context.
+
+    Keyword Args:
+        subject (str): Subject of the email.
+        body (str): Plain text body of the email (HTML tags will be stripped).
+        recipients (list): List of recipient email addresses.
+        bcc (list, optional): List of BCC recipient email addresses.
+        attachments (list, optional): List of attachments, each as a dict with keys:
+            - "path": File path to the attachment.
+            - "name": Name of the attachment file.
+            - "mime-type": MIME type of the attachment.
+        html_template (str, optional): Name of the HTML template (without .html extension) to render as the email body.
+        html_string (str, optional): Raw HTML string to use as the email body (overrides html_template if provided).
+        full_name (str, optional): Full name to be passed to the template context.
+        otp (str, optional): OTP value to be passed to the template context.
+        password (str, optional): Password to be passed to the template context.
+        email (str, optional): Email address to be passed to the template context.
+        button_links (list, optional): List of button links to be passed to the template context.
+
+    Returns:
+        bool: Always returns True, regardless of success or failure.
+
+    Exceptions:
+        Logs and prints any exceptions that occur during email sending.
     """
     try:
         # Create the email message
@@ -89,7 +107,23 @@ class EmailService:
         password=None,
         email=None,
     ):
-        """Creates a context dictionary for email sending."""
+        """
+        Creates a context dictionary for sending emails with customizable fields.
+
+        Args:
+            subject (str): The subject of the email.
+            recipients (list): List of recipient email addresses.
+            button_link (str or None): URL for the button in the email. If None, button_links is omitted from context.
+            html_template (str): Path or identifier for the HTML template to use.
+            title (str): Title to display in the email.
+            full_name (str): Full name of the recipient.
+            otp (str, optional): One-time password or code to include in the email. Defaults to None.
+            password (str, optional): Password to include in the email. Defaults to None.
+            email (str, optional): Email address to include in the context. Defaults to None.
+
+        Returns:
+            dict: A dictionary containing the email context to be used for rendering templates or sending emails.
+        """
         context_dict = {
             "subject": subject,
             "user": self.user,
@@ -116,6 +150,15 @@ class EmailService:
         return context_dict
 
     def send_verification_email(self):
+        """
+        Sends a verification email to the user with a unique verification token.
+
+        This method generates a verification token for the user, constructs a verification link,
+        prepares the email context with relevant details, and sends the verification email asynchronously.
+
+        Returns:
+            None
+        """
         verify_token = TokenService.for_user(
             self.user,
             TokenType.VERIFY_MAIL.value,
@@ -134,6 +177,21 @@ class EmailService:
         self.send_email_async(context)
 
     def send_password_reset_email(self, email: str):
+        """
+        Sends a password reset email to the specified email address.
+
+        This method generates a password reset token for the current user, constructs a password reset link,
+        and sends an email with the reset instructions to the provided email address.
+
+        Args:
+            email (str): The recipient's email address.
+
+        Returns:
+            None
+
+        Side Effects:
+            Sends an asynchronous email to the user with a password reset link.
+        """
         reset_token = TokenService.for_user(
             self.user,
             TokenType.RESET.value,
@@ -153,6 +211,14 @@ class EmailService:
         self.send_email_async(context)
 
     def send_password_update_confirmation(self):
+        """
+        Sends a password update confirmation email to the user.
+        This method constructs an email context with a confirmation message indicating that the user's password has been updated successfully.
+        It includes a link to the login page and the user's full name in the email content, and sends the email asynchronously.
+        Returns:
+            None
+        """
+
         button_link = f"{settings.FRONTEND_URL}/api/auth/login"
         full_name = f"{self.user.first_name} {self.user.last_name}"
 
@@ -167,6 +233,15 @@ class EmailService:
         self.send_email_async(context)
 
     def send_otp(self, otp):
+        """
+        Sends a One-Time Password (OTP) email to the user for password reset.
+
+        Args:
+            otp (str): The OTP code to be sent to the user.
+
+        This method constructs the email context with the user's full name, a reset password link,
+        and the OTP code, then sends the email asynchronously to the user's registered email address.
+        """
         full_name = f"{self.user.first_name} {self.user.last_name}"
         button_link = f"{settings.FRONTEND_URL}/api/auth/reset-password-otp"
         context = self.create_email_context(
@@ -182,6 +257,19 @@ class EmailService:
         self.send_email_async(context)
 
     def send_email_superuser(self, password, email):
+        """
+        Sends a welcome email to a newly created superuser with their credentials.
+
+        Args:
+            password (str): The password assigned to the superuser.
+            email (str): The email address of the superuser.
+
+        Returns:
+            bool: True if the email was sent successfully, False otherwise.
+
+        Logs:
+            Logs an error message if the email fails to send.
+        """
         try:
             print(self.user.first_name)
             full_name = self.user.first_name
@@ -205,8 +293,22 @@ class EmailService:
             return False
 
     def send_verification_email_by_admin(self, password, email):
+        """
+        Sends a verification email to a user, typically triggered by an admin action.
+
+        This method generates a verification token for the user, constructs an email context
+        with the provided password and email, and sends a verification email asynchronously.
+        If the email fails to send, the error is logged and the method returns False.
+
+        Args:
+            password (str): The password to include in the email context.
+            email (str): The recipient's email address.
+
+        Returns:
+            bool: True if the email was sent successfully, False otherwise.
+        """
         try:
-            verify_token = SimpleToken.for_user(
+            verify_token = TokenService.for_user(
                 self.user,
                 TokenType.VERIFY_MAIL.value,
                 settings.AUTH_VERIFY_EMAIL_TOKEN_LIFELINE,

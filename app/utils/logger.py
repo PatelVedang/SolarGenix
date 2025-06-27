@@ -9,6 +9,19 @@ from slack_sdk.webhook import WebhookClient
 
 
 class UTCTimezone(tzinfo):
+    """
+    A timezone class representing Coordinated Universal Time (UTC).
+
+    This class inherits from `tzinfo` and provides implementations for the required
+    methods to represent the UTC timezone. It can be used with Python's `datetime`
+    objects to ensure they are timezone-aware and set to UTC.
+
+    Methods:
+        utcoffset(dt): Returns the offset from UTC, which is always zero.
+        tzname(dt): Returns the name of the timezone, which is "UTC".
+        dst(dt): Returns the daylight saving time offset, which is always zero for UTC.
+    """
+
     def utcoffset(self, dt):
         return timedelta(hours=0)
 
@@ -23,6 +36,19 @@ utc_tz = UTCTimezone()
 
 
 class TZFormatter(logging.Formatter):
+    """
+    A custom logging formatter that supports timezone-aware timestamps.
+
+    Args:
+        fmt (str, optional): Log message format string.
+        datefmt (str, optional): Date/time format string.
+        tz (datetime.tzinfo, optional): Timezone to use for timestamps. Defaults to UTCTimezone().
+
+    Methods:
+        formatTime(record, datefmt=None):
+            Formats the creation time of the specified LogRecord as a timezone-aware string.
+    """
+
     def __init__(self, fmt=None, datefmt=None, tz=UTCTimezone()):
         super().__init__(fmt, datefmt)
         self.tz = tz
@@ -33,6 +59,25 @@ class TZFormatter(logging.Formatter):
 
 
 class SlackFormatter(TZFormatter):
+    """
+    SlackFormatter formats log records for Slack notifications with enhanced readability and context.
+
+    This formatter extends TZFormatter and customizes log output to include:
+    - Risk level icons based on the log level (e.g., warning, error, critical, fatal).
+    - Timestamp in UTC.
+    - Originating file, function, and line number (with support for custom attributes if present).
+    - The log message, formatted in a code block for clarity.
+    - A separator line for visual distinction between log entries.
+
+    Attributes:
+        None
+
+    Methods:
+        format(record):
+            Formats a logging.LogRecord into a Slack-friendly message string, including risk icons,
+            timestamp, origin details, and the log message.
+    """
+
     def format(self, record):
         separator = "\n" + "─" * 50 + "\n"
 
@@ -72,11 +117,25 @@ class SlackFormatter(TZFormatter):
 
 
 class SlackLogHandler(logging.Handler):
+    """
+    A custom logging handler that sends log records to a Slack channel via a webhook.
+
+    Args:
+        webhook_url (str): The Slack webhook URL to which log messages will be sent.
+        level (int, optional): The logging level for this handler. Defaults to logging.WARNING.
+
+    Methods:
+        emit(record):
+            Formats and sends the log record to the configured Slack webhook.
+            If an error occurs during sending, it prints the error and calls handleError.
+    """
+
     def __init__(self, webhook_url, level=logging.WARNING):
         super().__init__(level=level)
         self.webhook = WebhookClient(webhook_url)
 
     def emit(self, record):
+        """Emit a log record to Slack."""
         try:
             log_entry = self.format(record)
             print(
@@ -97,6 +156,23 @@ class SlackLogHandler(logging.Handler):
 
 
 class CappedFileHandler(FileHandler):
+    """
+    A custom logging file handler that caps the log file size.
+
+    This handler extends the standard FileHandler to ensure that the log file does not exceed a specified maximum size.
+    When the file reaches or exceeds `max_bytes`, it is truncated (overwritten) before new log records are written.
+
+    Args:
+        filename (str): The name of the log file.
+        max_bytes (int, optional): The maximum allowed size of the log file in bytes. Defaults to 30 MB.
+        mode (str, optional): The mode to open the file. Defaults to "a" (append).
+        encoding (str, optional): The encoding to use for the file. Defaults to None.
+        delay (bool, optional): If True, file opening is deferred until the first call to emit(). Defaults to False.
+
+    Methods:
+        emit(record):
+            Writes a log record to the file. If the file size exceeds `max_bytes`, the file is truncated before writing.
+    """
     def __init__(
         self, filename, max_bytes=30 * 1024 * 1024, mode="a", encoding=None, delay=False
     ):
@@ -117,6 +193,16 @@ class CappedFileHandler(FileHandler):
 
 
 class IgnoreDjangoInternalErrorsFilter(logging.Filter):
+    """
+    A logging filter that ignores log records originating from Django's internal modules.
+
+    This filter is useful for suppressing noise from common internal Django exceptions and errors,
+    such as those from request handlers, database backends, and HTTP server errors, allowing
+    application-specific logs to be more visible.
+
+    Returns:
+        bool: True if the log record does not originate from specified Django internal paths; False otherwise.
+    """
     def filter(self, record):
         # Ignore logs coming from Django internal modules
         internal_paths = [

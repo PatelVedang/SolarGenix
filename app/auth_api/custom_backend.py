@@ -57,9 +57,16 @@ class LoginOnAuthBackend(ModelBackend):
 
 
 class CognitoBackend(ModelBackend):
-    """
-    Authenticate a user using AWS Cognito after token has already been validated.
-    Only checks if the user exists locally and is active.
+    """Custom authentication backend for Django that integrates with AWS Cognito.
+
+    This backend is invoked after a Cognito token has been validated. It attempts to authenticate
+    a user based on their email address (used as the username) by checking for an active, non-deleted
+    user in the database.
+
+    Methods:
+        authenticate(request, username=None, **kwargs):
+            Authenticates a user by their email address. Returns the user instance if found and active.
+            Raises AuthenticationFailed if the user does not exist or is inactive/deleted.
     """
 
     def authenticate(self, request, username=None, **kwargs):

@@ -17,7 +17,6 @@ from .verification_view import (
     VerifyOTPView,
 )
 
-
 __all__ = [
     "LogoutView",
     "UserLoginView",

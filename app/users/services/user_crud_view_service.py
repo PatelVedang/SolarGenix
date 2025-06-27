@@ -5,6 +5,8 @@ from users.constants import UserResponseConstants
 
 
 class ExportUsersService:
+    """Service to handle exporting user data in various formats. like CSV or JSON."""
+
     def post_execute(self, request):
         export_fields = request.query_params.get("export_fields", "")
         export_format = request.query_params.get("export_format", "csv").lower()
@@ -14,7 +16,6 @@ class ExportUsersService:
             for field in User._meta.get_fields()
             if field.concrete and not field.many_to_many and not field.one_to_many
         ]
-
 
         selected_fields = (
             [

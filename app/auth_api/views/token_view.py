@@ -26,6 +26,20 @@ logger = logging.getLogger("django")
     },
 )
 class RefreshTokenView(TokenObtainPairView):
+    """
+    View for handling refresh token requests.
+
+    This view allows clients to obtain a new access token using a valid refresh token.
+    It uses the `RefreshTokenSerializer` to validate the incoming data and, upon success,
+    returns the new token data along with a success message.
+
+    Methods:
+        post(request):
+            Validates the provided refresh token and returns a new access token if valid.
+
+    Permissions:
+        AllowAny: This endpoint is accessible to any user (authenticated or not).
+    """
     permission_classes = [AllowAny]
     serializer_class = RefreshTokenSerializer
 

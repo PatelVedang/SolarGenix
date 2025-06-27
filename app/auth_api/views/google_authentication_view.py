@@ -23,6 +23,19 @@ logger = logging.getLogger("django")
     },
 )
 class GoogleSSOView(APIView):
+    """
+    View for handling Google Single Sign-On (SSO) authentication requests.
+
+    This view processes POST requests containing Google authentication data,
+    validates the input using the `GoogleSSOSerializer`, and returns a response
+    with a status code, message, and data payload.
+
+    Methods:
+        post(request):
+            Handles POST requests for Google SSO authentication.
+            Validates the incoming data and returns a response with the authentication result.
+    """
+
     serializer_class = GoogleSSOSerializer
 
     def post(self, request):

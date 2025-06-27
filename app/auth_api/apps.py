@@ -12,4 +12,3 @@ class AuthApiConfig(AppConfig):
         from auth_api import scheduler
 
         scheduler.start()
-

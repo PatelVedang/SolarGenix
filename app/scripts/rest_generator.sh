@@ -25,7 +25,6 @@ if [ "$current_dir" != "app" ]; then
     exit 1
 fi
 
-
 # Check if the app name argument is provided
 if [ -z "$1" ]; then
     echo "Error: No app name provided."
@@ -38,6 +37,7 @@ PROJECT_ROOT="."
 SETTINGS_FILE="$PROJECT_ROOT/proj/settings.py"
 URLS_FILE="$PROJECT_ROOT/proj/urls.py"
 APP_PATH="$PROJECT_ROOT/$APP_NAME"
+INIT_OUTER_CHECK="$PROJECT_ROOT/core/models/__init__.py"
 
 # Activate virtual environment
 source ../env/bin/activate
@@ -46,6 +46,7 @@ echo "Initializing script..."
 
 # Call name_generator.py to get naming conventions
 NAMES_JSON=$(python ./scripts/name_generator.py "$APP_NAME")
+SINGULAR_UNDERSCORED=$(echo $NAMES_JSON | jq -r '.singular_underscored')
 PLURAL_UNDERSCORED=$(echo $NAMES_JSON | jq -r '.plural_underscored')
 SINGULAR_CAPITALIZED=$(echo $NAMES_JSON | jq -r '.singular_capitalized')
 SINGULAR_CAPITALIZED_SERIALIZER=$(echo $NAMES_JSON | jq -r '.singular_capitalized')Serializer
@@ -79,6 +80,17 @@ if ! grep -q "# IMPORT_NEW_ROUTE_HERE" "$URLS_FILE"; then
     exit 1
 fi
 
+# Check if the line '# ADD NEW IMPORT FOR MODEL HERE' exists in the file
+if ! grep -q "# ADD NEW IMPORT FOR MODEL HERE" "$INIT_OUTER_CHECK"; then
+    echo "Error: Line # ADD NEW IMPORT FOR MODEL HERE' does not exist in the file '$INIT_OUTER_CHECK'."
+    exit 1
+fi
+
+# Check if the line '# ADD NEW MODEL HERE' exists in the file
+if ! grep -q "# ADD NEW MODEL HERE" "$INIT_OUTER_CHECK"; then
+    echo "Error: Line # ADD NEW MODEL HERE' does not exist in the file '$INIT_OUTER_CHECK'."
+    exit 1
+fi
 
 # Create the Django app
 echo "Task initiated: Creating Django app..."
@@ -100,10 +112,10 @@ if ! grep -q "'$PLURAL_UNDERSCORED'" "$SETTINGS_FILE"; then
         # macOS
         sed -i '' "/# django apps/a\\
     '$PLURAL_UNDERSCORED',\\
-" "$SETTINGS_FILE"
+" "$SETTINGS_FILE"      # Add line after the comment: "# django apps"
     else
         # Linux
-        sed -i "/# django apps/a\    '$PLURAL_UNDERSCORED'," "$SETTINGS_FILE"
+        sed -i "/# django apps/a\    '$PLURAL_UNDERSCORED'," "$SETTINGS_FILE"    # Add line after the comment: "# django apps"
     fi
     # $SED_CMD "/# django apps/a\    '$PLURAL_UNDERSCORED'," "$SETTINGS_FILE"
 fi
@@ -122,9 +134,12 @@ if ! grep -q "'$PLURAL_UNDERSCORED.urls'" "$URLS_FILE"; then
     fi
 fi
 
-# Generate models.py with various field types
+# ::::::::::::::::::::::::: Setup of Centralize Model :::::::::::::::::::::::::
+
+# Generate models in core/models with various field types
 echo "Task initiated: Generating models.py..."
-cat <<EOL > "$PLURAL_UNDERSCORED/models.py"
+mkdir -p "$PROJECT_ROOT/core/models/$PLURAL_UNDERSCORED"  # Generate Directory 
+cat <<EOL > "$PROJECT_ROOT/core/models/$PLURAL_UNDERSCORED/models.py"
 from django.db import models
 import uuid
 from proj.models import BaseModel
@@ -156,12 +171,70 @@ class $SINGULAR_CAPITALIZED(BaseModel):
         return self.name
 EOL
 
-# Generate serializers.py
+# Generate Inner __init__ file  
+cat <<EOL > "$PROJECT_ROOT/core/models/$PLURAL_UNDERSCORED/__init__.py"
+# ADD NEW INNER IMPORT FOR MODEL HERE
+
+__all__ = [
+    # ADD NEW INNER MODEL HERE
+]
+EOL
+
+
+# Add Some Imports and Models Register in Inner __init__.py
+INIT_INNER="$PROJECT_ROOT/core/models/$PLURAL_UNDERSCORED/__init__.py"
+
+if ! grep -q "'$PLURAL_UNDERSCORED'" "$INIT_INNER"; then
+    echo "Task initiated: Adding app to model in the Inner __init__..."
+
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        # macOS (BSD sed)
+        sed -i '' "/# ADD NEW INNER IMPORT FOR MODEL HERE/a\\
+from .models import *\\
+" "$INIT_INNER"
+
+        sed -i '' "/# ADD NEW INNER MODEL HERE/a\\
+    '$SINGULAR_CAPITALIZED',\\
+" "$INIT_INNER"
+    else
+        # Linux (GNU sed)
+        sed -i "/# ADD NEW INNER IMPORT FOR MODEL HERE/a\from .models import *" "$INIT_INNER"
+    
+        sed -i "/# ADD NEW INNER MODEL HERE/a\    '$SINGULAR_CAPITALIZED'," "$INIT_INNER"
+    fi
+fi
+
+
+# Add Some Imports and Models Register in Outer __init__.py
+INIT_OUTER="$PROJECT_ROOT/core/models/__init__.py"
+ 
+if ! grep -q "'$PLURAL_UNDERSCORED'" "$INIT_OUTER"; then
+    echo "Task initiated: Adding app to model in to the __init__..."
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        # macOS
+        sed -i '' "/# ADD NEW IMPORT FOR MODEL HERE/a\\from .$PLURAL_UNDERSCORED import *\\
+" "$INIT_OUTER"
+
+        sed -i '' "# ADD NEW MODEL HERE/a\\
+    '$SINGULAR_CAPITALIZED',\\
+" "$INIT_OUTER"
+    else
+        
+        sed -i "/# ADD NEW IMPORT FOR MODEL HERE/a\from .$PLURAL_UNDERSCORED import *" "$INIT_OUTER"
+
+        sed -i "/# ADD NEW MODEL HERE/a\    '$SINGULAR_CAPITALIZED'," "$INIT_OUTER"
+    fi
+    # $SED_CMD "/# django apps/a\    '$PLURAL_UNDERSCORED'," "$SETTINGS_FILE"
+fi
+
+
+# ::::::::::::::::::::::::: Create serializers.py :::::::::::::::::::::::::
+
 echo "Task initiated: Generating serializers.py..."
 cat <<EOL > "$PLURAL_UNDERSCORED/serializers.py"
 from rest_framework import serializers
 from proj.base_serializer import BaseModelSerializer
-from .models import $SINGULAR_CAPITALIZED
+from core.models import $SINGULAR_CAPITALIZED
 
 class $SINGULAR_CAPITALIZED_SERIALIZER(BaseModelSerializer):
     class Meta:
@@ -169,14 +242,19 @@ class $SINGULAR_CAPITALIZED_SERIALIZER(BaseModelSerializer):
         fields = '__all__'
 EOL
 
-# Generate views.py
+
+# ::::::::::::::::::::::::: Create views.py :::::::::::::::::::::::::
+
+VIEW_FILE="${SINGULAR_UNDERSCORED}_view"
+
 echo "Task initiated: Generating views.py..."
-cat <<EOL > "$PLURAL_UNDERSCORED/views.py"
+mkdir -p "$PLURAL_UNDERSCORED/views"  # Create Directory
+cat <<EOL > "$PLURAL_UNDERSCORED/views/$VIEW_FILE.py"
 from utils.swagger import apply_swagger_tags
 from utils.custom_filter import filter_model
 from proj.base_view import BaseModelViewSet
-from .models import $SINGULAR_CAPITALIZED
-from .serializers import $SINGULAR_CAPITALIZED_SERIALIZER
+from core.models import $SINGULAR_CAPITALIZED
+from $PLURAL_UNDERSCORED.serializers import $SINGULAR_CAPITALIZED_SERIALIZER
 from auth_api.permissions import IsAuthenticated
 from rest_framework.decorators import action
 from utils.make_response import response
@@ -215,12 +293,44 @@ class $SINGULAR_CAPITALIZED_VIEWSET(BaseModelViewSet):
         )
 EOL
 
-# Generate urls.py
+# Generate __init__.py file in Views Folder
+cat <<EOL > "$PLURAL_UNDERSCORED/views/__init__.py"
+# imports view from the application
+
+__all__ = [
+    # Add New view here 
+]
+EOL
+
+# Add some Imports and Views in Views __init__.py 
+VIEWS_INIT="$PLURAL_UNDERSCORED/views/__init__.py" 
+
+if ! grep -q "'$VIEW_FILE'" "$VIEWS_INIT"; then
+    echo "Task initiated: Adding app to model in to the __init__..."
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        # macOS
+        sed -i '' "/# imports view from the application/a\\from .$PLURAL_UNDERSCORED import *\\
+" "$VIEWS_INIT"
+
+        sed -i '' "# Add New view here/a\\
+    '$SINGULAR_CAPITALIZED',\\
+" "$VIEWS_INIT"
+    else
+        sed -i "/# imports view from the application/a\from .$VIEW_FILE import *" "$VIEWS_INIT"
+
+        sed -i "/# Add New view here/a\    '$SINGULAR_CAPITALIZED_VIEWSET'," "$VIEWS_INIT"
+    fi
+    # $SED_CMD "/# django apps/a\    '$PLURAL_UNDERSCORED'," "$SETTINGS_FILE"
+fi
+
+
+# ::::::::::::::::::::::::: Create urls.py :::::::::::::::::::::::::
+
 echo "Task initiated: Generating urls.py..."
 cat <<EOL > "$PLURAL_UNDERSCORED/urls.py"
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from .views import $SINGULAR_CAPITALIZED_VIEWSET
+from $PLURAL_UNDERSCORED.views import $SINGULAR_CAPITALIZED_VIEWSET
 
 router = DefaultRouter(trailing_slash=True)
 router.register(r'', $SINGULAR_CAPITALIZED_VIEWSET)
@@ -230,11 +340,13 @@ urlpatterns = [
 ]
 EOL
 
-# Generate admin.py
+
+# ::::::::::::::::::::::::: Create admin.py :::::::::::::::::::::::::
+
 echo "Task initiated: Generating admin.py..."
 cat <<EOL > "$PLURAL_UNDERSCORED/admin.py"
 from django.contrib import admin
-from .models import $SINGULAR_CAPITALIZED
+from core.models import $SINGULAR_CAPITALIZED
 
 @admin.register($SINGULAR_CAPITALIZED)
 class $SINGULAR_CAPITALIZED_ADMIN(admin.ModelAdmin):
@@ -242,9 +354,11 @@ class $SINGULAR_CAPITALIZED_ADMIN(admin.ModelAdmin):
     search_fields = ('name', 'description', 'price', 'inventory', 'available', 'published_date')
 EOL
 
-# Generate tests.py
+
+# ::::::::::::::::::::::::: Create tests.py :::::::::::::::::::::::::
+
 echo "Task initiated: Generating tests.py..."
-cat <<EOL > "$PLURAL_UNDERSCORED/tests.py"
+cat <<EOL > "$PLURAL_UNDERSCORED/tests.py"       
 import os,json, tempfile
 from PIL import Image
 from django.test import TestCase
@@ -254,7 +368,7 @@ from datetime import timedelta
 from rest_framework.test import APITestCase, APIClient
 from django.core.files.uploadedfile import SimpleUploadedFile
 from rest_framework import status
-from .models import $SINGULAR_CAPITALIZED
+from core.models import $SINGULAR_CAPITALIZED
 from auth_api.models import User
 from auth_api.tests import BaseAPITestCase
 
@@ -447,16 +561,19 @@ class ${SINGULAR_CAPITALIZED_MODEL_TESTS}(BaseAPITestCase):
         self.login()
         self.set_response(self.client.delete(f"{self.url}111/"))
         self.match_error_response(404)
-
-
 EOL
 
 # Ensure settings file is saved and changes are applied
 sleep 2
 
-# Make migrations and migrate
-python manage.py makemigrations "$PLURAL_UNDERSCORED"
+
+# ::::::::::::::::::::::::: Perform Makemigrations and Migrate :::::::::::::::::::::::::
+
+python manage.py makemigrations 
 python manage.py migrate
+
+
+# ::::::::::::::::::::::::: Successfully Sey of Application :::::::::::::::::::::::::
 
 echo "App '$PLURAL_UNDERSCORED' has been created and configured successfully."
 echo "App '$PLURAL_UNDERSCORED' created successfully!"

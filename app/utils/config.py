@@ -89,6 +89,22 @@ class Settings(BaseSettings):
 
 
 def load_settings():
+    """
+    Loads application settings from a .env file and validates them.
+
+    This function checks for the existence of a .env file in the BASE_DIR directory.
+    If the file is missing, it raises a FileNotFoundError. It then initializes the
+    Settings object, validates the authentication type, and assigns default values
+    to any empty fields. If validation fails, it prints detailed error messages and
+    raises a ValidationError.
+
+    Returns:
+        Settings: An instance of the Settings class with loaded and validated configuration.
+
+    Raises:
+        FileNotFoundError: If the .env file is not found at the specified path.
+        ValidationError: If any settings fail validation.
+    """
     env_file_path = os.path.join(BASE_DIR, ".env")
     if not os.path.isfile(env_file_path):
         raise FileNotFoundError(f"Missing required .env file at path: {env_file_path}")
@@ -113,6 +129,15 @@ def load_settings():
 
 
 def validate_auth_type(settings: Settings):
+    """
+    Validates that all required Cognito authentication settings are present in the provided settings object.
+
+    Args:
+        settings (Settings): The settings object containing authentication configuration attributes.
+
+    Raises:
+        ValueError: If any required Cognito fields are missing from the settings object.
+    """
     if settings.AUTH_TYPE == "cognito":
         required_fields = [
             "AWS_REGION",
