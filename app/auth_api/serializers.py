@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 from datetime import timezone as dt_timezone
 
 from core.models import Token, TokenType, User
-from core.models.auth_api.auth import AUTH_PROVIDER, SimpleToken
+from core.models.auth_api.auth import AUTH_PROVIDER
 from core.services.google_service import Google
 from core.services.token_service import TokenService
 from django.conf import settings
@@ -21,8 +21,9 @@ from rest_framework.exceptions import AuthenticationFailed
 from rest_framework_simplejwt.serializers import TokenRefreshSerializer
 from utils.custom_exception import CustomValidationError
 from utils.email import EmailService
-from auth_api.constants import AuthResponseConstants
+
 from auth_api.cognito import Cognito
+from auth_api.constants import AuthResponseConstants
 from auth_api.custom_backend import LoginOnAuthBackend
 from auth_api.totp_service import TOTPService
 
@@ -60,6 +61,7 @@ class UserRegistrationSerializer(BaseModelSerializer):
         Raises:
             serializers.ValidationError: If the password does not match the custom regex pattern.
         """
+
         password = attrs.get("password")
         if User.objects.filter(email=attrs.get("email").lower()).exists():
             raise CustomValidationError(AuthResponseConstants.EMAIL_ALREADY_EXISTS)
@@ -270,24 +272,13 @@ class LogoutSerializer(BaseSerializer):
         # Validate the provided refresh token
         payload = TokenService.validate_token(token, TokenType.REFRESH.value)
         token_obj = payload.get("token_obj")
-        try:
-            token_obj = Token.objects.select_related("user").get(token=token)
-        except Token.DoesNotExist:
-            raise serializers.ValidationError("Invalid token")
-
         user = token_obj.user
-
         if user.auth_provider == AUTH_PROVIDER.get("cognito"):
             Cognito.logout_user(user)
             return attrs
 
-        # For non-cognito, validate token and delete accordingly
-        payload = SimpleToken.validate_token(token, TokenType.REFRESH.value)
-        token_obj = payload.get(
-            "token_obj"
-        )  # this may be redundant if token_obj already fetched, but needed for validation
-
         data = {"user": user}
+
         if logout_all_devices == 0:
             data["jti"] = token_obj.jti
 

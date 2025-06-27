@@ -1,7 +1,5 @@
-import pandas as pd
 from auth_api.permissions import IsAuthenticated
 from core.models import User
-from django.http import HttpResponse, JsonResponse
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from proj.base_view import BaseModelViewSet
@@ -9,13 +7,13 @@ from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import IsAdminUser
 from users.constants import UserResponseConstants
+from users.permission import CustomSuperAdminOrOwnerDeletePermission
+from users.serializers import UserSerializer
+from users.services import ExportUsersService
 from utils.custom_filter import filter_model
 from utils.make_response import response
 from utils.pagination import BasePagination
 from utils.swagger import apply_swagger_tags
-
-from .permission import CustomSuperAdminOrOwnerDeletePermission
-from .serializers import UserSerializer
 
 
 @apply_swagger_tags(
@@ -103,46 +101,7 @@ class UserViewSet(BaseModelViewSet):
         pagination_class=BasePagination,
     )
     def export_users(self, request, *args, **kwargs):
-        export_fields = request.query_params.get("export_fields", "")
-        export_format = request.query_params.get("export_format", "csv").lower()
+        service = ExportUsersService()
+        response_data = service.post_execute(request)
 
-        default_fields = [
-            field.name
-            for field in User._meta.get_fields()
-            if field.concrete and not field.many_to_many and not field.one_to_many
-        ]
-
-        selected_fields = (
-            [
-                field.strip()
-                for field in export_fields.split(",")
-                if field.strip() in default_fields
-            ]
-            if export_fields
-            else default_fields
-        )
-
-        if not selected_fields:
-            return JsonResponse(
-                {"error": UserResponseConstants.INVALID_FIELDS}, status=400
-            )
-
-        users = User.objects.all().values(*selected_fields)
-
-        df = pd.DataFrame(users)
-
-        for field in df.columns:
-            if "date" in field or "time" in field:
-                df[field] = pd.to_datetime(df[field]).dt.strftime("%Y-%m-%d %H:%M:%S")
-
-        if export_format == "csv":
-            res = HttpResponse(content_type="text/csv")
-            res["Content-Disposition"] = 'attachment; filename="users_export.csv"'
-            df.to_csv(path_or_buf=res, index=False)
-            return res
-        elif export_format == "json":
-            return JsonResponse(df.to_dict(orient="records"), safe=False, status=200)
-        else:
-            return JsonResponse(
-                {"error": UserResponseConstants.INVALID_EXPORT_FORMAT}, status=400
-            )
+        return response_data

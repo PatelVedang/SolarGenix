@@ -2,6 +2,7 @@ from django.urls import path
 
 from auth_api.views import (
     ChangePasswordView,
+    CognitoSyncTokensView,
     CreateCognitoRoleAPIView,
     ForgotPasswordView,
     GoogleSSOView,
@@ -18,7 +19,6 @@ from auth_api.views import (
     UserRegistrationView,
     VerifyEmailView,
     VerifyOTPView,
-    CognitoSyncTokensView,
 )
 
 urlpatterns = [
