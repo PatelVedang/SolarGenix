@@ -81,7 +81,7 @@ class Settings(BaseSettings):
     COGNITO_REDIRECT_URI: str | None = Field(default=None)
     AWS_ACCESS_KEY_ID: str | None = Field(default=None)
     AWS_SECRET_ACCESS_KEY: str | None = Field(default=None)
-    ENABLE_2FA: bool = Field(default=0)
+    ENABLE_2FA: bool = Field(default=False)
 
     class Config:
         env_file = os.path.join(BASE_DIR, ".env")

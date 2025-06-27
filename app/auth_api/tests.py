@@ -294,9 +294,7 @@ class AuthTest(BaseAPITestCase):
         """
         # Login the user and get the refresh token from self._data
         self.login()  # Assuming this populates self._data
-        refresh_token = self._data["data"]["tokens"]["refresh"][
-            "token"
-        ]  # Extracting refresh token
+        refresh_token = self._data["data"]["tokens"]["refresh"]["token"]
 
         # Send a POST request to the logout endpoint with the token directly in the data
         self.set_response(

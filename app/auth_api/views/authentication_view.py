@@ -39,18 +39,15 @@ class UserLoginView(APIView):
     Methods:
         post(request): Authenticates the user with provided credentials and returns a success response.
     """
+
     throttle_classes = [custom_throttling.CustomAuthThrottle]
     serializer_class = UserLoginSerializer
     permission_classes = []
 
     def post(self, request):
         service = UserLoginViewService()
-        validated_data = service.post_execute(request)
-        return response(
-            data=validated_data,
-            status_code=status.HTTP_200_OK,
-            message=AuthResponseConstants.LOGIN_SUCCESS,
-        )
+
+        return service.post_execute(request)
 
 
 @apply_swagger_tags(
@@ -74,6 +71,7 @@ class UserRegistrationView(APIView):
     Methods:
         post(request): Handles user registration via POST request.
     """
+
     throttle_classes = [custom_throttling.CustomAuthThrottle]
     serializer_class = UserRegistrationSerializer
 
@@ -113,6 +111,7 @@ class UserProfileView(APIView):
     Responses:
         - 200 OK: Returns the user's profile data with a success message.
     """
+
     permission_classes = [IsAuthenticated]
     throttle_classes = [custom_throttling.CustomAuthThrottle]
 
@@ -145,6 +144,7 @@ class LogoutView(APIView):
     Methods:
         post(request): Logs out the authenticated user after validating the request data.
     """
+
     serializer_class = LogoutSerializer
     permission_classes = [IsAuthenticated]
 

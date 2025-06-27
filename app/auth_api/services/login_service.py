@@ -41,8 +41,8 @@ class UserLoginViewService:
                 status_code=status.HTTP_200_OK,
                 message=AuthResponseConstants.ACCOUNT_NOT_VERIFIED,
             )
-
-        if settings.ENABLE_2FA:    # Check if 2FA is enabled
+        print(f"Checking of the 2FA is enabled or not{settings.ENABLE_2FA}")
+        if settings.ENABLE_2FA:  # Check if 2FA is enabled
             return response(
                 data={
                     "requires_2fa": True,
@@ -54,4 +54,8 @@ class UserLoginViewService:
 
         validated_data["user"] = UserProfileSerializer(user).data
 
-        return validated_data
+        return response(
+            data=validated_data,
+            status_code=status.HTTP_200_OK,
+            message=AuthResponseConstants.LOGIN_SUCCESS,
+        )
