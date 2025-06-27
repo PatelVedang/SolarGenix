@@ -9,7 +9,7 @@ import boto3
 import jwt
 import requests
 from botocore.exceptions import ClientError
-from core.models.auth_api.auth import Token
+from core.models import Token
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from rest_framework.exceptions import AuthenticationFailed

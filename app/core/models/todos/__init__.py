@@ -1,4 +1,4 @@
-from .todo import Todo
+from .models import Todo
 
 __all__ = [
     "Todo",

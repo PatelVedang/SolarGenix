@@ -4,8 +4,7 @@ import re
 from datetime import datetime, timedelta
 from datetime import timezone as dt_timezone
 
-from core.models import Token, TokenType, User
-from core.models.auth_api.auth import AUTH_PROVIDER
+from core.models import AUTH_PROVIDER, Token, TokenType, User
 from core.services.google_service import Google
 from core.services.token_service import TokenService
 from django.conf import settings

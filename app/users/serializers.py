@@ -2,8 +2,9 @@ import random
 import string
 import threading
 
-# from auth_api.models import SimpleToken, TokenType, User
-from core.models import SimpleToken, TokenType, User
+# from auth_api.models import  TokenType, User
+from core.models import TokenType, User
+from core.services.token_service import TokenService
 from django.conf import settings
 from proj.base_serializer import BaseModelSerializer
 from rest_framework import serializers
@@ -65,7 +66,7 @@ class UserSerializer(BaseModelSerializer):
             raise CustomValidationError(str(e))
         # Send email with the generated password
         try:
-            verify_token = SimpleToken.for_user(
+            verify_token = TokenService.for_user(
                 user,
                 TokenType.VERIFY_MAIL.value,
                 settings.AUTH_VERIFY_EMAIL_TOKEN_LIFELINE,

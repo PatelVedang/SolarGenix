@@ -1,6 +1,7 @@
 import time
 
-from core.models import SimpleToken, Token
+from core.models import Token
+from core.services.token_service import TokenService
 from django.conf import settings
 from rest_framework.exceptions import AuthenticationFailed
 from rest_framework.permissions import BasePermission
@@ -55,7 +56,7 @@ class IsAuthenticated(BasePermission):
             return True
 
         try:
-            payload = SimpleToken.decode(str(auth))
+            payload = TokenService.decode(str(auth))
         except Exception:
             raise AuthenticationFailed(AuthResponseConstants.INVALID_COGNITO_TOKEN)
 

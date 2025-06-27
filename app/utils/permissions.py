@@ -1,11 +1,10 @@
 import time
 
 from auth_api.cognito import Cognito
+from core.models import Token
 from rest_framework.exceptions import AuthenticationFailed
 from rest_framework.permissions import BasePermission
 from rest_framework_simplejwt.tokens import UntypedToken
-
-from app.core.models.auth_api.auth import Token
 
 
 class IsTokenValid(BasePermission):

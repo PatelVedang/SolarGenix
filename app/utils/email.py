@@ -2,8 +2,8 @@ import logging
 import threading
 import traceback
 
-# from auth_api.models import SimpleToken, TokenType, User
-from core.models import SimpleToken, TokenType, User
+# from auth_api.models import TokenType, User
+from core.models import TokenType, User
 from core.services.token_service import TokenService
 from django.conf import settings
 from django.core.mail import EmailMessage
@@ -218,7 +218,7 @@ class EmailService:
         Returns:
             None
         """
-        
+
         button_link = f"{settings.FRONTEND_URL}/api/auth/login"
         full_name = f"{self.user.first_name} {self.user.last_name}"
 
@@ -308,7 +308,7 @@ class EmailService:
             bool: True if the email was sent successfully, False otherwise.
         """
         try:
-            verify_token = SimpleToken.for_user(
+            verify_token = TokenService.for_user(
                 self.user,
                 TokenType.VERIFY_MAIL.value,
                 settings.AUTH_VERIFY_EMAIL_TOKEN_LIFELINE,

@@ -1,5 +1,4 @@
-from core.models import Token, User
-from core.models.auth_api.auth import GroupProfile
+from core.models import GroupProfile, Token, User
 from core.services.google_service import Google
 from django import forms
 from django.conf import settings
@@ -83,7 +82,7 @@ class SoftDeleteAdminMixin(admin.ModelAdmin):
         """Hard delete selected items using Django default. This will permanently delete the user and their tokens from the database also"""
         return admin.actions.delete_selected(self, request, queryset)
 
-    hard_delete_selected.short_description = "Hard delete"    
+    hard_delete_selected.short_description = "Hard delete"
 
 
 class AssignGroupForm(forms.Form):
@@ -311,6 +310,7 @@ class GroupAdmin(admin.ModelAdmin):
         delete_model(request, obj): Handles deleting a group and its Cognito counterpart.
         delete_queryset(request, queryset): Handles bulk deletion of groups and their Cognito counterparts.
     """
+
     list_display = ["name"]
     search_fields = ["name"]
     inlines = [GroupProfileInline]
