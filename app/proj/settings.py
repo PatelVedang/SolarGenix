@@ -62,6 +62,7 @@ INSTALLED_APPS = [
     "auth_api",
     "users",
     "todos",
+    "storages",
 ]
 
 MIDDLEWARE = [
@@ -244,11 +245,43 @@ COGNITO_CLIENT_SECRET = settings.COGNITO_CLIENT_SECRET
 COGNITO_DOMAIN = settings.COGNITO_DOMAIN
 COGNITO_REDIRECT_URI = settings.COGNITO_REDIRECT_URI
 
-# Base url to serve media files
-MEDIA_URL = "/media/"
+# MEDIA STORAGE CONFIGURATION
+STAGE = settings.STAGE
 
-# Path where media is stored
-MEDIA_ROOT = os.path.join(BASE_DIR, "media/")
+if STAGE == "PROD":
+    # S3 Production Storage
+    if "storages" not in INSTALLED_APPS:
+        INSTALLED_APPS += ["storages"]
+
+    STORAGES = {
+        "default": {
+            "BACKEND": "utils.storage_backends.MediaStorage",
+        },
+        "staticfiles": {
+            "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+        },
+    }
+
+    AWS_STORAGE_BUCKET_NAME = settings.AWS_STORAGE_BUCKET_NAME
+    AWS_S3_REGION_NAME = settings.AWS_S3_REGION_NAME
+    AWS_ACCESS_KEY_ID = settings.AWS_ACCESS_KEY_ID
+    AWS_SECRET_ACCESS_KEY = settings.AWS_SECRET_ACCESS_KEY
+
+    # Media URL is not used for private S3 storage (pre-signed URLs are used instead)
+    MEDIA_URL = None
+    MEDIA_ROOT = None
+else:
+    # Local Development/Beta Storage
+    STORAGES = {
+        "default": {
+            "BACKEND": "django.core.files.storage.FileSystemStorage",
+        },
+        "staticfiles": {
+            "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+        },
+    }
+    MEDIA_URL = "/media/"
+    MEDIA_ROOT = os.path.join(BASE_DIR, "media/")
 
 
 # EMAIL

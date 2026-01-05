@@ -66,7 +66,6 @@ class Settings(BaseSettings):
 
     # CELERY_BROKER_URL: str = Field(default=None)
 
-
     # ::::::::::::::: SLACK :::::::::::::::
     SLACK_BASIC_URL: str
     DJANGO_RUNTIME_ENVIRONMENT: str = Field(default="Local")
@@ -82,6 +81,11 @@ class Settings(BaseSettings):
     AWS_ACCESS_KEY_ID: str | None = Field(default=None)
     AWS_SECRET_ACCESS_KEY: str | None = Field(default=None)
     ENABLE_2FA: bool = Field(default=False)
+
+    # ::::::::::::: Stage & Storage :::::::::::::
+    STAGE: str = Field(default="DEV")  # Options: 'DEV', 'BETA', 'PROD'
+    AWS_STORAGE_BUCKET_NAME: str | None = Field(default=None)
+    AWS_S3_REGION_NAME: str = Field(default="us-east-1")
 
     class Config:
         env_file = os.path.join(BASE_DIR, ".env")

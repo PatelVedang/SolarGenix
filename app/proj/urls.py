@@ -48,7 +48,10 @@ urlpatterns = [
         swagger_auth_required(SpectacularSwaggerView.as_view(url_name="schema")),
         name="swagger-ui",
     ),
-] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+]
+
+if settings.MEDIA_URL:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
 
 """The lines `handler404 = 'proj.base_view.handler404'` and `handler500 = 'proj.base_view.handler500'`
