@@ -62,7 +62,6 @@ INSTALLED_APPS = [
     "auth_api",
     "users",
     "todos",
-    "storages",
 ]
 
 MIDDLEWARE = [

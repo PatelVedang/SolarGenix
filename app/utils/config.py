@@ -84,8 +84,8 @@ class Settings(BaseSettings):
 
     # ::::::::::::: Stage & Storage :::::::::::::
     STAGE: str = Field(default="DEV")  # Options: 'DEV', 'BETA', 'PROD'
-    AWS_STORAGE_BUCKET_NAME: str | None = Field(default=None)
-    AWS_S3_REGION_NAME: str = Field(default="us-east-1")
+    AWS_STORAGE_BUCKET_NAME: str | None 
+    AWS_S3_REGION_NAME: str | None
 
     class Config:
         env_file = os.path.join(BASE_DIR, ".env")
