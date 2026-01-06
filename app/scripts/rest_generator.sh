@@ -96,6 +96,9 @@ fi
 echo "Task initiated: Creating Django app..."
 python manage.py startapp "$PLURAL_UNDERSCORED"
 
+# Remove default views.py file
+rm "$PLURAL_UNDERSCORED/views.py"
+
 # Determine the correct sed command for in-place editing
 if [[ "$OSTYPE" == "darwin"* ]]; then
     # macOS
@@ -228,10 +231,13 @@ if ! grep -q "'$PLURAL_UNDERSCORED'" "$INIT_OUTER"; then
 fi
 
 
-# ::::::::::::::::::::::::: Create serializers.py :::::::::::::::::::::::::
+# ::::::::::::::::::::::::: Create serializers package :::::::::::::::::::::::::
 
-echo "Task initiated: Generating serializers.py..."
-cat <<EOL > "$PLURAL_UNDERSCORED/serializers.py"
+SERIALIZER_FILE="${SINGULAR_UNDERSCORED}_serializers"
+
+echo "Task initiated: Generating serializers package..."
+mkdir -p "$PLURAL_UNDERSCORED/serializers"  # Create Directory
+cat <<EOL > "$PLURAL_UNDERSCORED/serializers/$SERIALIZER_FILE.py"
 from rest_framework import serializers
 from proj.base_serializer import BaseModelSerializer
 from core.models import $SINGULAR_CAPITALIZED
@@ -242,12 +248,88 @@ class $SINGULAR_CAPITALIZED_SERIALIZER(BaseModelSerializer):
         fields = '__all__'
 EOL
 
+# Generate __init__.py file in Serializers Folder
+cat <<EOL > "$PLURAL_UNDERSCORED/serializers/__init__.py"
+# imports serializer from the application
 
-# ::::::::::::::::::::::::: Create views.py :::::::::::::::::::::::::
+__all__ = [
+    # Add New serializer here 
+]
+EOL
+
+# Add some Imports and Serializers in Serializers __init__.py 
+SERIALIZERS_INIT="$PLURAL_UNDERSCORED/serializers/__init__.py" 
+
+if ! grep -q "'$SERIALIZER_FILE'" "$SERIALIZERS_INIT"; then
+    echo "Task initiated: Adding serializer to __init__..."
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        # macOS
+        sed -i '' "/# imports serializer from the application/a\\from .$SERIALIZER_FILE import *\\
+" "$SERIALIZERS_INIT"
+
+        sed -i '' "/# Add New serializer here/a\\
+    '$SINGULAR_CAPITALIZED_SERIALIZER',\\
+" "$SERIALIZERS_INIT"
+    else
+        sed -i "/# imports serializer from the application/a\from .$SERIALIZER_FILE import *" "$SERIALIZERS_INIT"
+
+        sed -i "/# Add New serializer here/a\    '$SINGULAR_CAPITALIZED_SERIALIZER'," "$SERIALIZERS_INIT"
+    fi
+fi
+
+
+# ::::::::::::::::::::::::: Create services package :::::::::::::::::::::::::
+
+SERVICE_FILE="${SINGULAR_UNDERSCORED}_services"
+
+echo "Task initiated: Generating services package..."
+mkdir -p "$PLURAL_UNDERSCORED/services"  # Create Directory
+cat <<EOL > "$PLURAL_UNDERSCORED/services/$SERVICE_FILE.py"
+from core.models import $SINGULAR_CAPITALIZED
+
+class $SINGULAR_CAPITALIZED_SERVICE:
+    def __init__(self):
+        pass
+
+    def get_all(self):
+        return $SINGULAR_CAPITALIZED.objects.all()
+EOL
+
+# Generate __init__.py file in Services Folder
+cat <<EOL > "$PLURAL_UNDERSCORED/services/__init__.py"
+# imports service from the application
+
+__all__ = [
+    # Add New service here 
+]
+EOL
+
+# Add some Imports and Services in Services __init__.py 
+SERVICES_INIT="$PLURAL_UNDERSCORED/services/__init__.py" 
+
+if ! grep -q "'$SERVICE_FILE'" "$SERVICES_INIT"; then
+    echo "Task initiated: Adding service to __init__..."
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        # macOS
+        sed -i '' "/# imports service from the application/a\\from .$SERVICE_FILE import *\\
+" "$SERVICES_INIT"
+
+        sed -i '' "/# Add New service here/a\\
+    '${SINGULAR_CAPITALIZED}_SERVICE',\\
+" "$SERVICES_INIT"
+    else
+        sed -i "/# imports service from the application/a\from .$SERVICE_FILE import *" "$SERVICES_INIT"
+
+        sed -i "/# Add New service here/a\    '${SINGULAR_CAPITALIZED}_SERVICE'," "$SERVICES_INIT"
+    fi
+fi
+
+
+# ::::::::::::::::::::::::: Create views package :::::::::::::::::::::::::
 
 VIEW_FILE="${SINGULAR_UNDERSCORED}_view"
 
-echo "Task initiated: Generating views.py..."
+echo "Task initiated: Generating views package..."
 mkdir -p "$PLURAL_UNDERSCORED/views"  # Create Directory
 cat <<EOL > "$PLURAL_UNDERSCORED/views/$VIEW_FILE.py"
 from utils.swagger import apply_swagger_tags
@@ -306,21 +388,20 @@ EOL
 VIEWS_INIT="$PLURAL_UNDERSCORED/views/__init__.py" 
 
 if ! grep -q "'$VIEW_FILE'" "$VIEWS_INIT"; then
-    echo "Task initiated: Adding app to model in to the __init__..."
+    echo "Task initiated: Adding view to __init__..."
     if [[ "$OSTYPE" == "darwin"* ]]; then
         # macOS
-        sed -i '' "/# imports view from the application/a\\from .$PLURAL_UNDERSCORED import *\\
+        sed -i '' "/# imports view from the application/a\\from .$VIEW_FILE import *\\
 " "$VIEWS_INIT"
 
-        sed -i '' "# Add New view here/a\\
-    '$SINGULAR_CAPITALIZED',\\
+        sed -i '' "/# Add New view here/a\\
+    '$SINGULAR_CAPITALIZED_VIEWSET',\\
 " "$VIEWS_INIT"
     else
         sed -i "/# imports view from the application/a\from .$VIEW_FILE import *" "$VIEWS_INIT"
 
         sed -i "/# Add New view here/a\    '$SINGULAR_CAPITALIZED_VIEWSET'," "$VIEWS_INIT"
     fi
-    # $SED_CMD "/# django apps/a\    '$PLURAL_UNDERSCORED'," "$SETTINGS_FILE"
 fi
 
 

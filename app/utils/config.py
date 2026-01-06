@@ -84,8 +84,8 @@ class Settings(BaseSettings):
 
     # ::::::::::::: Stage & Storage :::::::::::::
     STAGE: str = Field(default="DEV")  # Options: 'DEV', 'BETA', 'PROD'
-    AWS_STORAGE_BUCKET_NAME: str | None 
-    AWS_S3_REGION_NAME: str | None
+    AWS_STORAGE_BUCKET_NAME: str | None = Field(default=None)
+    AWS_S3_REGION_NAME: str | None = Field(default=None)
 
     class Config:
         env_file = os.path.join(BASE_DIR, ".env")
@@ -116,11 +116,22 @@ def load_settings():
     try:
         settings = Settings()
         validate_auth_type(settings)
+        validate_storage_settings(settings)
 
-        for field in settings.__fields__.keys():
-            if not getattr(settings, field):
-                # Assign default values if they are empty
-                default_value = settings.__fields__[field].default
+        # Handle Pydantic v1/v2 field access
+        fields = (
+            settings.model_fields.keys()
+            if hasattr(settings, "model_fields")
+            else settings.__fields__.keys()
+        )
+
+        for field in fields:
+            if getattr(settings, field) is None:
+                # Assign default values if they are None
+                if hasattr(settings, "model_fields"):
+                    default_value = settings.model_fields[field].default
+                else:
+                    default_value = settings.__fields__[field].default
                 setattr(settings, field, default_value)
         print("Settings loaded successfully.")
         return settings
@@ -156,3 +167,27 @@ def validate_auth_type(settings: Settings):
         missing = [field for field in required_fields if not getattr(settings, field)]
         if missing:
             raise ValueError(f"Missing required Cognito fields: {', '.join(missing)}")
+
+
+def validate_storage_settings(settings: Settings):
+    """
+    Validates that all required AWS S3 settings are present when stage is PROD.
+
+    Args:
+        settings (Settings): The settings object containing storage configuration attributes.
+
+    Raises:
+        ValueError: If any required S3 fields are missing in PROD stage.
+    """
+    if settings.STAGE == "PROD":
+        required_fields = [
+            "AWS_STORAGE_BUCKET_NAME",
+            "AWS_S3_REGION_NAME",
+            "AWS_ACCESS_KEY_ID",
+            "AWS_SECRET_ACCESS_KEY",
+        ]
+        missing = [field for field in required_fields if not getattr(settings, field)]
+        if missing:
+            raise ValueError(
+                f"Missing required AWS S3 fields for PROD stage: {', '.join(missing)}"
+            )

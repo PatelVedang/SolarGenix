@@ -207,28 +207,31 @@ else
     echo "Skipping PostgreSQL user and database creation."
 fi
 
-echo "Checking Python 3.11"
+eecho "Checking Python 3.11"
 echo "----------------------------------------------------"
-python_version=$(python3.11 --version 2>&1)
-if [[ $python_version == *"3.11.9"* ]]; then
-    echo "Python 3.11 is already installed."
+
+if command -v python3.11 >/dev/null 2>&1; then
+    python_version=$(python3.11 --version 2>&1)
+    echo "Python 3.11 is already installed ($python_version)"
 else
     echo "Python 3.11 is not installed. Installing..."
+
     if [ "$OS" == "linux" ]; then
         sudo apt update
-        sudo add-apt-repository ppa:deadsnakes/ppa
         sudo apt install python3.11 -y
     elif [ "$OS" == "mac" ]; then
         brew install python@3.11
     fi
-    python_version=$(python3.11 --version 2>&1)
-    if [[ $python_version == *"3.11.9"* ]]; then
-        echo "Python 3.11 installed successfully."
+
+    if command -v python3.11 >/dev/null 2>&1; then
+        python_version=$(python3.11 --version 2>&1)
+        echo "Python 3.11 installed successfully ($python_version)"
     else
         echo "Failed to install Python 3.11. Please check the installation manually."
         exit 1
     fi
 fi
+
 echo "----------------------------------------------------"
 printf "Python 3.11 check and installation completed 😎 \n\n\n"
 
