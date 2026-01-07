@@ -98,6 +98,7 @@ python manage.py startapp "$PLURAL_UNDERSCORED"
 
 # Remove default views.py file
 rm "$PLURAL_UNDERSCORED/views.py"
+rm "$PLURAL_UNDERSCORED/models.py"
 
 # Determine the correct sed command for in-place editing
 if [[ "$OSTYPE" == "darwin"* ]]; then
