@@ -1,7 +1,7 @@
 # imports service from the application
-from .todo_services import TodoService
+from .todos_services import TodosService
 
 __all__ = [
     # Add New service here 
-    'TodoService',
+    'TodosService',
 ]

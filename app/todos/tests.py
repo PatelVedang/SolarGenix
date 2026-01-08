@@ -7,13 +7,13 @@ from datetime import timedelta
 from rest_framework.test import APITestCase, APIClient
 from django.core.files.uploadedfile import SimpleUploadedFile
 from rest_framework import status
-from core.models import Todo
+from core.models import Todos
 from auth_api.models import User
 from auth_api.tests import BaseAPITestCase
 
 
 
-class TodoModelTests(BaseAPITestCase):
+class TodosModelTests(BaseAPITestCase):
     url = reverse("todos-list")
     
     def create_todos_via_orm(self, **kwargs):
@@ -41,7 +41,7 @@ class TodoModelTests(BaseAPITestCase):
         data.update(kwargs)
 
         # Attempt to create the todos using Django's ORM and return the instance
-        return Todo.objects.create(**data)
+        return Todos.objects.create(**data)
     
     
     def test_create_todos_with_authenticate(self):
@@ -170,7 +170,7 @@ class TodoModelTests(BaseAPITestCase):
     #     # Create the first todos via ORM
     #     self.create_todos_via_orm(email="duplicate@example.com")
     #     # self.create_todos_via_orm(email="duplicate@example.com")
-    #     if Todo.objects.filter(email="duplicate@example.com").count() > 1:
+    #     if Todos.objects.filter(email="duplicate@example.com").count() > 1:
     #         # Simulate a 400 Bad Request error since email is already in use
     #         self.match_error_response(400)
     #     else:

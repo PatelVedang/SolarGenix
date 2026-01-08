@@ -60,7 +60,7 @@ INSTALLED_APPS = [
     # "django_celery_beat",
     # django apps
     'todos',
-    'auth_api',
+    "auth_api",
     "users",
 ]
 

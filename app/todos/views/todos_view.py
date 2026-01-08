@@ -1,8 +1,8 @@
 from utils.swagger import apply_swagger_tags
 from utils.custom_filter import filter_model
 from proj.base_view import BaseModelViewSet
-from core.models import Todo
-from todos.serializers import TodoSerializer
+from core.models import Todos
+from todos.serializers import TodosSerializer
 from auth_api.permissions import IsAuthenticated
 from rest_framework.decorators import action
 from utils.make_response import response
@@ -17,9 +17,9 @@ from utils.make_response import response
         },
     },
 )
-class TodoViewSet(BaseModelViewSet):
-    queryset = Todo.objects.all()
-    serializer_class = TodoSerializer
+class TodosViewSet(BaseModelViewSet):
+    queryset = Todos.objects.all()
+    serializer_class = TodosSerializer
     permission_classes = [IsAuthenticated]
     
     def get_queryset(self):
@@ -27,7 +27,7 @@ class TodoViewSet(BaseModelViewSet):
         query_params = self.request.query_params
         if query_params:
             # Apply filtering based on query parameters
-            return filter_model(query_params, queryset, Todo)
+            return filter_model(query_params, queryset, Todos)
         return queryset
     
     @action(methods=["GET"], detail=False, url_path="all")

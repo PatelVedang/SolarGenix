@@ -1,7 +1,7 @@
 # ADD NEW INNER IMPORT FOR MODEL HERE
-from .models import Todo
+from .models import Todos
 
 __all__ = [
     # ADD NEW INNER MODEL HERE
-    'Todo',
+    'Todos',
 ]
