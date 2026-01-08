@@ -16,3 +16,11 @@ repos:
       - id: commitlint
         stages: [commit-msg]
 
+  - repo: local
+    hooks:
+      - id: check-env-synced
+        name: Check .env and .env_example synchronization
+        entry: ./app/scripts/check_env_sync.sh
+        language: script
+        always_run: true
+        stages: [pre-commit]
