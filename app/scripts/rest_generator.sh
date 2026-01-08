@@ -225,17 +225,15 @@ if ! grep -q "'$APP_NAME'" "$INIT_OUTER"; then
     echo "Task initiated: Adding app to model in to the __init__..."
     if [[ "$OSTYPE" == "darwin"* ]]; then
         # macOS
-        sed -i '' "/# ADD NEW IMPORT FOR MODEL HERE/a\\from .$APP_NAME import $SINGULAR_CAPITALIZED\\
+        sed -i '' "/# ADD NEW IMPORT FOR MODEL HERE/a\\from .$APP_NAME import *\\
 " "$INIT_OUTER"
 
-        sed -i '' "/# ADD NEW MODEL HERE/a\\
-    '$SINGULAR_CAPITALIZED',\\
-" "$INIT_OUTER"
+
     else
         
-        sed -i "/# ADD NEW IMPORT FOR MODEL HERE/a\from .$APP_NAME import $SINGULAR_CAPITALIZED" "$INIT_OUTER"
+        sed -i "/# ADD NEW IMPORT FOR MODEL HERE/a\from .$APP_NAME import *" "$INIT_OUTER"
 
-        sed -i "/# ADD NEW MODEL HERE/a\    '$SINGULAR_CAPITALIZED'," "$INIT_OUTER"
+
     fi
 fi
 

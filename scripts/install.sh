@@ -208,11 +208,11 @@ else
 fi
 
 # Required Python version
-PYTHON_REQUIRED_VERSION="3.11"
+PYTHON_REQUIRED_VERSION="3.12"
 echo "Checking Python $PYTHON_REQUIRED_VERSION"
 echo "----------------------------------------------------"
 
-# Check if python3.11 is available and its version
+# Check if python3.12 is available and its version
 if is_command_available "python$PYTHON_REQUIRED_VERSION"; then
     python_version=$( "python$PYTHON_REQUIRED_VERSION" --version 2>&1 )
     if [[ $python_version == *"$PYTHON_REQUIRED_VERSION"* ]]; then
@@ -249,15 +249,15 @@ if [ "$INSTALL_PYTHON" = true ]; then
     fi
 fi
 echo "----------------------------------------------------"
-printf "Python 3.11 check and installation completed 😎 \n\n\n"
+printf "Python 3.12 check and installation completed 😎 \n\n\n"
 
-echo "Installing Python 3.11 venv module"
+echo "Installing Python 3.12 venv module"
 echo "----------------------------------------------------"
 if [ "$OS" == "linux" ]; then
     sudo apt install "python$PYTHON_REQUIRED_VERSION-venv" -y
 fi
 echo "----------------------------------------------------"
-printf "Python 3.11 venv module Installed 😎 \n\n\n"
+printf "Python 3.12 venv module Installed 😎 \n\n\n"
 
 echo "Creating Virtual Environment"
 echo "----------------------------------------------------"
