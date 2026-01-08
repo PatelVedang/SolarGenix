@@ -1,3 +1,7 @@
-from .todo_crud_view import TodoViewSet
+# imports view from the application
+from .todo_view import TodoViewSet
 
-__all__ = ["TodoViewSet"]
+__all__ = [
+    # Add New view here 
+    'TodoViewSet',
+]

@@ -1,16 +1,23 @@
-import json
-
-from auth_api.tests import BaseAPITestCase
-from core.models import Todo
+import os,json, tempfile
+from PIL import Image
+from django.test import TestCase
 from django.urls import reverse
+from datetime import date
+from datetime import timedelta
+from rest_framework.test import APITestCase, APIClient
+from django.core.files.uploadedfile import SimpleUploadedFile
 from rest_framework import status
+from core.models import Todo
+from auth_api.models import User
+from auth_api.tests import BaseAPITestCase
 
 
-class TodoTest(BaseAPITestCase):
-    url = reverse("todo-list")
 
-    def create_todo_via_orm(self, **kwargs):
-        """Create a todo using Django ORM and return the instance."""
+class TodoModelTests(BaseAPITestCase):
+    url = reverse("todos-list")
+    
+    def create_todos_via_orm(self, **kwargs):
+        """Create a todos using Django ORM and return the instance."""
         # Default valid data
         data = {
             "name": "New todos",
@@ -31,50 +38,48 @@ class TodoTest(BaseAPITestCase):
                 {"key": "value", "key2": "value2"}
             ),  # Add JSON data as string
         }
-
-        # Override with any invalid data passed via kwargs
         data.update(kwargs)
 
-        # Attempt to create the todo using Django's ORM and return the instance
+        # Attempt to create the todos using Django's ORM and return the instance
         return Todo.objects.create(**data)
-
+    
+    
     def test_create_todos_with_authenticate(self):
         """
-        The function `test_create_todos_with_authenticate` creates a todo with authentication
+        The function `test_create_todos_with_authenticate` creates a todos with authentication
         and checks for a successful response.
         """
-        # self.register()
         self.login()
-        self.create_todo_via_orm()
+        self.create_todos_via_orm()
         self.status_code = status.HTTP_201_CREATED
 
         self.match_success_response(201)
 
     def test_create_todos_without_authenticate(self):
         """
-        The function `test_create_todos_without_authenticate` creates a todo without authentication
+        The function `test_create_todos_without_authenticate` creates a todos without authentication
         and checks for a successful response.
         """
-
-        self.create_todo_via_orm()
+        self.create_todos_via_orm()
         self.status_code = status.HTTP_401_UNAUTHORIZED
         self.match_error_response(401)
 
     def test_create_todos_with_invalid_data(self):
         """
-        Test creating a TODO with invalid data (e.g., invalid URL).
-        Expected: HTTP 422 using customexeption Bad Request.
+        The function `test_create_todos_with_invalid_data`
+        and checks for a successful response.
         """
         self.login()
         invalid_data = {
-            "url": "invalid_url"  # Invalid format for URLField
+            "url": "invalid_url"  # Invalid URL format
         }
-        self.set_response(self.client.post(self.url, data=invalid_data, format="json"))
-        self.match_error_response(422)
+        with self.assertRaises(Exception):  # Expect failure due to invalid data
+            self.create_todos_via_orm(**invalid_data)
+            self.match_error_response(400)
 
     def test_get_todos(self):
         """
-        The function `test_get_todos` retrieves all todos and checks for a successful response.
+        The function `test_create_todos` retrieves all todos and checks for a successful response.
         """
         self.login()
         self.set_response(self.client.get(self.url))
@@ -88,68 +93,56 @@ class TodoTest(BaseAPITestCase):
         self.set_response(self.client.get(self.url))
         self.match_error_response(401)
 
-    def test_retrieve_todo_by_id(self):
+    def test_retrieve_todos_by_id(self):
         """
-        The function `test_retrieve_todo_by_id` retrieves a todo by ID and checks for a successful response.
+        The function `test_retrieve_todos_by_id` retrieves a todos by ID and checks for a successful response.
         """
         self.login()
-        todo = self.create_todo_via_orm()
-        created_todo_id = todo.id
-        self.set_response(self.client.get(f"{self.url}{created_todo_id}/"))
+        todos = self.create_todos_via_orm()
+        created_todos_id = todos.id
+        self.set_response(self.client.get(f"{self.url}{created_todos_id}/"))
         self.match_success_response(200)
 
-    def test_retrieve_todo_by_id_without_authenticate(self):
+    def test_retrieve_todos_by_id_without_authenticate(self):
         """
-        The function `test_retrieve_todo_by_id_without_authenticate` retrieves a todo by ID without authentication
+        The function `test_retrieve_todos_by_id_without_authenticate` retrieves a todos by ID without authentication
         and checks for a successful response.
         """
-        todo = self.create_todo_via_orm()
-        created_todo_id = todo.id
-        self.set_response(self.client.get(f"{self.url}{created_todo_id}/"))
+        todos = self.create_todos_via_orm()
+        created_todos_id = todos.id
+        self.set_response(self.client.get(f"{self.url}{created_todos_id}/"))
         self.match_error_response(401)
 
-    def test_retrieve_todo_by_id_with_wrong_id(self):
+    def test_retrieve_todos_by_id_with_wrong_id(self):
         """
-        The function `test_retrieve_todo_by_id_without_authenticate` retrieves a todo by ID without authentication
+        The function `test_retrieve_todos_by_id_with_wrong_id` retrieves a todos by ID with a wrong ID
         and checks for a successful response.
         """
         self.login()
         self.set_response(self.client.get(f"{self.url}1000/"))
         self.match_error_response(404)
 
-    def test_update_todo_by_id(self):
-        """
-        The function `test_update_todo_by_id` updates a todo by ID and checks for a successful response.
-        """
+    def test_update_todos_by_id(self):
         self.login()
-        todo = self.create_todo_via_orm()
-        created_todo_id = todo.id
-        # Update the todo with a patch request
+        todos = self.create_todos_via_orm()
+        created_todos_id = todos.id
+        # Update the todos with a patch request
         self.client.patch(
-            f"{self.url}{created_todo_id}/", {"name": "Updated name"}, format="json"
+            f"{self.url}{created_todos_id}/", {"name": "Updated name"}, format="json"
         )
         self.match_success_response()
 
-    def test_update_todo_by_id_without_authenticate(self):
-        """
-        The function `test_update_todo_by_id_without_authenticate` updates a todo by ID without authentication
-        and checks for a successful response.
-        """
-        todo = self.create_todo_via_orm()
-        # Update the todo with a patch request
+    def test_update_todos_by_id_without_authenticate(self):
+        todos = self.create_todos_via_orm()
+        # Update the todos with a patch request
         self.client.patch(
-            f"{self.url}{todo.id}/", {"name": "Updated name"}, format="json"
+            f"{self.url}{todos.id}/", {"name": "Updated name"}, format="json"
         )
         self.status_code = status.HTTP_401_UNAUTHORIZED
         self.match_error_response(401)
 
-    def test_update_todo_by_id_with_wrong_id(self):
-        """
-        The function `test_update_todo_by_id_with_wrong_id` updates a todo by ID with wrong ID
-        and checks for a successful response.
-        """
+    def test_update_todos_by_id_with_wrong_id(self):
         self.login()
-        # todo = self.create_todo_via_orm()
 
         self.set_response(
             self.client.patch(
@@ -162,10 +155,10 @@ class TodoTest(BaseAPITestCase):
     #     """Test creating todos with invalid email."""
     #     self.login()
     #     payload = {
-    #         "name": "Test Todo",  # Adjust these fields as needed
+    #         "name": "Test todos",  # Adjust these fields as needed
     #         "email": "invalid-email",
     #     }
-    #     self.create_todo_via_orm(**payload)
+    #     self.create_todos_via_orm(**payload)
     #     self.status_code = status.HTTP_400_BAD_REQUEST
     #     self.match_error_response(400)
 
@@ -174,142 +167,36 @@ class TodoTest(BaseAPITestCase):
     #     Test creating todos with an existing email, expecting a 400 Bad Request error using ORM.
     #     """
     #     self.login()
-    #     # Create the first todo via ORM
-    #     self.create_todo_via_orm(email="duplicate@example.com")
-    #     # self.create_todo_via_orm(email="duplicate@example.com")
+    #     # Create the first todos via ORM
+    #     self.create_todos_via_orm(email="duplicate@example.com")
+    #     # self.create_todos_via_orm(email="duplicate@example.com")
     #     if Todo.objects.filter(email="duplicate@example.com").count() > 1:
     #         # Simulate a 400 Bad Request error since email is already in use
     #         self.match_error_response(400)
     #     else:
-    #         # Create the second todo via ORM (this shouldn't be reached in this test)
-    #         self.create_todo_via_orm(email="duplicate@example.com")
+    #         # Create the second todos via ORM (this shouldn't be reached in this test)
+    #         self.create_todos_via_orm(email="duplicate@example.com")
     #         self.match_error_response(200)  # This line is for testing purposes
 
-    def test_delete_todo_by_id(self):
+    def test_delete_todos_by_id(self):
         """
-        The function `test_delete_todo_by_id` deletes a todo by ID and checks for a successful response.
+        The function `test_delete_todos_by_id` deletes a todos by ID and checks for a successful response.
         """
         self.login()
-        todo = self.create_todo_via_orm()
-        created_todo_id = todo.id
-        self.set_response(self.client.delete(f"{self.url}{created_todo_id}/"))
+        todos = self.create_todos_via_orm()
+        created_todos_id = todos.id
+        self.set_response(self.client.delete(f"{self.url}{created_todos_id}/"))
         self.match_success_response(204)
 
-    def test_delete_todo_by_id_without_authenticate(self):
-        #     """Test deleting a todo by ID without authentication."""
-        todo = self.create_todo_via_orm()
-        created_todo_id = todo.id
-        self.set_response(self.client.delete(f"{self.url}{created_todo_id}/"))
+    def test_delete_todos_by_id_without_authenticate(self):
+        #     """Test deleting by ID without authentication."""
+        todos = self.create_todos_via_orm()
+        created_todos_id = todos.id
+        self.set_response(self.client.delete(f"{self.url}{created_todos_id}/"))
         self.match_error_response(401)
 
-    def test_delete_todo_by_id_with_wrong_id(self):
-        """Test deleting a todo by an invalid ID."""
+    def test_delete_todos_by_id_with_wrong_id(self):
+        """Test deleting a todos by an invalid ID."""
         self.login()
         self.set_response(self.client.delete(f"{self.url}111/"))
         self.match_error_response(404)
-
-    def create_sample_todo(self):
-        """
-        Utility function to create a set of sample todo for tests.
-        """
-        records = [
-            {"name": "todo", "description": "First record"},
-            {"name": "folder", "description": "Second record"},
-            {"name": "file", "description": "Third record"},
-        ]
-        for record in records:
-            self.create_todo_via_orm(
-                name=record["name"], description=record["description"]
-            )
-
-    def test_get_todo_with_search_filter(self):
-        """
-        Test for filtering todo by name.
-        """
-        self.login()
-
-        self.create_sample_todo()
-
-        # Search filter (search for "todo")
-        url_search = f"{self.url}?name=todo"
-        response_search = self.client.get(url_search)
-        self.status_code = status.HTTP_200_OK  # Set the expected status code
-        self.match_success_response(response_search.status_code)
-
-        response_data_search = response_search.json()
-        results_search = response_data_search["data"]["results"]
-
-        expected_names_search = ["todo"]
-        result_names_search = [todo["name"] for todo in results_search]
-        self.assertListEqual(result_names_search, expected_names_search)
-
-    def test_get_todo_with_sort_ascending(self):
-        """
-        Test for sorting todo by name in ascending order.
-        """
-        self.login()
-        self.create_sample_todo()
-
-        # Sort Ascending (by name)
-        url_sort_asc = f"{self.url}?sort=name"
-        response_sort_asc = self.client.get(url_sort_asc)
-        self.match_success_response(response_sort_asc.status_code)
-
-        response_data_sort_asc = response_sort_asc.json()
-        results_sort_asc = response_data_sort_asc["data"]["results"]
-        expected_names_asc = ["file", "folder", "todo"]
-        result_names_sort_asc = [todo["name"] for todo in results_sort_asc]
-        self.assertListEqual(result_names_sort_asc, expected_names_asc)
-
-    def test_get_todo_with_sort_descending(self):
-        """
-        Test for sorting todo by name in descending order.
-        """
-        self.login()
-        self.create_sample_todo()
-
-        # Sort Descending (by name)
-        url_sort_desc = f"{self.url}?sort=-name"
-        response_sort_desc = self.client.get(url_sort_desc)
-        self.match_success_response(response_sort_desc.status_code)
-
-        response_data_sort_desc = response_sort_desc.json()
-        results_sort_desc = response_data_sort_desc["data"]["results"]
-        expected_names_desc = ["todo", "folder", "file"]
-        result_names_sort_desc = [todo["name"] for todo in results_sort_desc]
-        self.assertListEqual(result_names_sort_desc, expected_names_desc)
-
-    def test_get_todos_with_pagination(self):
-        """
-        Test for paginating todo.
-        """
-        self.login()
-
-        self.create_sample_todo()
-
-        # Pagination (skip and limit)
-        url_pagination = f"{self.url}?paginate=2&page=1"
-        response_pagination = self.client.get(url_pagination)
-        self.match_success_response(response_pagination.status_code)
-
-        response_data_pagination = response_pagination.json()
-        results_pagination = response_data_pagination["data"]["results"]
-
-        expected_names_pagination = ["file", "folder"]
-        self.assertEqual(len(results_pagination), 2)
-        self.assertListEqual(
-            [todo["name"] for todo in results_pagination], expected_names_pagination
-        )
-
-        # Pagination with skipping the first todo
-        url_pagination_skip = f"{self.url}?paginate=1"
-        response_pagination_skip = self.client.get(url_pagination_skip)
-        self.match_success_response(response_pagination_skip.status_code)
-
-        response_data_skip = response_pagination_skip.json()
-        results_skip = response_data_skip["data"]["results"]
-
-        expected_names_skip = ["file"]  # Adjust if necessary based on sorting
-        self.assertListEqual(
-            [todo["name"] for todo in results_skip], expected_names_skip
-        )

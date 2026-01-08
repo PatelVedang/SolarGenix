@@ -59,9 +59,9 @@ INSTALLED_APPS = [
     "corsheaders",
     # "django_celery_beat",
     # django apps
-    "auth_api",
+    'todos',
+    'auth_api',
     "users",
-    "todos",
 ]
 
 MIDDLEWARE = [

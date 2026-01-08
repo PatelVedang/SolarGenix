@@ -207,25 +207,44 @@ else
     echo "Skipping PostgreSQL user and database creation."
 fi
 
-echo "Checking Python 3.11"
+# Required Python version
+PYTHON_REQUIRED_VERSION="3.11"
+echo "Checking Python $PYTHON_REQUIRED_VERSION"
 echo "----------------------------------------------------"
-python_version=$(python3.11 --version 2>&1)
-if [[ $python_version == *"3.11.9"* ]]; then
-    echo "Python 3.11 is already installed."
+
+# Check if python3.11 is available and its version
+if is_command_available "python$PYTHON_REQUIRED_VERSION"; then
+    python_version=$( "python$PYTHON_REQUIRED_VERSION" --version 2>&1 )
+    if [[ $python_version == *"$PYTHON_REQUIRED_VERSION"* ]]; then
+        echo "Python $python_version is already installed."
+    else
+        echo "Installed Python version does not match $PYTHON_REQUIRED_VERSION. Found: $python_version"
+        INSTALL_PYTHON=true
+    fi
 else
-    echo "Python 3.11 is not installed. Installing..."
+    echo "Python $PYTHON_REQUIRED_VERSION is not installed. Installing..."
+    INSTALL_PYTHON=true
+fi
+
+if [ "$INSTALL_PYTHON" = true ]; then
     if [ "$OS" == "linux" ]; then
         sudo apt update
-        sudo add-apt-repository ppa:deadsnakes/ppa
-        sudo apt install python3.11 -y
+        sudo add-apt-repository ppa:deadsnakes/ppa -y
+        sudo apt install "python$PYTHON_REQUIRED_VERSION" -y
     elif [ "$OS" == "mac" ]; then
-        brew install python@3.11
+        brew install "python@$PYTHON_REQUIRED_VERSION"
     fi
-    python_version=$(python3.11 --version 2>&1)
-    if [[ $python_version == *"3.11.9"* ]]; then
-        echo "Python 3.11 installed successfully."
+    
+    if is_command_available "python$PYTHON_REQUIRED_VERSION"; then
+        python_version=$( "python$PYTHON_REQUIRED_VERSION" --version 2>&1 )
+        if [[ $python_version == *"$PYTHON_REQUIRED_VERSION"* ]]; then
+            echo "Python $python_version installed successfully."
+        else
+            echo "Failed to install Python $PYTHON_REQUIRED_VERSION. Please check the installation manually."
+            exit 1
+        fi
     else
-        echo "Failed to install Python 3.11. Please check the installation manually."
+        echo "Failed to install Python $PYTHON_REQUIRED_VERSION. Please check the installation manually."
         exit 1
     fi
 fi
@@ -235,7 +254,7 @@ printf "Python 3.11 check and installation completed 😎 \n\n\n"
 echo "Installing Python 3.11 venv module"
 echo "----------------------------------------------------"
 if [ "$OS" == "linux" ]; then
-    sudo apt install python3.11-venv -y
+    sudo apt install "python$PYTHON_REQUIRED_VERSION-venv" -y
 fi
 echo "----------------------------------------------------"
 printf "Python 3.11 venv module Installed 😎 \n\n\n"
@@ -243,7 +262,7 @@ printf "Python 3.11 venv module Installed 😎 \n\n\n"
 echo "Creating Virtual Environment"
 echo "----------------------------------------------------"
 if [ ! -d "env" ]; then
-    python3.11 -m venv env
+    "python$PYTHON_REQUIRED_VERSION" -m venv env
 else
     echo "Virtual Environment already exists. Skipping creation."
 fi

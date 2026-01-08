@@ -1,46 +1,39 @@
-# from auth_api.permissions import IsAuthenticated
-from auth_api.permissions import IsAuthenticated
-from core.models import Todo
-from proj.base_view import BaseModelViewSet
-from rest_framework.decorators import action
-from utils.custom_filter import filter_model
-from utils.make_response import response
 from utils.swagger import apply_swagger_tags
-
+from utils.custom_filter import filter_model
+from proj.base_view import BaseModelViewSet
+from core.models import Todo
 from todos.serializers import TodoSerializer
-
+from auth_api.permissions import IsAuthenticated
+from rest_framework.decorators import action
+from utils.make_response import response
 
 @apply_swagger_tags(
     tags=["Todos"],
     extra_actions=["get_all"],
     method_details={
         "get_all": {
-            "description": "Get all todos records without pagination",
-            "summary": "Get all todos",
+            "description": "Get all Todos records without pagination",
+            "summary": "Get all Todos",
         },
     },
 )
 class TodoViewSet(BaseModelViewSet):
-    """ViewSet for managing Todo items."""
     queryset = Todo.objects.all()
     serializer_class = TodoSerializer
     permission_classes = [IsAuthenticated]
-
+    
     def get_queryset(self):
-        """Override get_queryset to apply filtering based on query parameters."""
         queryset = super().get_queryset()
         query_params = self.request.query_params
         if query_params:
             # Apply filtering based on query parameters
             return filter_model(query_params, queryset, Todo)
         return queryset
-
-    @action(methods=["GET"], detail=False, url_path="get_all")
+    
+    @action(methods=["GET"], detail=False, url_path="all")
     def get_all(self, request, *args, **kwargs):
-        """Get all todos records """
         self.pagination_class = None
         serializer = self.get_serializer(self.get_queryset(), many=True)
-
         return response(
             data=serializer.data,
             message=self.get_message(request, *args, **kwargs),

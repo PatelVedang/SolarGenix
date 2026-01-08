@@ -40,7 +40,16 @@ APP_PATH="$PROJECT_ROOT/$APP_NAME"
 INIT_OUTER_CHECK="$PROJECT_ROOT/core/models/__init__.py"
 
 # Activate virtual environment
-source ../env/bin/activate
+if [ -f "../env/bin/activate" ]; then
+    source ../env/bin/activate
+elif [ -f "../../scripts/env/bin/activate" ]; then # For local execution from app/scripts
+    source ../../scripts/env/bin/activate
+elif [ -f "../scripts/env/bin/activate" ]; then # For execution from app/
+    source ../scripts/env/bin/activate
+else
+    echo "Error: Virtual environment not found. Please ensure 'env' directory exists in appropriate location."
+    exit 1
+fi
 
 echo "Initializing script..."
 
@@ -53,12 +62,13 @@ SINGULAR_CAPITALIZED_SERIALIZER=$(echo $NAMES_JSON | jq -r '.singular_capitalize
 SINGULAR_CAPITALIZED_VIEWSET=$(echo $NAMES_JSON | jq -r '.singular_capitalized')ViewSet
 SINGULAR_CAPITALIZED_MODEL_TESTS=$(echo $NAMES_JSON | jq -r '.singular_capitalized')ModelTests
 SINGULAR_CAPITALIZED_ADMIN=$(echo $NAMES_JSON | jq -r '.singular_capitalized')Admin
+SINGULAR_CAPITALIZED_SERVICE=$(echo $NAMES_JSON | jq -r '.singular_capitalized')Service
 PLURAL_DASHED=$(echo $NAMES_JSON | jq -r '.plural_dashed')
 PLURAL_SPACE_SEPRATED=$(echo $NAMES_JSON | jq -r '.plural_space_separated')
 
 # Check if the app already exists
 if [ -d "$APP_PATH" ]; then
-    echo "Error: The app '$PLURAL_UNDERSCORED' already exists."
+    echo "Error: The app '$APP_NAME' already exists."
     exit 1
 fi
 
@@ -94,11 +104,11 @@ fi
 
 # Create the Django app
 echo "Task initiated: Creating Django app..."
-python manage.py startapp "$PLURAL_UNDERSCORED"
+python manage.py startapp "$APP_NAME"
 
 # Remove default views.py file
-rm "$PLURAL_UNDERSCORED/views.py"
-rm "$PLURAL_UNDERSCORED/models.py"
+rm "$APP_NAME/views.py"
+rm "$APP_NAME/models.py"
 
 # Determine the correct sed command for in-place editing
 if [[ "$OSTYPE" == "darwin"* ]]; then
@@ -110,31 +120,30 @@ else
 fi
 
 # Add the app to INSTALLED_APPS
-if ! grep -q "'$PLURAL_UNDERSCORED'" "$SETTINGS_FILE"; then
+if ! grep -q "'$APP_NAME'" "$SETTINGS_FILE"; then
     echo "Task initiated: Adding app to INSTALLED_APPS..."
     if [[ "$OSTYPE" == "darwin"* ]]; then
         # macOS
         sed -i '' "/# django apps/a\\
-    '$PLURAL_UNDERSCORED',\\
+    '$APP_NAME',\\
 " "$SETTINGS_FILE"      # Add line after the comment: "# django apps"
     else
         # Linux
-        sed -i "/# django apps/a\    '$PLURAL_UNDERSCORED'," "$SETTINGS_FILE"    # Add line after the comment: "# django apps"
+        sed -i "/# django apps/a\    '$APP_NAME'," "$SETTINGS_FILE"    # Add line after the comment: "# django apps"
     fi
-    # $SED_CMD "/# django apps/a\    '$PLURAL_UNDERSCORED'," "$SETTINGS_FILE"
 fi
 
 # Add the app's URLs to the project's URLs
-if ! grep -q "'$PLURAL_UNDERSCORED.urls'" "$URLS_FILE"; then
+if ! grep -q "'$APP_NAME.urls'" "$URLS_FILE"; then
     echo "Task initiated: Adding app URLs to project URLs..."
     if [[ "$OSTYPE" == "darwin"* ]]; then
         # macOS
         sed -i '' "/# IMPORT_NEW_ROUTE_HERE/a\\
-    path(\"\", include('$PLURAL_UNDERSCORED.urls')),\\
+    path(\"\", include('$APP_NAME.urls')),\\
 " "$URLS_FILE"        
     else
         # Linux
-        sed -i "/# IMPORT_NEW_ROUTE_HERE/a\                path(\"\", include('$PLURAL_UNDERSCORED.urls'))," "$URLS_FILE"
+        sed -i "/# IMPORT_NEW_ROUTE_HERE/a\                path(\"\", include('$APP_NAME.urls'))," "$URLS_FILE"
     fi
 fi
 
@@ -142,8 +151,8 @@ fi
 
 # Generate models in core/models with various field types
 echo "Task initiated: Generating models.py..."
-mkdir -p "$PROJECT_ROOT/core/models/$PLURAL_UNDERSCORED"  # Generate Directory 
-cat <<EOL > "$PROJECT_ROOT/core/models/$PLURAL_UNDERSCORED/models.py"
+mkdir -p "$PROJECT_ROOT/core/models/$APP_NAME"  # Generate Directory 
+cat <<EOL > "$PROJECT_ROOT/core/models/$APP_NAME/models.py"
 from django.db import models
 import uuid
 from proj.models import BaseModel
@@ -176,7 +185,7 @@ class $SINGULAR_CAPITALIZED(BaseModel):
 EOL
 
 # Generate Inner __init__ file  
-cat <<EOL > "$PROJECT_ROOT/core/models/$PLURAL_UNDERSCORED/__init__.py"
+cat <<EOL > "$PROJECT_ROOT/core/models/$APP_NAME/__init__.py"
 # ADD NEW INNER IMPORT FOR MODEL HERE
 
 __all__ = [
@@ -186,15 +195,15 @@ EOL
 
 
 # Add Some Imports and Models Register in Inner __init__.py
-INIT_INNER="$PROJECT_ROOT/core/models/$PLURAL_UNDERSCORED/__init__.py"
+INIT_INNER="$PROJECT_ROOT/core/models/$APP_NAME/__init__.py"
 
-if ! grep -q "'$PLURAL_UNDERSCORED'" "$INIT_INNER"; then
+if ! grep -q "'$APP_NAME'" "$INIT_INNER"; then
     echo "Task initiated: Adding app to model in the Inner __init__..."
 
     if [[ "$OSTYPE" == "darwin"* ]]; then
         # macOS (BSD sed)
         sed -i '' "/# ADD NEW INNER IMPORT FOR MODEL HERE/a\\
-from .models import *\\
+from .models import $SINGULAR_CAPITALIZED\\
 " "$INIT_INNER"
 
         sed -i '' "/# ADD NEW INNER MODEL HERE/a\\
@@ -202,7 +211,7 @@ from .models import *\\
 " "$INIT_INNER"
     else
         # Linux (GNU sed)
-        sed -i "/# ADD NEW INNER IMPORT FOR MODEL HERE/a\from .models import *" "$INIT_INNER"
+        sed -i "/# ADD NEW INNER IMPORT FOR MODEL HERE/a\from .models import $SINGULAR_CAPITALIZED" "$INIT_INNER"
     
         sed -i "/# ADD NEW INNER MODEL HERE/a\    '$SINGULAR_CAPITALIZED'," "$INIT_INNER"
     fi
@@ -212,23 +221,22 @@ fi
 # Add Some Imports and Models Register in Outer __init__.py
 INIT_OUTER="$PROJECT_ROOT/core/models/__init__.py"
  
-if ! grep -q "'$PLURAL_UNDERSCORED'" "$INIT_OUTER"; then
+if ! grep -q "'$APP_NAME'" "$INIT_OUTER"; then
     echo "Task initiated: Adding app to model in to the __init__..."
     if [[ "$OSTYPE" == "darwin"* ]]; then
         # macOS
-        sed -i '' "/# ADD NEW IMPORT FOR MODEL HERE/a\\from .$PLURAL_UNDERSCORED import *\\
+        sed -i '' "/# ADD NEW IMPORT FOR MODEL HERE/a\\from .$APP_NAME import $SINGULAR_CAPITALIZED\\
 " "$INIT_OUTER"
 
-        sed -i '' "# ADD NEW MODEL HERE/a\\
+        sed -i '' "/# ADD NEW MODEL HERE/a\\
     '$SINGULAR_CAPITALIZED',\\
 " "$INIT_OUTER"
     else
         
-        sed -i "/# ADD NEW IMPORT FOR MODEL HERE/a\from .$PLURAL_UNDERSCORED import *" "$INIT_OUTER"
+        sed -i "/# ADD NEW IMPORT FOR MODEL HERE/a\from .$APP_NAME import $SINGULAR_CAPITALIZED" "$INIT_OUTER"
 
         sed -i "/# ADD NEW MODEL HERE/a\    '$SINGULAR_CAPITALIZED'," "$INIT_OUTER"
     fi
-    # $SED_CMD "/# django apps/a\    '$PLURAL_UNDERSCORED'," "$SETTINGS_FILE"
 fi
 
 
@@ -237,8 +245,8 @@ fi
 SERIALIZER_FILE="${SINGULAR_UNDERSCORED}_serializers"
 
 echo "Task initiated: Generating serializers package..."
-mkdir -p "$PLURAL_UNDERSCORED/serializers"  # Create Directory
-cat <<EOL > "$PLURAL_UNDERSCORED/serializers/$SERIALIZER_FILE.py"
+mkdir -p "$APP_NAME/serializers"  # Create Directory
+cat <<EOL > "$APP_NAME/serializers/$SERIALIZER_FILE.py"
 from rest_framework import serializers
 from proj.base_serializer import BaseModelSerializer
 from core.models import $SINGULAR_CAPITALIZED
@@ -250,7 +258,7 @@ class $SINGULAR_CAPITALIZED_SERIALIZER(BaseModelSerializer):
 EOL
 
 # Generate __init__.py file in Serializers Folder
-cat <<EOL > "$PLURAL_UNDERSCORED/serializers/__init__.py"
+cat <<EOL > "$APP_NAME/serializers/__init__.py"
 # imports serializer from the application
 
 __all__ = [
@@ -259,20 +267,20 @@ __all__ = [
 EOL
 
 # Add some Imports and Serializers in Serializers __init__.py 
-SERIALIZERS_INIT="$PLURAL_UNDERSCORED/serializers/__init__.py" 
+SERIALIZERS_INIT="$APP_NAME/serializers/__init__.py" 
 
 if ! grep -q "'$SERIALIZER_FILE'" "$SERIALIZERS_INIT"; then
     echo "Task initiated: Adding serializer to __init__..."
     if [[ "$OSTYPE" == "darwin"* ]]; then
         # macOS
-        sed -i '' "/# imports serializer from the application/a\\from .$SERIALIZER_FILE import *\\
+        sed -i '' "/# imports serializer from the application/a\\from .$SERIALIZER_FILE import $SINGULAR_CAPITALIZED_SERIALIZER\\
 " "$SERIALIZERS_INIT"
 
         sed -i '' "/# Add New serializer here/a\\
     '$SINGULAR_CAPITALIZED_SERIALIZER',\\
 " "$SERIALIZERS_INIT"
     else
-        sed -i "/# imports serializer from the application/a\from .$SERIALIZER_FILE import *" "$SERIALIZERS_INIT"
+        sed -i "/# imports serializer from the application/a\from .$SERIALIZER_FILE import $SINGULAR_CAPITALIZED_SERIALIZER" "$SERIALIZERS_INIT"
 
         sed -i "/# Add New serializer here/a\    '$SINGULAR_CAPITALIZED_SERIALIZER'," "$SERIALIZERS_INIT"
     fi
@@ -284,8 +292,8 @@ fi
 SERVICE_FILE="${SINGULAR_UNDERSCORED}_services"
 
 echo "Task initiated: Generating services package..."
-mkdir -p "$PLURAL_UNDERSCORED/services"  # Create Directory
-cat <<EOL > "$PLURAL_UNDERSCORED/services/$SERVICE_FILE.py"
+mkdir -p "$APP_NAME/services"  # Create Directory
+cat <<EOL > "$APP_NAME/services/$SERVICE_FILE.py"
 from core.models import $SINGULAR_CAPITALIZED
 
 class $SINGULAR_CAPITALIZED_SERVICE:
@@ -297,7 +305,7 @@ class $SINGULAR_CAPITALIZED_SERVICE:
 EOL
 
 # Generate __init__.py file in Services Folder
-cat <<EOL > "$PLURAL_UNDERSCORED/services/__init__.py"
+cat <<EOL > "$APP_NAME/services/__init__.py"
 # imports service from the application
 
 __all__ = [
@@ -306,22 +314,22 @@ __all__ = [
 EOL
 
 # Add some Imports and Services in Services __init__.py 
-SERVICES_INIT="$PLURAL_UNDERSCORED/services/__init__.py" 
+SERVICES_INIT="$APP_NAME/services/__init__.py" 
 
 if ! grep -q "'$SERVICE_FILE'" "$SERVICES_INIT"; then
     echo "Task initiated: Adding service to __init__..."
     if [[ "$OSTYPE" == "darwin"* ]]; then
         # macOS
-        sed -i '' "/# imports service from the application/a\\from .$SERVICE_FILE import *\\
+        sed -i '' "/# imports service from the application/a\\from .$SERVICE_FILE import $SINGULAR_CAPITALIZED_SERVICE\\
 " "$SERVICES_INIT"
 
         sed -i '' "/# Add New service here/a\\
-    '${SINGULAR_CAPITALIZED}_SERVICE',\\
+    '$SINGULAR_CAPITALIZED_SERVICE',\\
 " "$SERVICES_INIT"
     else
-        sed -i "/# imports service from the application/a\from .$SERVICE_FILE import *" "$SERVICES_INIT"
+        sed -i "/# imports service from the application/a\from .$SERVICE_FILE import $SINGULAR_CAPITALIZED_SERVICE" "$SERVICES_INIT"
 
-        sed -i "/# Add New service here/a\    '${SINGULAR_CAPITALIZED}_SERVICE'," "$SERVICES_INIT"
+        sed -i "/# Add New service here/a\    '$SINGULAR_CAPITALIZED_SERVICE'," "$SERVICES_INIT"
     fi
 fi
 
@@ -331,13 +339,13 @@ fi
 VIEW_FILE="${SINGULAR_UNDERSCORED}_view"
 
 echo "Task initiated: Generating views package..."
-mkdir -p "$PLURAL_UNDERSCORED/views"  # Create Directory
-cat <<EOL > "$PLURAL_UNDERSCORED/views/$VIEW_FILE.py"
+mkdir -p "$APP_NAME/views"  # Create Directory
+cat <<EOL > "$APP_NAME/views/$VIEW_FILE.py"
 from utils.swagger import apply_swagger_tags
 from utils.custom_filter import filter_model
 from proj.base_view import BaseModelViewSet
 from core.models import $SINGULAR_CAPITALIZED
-from $PLURAL_UNDERSCORED.serializers import $SINGULAR_CAPITALIZED_SERIALIZER
+from $APP_NAME.serializers import $SINGULAR_CAPITALIZED_SERIALIZER
 from auth_api.permissions import IsAuthenticated
 from rest_framework.decorators import action
 from utils.make_response import response
@@ -377,7 +385,7 @@ class $SINGULAR_CAPITALIZED_VIEWSET(BaseModelViewSet):
 EOL
 
 # Generate __init__.py file in Views Folder
-cat <<EOL > "$PLURAL_UNDERSCORED/views/__init__.py"
+cat <<EOL > "$APP_NAME/views/__init__.py"
 # imports view from the application
 
 __all__ = [
@@ -386,20 +394,20 @@ __all__ = [
 EOL
 
 # Add some Imports and Views in Views __init__.py 
-VIEWS_INIT="$PLURAL_UNDERSCORED/views/__init__.py" 
+VIEWS_INIT="$APP_NAME/views/__init__.py" 
 
 if ! grep -q "'$VIEW_FILE'" "$VIEWS_INIT"; then
     echo "Task initiated: Adding view to __init__..."
     if [[ "$OSTYPE" == "darwin"* ]]; then
         # macOS
-        sed -i '' "/# imports view from the application/a\\from .$VIEW_FILE import *\\
+        sed -i '' "/# imports view from the application/a\\from .$VIEW_FILE import $SINGULAR_CAPITALIZED_VIEWSET\\
 " "$VIEWS_INIT"
 
         sed -i '' "/# Add New view here/a\\
     '$SINGULAR_CAPITALIZED_VIEWSET',\\
 " "$VIEWS_INIT"
     else
-        sed -i "/# imports view from the application/a\from .$VIEW_FILE import *" "$VIEWS_INIT"
+        sed -i "/# imports view from the application/a\from .$VIEW_FILE import $SINGULAR_CAPITALIZED_VIEWSET" "$VIEWS_INIT"
 
         sed -i "/# Add New view here/a\    '$SINGULAR_CAPITALIZED_VIEWSET'," "$VIEWS_INIT"
     fi
@@ -409,10 +417,10 @@ fi
 # ::::::::::::::::::::::::: Create urls.py :::::::::::::::::::::::::
 
 echo "Task initiated: Generating urls.py..."
-cat <<EOL > "$PLURAL_UNDERSCORED/urls.py"
+cat <<EOL > "$APP_NAME/urls.py"
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from $PLURAL_UNDERSCORED.views import $SINGULAR_CAPITALIZED_VIEWSET
+from $APP_NAME.views import $SINGULAR_CAPITALIZED_VIEWSET
 
 router = DefaultRouter(trailing_slash=True)
 router.register(r'', $SINGULAR_CAPITALIZED_VIEWSET)
@@ -426,7 +434,7 @@ EOL
 # ::::::::::::::::::::::::: Create admin.py :::::::::::::::::::::::::
 
 echo "Task initiated: Generating admin.py..."
-cat <<EOL > "$PLURAL_UNDERSCORED/admin.py"
+cat <<EOL > "$APP_NAME/admin.py"
 from django.contrib import admin
 from core.models import $SINGULAR_CAPITALIZED
 
@@ -440,7 +448,7 @@ EOL
 # ::::::::::::::::::::::::: Create tests.py :::::::::::::::::::::::::
 
 echo "Task initiated: Generating tests.py..."
-cat <<EOL > "$PLURAL_UNDERSCORED/tests.py"       
+cat <<EOL > "$APP_NAME/tests.py"       
 import os,json, tempfile
 from PIL import Image
 from django.test import TestCase
@@ -489,7 +497,7 @@ class ${SINGULAR_CAPITALIZED_MODEL_TESTS}(BaseAPITestCase):
     
     def test_create_${APP_NAME}_with_authenticate(self):
         """
-        The function \`test_create_${APP_NAME}_with_authenticate\` creates a todo with authentication
+        The function \`test_create_${APP_NAME}_with_authenticate\` creates a ${APP_NAME} with authentication
         and checks for a successful response.
         """
         self.login()
@@ -500,7 +508,7 @@ class ${SINGULAR_CAPITALIZED_MODEL_TESTS}(BaseAPITestCase):
 
     def test_create_${APP_NAME}_without_authenticate(self):
         """
-        The function \`test_create_${APP_NAME}_without_authenticate\` creates a todo without authentication
+        The function \`test_create_${APP_NAME}_without_authenticate\` creates a ${APP_NAME} without authentication
         and checks for a successful response.
         """
         self.create_${APP_NAME}_via_orm()
@@ -558,7 +566,7 @@ class ${SINGULAR_CAPITALIZED_MODEL_TESTS}(BaseAPITestCase):
 
     def test_retrieve_${APP_NAME}_by_id_with_wrong_id(self):
         """
-        The function \`test_retrieve_${APP_NAME}_by_id_without_authenticate\` retrieves a ${APP_NAME} by ID without authentication
+        The function \`test_retrieve_${APP_NAME}_by_id_with_wrong_id\` retrieves a ${APP_NAME} by ID with a wrong ID
         and checks for a successful response.
         """
         self.login()
@@ -598,10 +606,10 @@ class ${SINGULAR_CAPITALIZED_MODEL_TESTS}(BaseAPITestCase):
     #     """Test creating ${APP_NAME} with invalid email."""
     #     self.login()
     #     payload = {
-    #         "name": "Test Todo",  # Adjust these fields as needed
+    #         "name": "Test ${APP_NAME}",  # Adjust these fields as needed
     #         "email": "invalid-email",
     #     }
-    #     self.create_todo_via_orm(**payload)
+    #     self.create_${APP_NAME}_via_orm(**payload)
     #     self.status_code = status.HTTP_400_BAD_REQUEST
     #     self.match_error_response(400)
 
@@ -610,15 +618,15 @@ class ${SINGULAR_CAPITALIZED_MODEL_TESTS}(BaseAPITestCase):
     #     Test creating ${APP_NAME} with an existing email, expecting a 400 Bad Request error using ORM.
     #     """
     #     self.login()
-    #     # Create the first todo via ORM
-    #     self.create_todo_via_orm(email="duplicate@example.com")
-    #     # self.create_todo_via_orm(email="duplicate@example.com")
-    #     if Todo.objects.filter(email="duplicate@example.com").count() > 1:
+    #     # Create the first ${APP_NAME} via ORM
+    #     self.create_${APP_NAME}_via_orm(email="duplicate@example.com")
+    #     # self.create_${APP_NAME}_via_orm(email="duplicate@example.com")
+    #     if ${SINGULAR_CAPITALIZED}.objects.filter(email="duplicate@example.com").count() > 1:
     #         # Simulate a 400 Bad Request error since email is already in use
     #         self.match_error_response(400)
     #     else:
-    #         # Create the second todo via ORM (this shouldn't be reached in this test)
-    #         self.create_todo_via_orm(email="duplicate@example.com")
+    #         # Create the second ${APP_NAME} via ORM (this shouldn't be reached in this test)
+    #         self.create_${APP_NAME}_via_orm(email="duplicate@example.com")
     #         self.match_error_response(200)  # This line is for testing purposes
 
     def test_delete_${APP_NAME}_by_id(self):
@@ -657,5 +665,5 @@ python manage.py migrate
 
 # ::::::::::::::::::::::::: Successfully Sey of Application :::::::::::::::::::::::::
 
-echo "App '$PLURAL_UNDERSCORED' has been created and configured successfully."
-echo "App '$PLURAL_UNDERSCORED' created successfully!"
+echo "App '$APP_NAME' has been created and configured successfully."
+echo "App '$APP_NAME' created successfully!"

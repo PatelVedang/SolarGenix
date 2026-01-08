@@ -8,7 +8,7 @@ pluralizer = Pluralizer()
 
 
 def to_dashed(string):
-    return re.sub(r"([A-Z])", r"-\1", string).lower()
+    return re.sub(r"([A-Z])", r"-\1", string).lower().lstrip("-")
 
 
 def to_lower(string):
@@ -16,11 +16,11 @@ def to_lower(string):
 
 
 def to_underscore(string):
-    return re.sub(r"([A-Z])", r"_\1", string).lower()
+    return re.sub(r"([A-Z])", r"_\1", string).lower().lstrip("_")
 
 
 def to_upper_case_underscored(string):
-    return re.sub(r"([A-Z])", r"_\1", string).upper()
+    return re.sub(r"([A-Z])", r"_\1", string).upper().lstrip("_")
 
 
 def to_capitalized(string):
