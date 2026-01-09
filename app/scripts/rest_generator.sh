@@ -464,7 +464,7 @@ from auth_api.tests import BaseAPITestCase
 
 
 class ${SINGULAR_CAPITALIZED_MODEL_TESTS}(BaseAPITestCase):
-    url = reverse("${APP_NAME}-list")
+    url = reverse("${APP_NAME_LOWER}-list")
     
     def create_${APP_NAME}_via_orm(self, **kwargs):
         """Create a ${APP_NAME} using Django ORM and return the instance."""
