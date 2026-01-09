@@ -1,7 +1,7 @@
 # imports serializer from the application
-from .todos_serializers import TodosSerializer
+from .todo_serializer import TodoSerializer
 
 __all__ = [
     # Add New serializer here 
-    'TodosSerializer',
+    'TodoSerializer',
 ]

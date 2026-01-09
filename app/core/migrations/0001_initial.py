@@ -17,41 +17,7 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.CreateModel(
-            name='Todo',
-            fields=[
-                ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
-                ('is_deleted', models.BooleanField(default=False)),
-                ('name', models.CharField(max_length=255)),
-                ('description', models.TextField()),
-                ('price', models.DecimalField(decimal_places=2, max_digits=10)),
-                ('inventory', models.IntegerField()),
-                ('available', models.BooleanField(default=True)),
-                ('published_date', models.DateField()),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('rating', models.FloatField()),
-                ('image', models.ImageField(upload_to='images/')),
-                ('file', models.FileField(upload_to='files/')),
-                ('url', models.URLField()),
-                ('email', models.EmailField(max_length=254)),
-                ('slug', models.SlugField()),
-                ('uuid', models.UUIDField(default=uuid.uuid4, editable=False)),
-                ('ip_address', models.GenericIPAddressField()),
-                ('big_integer', models.BigIntegerField()),
-                ('positive_integer', models.PositiveIntegerField()),
-                ('small_integer', models.SmallIntegerField()),
-                ('duration', models.DurationField()),
-                ('json_data', models.JSONField()),
-            ],
-            options={
-                'ordering': ('-created_at',),
-                'abstract': False,
-            },
-            managers=[
-                ('default', django.db.models.manager.Manager()),
-            ],
-        ),
+
         migrations.CreateModel(
             name='User',
             fields=[

@@ -1,7 +1,7 @@
 # imports view from the application
-from .todos_view import TodosViewSet
+from .todo_view import TodoViewSet
 
 __all__ = [
     # Add New view here 
-    'TodosViewSet',
+    'TodoViewSet',
 ]

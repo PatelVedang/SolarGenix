@@ -41,12 +41,7 @@ if not name:
 plural = None
 singular = None
 
-EXCEPTIONS = ["todos"]
-
-if name in EXCEPTIONS:
-    singular = name
-    plural = name
-elif pluralizer.isSingular(name):
+if pluralizer.isSingular(name):
     singular = name
     plural = pluralizer.plural(name)
 else:

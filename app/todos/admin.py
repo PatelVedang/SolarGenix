@@ -1,7 +1,7 @@
 from django.contrib import admin
-from core.models import Todos
+from core.models import Todo
 
-@admin.register(Todos)
-class TodosAdmin(admin.ModelAdmin):
+@admin.register(Todo)
+class TodoAdmin(admin.ModelAdmin):
     list_display = ('name', 'description', 'price', 'inventory', 'available', 'published_date')
     search_fields = ('name', 'description', 'price', 'inventory', 'available', 'published_date')

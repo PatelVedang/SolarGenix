@@ -33,6 +33,7 @@ if [ -z "$1" ]; then
 fi
 
 APP_NAME=$1
+APP_NAME_LOWER=$(echo "$APP_NAME" | tr '[:upper:]' '[:lower:]')
 PROJECT_ROOT="."
 SETTINGS_FILE="$PROJECT_ROOT/proj/settings.py"
 URLS_FILE="$PROJECT_ROOT/proj/urls.py"
@@ -151,8 +152,8 @@ fi
 
 # Generate models in core/models with various field types
 echo "Task initiated: Generating models.py..."
-mkdir -p "$PROJECT_ROOT/core/models/$APP_NAME"  # Generate Directory 
-cat <<EOL > "$PROJECT_ROOT/core/models/$APP_NAME/models.py"
+mkdir -p "$PROJECT_ROOT/core/models/$APP_NAME_LOWER"  # Generate Directory 
+cat <<EOL > "$PROJECT_ROOT/core/models/$APP_NAME_LOWER/models.py"
 from django.db import models
 import uuid
 from proj.models import BaseModel
@@ -185,7 +186,7 @@ class $SINGULAR_CAPITALIZED(BaseModel):
 EOL
 
 # Generate Inner __init__ file  
-cat <<EOL > "$PROJECT_ROOT/core/models/$APP_NAME/__init__.py"
+cat <<EOL > "$PROJECT_ROOT/core/models/$APP_NAME_LOWER/__init__.py"
 # ADD NEW INNER IMPORT FOR MODEL HERE
 
 __all__ = [
@@ -195,7 +196,7 @@ EOL
 
 
 # Add Some Imports and Models Register in Inner __init__.py
-INIT_INNER="$PROJECT_ROOT/core/models/$APP_NAME/__init__.py"
+INIT_INNER="$PROJECT_ROOT/core/models/$APP_NAME_LOWER/__init__.py"
 
 if ! grep -q "'$APP_NAME'" "$INIT_INNER"; then
     echo "Task initiated: Adding app to model in the Inner __init__..."
@@ -225,13 +226,13 @@ if ! grep -q "'$APP_NAME'" "$INIT_OUTER"; then
     echo "Task initiated: Adding app to model in to the __init__..."
     if [[ "$OSTYPE" == "darwin"* ]]; then
         # macOS
-        sed -i '' "/# ADD NEW IMPORT FOR MODEL HERE/a\\from .$APP_NAME import *\\
+        sed -i '' "/# ADD NEW IMPORT FOR MODEL HERE/a\\from .$APP_NAME_LOWER import *\\
 " "$INIT_OUTER"
 
 
     else
         
-        sed -i "/# ADD NEW IMPORT FOR MODEL HERE/a\from .$APP_NAME import *" "$INIT_OUTER"
+        sed -i "/# ADD NEW IMPORT FOR MODEL HERE/a\from .$APP_NAME_LOWER import *" "$INIT_OUTER"
 
 
     fi
@@ -240,7 +241,7 @@ fi
 
 # ::::::::::::::::::::::::: Create serializers package :::::::::::::::::::::::::
 
-SERIALIZER_FILE="${SINGULAR_UNDERSCORED}_serializers"
+SERIALIZER_FILE="${SINGULAR_UNDERSCORED}_serializer"
 
 echo "Task initiated: Generating serializers package..."
 mkdir -p "$APP_NAME/serializers"  # Create Directory
@@ -287,7 +288,7 @@ fi
 
 # ::::::::::::::::::::::::: Create services package :::::::::::::::::::::::::
 
-SERVICE_FILE="${SINGULAR_UNDERSCORED}_services"
+SERVICE_FILE="${SINGULAR_UNDERSCORED}_service"
 
 echo "Task initiated: Generating services package..."
 mkdir -p "$APP_NAME/services"  # Create Directory
