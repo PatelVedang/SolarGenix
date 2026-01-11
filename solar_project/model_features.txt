@@ -1,0 +1,1 @@
+['last_bill_kWh', 'avg_last_2_bills_kWh', 'avg_last_3_bills_kWh', 'std_last_3_bills_kWh', 'slope_last_3_bills', 'same_period_last_year_kWh', 'cycle_sin', 'cycle_cos']
