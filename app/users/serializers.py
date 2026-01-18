@@ -11,7 +11,6 @@ from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from users.constants import UserResponseConstants
 from utils.custom_exception import CustomValidationError
-from utils.email import send_email
 
 
 class UserSerializer(BaseModelSerializer):
@@ -64,30 +63,6 @@ class UserSerializer(BaseModelSerializer):
             user = User.objects.create_user(**validated_data)
         except Exception as e:
             raise CustomValidationError(str(e))
-        # Send email with the generated password
-        try:
-            verify_token = TokenService.for_user(
-                user,
-                TokenType.VERIFY_MAIL.value,
-                settings.AUTH_VERIFY_EMAIL_TOKEN_LIFELINE,
-            )
-            context = {
-                "subject": f"Welcome to Our Community, {user.first_name}!",
-                "user": user,
-                "password": raw_password,
-                "recipients": [user.email],
-                "button_links": [
-                    f"{settings.FRONTEND_URL}/api/auth/verify-email/{verify_token}"
-                ],
-                "html_template": "user_created_by_admin",
-                "title": "Verify Your E-mail Address",
-            }
-            thread = threading.Thread(target=send_email, kwargs=context)
-            thread.start()
-
-        except Exception as e:
-            print(f"Error sending email: {e}")
-            raise CustomValidationError(UserResponseConstants.ERROR_SENDING_EMAIL)
 
         return user
 

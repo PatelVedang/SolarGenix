@@ -174,7 +174,7 @@ class CappedFileHandler(FileHandler):
             Writes a log record to the file. If the file size exceeds `max_bytes`, the file is truncated before writing.
     """
     def __init__(
-        self, filename, max_bytes=30 * 1024 * 1024, mode="a", encoding=None, delay=False
+        self, filename, max_bytes=30 * 1024 * 1024, mode="a", encoding="utf-8", delay=False
     ):
         self.max_bytes = max_bytes
         super().__init__(filename, mode, encoding, delay)

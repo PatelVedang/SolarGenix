@@ -59,13 +59,6 @@ INSTALLED_APPS = [
     "corsheaders",
     # "django_celery_beat",
     # django apps
-    'todos',
-
-
-
-
-
-
     "auth_api",
     "users",
 ]
@@ -117,12 +110,13 @@ DATABASES = {
         "HOST": settings.SQL_DATABASE_HOST,
         "PORT": settings.SQL_DATABASE_PORT,
         "CONN_MAX_AGE": 60,
-        # 'OPTIONS': {
-        #     # "init_command": f"SET GLOBAL max_connections = 100000",
-        #     'MAX_AGE': 600
-        # }
+        "OPTIONS": {
+            "sslmode": "require",
+            "connect_timeout": 5,
+        },
     }
 }
+
 
 # Password validation
 # https://docs.djangoproject.com/en/4.1/ref/settings/#auth-password-validators
@@ -260,7 +254,7 @@ if STAGE == "PROD":
 
     STORAGES = {
         "default": {
-            "BACKEND": "utils.storage_backends.MediaStorage",
+            "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
         },
         "staticfiles": {
             "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
@@ -414,6 +408,7 @@ LOGGING = {
             "maxBytes": 30 * 1024 * 1024,  # 30 MB
             "backupCount": 10,
             "formatter": "info",
+            "encoding": "utf-8",
         },
         "error_file": {
             "class": "logging.handlers.RotatingFileHandler",
@@ -422,6 +417,7 @@ LOGGING = {
             "maxBytes": 30 * 1024 * 1024,  # 30 MB
             "backupCount": 5,
             "formatter": "error",
+            "encoding": "utf-8",
         },
         "warning_file": {
             "class": "logging.handlers.RotatingFileHandler",
@@ -430,6 +426,7 @@ LOGGING = {
             "maxBytes": 30 * 1024 * 1024,
             "backupCount": 3,
             "formatter": "info",
+            "encoding": "utf-8",
         },
         "slack": {
             "()": SlackLogHandler,

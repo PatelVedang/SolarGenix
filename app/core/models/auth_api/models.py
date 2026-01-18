@@ -42,7 +42,7 @@ class User(AbstractUser, PermissionsMixin, BaseModel):
         _("active"),
         default=True,  # Override the default value
     )
-    is_email_verified = models.BooleanField(default=False)
+    is_email_verified = models.BooleanField(default=True)
     is_default_password = models.BooleanField(default=False)
     cognito_sub = models.CharField(max_length=255, unique=True, null=True, blank=True)
     totp_secret = models.CharField(max_length=64, null=True, blank=True)

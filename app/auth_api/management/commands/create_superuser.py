@@ -2,7 +2,6 @@ from core.models import User
 from django.conf import settings
 from django.core.management.base import BaseCommand
 from proj.models import generate_password  # Import the function
-from utils.email import EmailService
 
 
 class Command(BaseCommand):
@@ -20,19 +19,8 @@ class Command(BaseCommand):
         password = generate_password()
         superuser = User.objects.create_superuser(email, password)
 
-        email_service = EmailService(superuser)
-        email_sent = email_service.send_email_superuser(password=password, email=email)
-        if not email_sent:
-            self.stdout.write(
-                self.style.ERROR(
-                    "Failed to send email for superuser creation. Rolling back."
-                )
-            )
-            superuser.delete()
-            return
-
         self.stdout.write(
             self.style.SUCCESS(
-                f"Superuser with email {email} created and email sent successfully."
+                f"Superuser with email {email} created successfully."
             )
         )

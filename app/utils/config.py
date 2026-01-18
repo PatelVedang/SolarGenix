@@ -18,7 +18,7 @@ class Settings(BaseSettings):
     SQL_USER: str = Field(default="postgres")
     SQL_PASSWORD: str = Field(default="postgres")
     SQL_DATABASE_HOST: str = Field(default="localhost")
-    SQL_DATABASE_PORT: int = Field(default=5432)
+    SQL_DATABASE_PORT: int = Field(default=6543)
 
     # :::::::::::::: Email settings :::::::::::::
     EMAIL_HOST: str = Field(default="smtp.gmail.com")

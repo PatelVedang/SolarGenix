@@ -341,7 +341,6 @@ echo "Task initiated: Generating views package..."
 mkdir -p "$APP_NAME/views"  # Create Directory
 cat <<EOL > "$APP_NAME/views/$VIEW_FILE.py"
 from utils.swagger import apply_swagger_tags
-from utils.custom_filter import filter_model
 from proj.base_view import BaseModelViewSet
 from core.models import $SINGULAR_CAPITALIZED
 from $APP_NAME.serializers import $SINGULAR_CAPITALIZED_SERIALIZER

@@ -3,7 +3,6 @@ import logging
 from rest_framework import status
 from rest_framework.permissions import AllowAny
 from rest_framework.views import APIView
-from utils import custom_throttling
 from utils.make_response import response
 from utils.swagger import apply_swagger_tags
 
@@ -71,8 +70,8 @@ class ForgotPasswordView(APIView):
     API view to handle forgot password requests.
 
     This view accepts POST requests with user data (typically an email address)
-    to initiate the password reset process. It uses a custom throttle class to
-    limit request rates and validates input using the ForgotPasswordSerializer.
+    to initiate the password reset process and validates input using the 
+    ForgotPasswordSerializer.
 
     Methods:
         post(request):
@@ -81,7 +80,6 @@ class ForgotPasswordView(APIView):
             on success.
     """
 
-    throttle_classes = [custom_throttling.CustomAuthThrottle]
     serializer_class = ForgotPasswordSerializer
 
     def post(self, request):
@@ -124,7 +122,6 @@ class UserPasswordResetView(APIView):
                 HTTP 204 No Content on successful password reset.
     """
     permission_classes = [AllowAny]
-    throttle_classes = [custom_throttling.CustomAuthThrottle]
     serializer_class = UserPasswordResetSerializer
 
     def post(self, request, token):

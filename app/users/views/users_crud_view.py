@@ -10,9 +10,7 @@ from users.constants import UserResponseConstants
 from users.permission import CustomSuperAdminOrOwnerDeletePermission
 from users.serializers import UserSerializer
 from users.services import ExportUsersService
-from utils.custom_filter import filter_model
 from utils.make_response import response
-from utils.pagination import BasePagination
 from utils.swagger import apply_swagger_tags
 
 
@@ -66,24 +64,19 @@ class UserViewSet(BaseModelViewSet):
 
     def get_queryset(self):
         """
-        Returns a queryset of User objects based on the requesting user's permissions and optional query parameters.
+        Returns a queryset of User objects based on the requesting user's permissions.
 
         - If the requesting user is a superuser, returns all User objects.
         - Otherwise, returns only the User object corresponding to the requesting user.
-        - If query parameters are present, applies additional filtering using the `filter_model` function.
 
         Returns:
-            QuerySet: A Django QuerySet of filtered User objects.
+            QuerySet: A Django QuerySet of User objects.
         """
         queryset = (
             User.objects.all()
             if self.request.user.is_superuser
             else User.objects.filter(id=self.request.user.id)
         )
-        query_params = self.request.query_params
-        if query_params:
-            # Apply filtering based on query parameters
-            return filter_model(query_params, queryset, User)
         return queryset
 
     def create(self, request, *args, **kwargs):
@@ -133,7 +126,6 @@ class UserViewSet(BaseModelViewSet):
         detail=False,
         url_path="export-users",
         permission_classes=[IsAdminUser],
-        pagination_class=BasePagination,
     )
     def export_users(self, request, *args, **kwargs):
         """Export user data in CSV or JSON format."""

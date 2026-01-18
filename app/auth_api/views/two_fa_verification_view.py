@@ -3,7 +3,6 @@ import logging
 from rest_framework import status
 from rest_framework.permissions import AllowAny
 from rest_framework.views import APIView
-from utils import custom_throttling
 from utils.make_response import response
 from utils.swagger import apply_swagger_tags
 
@@ -75,14 +74,10 @@ class User2FAVerifyView(APIView):
     Permissions:
         - AllowAny: This endpoint is accessible without authentication.
 
-    Throttling:
-        - CustomAuthThrottle: Applies custom throttling to prevent abuse.
-
     Returns:
         - 200 OK: If the 2FA code is valid and verification succeeds.
         - Appropriate error response if verification fails.
     """
-    throttle_classes = [custom_throttling.CustomAuthThrottle]
     serializer_class = User2FAVerifySerializer
     permission_classes = [AllowAny]
 

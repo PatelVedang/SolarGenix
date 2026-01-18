@@ -33,7 +33,7 @@ def start():
 
     # Start scheduler
     scheduler.start()
-    logger.info("✅ Scheduler started: Expire Token Clearance Job")
+    logger.info("Scheduler started: Expire Token Clearance Job")
 
     # Shut down cleanly on exit
     atexit.register(lambda: scheduler.shutdown())

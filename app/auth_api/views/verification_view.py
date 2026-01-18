@@ -3,7 +3,6 @@ import logging
 from rest_framework import status
 from rest_framework.permissions import AllowAny
 from rest_framework.views import APIView
-from utils import custom_throttling
 from utils.make_response import response
 from utils.swagger import apply_swagger_tags
 
@@ -40,13 +39,9 @@ class VerifyEmailView(APIView):
 
     Permissions:
         AllowAny: No authentication required.
-
-    Throttling:
-        CustomAuthThrottle: Applies custom throttling to prevent abuse.
     """
 
     permission_classes = [AllowAny]
-    throttle_classes = [custom_throttling.CustomAuthThrottle]
 
     def get(self, request, token):
         serializer = VerifyEmailSerializer(data={"token": token})
@@ -69,8 +64,8 @@ class ResendVerificationEmailView(APIView):
 
     This view accepts a POST request with user data, validates the input using
     the ResendVerificationEmailSerializer, and triggers the process to resend
-    a verification email if the data is valid. Throttling is applied to prevent
-    abuse, and the endpoint is accessible to unauthenticated users.
+    a verification email if the data is valid. The endpoint is accessible to 
+    unauthenticated users.
 
     Methods:
         post(request): Validates the request data and initiates the resend
@@ -78,7 +73,6 @@ class ResendVerificationEmailView(APIView):
                        on success.
     """
 
-    throttle_classes = [custom_throttling.CustomAuthThrottle]
     permission_classes = [AllowAny]
     serializer_class = ResendVerificationEmailSerializer
 
@@ -107,7 +101,6 @@ class SendOTPView(APIView):
     validated data and a success message.
 
     Attributes:
-        throttle_classes (list): List of throttle classes applied to the view.
         serializer_class (Serializer): Serializer class used for input validation.
 
     Methods:
@@ -116,7 +109,6 @@ class SendOTPView(APIView):
             Validates the request data and returns a response indicating
             the OTP has been sent.
     """
-    throttle_classes = [custom_throttling.CustomAuthThrottle]
     serializer_class = SendOTPSerializer
 
     def post(self, request):

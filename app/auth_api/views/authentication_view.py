@@ -2,7 +2,6 @@ import logging
 
 from rest_framework import status
 from rest_framework.views import APIView
-from utils import custom_throttling
 from utils.make_response import response
 from utils.swagger import apply_swagger_tags
 
@@ -32,15 +31,13 @@ class UserLoginView(APIView):
     """
     UserLoginView handles user authentication via POST requests.
 
-    This view applies custom throttling to limit login attempts and uses the UserLoginSerializer
-    for validating login credentials. On successful authentication, it returns a response with
-    user data and a success message.
+    This view uses the UserLoginSerializer for validating login credentials. On successful 
+    authentication, it returns a response with user data and a success message.
 
     Methods:
         post(request): Authenticates the user with provided credentials and returns a success response.
     """
 
-    throttle_classes = [custom_throttling.CustomAuthThrottle]
     serializer_class = UserLoginSerializer
     permission_classes = []
 
@@ -63,16 +60,15 @@ class UserRegistrationView(APIView):
     """
     API view for user registration.
 
-    This view handles POST requests to register a new user. It applies custom authentication throttling
-    and uses the `UserRegistrationSerializer` for validating input data. Upon receiving a POST request,
-    it delegates the registration logic to the `UserRegisterViewService`, and returns a response with
-    the registration result, HTTP 201 status code, and a success message.
+    This view handles POST requests to register a new user. It uses the `UserRegistrationSerializer` 
+    for validating input data. Upon receiving a POST request, it delegates the registration logic 
+    to the `UserRegisterViewService`, and returns a response with the registration result, 
+    HTTP 201 status code, and a success message.
 
     Methods:
         post(request): Handles user registration via POST request.
     """
 
-    throttle_classes = [custom_throttling.CustomAuthThrottle]
     serializer_class = UserRegistrationSerializer
 
     def post(self, request):
@@ -105,15 +101,11 @@ class UserProfileView(APIView):
     Permissions:
         - Requires the user to be authenticated.
 
-    Throttling:
-        - Applies custom authentication throttling via CustomAuthThrottle.
-
     Responses:
         - 200 OK: Returns the user's profile data with a success message.
     """
 
     permission_classes = [IsAuthenticated]
-    throttle_classes = [custom_throttling.CustomAuthThrottle]
 
     def get(self, request):
         serializer = UserProfileSerializer(request.user)

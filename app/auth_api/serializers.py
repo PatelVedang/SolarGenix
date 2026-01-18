@@ -19,7 +19,6 @@ from rest_framework import serializers
 from rest_framework.exceptions import AuthenticationFailed
 from rest_framework_simplejwt.serializers import TokenRefreshSerializer
 from utils.custom_exception import CustomValidationError
-from utils.email import EmailService
 
 from auth_api.cognito import Cognito
 from auth_api.constants import AuthResponseConstants
