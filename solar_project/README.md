@@ -38,19 +38,11 @@ pip install -r requirements.txt
 ```
 
 ### 3. Environment Setup
-Create a `.env` file in the project root:
-```env
-# Database (Supabase)
-SQL_ENGINE=django.db.backends.postgresql
-SQL_DATABASE=postgres
-SQL_DATABASE_HOST=<supabase-host>
-SQL_DATABASE_PORT=5432
-SQL_USER=postgres
-SQL_PASSWORD=<supabase-password>
-
-# AI Services
-GROQ_API_KEY=<your-groq-key>
+Run the setup script to initialize your `.env` file:
+```bash
+python setup_env.py
 ```
+This will create a `.env` file from `.env.example`. Open it and fill in your actual credentials.
 
 ### 4. Running the Server
 ```bash
