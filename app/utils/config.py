@@ -69,18 +69,11 @@ class Settings(BaseSettings):
     # ::::::::::::::: SLACK :::::::::::::::
     SLACK_BASIC_URL: str
     DJANGO_RUNTIME_ENVIRONMENT: str = Field(default="Local")
-
-    # ::::::::::::: Cognito :::::::::::::
     AUTH_TYPE: str = Field(default="simplejwt")
-    AWS_REGION: str | None = Field(default=None)
-    COGNITO_USER_POOL_ID: str | None = Field(default=None)
-    COGNITO_CLIENT_ID: str | None = Field(default=None)
-    COGNITO_CLIENT_SECRET: str | None = Field(default=None)
-    COGNITO_DOMAIN: str | None = Field(default=None)
-    COGNITO_REDIRECT_URI: str | None = Field(default=None)
     AWS_ACCESS_KEY_ID: str | None = Field(default=None)
     AWS_SECRET_ACCESS_KEY: str | None = Field(default=None)
-    ENABLE_2FA: bool = Field(default=False)
+
+
 
     # ::::::::::::: Stage & Storage :::::::::::::
     STAGE: str = Field(default="DEV")  # Options: 'DEV', 'BETA', 'PROD'
@@ -90,6 +83,7 @@ class Settings(BaseSettings):
     class Config:
         env_file = os.path.join(BASE_DIR, ".env")
         case_sensitive = True
+        extra = "ignore"
 
 
 def load_settings():
@@ -115,7 +109,6 @@ def load_settings():
 
     try:
         settings = Settings()
-        validate_auth_type(settings)
         validate_storage_settings(settings)
 
         # Handle Pydantic v1/v2 field access
@@ -143,30 +136,7 @@ def load_settings():
         raise e
 
 
-def validate_auth_type(settings: Settings):
-    """
-    Validates that all required Cognito authentication settings are present in the provided settings object.
 
-    Args:
-        settings (Settings): The settings object containing authentication configuration attributes.
-
-    Raises:
-        ValueError: If any required Cognito fields are missing from the settings object.
-    """
-    if settings.AUTH_TYPE == "cognito":
-        required_fields = [
-            "AWS_REGION",
-            "COGNITO_USER_POOL_ID",
-            "COGNITO_CLIENT_ID",
-            "COGNITO_CLIENT_SECRET",
-            "COGNITO_DOMAIN",
-            "COGNITO_REDIRECT_URI",
-            "AWS_ACCESS_KEY_ID",
-            "AWS_SECRET_ACCESS_KEY",
-        ]
-        missing = [field for field in required_fields if not getattr(settings, field)]
-        if missing:
-            raise ValueError(f"Missing required Cognito fields: {', '.join(missing)}")
 
 
 def validate_storage_settings(settings: Settings):

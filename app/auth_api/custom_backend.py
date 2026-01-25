@@ -56,27 +56,4 @@ class LoginOnAuthBackend(ModelBackend):
             raise AuthenticationFailed(AuthResponseConstants.INVALID_CREDENTIALS)
 
 
-class CognitoBackend(ModelBackend):
-    """Custom authentication backend for Django that integrates with AWS Cognito.
 
-    This backend is invoked after a Cognito token has been validated. It attempts to authenticate
-    a user based on their email address (used as the username) by checking for an active, non-deleted
-    user in the database.
-
-    Methods:
-        authenticate(request, username=None, **kwargs):
-            Authenticates a user by their email address. Returns the user instance if found and active.
-            Raises AuthenticationFailed if the user does not exist or is inactive/deleted.
-    """
-
-    def authenticate(self, request, username=None, **kwargs):
-        """
-        Called after Cognito token is validated. Just return the user if they exist.
-        """
-        if username is None:
-            return None
-
-        try:
-            return User.objects.get(email=username, is_active=True, is_deleted=False)
-        except User.DoesNotExist:
-            raise AuthenticationFailed(AuthResponseConstants.INVALID_CREDENTIALS)

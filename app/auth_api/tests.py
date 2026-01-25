@@ -2,7 +2,6 @@ import json
 import urllib.parse
 from io import BytesIO
 
-import pyotp
 from core.models import Token, TokenType, User
 from core.services.token_service import TokenService
 from django.conf import settings
@@ -15,8 +14,7 @@ from PIL import Image
 from rest_framework import status
 from rest_framework.test import APITestCase
 
-from auth_api.cognito import Cognito
-from auth_api.services.totp_service import TOTPService
+
 
 
 class BaseAPITestCase(APITestCase):
@@ -682,123 +680,7 @@ class AuthTest(BaseAPITestCase):
         self.match_success_response(401)  # current status code 400
 
 
-class CognitoIntegrationTest(BaseAPITestCase):
-    prefix = "/api/auth"
 
-    def setUp(self):
-        super().setUp()
-        self.email = "parth@yopmail.com"
-        self.password = "Parth@123"
-        self.sync_token_url = reverse("cognito-sync-tokens")
-        self.add_group_url = reverse("create-cognito-group")
-        cognito = Cognito()
-        # Ensure user exists and is confirmed in Cognito
-        try:
-            cognito.admin_get_user(self.email)
-        except Exception:
-            cognito.sign_up(
-                self.email,
-                self.password,
-                user_attributes=[
-                    {"Name": "email", "Value": self.email},
-                    {"Name": "given_name", "Value": "Parth"},
-                    {"Name": "family_name", "Value": "Yopmail"},
-                ],
-            )
-            cognito.admin_confirm_sign_up(self.email)
-        # Ensure user exists in Django
-        User.objects.get_or_create(
-            email=self.email, defaults={"password": self.password}
-        )
-
-    def test_create_role_api(self):
-        """
-        Test the API endpoint for adding a group using access token.
-        """
-        cognito = Cognito()
-        tokens = cognito.login(self.email, self.password)
-        access_token = tokens["AccessToken"]
-        refresh_token = tokens.get("RefreshToken")
-
-        user, created = User.objects.get_or_create(
-            email=self.email, defaults={"password": self.password}
-        )
-
-        # Save tokens to DB
-        Token.objects.update_or_create(
-            user=user, token_type="access_token", defaults={"token": access_token}
-        )
-        if refresh_token:
-            Token.objects.update_or_create(
-                user=user, token_type="refresh_token", defaults={"token": refresh_token}
-            )
-
-        group_name = "ApiTestGroup"
-        headers = {"HTTP_AUTHORIZATION": f"Bearer {access_token}"}
-        data = {"name": group_name}
-        response = self.client.post(self.add_group_url, data, **headers)
-        if response.status_code == 403:
-            self.skipTest(
-                "Skipping due to insufficient API permissions (403 Forbidden)."
-            )
-        self.assertIn(response.status_code, [200, 201])
-
-    def test_cognito_create_and_add_user_to_role(self):
-        """
-        Ensure group exists before adding user to it, and sync with Django Group.
-        """
-        cognito = Cognito()
-        group_name = "ApiTestGroup"
-
-        # Step 1: Ensure Django group exists
-        group, _ = Group.objects.get_or_create(name=group_name)
-        # Step 2: Add user to Django group
-        user = User.objects.get(email=self.email)
-        user.groups.add(group)
-        user.save()
-        self.assertIn(group, user.groups.all())
-
-        # Step 3: Create group in Cognito (if not exists)
-        try:
-            response = cognito.create_role(group_name)
-            print("create_role response", response)
-            self.assertIn("Group", response)
-        except Exception as e:
-            print(f"Group creation skipped or failed: {e}")
-
-        # Step 4: Add user to Cognito group
-        response = cognito.add_user_to_role(self.email, group_name)
-        if isinstance(response, bool):
-            self.assertTrue(response)
-        else:
-            self.assertIn("ResponseMetadata", response)
-            self.assertIn(response["ResponseMetadata"]["HTTPStatusCode"], [200, 201])
-
-    def test_cognito_remove_user_from_role(self):
-        """
-        Test removing user from a Cognito group (role).
-        """
-        cognito = Cognito()
-        group_name = "ApiTestGroup"
-
-        # Ensure user is in the group first
-        try:
-            cognito.add_user_to_role(self.email, group_name)
-        except Exception as e:
-            print(f"User may already be in group or group doesn't exist: {e}")
-
-        # Now remove the user from the group
-        response = cognito.remove_user_from_role(self.email, group_name)
-        self.assertIn("ResponseMetadata", response)
-        self.assertIn(response["ResponseMetadata"]["HTTPStatusCode"], [200, 201])
-
-        # Optionally, verify user is no longer in the group
-        try:
-            groups = cognito.list_user_groups(self.email)
-            group_names = [g["GroupName"] for g in groups]
-            self.assertNotIn(group_name, group_names)
-        except Exception as e:
-            print(f"Could not verify group removal: {e}")
 
     def test_cognito_delete_role(self):
         """
@@ -826,39 +708,3 @@ class CognitoIntegrationTest(BaseAPITestCase):
             self.skipTest(f"Skipping due to AWS permissions: {e}")
 
 
-class TOTPServiceTestCase(APITestCase):
-    def setUp(self):
-        """Initializes the test case by creating a user and an instance of TOTPService."""
-        self.user = User.objects.create_user(
-            email="totpuser@yopmail.com", password="Test@1234"
-        )
-        self.totp_service = TOTPService(self.user)
-
-    def test_generate_secret(self):
-        """Tests the generation of a TOTP secret and verifies it is saved to the user."""
-        secret = self.totp_service.generate_secret()
-        self.assertTrue(secret)
-        self.user.refresh_from_db()
-        self.assertEqual(self.user.totp_secret, secret)
-
-    def test_get_provisioning_uri(self):
-        """Tests the generation of a provisioning URI for TOTP."""
-        self.totp_service.generate_secret()
-        uri = self.totp_service.get_provisioning_uri()
-        encoded_email = urllib.parse.quote(self.user.email)
-        self.assertIn(encoded_email, uri)
-        self.assertTrue(uri.startswith("otpauth://totp/"))
-
-    def test_generate_qr_code_url(self):
-        """Tests the generation of a QR code URL for TOTP."""
-        self.totp_service.generate_secret()
-        qr_url = self.totp_service.generate_qr_code_url()
-        self.assertTrue(qr_url.startswith("data:image/png;base64,"))
-
-    def test_verify_code(self):
-        """Tests the verification of a TOTP code."""
-        secret = self.totp_service.generate_secret()
-        totp = pyotp.TOTP(secret)
-        code = totp.now()
-        self.assertTrue(self.totp_service.verify_code(code))
-        self.assertFalse(self.totp_service.verify_code("000000"))

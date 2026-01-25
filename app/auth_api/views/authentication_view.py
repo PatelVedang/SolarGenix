@@ -22,8 +22,8 @@ logger = logging.getLogger("django")
     tags=["Auth"],
     method_details={
         "post": {
-            "description": "Login API with 2FA support",
-            "summary": "Dynamic POST method for user login with optional 2FA step",
+            "description": "Login API",
+            "summary": "POST method for user login",
         },
     },
 )

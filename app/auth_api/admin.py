@@ -8,7 +8,7 @@ from django.contrib.auth.models import Group
 from django.db import transaction
 from django.shortcuts import render
 
-from auth_api.cognito import Cognito
+
 
 # class SoftDeleteAdminMixin(admin.ModelAdmin):
 #     actions = ["soft_delete", "soft_delete_recover"]
@@ -148,68 +148,25 @@ class UserModelAdmin(BaseUserAdmin, SoftDeleteAdminMixin):
     filter_horizontal = []
 
     def save_related(self, request, form, formsets, change):
-        """Override save_related to handle Cognito group synchronization."""
+        """Override save_related to handle related objects synchronization."""
         super().save_related(request, form, formsets, change)
-        obj = form.instance
-        username = obj.email
-        if obj.auth_provider == "cognito":
-            try:
-                with transaction.atomic():
-                    cognito = Cognito()
-                    for group_name in cognito.list_user_groups(username):
-                        try:
-                            cognito.remove_user_from_role(username, group_name)
-                        except Exception as e:
-                            self.message_user(
-                                request,
-                                f"Error removing user {username} from group '{group_name}': {str(e)}",
-                                level="error",
-                            )
-                    for group in obj.groups.all():
-                        try:
-                            cognito.add_user_to_role(
-                                username, clean_group_name(group.name)
-                            )
-                        except Exception as e:
-                            self.message_user(
-                                request,
-                                f"Failed to add user {username} to Cognito group '{group.name}': {str(e)}",
-                                level="error",
-                            )
-            except Exception as e:
-                self.message_user(
-                    request,
-                    f"Failed to sync Cognito groups for {username}: {str(e)}",
-                    level="error",
-                )
 
     def assign_group_to_selected_users(self, request, queryset):
         """Assign a group to selected users in the admin interface.
-        This action allows admins to assign a group to multiple users at once.
-        It also handles adding users to the corresponding Cognito group if applicable"""
+        This action allows admins to assign a group to multiple users at once."""
         if "apply" in request.POST:
             form = AssignGroupForm(request.POST)
             if form.is_valid():
                 group = form.cleaned_data["group"]
-                cognito = Cognito()
                 added_users = 0
-                errors = []
-                clean_name = clean_group_name(group.name)
                 for user in queryset:
                     user.groups.add(group)
-                    if user.auth_provider == "cognito":
-                        try:
-                            cognito.add_user_to_role(user.email, clean_name)
-                            added_users += 1
-                        except Exception as e:
-                            errors.append(f"User {user.email}: {str(e)}")
+                    added_users += 1
                 if added_users:
                     self.message_user(
                         request,
                         f"Successfully added {added_users} users to group '{group.name}'.",
                     )
-                for error in errors:
-                    self.message_user(request, error, level=messages.ERROR)
                 return None
         else:
             form = AssignGroupForm()
@@ -231,35 +188,11 @@ class UserModelAdmin(BaseUserAdmin, SoftDeleteAdminMixin):
         return super().changelist_view(request, extra_context=extra)
 
     def delete_model(self, request, obj):
-        """Override delete_model to handle Cognito user deletion."""
-        if obj.auth_provider == "cognito":
-            try:
-                Cognito().delete_user(obj.email)
-                self.message_user(request, f"User '{obj.email}' deleted from Cognito.")
-            except Exception as e:
-                self.message_user(
-                    request,
-                    f"Error deleting Cognito user '{obj.email}': {str(e)}",
-                    level=messages.ERROR,
-                )
+        """Override delete_model."""
         super().delete_model(request, obj)
 
     def delete_queryset(self, request, queryset):
-        """Override delete_queryset to handle Cognito user deletion for multiple users."""
-        cognito = Cognito()
-        for obj in queryset:
-            if obj.auth_provider == "cognito":
-                try:
-                    cognito.delete_user(obj.email)
-                    self.message_user(
-                        request, f"User '{obj.email}' deleted from Cognito."
-                    )
-                except Exception as e:
-                    self.message_user(
-                        request,
-                        f"Error deleting Cognito user '{obj.email}': {str(e)}",
-                        level=messages.ERROR,
-                    )
+        """Override delete_queryset."""
         super().delete_queryset(request, queryset)
 
 
@@ -316,92 +249,12 @@ class GroupAdmin(admin.ModelAdmin):
     inlines = [GroupProfileInline]
 
     def save_model(self, request, obj, form, change):
-        if getattr(settings, "AUTH_TYPE", "").lower() == "cognito":
-            try:
-                cognito = Cognito()
-                clean_name = clean_group_name(obj.name)
-                if change:
-                    old_group = Group.objects.get(pk=obj.pk)
-                    old_name = clean_group_name(old_group.name)
-                    if old_name != clean_name:
-                        users_in_old_group = old_group.user_set.all()
-                        cognito.delete_group(old_name)
-                        try:
-                            cognito.create_role(clean_name)
-                            self.message_user(
-                                request,
-                                f"Group renamed in Cognito: '{old_name}' → '{clean_name}'",
-                            )
-                        except Exception as e:
-                            if "GroupExistsException" in str(e):
-                                self.message_user(
-                                    request,
-                                    f"Cognito group '{clean_name}' already exists.",
-                                    level="warning",
-                                )
-                            else:
-                                raise e
-                        for user in users_in_old_group:
-                            if user.auth_provider == "cognito":
-                                try:
-                                    cognito.add_user_to_role(user.email, clean_name)
-                                except Exception as e:
-                                    self.message_user(
-                                        request,
-                                        f"Failed to add user '{user.email}' to group '{clean_name}': {str(e)}",
-                                        level="error",
-                                    )
-                else:
-                    try:
-                        cognito.create_role(clean_name)
-                        self.message_user(
-                            request, f"Cognito group '{clean_name}' created."
-                        )
-                    except Exception as e:
-                        if "GroupExistsException" in str(e):
-                            self.message_user(
-                                request,
-                                f"Cognito group '{clean_name}' already exists.",
-                                level="warning",
-                            )
-                        else:
-                            raise e
-                super().save_model(request, obj, form, change)
-            except Exception as e:
-                self.message_user(
-                    request,
-                    f"Error syncing group '{obj.name}' with Cognito: {str(e)}",
-                    level="error",
-                )
-        else:
-            super().save_model(request, obj, form, change)
+        super().save_model(request, obj, form, change)
 
     def delete_model(self, request, obj):
-        clean_name = clean_group_name(obj.name)
-        try:
-            Cognito().delete_group(clean_name)
-            self.message_user(request, f"Cognito group '{clean_name}' deleted.")
-        except Exception as e:
-            self.message_user(
-                request,
-                f"Error deleting Cognito group '{clean_name}': {str(e)}",
-                level="error",
-            )
         super().delete_model(request, obj)
 
     def delete_queryset(self, request, queryset):
-        cognito = Cognito()
-        for obj in queryset:
-            clean_name = clean_group_name(obj.name)
-            try:
-                cognito.delete_group(clean_name)
-                self.message_user(request, f"Cognito group '{clean_name}' deleted.")
-            except Exception as e:
-                self.message_user(
-                    request,
-                    f"Error deleting Cognito group '{clean_name}': {str(e)}",
-                    level="error",
-                )
         super().delete_queryset(request, queryset)
 
 

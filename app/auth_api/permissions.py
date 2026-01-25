@@ -6,7 +6,6 @@ from django.conf import settings
 from rest_framework.exceptions import AuthenticationFailed
 from rest_framework.permissions import BasePermission
 
-from auth_api.cognito import Cognito
 from auth_api.constants import AuthResponseConstants
 
 
@@ -41,24 +40,12 @@ class IsAuthenticated(BasePermission):
         if not user.is_active:
             return False
 
-        auth_type = getattr(settings, "AUTH_TYPE", "simplejwt").lower()
 
-        # Handdle conginto authentication
-        if auth_type == "cognito":
-            try:
-                payload = Cognito.decode_token(str(auth))
-                if payload.get("token_use") != "access":
-                    return False
-                if payload.get("exp", 0) < time.time():
-                    return False
-            except Exception:
-                raise AuthenticationFailed(AuthResponseConstants.INVALID_COGNITO_TOKEN)
-            return True
 
         try:
             payload = TokenService.decode(str(auth))
         except Exception:
-            raise AuthenticationFailed(AuthResponseConstants.INVALID_COGNITO_TOKEN)
+            raise AuthenticationFailed("Invalid token")
 
         if payload.get("token_type") != "access":
             return False

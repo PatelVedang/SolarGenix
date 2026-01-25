@@ -81,7 +81,7 @@ pyotp==2.9.0
 pyparsing==3.2.3
 python-dateutil==2.9.0.post0
 python-dotenv==1.1.0
-python-jose==3.4.0
+
 pytz==2025.2
 PyYAML==6.0.2
 questionary==2.1.0

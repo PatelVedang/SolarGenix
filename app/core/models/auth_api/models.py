@@ -23,7 +23,7 @@ class TokenType(models.TextChoices):
 
 
 # Create your models here.
-AUTH_PROVIDER = {"google": "google", "email": "email", "cognito": "cognito"}
+AUTH_PROVIDER = {"google": "google", "email": "email"}
 
 
 class User(AbstractUser, PermissionsMixin, BaseModel):
@@ -44,8 +44,6 @@ class User(AbstractUser, PermissionsMixin, BaseModel):
     )
     is_email_verified = models.BooleanField(default=True)
     is_default_password = models.BooleanField(default=False)
-    cognito_sub = models.CharField(max_length=255, unique=True, null=True, blank=True)
-    totp_secret = models.CharField(max_length=64, null=True, blank=True)
 
     objects = UserManager()
 

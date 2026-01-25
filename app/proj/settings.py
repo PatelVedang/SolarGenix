@@ -13,9 +13,7 @@ https://docs.djangoproject.com/en/4.1/ref/settings/
 import os
 from datetime import timedelta
 from pathlib import Path
-
 from utils.config import load_settings
-
 settings = load_settings()
 
 
@@ -43,6 +41,9 @@ ALLOWED_HOSTS = ["*"]
 
 
 # Application definition
+SPECTACULAR_SETTINGS = {
+    "DISABLE_ERRORS_AND_WARNINGS": True
+}
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -202,16 +203,12 @@ AUTH_THROTTLING_LIMIT = os.environ.get(
 # Load auth config values
 AUTH_TYPE = settings.AUTH_TYPE
 
-# DRF config (depends on AUTH_TYPE)
-if AUTH_TYPE == "cognito":
-    DEFAULT_AUTH_CLASSES = ("utils.authentication.CognitoAuthentication",)
-    AUTH_BACKENDS = ("auth_api.custom_backend.CognitoBackend",)
-else:
-    DEFAULT_AUTH_CLASSES = (
-        "utils.authentication.CustomJWTAuthentication",
-        "rest_framework_simplejwt.authentication.JWTAuthentication",
-    )
-    AUTH_BACKENDS = ("django.contrib.auth.backends.ModelBackend",)
+# DRF config
+DEFAULT_AUTH_CLASSES = (
+    "utils.authentication.CustomJWTAuthentication",
+    "rest_framework_simplejwt.authentication.JWTAuthentication",
+)
+AUTH_BACKENDS = ("django.contrib.auth.backends.ModelBackend",)
 
 # Now define REST_FRAMEWORK in one go
 REST_FRAMEWORK = {
@@ -236,13 +233,7 @@ SIMPLE_JWT = {
 # `AUTH_USER_MODEL = "core.User"` is a setting in Django that allows you to specify a custom user
 # model to use for authentication instead of the default `User` model provided by Django.
 AUTH_USER_MODEL = "core.User"
-# Cognito
-AWS_REGION = settings.AWS_REGION
-COGNITO_USER_POOL_ID = settings.COGNITO_USER_POOL_ID
-COGNITO_CLIENT_ID = settings.COGNITO_CLIENT_ID
-COGNITO_CLIENT_SECRET = settings.COGNITO_CLIENT_SECRET
-COGNITO_DOMAIN = settings.COGNITO_DOMAIN
-COGNITO_REDIRECT_URI = settings.COGNITO_REDIRECT_URI
+
 
 # MEDIA STORAGE CONFIGURATION
 STAGE = settings.STAGE
@@ -475,4 +466,3 @@ SUPERUSER_EMAIL = settings.SUPERUSER_EMAIL
 # CELERY_TASK_SERIALIZER = "json"
 AWS_ACCESS_KEY_ID = settings.AWS_ACCESS_KEY_ID
 AWS_SECRET_ACCESS_KEY = settings.AWS_SECRET_ACCESS_KEY
-ENABLE_2FA = settings.ENABLE_2FA
