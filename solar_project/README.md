@@ -46,9 +46,9 @@ This will create a `.env` file from `.env.example`. Open it and fill in your act
 
 ### 4. Running the Server
 ```bash
-python manage.py runserver
+python manage.py runserver 5000
 ```
-Documentation available at: `http://127.0.0.1:8000/solar_generation/swagger/`
+Documentation available at: `http://127.0.0.1:5000/solar_generation/swagger/`
 
 ---
 

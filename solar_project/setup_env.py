@@ -25,7 +25,7 @@ def setup_env():
     print(f"1. Open {env_file} and fill in your actual credentials.")
     print("2. Ensure Python dependencies are installed: pip install -r requirements.txt")
     print("3. Run the migrations if necessary: python manage.py migrate")
-    print("4. Start the server: python manage.py runserver")
+    print("4. Start the server: python manage.py runserver 5000")
 
 if __name__ == "__main__":
     setup_env()
