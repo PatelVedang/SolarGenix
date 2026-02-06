@@ -20,15 +20,6 @@ class Settings(BaseSettings):
     SQL_DATABASE_HOST: str = Field(default="localhost")
     SQL_DATABASE_PORT: int = Field(default=6543)
 
-    # :::::::::::::: Email settings :::::::::::::
-    EMAIL_HOST: str = Field(default="smtp.gmail.com")
-    EMAIL_PORT: int = Field(default=465)
-    EMAIL_USE_TLS: bool = Field(default=0)
-    EMAIL_USE_SSL: bool = Field(default=1)
-    EMAIL_BACKEND: str = Field(default="django_smtp_ssl.SSLEmailBackend")
-    EMAIL_HOST_USER: EmailStr = Field(default="example@yopmail.com")
-    EMAIL_HOST_PASSWORD: str = Field(default="Test@123")
-    EMAIL_FORM_NAME: str
 
     # :::::::::::::: CSRF and CORS :::::::::::::
     CSRF_TRUSTED_ORIGINS: str = Field(default="http://localhost:8000")
@@ -41,9 +32,6 @@ class Settings(BaseSettings):
     UNIT_TEST_USER_EMAIL: EmailStr = Field(default="example@yopmail.com")
     UNIT_TEST_USER_PASSWORD: str = Field(default="test@123")
 
-    # ::::::::::::: Google OAuth :::::::::::::
-    GOOGLE_CLIENT_ID: str
-    GOOGLE_CLIENT_SECRET: str
 
     # ::::::::::::: Configs :::::::::::::
     FRONTEND_URL: str = Field(default="http://localhost:8000")
@@ -60,8 +48,6 @@ class Settings(BaseSettings):
     AUTH_ACCESS_TOKEN_DAYS: int = Field(default=1)
     AUTH_REFRESH_TOKEN_DAYS: int = Field(default=30)
     # Values in Minutes
-    AUTH_VERIFY_EMAIL_TOKEN_MINUTES: int = Field(default=60)
-    AUTH_RESET_PASSWORD_TOKEN_MINUTES: int = Field(default=60)
     OTP_EXPIRY_MINUTES: int = Field(default=1)
 
     # CELERY_BROKER_URL: str = Field(default=None)
@@ -72,6 +58,10 @@ class Settings(BaseSettings):
     AUTH_TYPE: str = Field(default="simplejwt")
     AWS_ACCESS_KEY_ID: str | None = Field(default=None)
     AWS_SECRET_ACCESS_KEY: str | None = Field(default=None)
+    # ::::::::::::: Twilio settings :::::::::::::
+    TWILIO_ACCOUNT_SID: str | None = Field(default=None)
+    TWILIO_AUTH_TOKEN: str | None = Field(default=None)
+    TWILIO_PHONE_NUMBER: str | None = Field(default=None)
 
 
 

@@ -11,8 +11,6 @@ from auth_api.permissions import IsAuthenticated
 # from utils.permissions import IsTokenValid
 from auth_api.serializers import (
     ChangePasswordSerializer,
-    ForgotPasswordSerializer,
-    UserPasswordResetSerializer,
 )
 
 logger = logging.getLogger("django")
@@ -54,79 +52,3 @@ class ChangePasswordView(APIView):
         if serializer.is_valid(raise_exception=True):
             serializer.save()
             return response(status_code=status.HTTP_204_NO_CONTENT)
-
-
-@apply_swagger_tags(
-    tags=["Auth"],
-    method_details={
-        "post": {
-            "description": "Forgot password",
-            "summary": "Post method for forgot password",
-        },
-    },
-)
-class ForgotPasswordView(APIView):
-    """
-    API view to handle forgot password requests.
-
-    This view accepts POST requests with user data (typically an email address)
-    to initiate the password reset process and validates input using the 
-    ForgotPasswordSerializer.
-
-    Methods:
-        post(request):
-            Validates the provided data and, if valid, initiates the password
-            reset process (such as sending a reset email). Returns HTTP 204 No Content
-            on success.
-    """
-
-    serializer_class = ForgotPasswordSerializer
-
-    def post(self, request):
-        serializer = ForgotPasswordSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        return response(status_code=status.HTTP_204_NO_CONTENT)
-
-
-@apply_swagger_tags(
-    tags=["Auth"],
-    method_details={
-        "post": {
-            "description": "Reset Password",
-            "summary": "Post method for resending request to reset password",
-        },
-    },
-)
-@apply_swagger_tags(
-    tags=["Auth"],
-    method_details={
-        "post": {
-            "description": "Reset Password",
-            "summary": "Post method for reset password",
-        },
-    },
-)
-class UserPasswordResetView(APIView):
-    """
-    API view to handle user password reset requests.
-
-    This view allows unauthenticated users to reset their password using a provided token.
-    It applies custom throttling and uses the `UserPasswordResetSerializer` to validate the request data.
-
-    Methods:
-        post(request, token): Validates the password reset data and processes the password reset.
-            - Parameters:
-                request (Request): The HTTP request object containing the new password data.
-                token (str): The password reset token.
-            - Returns:
-                HTTP 204 No Content on successful password reset.
-    """
-    permission_classes = [AllowAny]
-    serializer_class = UserPasswordResetSerializer
-
-    def post(self, request, token):
-        serializer = UserPasswordResetSerializer(
-            data=request.data, context={"token": token}
-        )
-        serializer.is_valid(raise_exception=True)
-        return response(status_code=status.HTTP_204_NO_CONTENT)

@@ -17,7 +17,11 @@ echo "                          |_|                    "
 
 
 printf "░░░░░░  Running the migrations ░░░░░░ \n\n\n"
-source env/bin/activate
+if [ -d "env/Scripts" ]; then
+    source env/Scripts/activate
+else
+    source env/bin/activate
+fi
 python app/manage.py migrate --no-input
 # printf "░░░░░░  Running the fixtures ░░░░░░ \n\n\n"
 # python app/manage.py loaddata app/scanner/fixtures/tool.json --app scanner.tool

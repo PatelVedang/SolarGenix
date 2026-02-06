@@ -7,7 +7,4 @@ from .register_service import UserRegisterViewService
 __all__ = [
     "UserLoginViewService",
     "UserRegisterViewService",
-    "CognitoSyncTokensViewService",
-    "CreateCognitoRoleAPIViewService",
-    "CreateCognitoRoleAPIViewService",
 ]

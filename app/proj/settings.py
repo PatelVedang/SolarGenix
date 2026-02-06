@@ -41,9 +41,6 @@ ALLOWED_HOSTS = ["*"]
 
 
 # Application definition
-SPECTACULAR_SETTINGS = {
-    "DISABLE_ERRORS_AND_WARNINGS": True
-}
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -182,6 +179,7 @@ SPECTACULAR_SETTINGS = {
         }
     },
     "SERVERS": [{"url": i} for i in settings.CSRF_TRUSTED_ORIGINS.split()],
+    "DISABLE_ERRORS_AND_WARNINGS": True
 }
 
 # CORS & CSRF allowed origins
@@ -275,22 +273,11 @@ else:
 
 
 # EMAIL
-EMAIL_HOST = settings.EMAIL_HOST
-EMAIL_PORT = settings.EMAIL_PORT
-EMAIL_USE_TLS = settings.EMAIL_USE_TLS
-EMAIL_USE_SSL = settings.EMAIL_USE_SSL
-EMAIL_BACKEND = settings.EMAIL_BACKEND
-EMAIL_HOST_USER = settings.EMAIL_HOST_USER
-EMAIL_HOST_PASSWORD = settings.EMAIL_HOST_PASSWORD
-EMAIL_FORM_NAME = settings.EMAIL_FORM_NAME
 
 
 FRONTEND_URL = settings.FRONTEND_URL
 
 
-# GOOGLE SSO
-GOOGLE_CLIENT_ID = settings.GOOGLE_CLIENT_ID
-GOOGLE_CLIENT_SECRET = settings.GOOGLE_CLIENT_SECRET
 
 # PASSWORD validation
 PASSWORD_VALIDATE_STRING = "A minimum 8 characters and maximum 30 character password contains a combination of uppercase and lowercase letter, special symbol and number are required."
@@ -452,8 +439,6 @@ SWAGGER_AUTH_USERNAME = settings.SWAGGER_AUTH_USERNAME
 SWAGGER_AUTH_PASSWORD = settings.SWAGGER_AUTH_PASSWORD
 
 # Token Lifespan
-AUTH_VERIFY_EMAIL_TOKEN_LIFELINE = settings.AUTH_VERIFY_EMAIL_TOKEN_MINUTES
-AUTH_RESET_PASSWORD_TOKEN_LIFELINE = settings.AUTH_RESET_PASSWORD_TOKEN_MINUTES
 OTP_EXPIRY_MINUTES = settings.OTP_EXPIRY_MINUTES
 
 # Configs
@@ -466,3 +451,8 @@ SUPERUSER_EMAIL = settings.SUPERUSER_EMAIL
 # CELERY_TASK_SERIALIZER = "json"
 AWS_ACCESS_KEY_ID = settings.AWS_ACCESS_KEY_ID
 AWS_SECRET_ACCESS_KEY = settings.AWS_SECRET_ACCESS_KEY
+
+# Twilio Configuration
+TWILIO_ACCOUNT_SID = settings.TWILIO_ACCOUNT_SID
+TWILIO_AUTH_TOKEN = settings.TWILIO_AUTH_TOKEN
+TWILIO_PHONE_NUMBER = settings.TWILIO_PHONE_NUMBER

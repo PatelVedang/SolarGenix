@@ -5,11 +5,10 @@ from datetime import datetime, timedelta
 from datetime import timezone as dt_timezone
 
 from core.models import AUTH_PROVIDER, Token, TokenType, User
-from core.services.google_service import Google
 from core.services.token_service import TokenService
 from django.conf import settings
 from django.contrib.auth import authenticate
-from django.contrib.auth.hashers import make_password
+from django.contrib.auth.hashers import check_password, make_password
 from django.contrib.auth.models import Group
 from django.db import transaction
 from django.utils import timezone
@@ -22,6 +21,7 @@ from utils.custom_exception import CustomValidationError
 
 from auth_api.constants import AuthResponseConstants
 from auth_api.custom_backend import LoginOnAuthBackend
+from utils.sms import SMSService
 
 logger = logging.getLogger("django")
 
@@ -61,7 +61,8 @@ class UserRegistrationSerializer(BaseModelSerializer):
 
     class Meta:
         model = User
-        fields = ["email", "first_name", "last_name", "password"]
+        fields = ["email", "first_name", "last_name", "password", "phone_number"]
+        extra_kwargs = {"phone_number": {"required": True}}
 
     def validate(self, attrs):
         """
@@ -88,6 +89,10 @@ class UserRegistrationSerializer(BaseModelSerializer):
         if User.objects.filter(email=attrs.get("email").lower()).exists():
             raise CustomValidationError(AuthResponseConstants.EMAIL_ALREADY_EXISTS)
 
+        # Check for existing phone number
+        if User.objects.filter(phone_number=attrs.get("phone_number")).exists():
+            raise CustomValidationError("User with this phone number already exists.")
+
         # Validate the password against the custom regex
         if not re.search(settings.PASSWORD_VALIDATE_REGEX, password):
             raise serializers.ValidationError(
@@ -100,10 +105,6 @@ class UserRegistrationSerializer(BaseModelSerializer):
         validated_data["email"] = validated_data["email"].lower()
         user = User.objects.create_user(**validated_data)
         user.save()
-
-        # Send verification email
-        email_service = EmailService(user)
-        email_service.send_verification_email()
 
         return user
 
@@ -158,13 +159,7 @@ class UserLoginSerializer(BaseModelSerializer):
         if authenticated is None:
             user = User.objects.filter(email=email).first()
             if user:
-                if not user.is_email_verified:
-                    Token.objects.filter(user=user, token_type="verify_mail").delete()
-
-                    EmailService(user).send_verification_email()
-                    raise AuthenticationFailed(
-                        AuthResponseConstants.LOGIN_UNVERIFIED_EMAIL
-                    )
+                pass
             raise AuthenticationFailed(AuthResponseConstants.INVALID_CREDENTIALS)
 
         user, tokens = authenticated
@@ -190,109 +185,9 @@ class UserProfileSerializer(BaseModelSerializer):
 
     class Meta:
         model = User
-        fields = ["id", "first_name", "last_name", "email", "is_active"]
+        fields = ["id", "first_name", "last_name", "email", "is_active", "phone_number"]
 
 
-class ForgotPasswordSerializer(BaseSerializer):
-    """
-    Serializer for handling forgot password requests.
-
-    Validates the provided email address, checks for an active and non-deleted user,
-    and triggers the appropriate email (password reset or verification) based on the user's email verification status.
-    If the user is not found, logs an error.
-
-    Fields:
-        email (EmailField): The email address of the user requesting password reset.
-
-    Methods:
-        validate(attrs):
-            - Checks if the user exists and is active.
-            - If the user's email is verified, deletes any existing reset tokens and sends a password reset email.
-            - If the user's email is not verified, deletes any existing verification tokens and sends a verification email.
-            - Logs an error if the user is not found.
-            - Returns the validated attributes.
-    """
-
-    email = serializers.EmailField(
-        max_length=255, required=True, allow_blank=False, allow_null=False
-    )
-
-    def validate(self, attrs):
-        email = attrs.get("email").lower()
-        user = User.objects.filter(
-            email=email, is_active=True, is_deleted=False
-        ).first()
-        if user:
-            if user.is_email_verified:
-                Token.objects.filter(user=user, token_type="reset").delete()
-                email_service = EmailService(user)
-                email_service.send_password_reset_email(email)
-            else:
-                Token.objects.filter(user=user, token_type="verify_mail").delete()
-                email_service = EmailService(user)
-                email_service.send_verification_email()
-
-        else:
-            logger.error(f"Forgot password mail sent fail due to {email} not found")
-        return attrs
-
-
-class UserPasswordResetSerializer(BaseSerializer):
-    """
-    Serializer for handling user password reset functionality.
-
-    Fields:
-        password (CharField): The new password to set for the user. Write-only.
-        confirm_password (CharField): Confirmation of the new password. Write-only.
-
-    Methods:
-        validate(attrs):
-            Validates the provided password and confirmation, checks password strength,
-            validates the reset token, updates the user's password, deletes the used token,
-            and sends a password update confirmation email.
-
-            Raises:
-                serializers.ValidationError: If the password does not meet strength requirements,
-                                             if the passwords do not match, or if the token is invalid.
-
-            Returns:
-                dict: The validated attributes.
-    """
-
-    password = serializers.CharField(style={"input_type": "password"}, write_only=True)
-    confirm_password = serializers.CharField(
-        style={"input_type": "password"}, write_only=True
-    )
-
-    def validate(self, attrs):
-        password = attrs.get("password")
-        confirm_password = attrs.get("confirm_password")
-        token = self.context.get("token")
-
-        # Validate the token
-        payload = TokenService.validate_token(token, TokenType.RESET.value)
-
-        # Check Paassword strength using regex
-        if not re.search(settings.PASSWORD_VALIDATE_REGEX, attrs.get("password")):
-            raise serializers.ValidationError(
-                {"password": f"{settings.PASSWORD_VALIDATE_STRING}__custom"}
-            )
-
-        if password != confirm_password:
-            raise serializers.ValidationError(
-                {
-                    "confirm_password": f"{AuthResponseConstants.PASSWORD_CONFIRMATION_MISMATCH}__custom"
-                }
-            )
-        token_obj = payload.get("token_obj")
-        user = token_obj.user
-        user.is_default_password = False
-        user.password = make_password(password)
-        user.save()
-        token_obj.hard_delete()  # Delete the token after successful password reset
-        email_service = EmailService(user)
-        email_service.send_password_update_confirmation()
-        return attrs
 
 
 class RefreshTokenSerializer(TokenRefreshSerializer, BaseSerializer):
@@ -380,72 +275,6 @@ class ChangePasswordSerializer(BaseSerializer):
         return user
 
 
-class ResendVerificationEmailSerializer(BaseSerializer):
-    """
-    Serializer for resending verification emails to users.
-
-    Fields:
-        email (EmailField): The email address of the user requesting verification.
-
-    Methods:
-        validate(attrs):
-            Validates the provided email address.
-            - Converts the email to lowercase.
-            - Checks if a user with the given email exists.
-            - If the user exists:
-                - Deletes any existing verification tokens for the user.
-                - Sends a new verification email using the EmailService.
-            - If the user does not exist:
-                - Raises a CustomValidationError indicating the email was not found.
-            - Returns the validated attributes.
-    """
-
-    email = serializers.EmailField(max_length=255)
-
-    def validate(self, attrs):
-        email = attrs.get("email").lower()
-        user = User.objects.filter(email=email)
-        if user.exists():
-            user = user.first()
-            Token.objects.filter(user=user, token_type="verify_mail").delete()
-            email_service = EmailService(user)
-            email_service.send_verification_email()
-        else:
-            # logger.error(f"Resend verification mail sent fail due to {email} not found")
-            raise CustomValidationError(
-                f"Resend verification mail sent fail due to {email} not found"
-            )
-        return attrs
-
-
-class VerifyEmailSerializer(BaseSerializer):
-    """
-    Serializer for verifying a user's email address using a token.
-
-    Fields:
-        token (CharField): The verification token provided by the user.
-
-    Methods:
-        validate_token(value):
-            Validates the provided token by decoding and verifying its type.
-            If valid, marks the associated user's email as verified, saves the user,
-            and deletes the token object. Returns the validated token value.
-
-    Raises:
-        ValidationError: If the token is invalid or expired.
-    """
-
-    token = serializers.CharField()
-
-    def validate_token(self, value):
-        payload = TokenService.decode(value)
-        payload = TokenService.validate_token(value, TokenType.VERIFY_MAIL.value)
-        token_obj = payload.get("token_obj")
-        user = token_obj.user
-        user.is_email_verified = True
-        user.save()
-        token_obj.hard_delete()
-        return value
 
 
 class LogoutSerializer(BaseSerializer):
@@ -475,104 +304,11 @@ class LogoutSerializer(BaseSerializer):
         if logout_all_devices == 0:
             data["jti"] = token_obj.jti
 
-        Token.default.filter(**data).exclude(token_type=TokenType.GOOGLE.value).delete()
+        Token.default.filter(**data).delete()
 
         return attrs
 
 
-class GoogleSSOSerializer(BaseSerializer):
-    """
-    Serializer for handling Google Single Sign-On (SSO) authentication and registration.
-
-    This serializer validates the Google authorization code, retrieves user information from Google,
-    and either logs in the user if they already exist or registers a new user if they do not.
-    It supports both login and registration flows, handling user creation, authentication,
-    and token generation.
-
-    Fields:
-        authorization_code (str): The authorization code received from Google OAuth2.
-
-    Methods:
-        validate(attrs):
-            Validates the provided authorization code by sending it to Google for verification.
-            - If the user exists and is active, logs them in and returns authentication tokens.
-            - If the user does not exist, registers a new user with the information from Google,
-              authenticates them, and returns authentication tokens.
-            - Raises AuthenticationFailed if the account is inactive, deleted, or if authentication fails.
-
-    Returns:
-        dict: A dictionary containing a message and user/token data upon successful login or registration.
-
-    Raises:
-        AuthenticationFailed: If the account is inactive, deleted, or authentication fails.
-    """
-
-    authorization_code = serializers.CharField(write_only=True, required=True)
-
-    def validate(self, attrs):
-        authorization_code = attrs.get("authorization_code")
-        google = Google()
-        data = google.validate_google_token(
-            authorization_code
-        )  # send the code to Google for validation
-        email = data.get("email")
-        full_name = data.get("name")
-        first_name, last_name = (full_name.split(" ", 1) + [""])[:2]
-
-        password = generate_password()  # Use the same function
-        google_refresh_token = data.get("refresh_token")
-        user = User.objects.filter(email=email)
-        if user.exists():
-            # Login Flow
-            user = user.first()
-            if not user.is_active or user.is_deleted:
-                raise AuthenticationFailed(
-                    "This account is either inactive or has been deleted."
-                )
-            if user.auth_provider == "google":
-                user_data = TokenService.auth_tokens(user)
-                return {"message": "Login done successfully!", "data": user_data}
-            else:
-                raise AuthenticationFailed(
-                    f"Please continue your login using {user.auth_provider}"
-                )
-        else:
-            # Register Flow
-            user = {
-                "email": email,
-                "password": password,
-                "first_name": first_name,
-                "last_name": last_name,
-            }
-            user = User.objects.create_user(**user)
-            user.auth_provider = "google"
-            user.is_active = True
-            user.is_email_verified = True
-            user.is_default_password = True
-            user.save()
-            if user:
-                # Use the built-in authenticate function to verify the user
-                authorized_user = authenticate(email=email, password=password)
-                if authorized_user:
-                    user_data = TokenService.auth_tokens(user)
-                    tokens = TokenService.for_user(
-                        user, TokenType.GOOGLE.value, None, jti=google_refresh_token
-                    )
-                    response_data = {
-                        "user": user_data,  # User profile data
-                        "tokens": tokens,  # Access and refresh tokens
-                    }
-                    return {
-                        "message": "Login done successfully!",
-                        "data": response_data,
-                    }
-            else:
-                # logger.error(
-                #     f"Google SSO failed for {email} after user creation due to authentication failed"
-                # )
-                raise AuthenticationFailed(
-                    f"Google SSO failed for {email} after user creation due to authentication failed"
-                )
 
 
 class SendOTPSerializer(BaseSerializer):
@@ -606,37 +342,33 @@ class SendOTPSerializer(BaseSerializer):
 
     def validate(self, attrs):
         email = attrs.get("email").lower()
+
         user = User.objects.filter(
             email=email, is_active=True, is_deleted=False
         ).first()
+
         if user:
-            if user.is_email_verified:
-                # Delete any existing OTP tokens
-                Token.objects.filter(user=user, token_type=TokenType.OTP.value).delete()
+            # Delete any existing OTP tokens
+            Token.objects.filter(user=user, token_type=TokenType.OTP.value).delete()
 
-                # Generate the OTP
-                otp = random.randint(1000, 9999)
+            # Generate the OTP
+            otp = random.randint(1000, 9999)
 
-                # Save the OTP in the Token model
-                reset_token = TokenService.for_user(
-                    user,
-                    TokenType.OTP.value,
-                    settings.OTP_EXPIRY_MINUTES,
-                    str(otp),
-                )
-                self.context["otp"] = otp
-                self.context["otp_expires"] = reset_token.lifetime
+            # Save the OTP in the Token model
+            reset_token = TokenService.for_user(
+                user,
+                TokenType.OTP.value,
+                settings.OTP_EXPIRY_MINUTES,
+                str(otp),
+            )
+            self.context["otp"] = otp
+            self.context["otp_expires"] = reset_token.lifetime
 
-                # Send the email in a separate thread
-                email_service = EmailService(user)
-                email_service.send_otp(otp=otp)
-
-            else:
-                Token.objects.filter(user=user, token_type="verify_mail").delete()
-                email_service = EmailService(user)
-                email_service.send_verification_email()
+            # Always send via SMS to the user's registered phone number
+            sms_service = SMSService()
+            sms_service.send_otp(user.phone_number, otp)
+            self.context["sent_to"] = "phone"
         else:
-            # logger.error(f"OTP sending failed, user with email {email} not found")
             raise CustomValidationError(
                 f"OTP sending failed, user with email {email} not found"
             )
@@ -645,10 +377,11 @@ class SendOTPSerializer(BaseSerializer):
 
     def to_representation(self, instance):
         """
-        Override the to_representation method to include OTP expiration and OTP in the response."""
+        Override the to_representation method to include OTP expiration and sent_to in the response."""
         data = super().to_representation(instance)
         data["otp_expires"] = self.context.get("otp_expires")
-        data["otp"] = self.context.get("otp")
+        # data["otp"] = self.context.get("otp")
+        data["sent_to"] = self.context.get("sent_to")
         return data
 
 
@@ -669,21 +402,22 @@ class VerifyOTPSerializer(BaseSerializer):
         attrs (dict): The validated data if all checks pass.
     """
 
-    email = serializers.EmailField(
-        max_length=255, required=True, allow_blank=False, allow_null=False
+    phone_number = serializers.CharField(
+        max_length=15, required=True, allow_blank=False, allow_null=False
     )
     otp = serializers.CharField(
         max_length=6, required=True, allow_blank=False, allow_null=False
     )
 
     def validate(self, attrs):
-        email = attrs.get("email").lower()
+        phone_number = attrs.get("phone_number")
         otp = attrs.get("otp")
-        # Check if user with this email exists
-        try:
-            user = User.objects.get(email=email)
-        except User.DoesNotExist:
-            raise CustomValidationError("Invalid email.")
+
+        # Check if user exists
+        user = User.objects.filter(phone_number=phone_number).first()
+
+        if not user:
+            raise CustomValidationError("Invalid phone number.")
 
         # Get the OTP record from the Token table
         try:
@@ -692,6 +426,7 @@ class VerifyOTPSerializer(BaseSerializer):
             )
         except Token.DoesNotExist:
             raise CustomValidationError("Invalid OTP, please try with a new OTP")
+
         # Check if OTP is expired
         if timezone.now() >= otp_obj.expire_at:
             raise CustomValidationError("OTP has expired.")
@@ -730,15 +465,14 @@ class ResetPasswordOTPSerializer(BaseSerializer):
     )
 
     def validate(self, attrs):
-        email, otp, password, confirm_password = (
-            attrs.get("email").lower(),
-            attrs.get("otp"),
-            attrs.get("password"),
-            attrs.get("confirm_password"),
-        )
+        email = attrs.get("email")
+        otp = attrs.get("otp")
+        password = attrs.get("password")
+        confirm_password = attrs.get("confirm_password")
 
         # Validate user existence and OTP
-        user = User.objects.filter(email=email).first()
+        user = User.objects.filter(email=email.lower()).first()
+
         if not user:
             raise CustomValidationError("Invalid email.")
 
@@ -760,13 +494,10 @@ class ResetPasswordOTPSerializer(BaseSerializer):
                 }
             )
 
-        # Update user password and send success email
         user.password = make_password(password)
         user.is_default_password = False
         user.save()
         otp_obj.hard_delete()
-        email_service = EmailService(user)
-        email_service.send_password_update_confirmation()
 
         return attrs
 

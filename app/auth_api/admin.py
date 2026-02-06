@@ -1,5 +1,4 @@
 from core.models import GroupProfile, Token, User
-from core.services.google_service import Google
 from django import forms
 from django.conf import settings
 from django.contrib import admin, messages
@@ -56,13 +55,8 @@ class SoftDeleteAdminMixin(admin.ModelAdmin):
             user.is_active = False
             user.save()
 
-            # Revoke and delete tokens
-            tokens = Token.objects.filter(user=user)
-            for token in tokens:
-                if token.token_type == "google":
-                    google = Google()
-                    google.revoke_token(token.jti)
-                token.hard_delete()  # Or token.delete() if needed
+            # Delete related tokens
+            Token.objects.filter(user=user).delete()
 
         self.message_user(
             request,
@@ -107,6 +101,7 @@ class UserModelAdmin(BaseUserAdmin, SoftDeleteAdminMixin):
         "username",
         "first_name",
         "email",
+        "phone_number",
         "is_superuser",
         "auth_provider",
         "is_active",
@@ -118,7 +113,7 @@ class UserModelAdmin(BaseUserAdmin, SoftDeleteAdminMixin):
     list_filter = ["is_superuser"]
     fieldsets = [
         ("User Credentials", {"fields": ["email", "password"]}),
-        ("Personal info", {"fields": ["first_name"]}),
+        ("Personal info", {"fields": ["first_name", "phone_number"]}),
         (
             "Permissions",
             {

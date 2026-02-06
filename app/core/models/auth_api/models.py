@@ -15,15 +15,11 @@ logger = logging.getLogger("django")
 class TokenType(models.TextChoices):
     ACCESS = "access", ("Access")
     REFRESH = "refresh", ("Refresh")
-    RESET = "reset", ("Reset")
-    VERIFY_MAIL = "verify_mail", ("Verify Mail")
-    GOOGLE = "google", ("Google")
     OTP = "otp", ("Otp")
-    ID_TOKEN = "id_token", ("Id Token")
 
 
 # Create your models here.
-AUTH_PROVIDER = {"google": "google", "email": "email"}
+AUTH_PROVIDER = {"email": "email"}
 
 
 class User(AbstractUser, PermissionsMixin, BaseModel):
@@ -44,6 +40,7 @@ class User(AbstractUser, PermissionsMixin, BaseModel):
     )
     is_email_verified = models.BooleanField(default=True)
     is_default_password = models.BooleanField(default=False)
+    phone_number = models.CharField(max_length=15, unique=True, default="0000000000")
 
     objects = UserManager()
 

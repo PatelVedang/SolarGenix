@@ -8,7 +8,7 @@ class AuthApiConfig(AppConfig):
     name = "auth_api"
 
     def ready(self):
-        importlib.import_module(f"{self.name}.signals")
+        # importlib.import_module(f"{self.name}.signals")
         from auth_api import scheduler
 
         scheduler.start()

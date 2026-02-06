@@ -8,78 +8,12 @@ from utils.swagger import apply_swagger_tags
 
 # from utils.permissions import IsTokenValid
 from auth_api.serializers import (
-    ResendVerificationEmailSerializer,
     ResetPasswordOTPSerializer,
     SendOTPSerializer,
-    VerifyEmailSerializer,
     VerifyOTPSerializer,
 )
 
 logger = logging.getLogger("django")
-
-
-@apply_swagger_tags(
-    tags=["Auth"],
-    method_details={
-        "get": {
-            "description": "Verify Email",
-            "summary": "Get method to verify email",
-        },
-    },
-)
-class VerifyEmailView(APIView):
-    """
-    API view for verifying user email addresses.
-
-    This view accepts a verification token as a URL parameter and validates it using the VerifyEmailSerializer.
-    If the token is valid, it returns a 204 No Content response.
-
-    Methods:
-        get(request, token): Validates the provided email verification token.
-
-    Permissions:
-        AllowAny: No authentication required.
-    """
-
-    permission_classes = [AllowAny]
-
-    def get(self, request, token):
-        serializer = VerifyEmailSerializer(data={"token": token})
-        serializer.is_valid(raise_exception=True)
-        return response(status_code=status.HTTP_204_NO_CONTENT)
-
-
-@apply_swagger_tags(
-    tags=["Auth"],
-    method_details={
-        "post": {
-            "description": "Resend Verify Token ",
-            "summary": "Post method for resend verify token",
-        },
-    },
-)
-class ResendVerificationEmailView(APIView):
-    """
-    API view to handle resending of verification emails.
-
-    This view accepts a POST request with user data, validates the input using
-    the ResendVerificationEmailSerializer, and triggers the process to resend
-    a verification email if the data is valid. The endpoint is accessible to 
-    unauthenticated users.
-
-    Methods:
-        post(request): Validates the request data and initiates the resend
-                       verification email process. Returns HTTP 204 No Content
-                       on success.
-    """
-
-    permission_classes = [AllowAny]
-    serializer_class = ResendVerificationEmailSerializer
-
-    def post(self, request):
-        serializer = ResendVerificationEmailSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        return response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @apply_swagger_tags(
@@ -115,10 +49,12 @@ class SendOTPView(APIView):
         serializer = SendOTPSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         data = serializer.data
+        sent_to = data.get("sent_to")
+        message = f"Successfully sent an OTP to your {sent_to}. Please check your {'inbox' if sent_to == 'email' else 'messages'}."
         return response(
             data=data,
             status_code=status.HTTP_200_OK,
-            message="Successfully sent an OTP in email. Please check your inbox.",
+            message=message,
         )
 
 
@@ -149,7 +85,10 @@ class VerifyOTPView(APIView):
     def post(self, request):
         serializer = VerifyOTPSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        return response(status_code=status.HTTP_204_NO_CONTENT)
+        return response(
+            status_code=status.HTTP_200_OK,
+            message="OTP Verified Successfully",
+        )
 
 
 @apply_swagger_tags(
@@ -178,4 +117,7 @@ class ResetPasswordOTP(APIView):
     def post(self, request):
         serializer = ResetPasswordOTPSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        return response(status_code=status.HTTP_204_NO_CONTENT)
+        return response(
+            status_code=status.HTTP_200_OK,
+            message="Password Reset Successfully",
+        )
