@@ -28,10 +28,17 @@ DB_CONFIG = {
 # =====================================================
 # GLOBALS
 # =====================================================
-EMBEDDER = SentenceTransformer(
-    "nomic-ai/nomic-embed-text-v1",
-    trust_remote_code=True
-)
+_EMBEDDER = None
+
+def get_embedder():
+    """Lazy load the sentence transformer model."""
+    global _EMBEDDER
+    if _EMBEDDER is None:
+        _EMBEDDER = SentenceTransformer(
+            "nomic-ai/nomic-embed-text-v1",
+            trust_remote_code=True
+        )
+    return _EMBEDDER
 
 # =====================================================
 # DB SETUP

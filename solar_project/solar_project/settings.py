@@ -13,7 +13,6 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 from pathlib import Path
 
 import os
-import environ
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -21,11 +20,6 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Initialize environment variables
 from dotenv import load_dotenv
 load_dotenv(os.path.join(BASE_DIR, '.env'))
-
-env = environ.Env(
-    # set casting, default value
-    DEBUG=(bool, False)
-)
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
@@ -36,12 +30,12 @@ SECRET_KEY = 'django-insecure-kr2lcv!^jurccxeq8%%bp_4h-4rsz=c^t*o3%d0m_!dy8zo)9_
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
-
-
+ALLOWED_HOSTS = ["*"]
+CORS_ALLOW_ALL_ORIGINS = True
 # Application definition
 
 INSTALLED_APPS = [
+    "corsheaders",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
     "django.contrib.messages",
@@ -52,6 +46,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -96,12 +91,12 @@ SWAGGER_SETTINGS = {
 
 DATABASES = {
     "default": {
-        "ENGINE": env("SQL_ENGINE", default="django.db.backends.postgresql"),
-        "NAME": env("SQL_DATABASE"),
-        "USER": env("SQL_USER"),
-        "PASSWORD": env("SQL_PASSWORD"),
-        "HOST": env("SQL_DATABASE_HOST"),
-        "PORT": env("SQL_DATABASE_PORT", default="5432"),
+        "ENGINE": os.getenv("SQL_ENGINE", "django.db.backends.postgresql"),
+        "NAME": os.getenv("SQL_DATABASE"),
+        "USER": os.getenv("SQL_USER"),
+        "PASSWORD": os.getenv("SQL_PASSWORD"),
+        "HOST": os.getenv("SQL_DATABASE_HOST"),
+        "PORT": os.getenv("SQL_DATABASE_PORT", "5432"),
         "CONN_MAX_AGE": 60,
         "OPTIONS": {
             "sslmode": "require",

@@ -1,3 +1,22 @@
+# Production-Grade Upgrade (2026)
+
+This project was upgraded to senior-level production standards in February 2026. The following improvements were made:
+
+- **Comprehensive error handling** with custom exception classes and user-friendly error responses
+- **Full logging integration** (INFO, DEBUG, WARNING, ERROR) with file and console handlers
+- **Batched embedding generation** for PDF ingestion (32 chunks at a time) to improve performance and memory usage
+- **Database transactions** for atomic multi-chunk ingestion and rollback on error
+- **Enhanced text cleaning** for PDF ingestion (removes null bytes, normalizes whitespace, preserves paragraphs)
+- **Proper input validation** for all endpoints (file size, tenant_id, question length, etc.)
+- **Security improvements**: API key validation, file size limits, input sanitization
+- **Swagger documentation** for all endpoints with detailed error/response schemas
+- **Hybrid RAG improvements**: metadata per chunk, duplicate prevention, content change detection
+- **Migration guide and troubleshooting** in `PRODUCTION_UPGRADE_GUIDE.md`
+
+See `PRODUCTION_UPGRADE_GUIDE.md` for full details, usage instructions, and migration checklist.
+
+---
+
 # Solar Prediction & Intelligence API
 
 A comprehensive REST API service for solar energy optimization and intelligent data retrieval.
