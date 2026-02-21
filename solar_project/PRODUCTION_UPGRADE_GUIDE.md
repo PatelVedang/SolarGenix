@@ -10,12 +10,18 @@ This document explains the **production-grade upgrades** made to your Django cha
 
 ```
 solar_api/
+├── serializers.py                           # DRF serializers for bill optimization
 ├── services/
-│   ├── chatbot_service_upgraded.py         # Enhanced chatbot with logging & error handling
-│   ├── pdf_ingestion_service_upgraded.py   # Batched PDF processing with transactions
-│   └── rag_shared.py                        # Shared utilities (unchanged)
+│   ├── bill_optimization_service.py         # Slab-tariff solar sizing (no ML)
+│   ├── bill_prediction_service.py           # ML-based bill forecasting
+│   ├── chatbot_service.py                   # Chatbot with logging & error handling
+│   ├── pdf_ingestion_service.py             # Batched PDF processing with transactions
+│   └── rag_shared.py                        # Shared RAG utilities
 └── views/
-    └── chatbot_view_upgraded.py             # Production-grade Django REST views
+    ├── bill_optimization_view.py            # POST /solar/bill-optimization-slab/
+    ├── bill_prediction_view.py              # GET  /predict-bill/
+    ├── solar_gen_prediction_view.py         # GET  /predict-production/
+    └── chatbot_view.py                      # Chatbot, PDF ingestion, delete KB
 ```
 
 ---
@@ -240,6 +246,76 @@ return Response({'error': 'AI service unavailable'}, status=status.HTTP_503_SERV
     },
     tags=['PDF Ingestion']
 )
+```
+
+---
+
+### 8. **Bill Optimization — Slab Tariff** ✅ *(Added Feb 2026)*
+
+A pure-calculation endpoint (no ML) that estimates required solar capacity to bring a monthly bill from a current amount down to a target amount using Indian residential tariff slabs.
+
+#### Files
+| File | Purpose |
+|------|--------|
+| `solar_api/serializers.py` | `BillOptimizationRequestSerializer` (validates input) + `BillOptimizationResponseSerializer` (shapes output) |
+| `solar_api/services/bill_optimization_service.py` | `BillOptimizationService` — forward & reverse slab calculations, solar sizing |
+| `solar_api/views/bill_optimization_view.py` | `BillOptimizationView(APIView)` — thin POST handler with `@swagger_auto_schema` |
+
+#### Serializer-Driven Architecture
+```
+POST body
+  → BillOptimizationRequestSerializer.is_valid()  ←  400 on failure
+  → validated_data (typed Python values)
+  → BillOptimizationService.optimize(validated_data)
+  → BillOptimizationResponseSerializer(result).data  →  200
+```
+
+#### Tariff Slabs (configurable constant)
+```python
+DEFAULT_TARIFF_SLABS = [
+    {"min": 0,   "max": 50,   "rate": 3.0},
+    {"min": 51,  "max": 100,  "rate": 3.5},
+    {"min": 101, "max": 200,  "rate": 5.0},
+    {"min": 201, "max": None, "rate": 7.0},  # unbounded last slab
+]
+```
+To update rates, edit only `DEFAULT_TARIFF_SLABS` in `bill_optimization_service.py`.
+
+#### Key Calculation Methods
+```python
+# Forward: units → bill (₹)
+BillOptimizationService.calculate_bill_from_units(units, slabs)
+
+# Reverse: bill (₹) → units
+BillOptimizationService.estimate_units_from_bill(bill, slabs)
+```
+
+#### Solar Assumptions
+- 1 kW generates **120 units / month** (India average)
+- Default panel size: **540 W**
+- Panels always rounded **up** (`math.ceil`) to ensure target is met
+- Required kW clamped to **≥ 0** (never negative)
+
+#### Example Request / Response
+```json
+// POST /solar_generation/solar/bill-optimization-slab/
+{
+  "current_bill": 2000,
+  "target_bill": 500,
+  "location": "Surat",
+  "has_solar": false,
+  "solar_capacity_kw": null
+}
+
+// 200 OK
+{
+  "current_units": 368.43,
+  "target_units": 135.4,
+  "units_to_offset": 233.03,
+  "recommended_solar_kw": 1.942,
+  "recommended_panels": 4,
+  "estimated_monthly_generation": 233.04
+}
 ```
 
 ---
@@ -559,5 +635,5 @@ For issues or questions:
 
 ---
 
-**Last Updated:** February 15, 2026
-**Version:** 1.0 (Production-Grade Upgrade)
+**Last Updated:** February 21, 2026
+**Version:** 1.1 (Bill Optimization — Slab Tariff)

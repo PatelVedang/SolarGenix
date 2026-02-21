@@ -1,113 +1,159 @@
-# Production-Grade Upgrade (2026)
-
-This project was upgraded to senior-level production standards in February 2026. The following improvements were made:
-
-- **Comprehensive error handling** with custom exception classes and user-friendly error responses
-- **Full logging integration** (INFO, DEBUG, WARNING, ERROR) with file and console handlers
-- **Batched embedding generation** for PDF ingestion (32 chunks at a time) to improve performance and memory usage
-- **Database transactions** for atomic multi-chunk ingestion and rollback on error
-- **Enhanced text cleaning** for PDF ingestion (removes null bytes, normalizes whitespace, preserves paragraphs)
-- **Proper input validation** for all endpoints (file size, tenant_id, question length, etc.)
-- **Security improvements**: API key validation, file size limits, input sanitization
-- **Swagger documentation** for all endpoints with detailed error/response schemas
-- **Hybrid RAG improvements**: metadata per chunk, duplicate prevention, content change detection
-- **Migration guide and troubleshooting** in `PRODUCTION_UPGRADE_GUIDE.md`
-
-See `PRODUCTION_UPGRADE_GUIDE.md` for full details, usage instructions, and migration checklist.
-
----
-
 # Solar Prediction & Intelligence API
 
-A comprehensive REST API service for solar energy optimization and intelligent data retrieval.
+A comprehensive REST API service for solar energy optimisation and intelligent data retrieval.
 
 ## Core Features
+
 - **Solar Generation Forecast**: 10-day predictions based on location, panel condition, and real-time weather data.
+- **Bill Optimization (Slab)**: Calculate required solar capacity to reduce monthly bills using Indian slab-based tariffs. No ML required.
 - **Bill Prediction**: Bi-monthly electricity bill forecasting using dual-model routing (High Usage vs. General).
 - **Intelligent Chatbot (RAG)**: Multi-tenant hybrid RAG system with fuzzy matching, synonym expansion, and query expansion.
-- **Web Crawler**: Selenium-based automated ingestion for JavaScript-heavy websites.
 - **PDF Ingestion**: Advanced document processing for extracting intelligence from PDF files.
 
 ## Tech Stack
-- **Framework**: Django + Django REST Framework
-- **Models**: scikit-learn (gradient boosting & regression)
-- **Database**: Supabase (PostgreSQL + pgvector)
-- **AI/LLM**: Groq (LLAMA 3.1 8B), Nomic Embedders
-- **Data Sources**: Open-Meteo, OpenStreetMap Nominatim
-- **Documentation**: Swagger UI (drf-yasg)
+
+| Layer | Technology |
+|-------|------------|
+| Framework | Django 6 + Django REST Framework |
+| ML Models | scikit-learn (gradient boosting & regression) |
+| Database | Supabase (PostgreSQL + pgvector) |
+| AI / LLM | Groq (LLAMA 3.1 8B), Nomic Embedders |
+| Data Sources | Open-Meteo, OpenStreetMap Nominatim |
+| Documentation | Swagger UI (`drf-yasg`) |
+
+---
 
 ## Quickstart
 
 ### 1. Prerequisites
 - Python 3.10+
-- Pip and virtualenv
+- pip + virtualenv
 
 ### 2. Installation
 ```bash
-# Clone the repository
 git clone <repo-url>
 cd solar_project
 
-# Set up virtual environment
 python -m venv .venv
-source .venv/bin/activate  # Windows: .venv\Scripts\activate
+.venv\Scripts\activate        # Windows
+# source .venv/bin/activate   # macOS / Linux
 
-# Install dependencies
 pip install -r requirements.txt
 ```
 
 ### 3. Environment Setup
-Run the setup script to initialize your `.env` file:
 ```bash
-python setup_env.py
+python setup_env.py   # creates .env from .env.example
+# open .env and fill in your credentials
 ```
-This will create a `.env` file from `.env.example`. Open it and fill in your actual credentials.
 
-### 4. Running the Server
+### 4. Run the Server
 ```bash
 python manage.py runserver 5000
 ```
-Documentation available at: `http://127.0.0.1:5000/solar_generation/swagger/`
+
+Swagger UI: `http://127.0.0.1:5000/solar_generation/swagger/`
 
 ---
 
 ## API Reference
 
+All endpoints are prefixed with `/solar_generation/`.
+
 ### 1) Solar Generation Prediction
-- **Path**: `/solar_generation/predict-production/`
-- **Method**: GET
-- **Params**: `pincode` (India), `sunlight_time` (hrs), `panels` (count), `panel_condition` (good/average/bad).
+| | |
+|--|--|
+| **Path** | `GET /solar_generation/predict-production/` |
+| **Params** | `pincode` (India), `sunlight_time` (hrs), `panels` (count), `panel_condition` (good/average/bad) |
 
-### 2) Electricity Bill Prediction
-- **Path**: `/solar_generation/predict-bill/`
-- **Method**: GET
-- **Params**: `consumption_history` (list of 6 numbers), `cycle_index` (1-6).
+---
 
-### 3) Intelligence Chatbot
-- **Path**: `/solar_generation/chatbot/ask/`
-- **Method**: POST
-- **Body**: `{"question": "How efficient are the solar panels?", "tenant_id": "client_001"}`
-- **Features**: Hybrid retrieval combining vector similarity and fuzzy keyword search.
+### 2) Bill Optimization — Slab Tariff ✨ *New*
+| | |
+|--|--|
+| **Path** | `POST /solar_generation/solar/bill-optimization-slab/` |
+| **Tag** | Solar Optimisation |
+| **Auth** | None |
 
-### 4) Website Crawler
-- **Path**: `/solar_generation/chatbot/crawl/`
-- **Method**: POST
-- **Body**: `{"website_url": "https://example-solar.com", "tenant_id": "client_001"}`
-- **Features**: Headless Selenium processing for deep indexing.
+**Request body:**
+```json
+{
+  "current_bill": 2000,
+  "target_bill": 500,
+  "location": "Surat",
+  "has_solar": false,
+  "solar_capacity_kw": null
+}
+```
+
+**Response `200`:**
+```json
+{
+  "current_units": 368.43,
+  "target_units": 135.4,
+  "units_to_offset": 233.03,
+  "recommended_solar_kw": 1.942,
+  "recommended_panels": 4,
+  "estimated_monthly_generation": 233.04
+}
+```
+
+**Tariff slabs used (₹/unit):**
+
+| Slab | Rate |
+|------|------|
+| 0 – 50 units | ₹ 3.00 |
+| 51 – 100 units | ₹ 3.50 |
+| 101 – 200 units | ₹ 5.00 |
+| 201 + units | ₹ 7.00 |
+
+> **Assumptions**: 1 kW solar → 120 units / month · Panel size = 540 W
+
+**Logic:**
+- `has_solar = false` → `required_kw = (current_units − target_units) / 120`
+- `has_solar = true` → `required_kw = (current_units − existing_generation − target_units) / 120`
+
+---
+
+### 3) Electricity Bill Prediction (ML)
+| | |
+|--|--|
+| **Path** | `GET /solar_generation/predict-bill/` |
+| **Params** | `consumption_history` (list of 6 numbers), `cycle_index` (1–6) |
+
+---
+
+### 4) Intelligence Chatbot
+| | |
+|--|--|
+| **Path** | `POST /solar_generation/chatbot/ask/` |
+| **Body** | `{"question": "How efficient are the panels?", "tenant_id": "client_001"}` |
+
+---
 
 ### 5) PDF Ingestion
-- **Path**: `/solar_generation/chatbot/ingest-pdf/`
-- **Method**: POST
-- **Format**: Multipart Form-data
-- **Fields**: `pdf_file` (File), `tenant_id` (String)
+| | |
+|--|--|
+| **Path** | `POST /solar_generation/chatbot/ingest-pdf/` |
+| **Format** | Multipart form-data |
+| **Fields** | `pdf_file` (File), `tenant_id` (String) |
+
+---
+
+### 6) Delete Knowledge Base
+| | |
+|--|--|
+| **Path** | `POST /solar_generation/chatbot/delete-knowledge-base/` |
+| **Body** | `{"tenant_id": "client_001"}` |
 
 ---
 
 ## Documentation
-- **Swagger UI**: `/solar_generation/swagger/`
-- **ReDoc**: `/solar_generation/redoc/`
+- **Swagger UI**: `http://127.0.0.1:5000/solar_generation/swagger/`
+- **ReDoc**: `http://127.0.0.1:5000/solar_generation/redoc/`
 
 ## Deployment & Security
-- Default Django Admin and Auth tables are removed to optimize Supabase schema.
-- All connections use `sslmode=require`.
-- Cross-origin isolation configured for safe API access.
+- All DB connections use `sslmode=require`.
+- Default Django Admin and Auth tables removed to keep Supabase schema lean.
+- Cross-origin isolation configured: `CORS_ALLOW_ALL_ORIGINS = True` (restrict in production).
+- No authentication on endpoints by default — add token auth before exposing publicly.

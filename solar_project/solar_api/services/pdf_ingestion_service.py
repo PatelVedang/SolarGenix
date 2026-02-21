@@ -500,76 +500,159 @@ def sync_pdf_to_db(pdf_path: str, tenant_id: str) -> Dict:
 # =====================================================
 def delete_tenant_knowledge_base(tenant_id: str) -> Dict:
     """
-    Delete all documents and pages for a specific tenant with transaction safety.
-    
+    Delete all documents and pages for a specific tenant.
+
+    Uses a fresh, independent psycopg2 connection that is completely
+    separate from Django's managed database connection.  This avoids the
+    ``psycopg2.ProgrammingError: set_session cannot be used inside a
+    transaction`` error that occurs when autocommit is toggled on a
+    connection that Django has already started a transaction on.
+
+    The connection is opened with ``autocommit = True`` *before* any SQL
+    is executed so that each statement is committed individually.  For the
+    two DELETEs we want true atomicity, so we switch autocommit back off,
+    run both deletes inside an explicit ``BEGIN`` / ``COMMIT`` block, then
+    restore autocommit and close the connection.
+
     Args:
-        tenant_id: Tenant identifier
-        
+        tenant_id: Tenant identifier (must be a non-empty string).
+
     Returns:
-        Dict with deletion results
+        Dict with deletion results::
+
+            {
+                "status": "success" | "not_found",
+                "tenant_id": str,
+                "deleted_documents": int,
+                "deleted_pages": int,
+            }
+
+    Raises:
+        ValueError: If ``tenant_id`` is empty.
+        Exception:  Re-raises any database error after rolling back.
     """
+    # ------------------------------------------------------------------
+    # Input validation
+    # ------------------------------------------------------------------
+    if not tenant_id or not str(tenant_id).strip():
+        raise ValueError("tenant_id must be a non-empty string")
+
+    tenant_id = str(tenant_id).strip()
+
+    # ------------------------------------------------------------------
+    # Open a FRESH, independent psycopg2 connection.
+    # Never touch django.db.connection here — Django may already have an
+    # open transaction on that connection and setting autocommit inside an
+    # active transaction raises ProgrammingError.
+    # ------------------------------------------------------------------
     conn = None
     cur = None
-    
+
     try:
-        logger.info(f"Deleting knowledge base for tenant: {tenant_id}")
-        
+        logger.info("Deleting knowledge base for tenant: %s", tenant_id)
+
+        # get_db_connection() calls psycopg2.connect(**DB_CONFIG) and
+        # returns a brand-new connection — no Django transaction involved.
         conn = get_db_connection()
+
+        # Set autocommit = True IMMEDIATELY after opening the connection,
+        # before any SQL runs.  psycopg2 starts in autocommit=False and
+        # begins an implicit transaction on the first query; changing
+        # autocommit inside that implicit transaction raises the error.
+        conn.autocommit = True
+
         cur = conn.cursor()
-        conn.autocommit = False
-        
-        # Get page count before deletion
-        cur.execute("""
-            SELECT COUNT(*) FROM pages 
-            WHERE tenant_id = %s AND is_active = TRUE
-        """, (tenant_id,))
+
+        # --------------------------------------------------------------
+        # Safety check: verify the tenant knowledge base exists.
+        # Uses a parameterised query — no string interpolation of
+        # tenant_id — to prevent SQL injection.
+        # --------------------------------------------------------------
+        cur.execute(
+            """
+            SELECT COUNT(*)
+            FROM pages
+            WHERE tenant_id = %s
+              AND is_active = TRUE
+            """,
+            (tenant_id,),
+        )
         page_count = cur.fetchone()[0]
-        
+
         if page_count == 0:
-            logger.warning(f"No knowledge base found for tenant: {tenant_id}")
+            logger.warning("No active knowledge base found for tenant: %s", tenant_id)
             return {
-                'status': 'not_found',
-                'tenant_id': tenant_id,
-                'deleted_documents': 0,
-                'deleted_pages': 0,
+                "status": "not_found",
+                "tenant_id": tenant_id,
+                "deleted_documents": 0,
+                "deleted_pages": 0,
             }
-        
-        # Delete documents
-        cur.execute("""
-            DELETE FROM documents 
-            WHERE page_url IN (
-                SELECT url FROM pages WHERE tenant_id = %s
+
+        # --------------------------------------------------------------
+        # Perform the two DELETEs atomically.
+        # Switch autocommit off so we can use BEGIN / COMMIT.  This is
+        # safe here because no SQL has been run since we last committed
+        # (the SELECT above auto-committed in autocommit=True mode).
+        # --------------------------------------------------------------
+        conn.autocommit = False
+
+        try:
+            # Delete child records first (documents reference pages).
+            cur.execute(
+                """
+                DELETE FROM documents
+                WHERE page_url IN (
+                    SELECT url FROM pages WHERE tenant_id = %s
+                )
+                """,
+                (tenant_id,),
             )
-        """, (tenant_id,))
-        deleted_docs = cur.rowcount
-        
-        # Delete pages
-        cur.execute("DELETE FROM pages WHERE tenant_id = %s", (tenant_id,))
-        deleted_pages = cur.rowcount
-        
-        conn.commit()
-        
-        logger.info(f"Deleted {deleted_docs} documents and {deleted_pages} pages for tenant: {tenant_id}")
-        
-        return {
-            'status': 'success',
-            'tenant_id': tenant_id,
-            'deleted_documents': deleted_docs,
-            'deleted_pages': deleted_pages,
-        }
-        
-    except Exception as e:
-        logger.error(f"Knowledge base deletion failed: {e}", exc_info=True)
-        if conn:
+            deleted_docs = cur.rowcount
+
+            # Delete parent records.
+            cur.execute(
+                "DELETE FROM pages WHERE tenant_id = %s",
+                (tenant_id,),
+            )
+            deleted_pages = cur.rowcount
+
+            conn.commit()
+
+        except Exception:
+            # Roll back only the DELETE transaction, then re-raise.
             conn.rollback()
+            raise
+
+        logger.info(
+            "Deleted %d documents and %d pages for tenant: %s",
+            deleted_docs,
+            deleted_pages,
+            tenant_id,
+        )
+
+        return {
+            "status": "success",
+            "tenant_id": tenant_id,
+            "deleted_documents": deleted_docs,
+            "deleted_pages": deleted_pages,
+        }
+
+    except Exception as e:
+        logger.error("Knowledge base deletion failed for tenant %s: %s", tenant_id, e, exc_info=True)
         raise
+
     finally:
-        if conn:
-            conn.autocommit = True
-        if cur:
-            cur.close()
-        if conn:
-            conn.close()
+        # Always release resources, regardless of success or failure.
+        if cur is not None:
+            try:
+                cur.close()
+            except Exception:
+                pass
+        if conn is not None:
+            try:
+                conn.close()
+            except Exception:
+                pass
 
 
 # =====================================================
