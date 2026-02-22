@@ -1,6 +1,6 @@
 # =============================================================================
-#  SolarGenix - Authentication API  (Django - port 5000)
-#  Run from Start-Dev.ps1 or standalone: .\authentication_api\run.ps1
+#  SolarGenix - Prediction API  (Django - port 8000)
+#  Run from Start-Dev.ps1 or standalone: .\prediction_api\start_server.ps1
 # =============================================================================
 
 Set-StrictMode -Version Latest
@@ -13,21 +13,21 @@ function Write-Info  { param([string]$m) Write-Host "[   ] $m"  -ForegroundColor
 function Write-Fatal { param([string]$m) Write-Host "[ERR] $m"  -ForegroundColor Red; exit 1 }
 
 # -- Resolve paths ------------------------------------------------------------
-$SERVICE_ROOT  = Split-Path -Parent $MyInvocation.MyCommand.Definition
-$APP_DIR       = Join-Path $SERVICE_ROOT "app"
-$VENV_DIR      = Join-Path $APP_DIR "env"
-$ACTIVATE      = Join-Path $VENV_DIR "Scripts\Activate.ps1"
-$REQUIREMENTS  = Join-Path $APP_DIR "requirements.txt"
-$PORT          = 5000
+$SERVICE_ROOT = Split-Path -Parent $MyInvocation.MyCommand.Definition
+$VENV_DIR     = Join-Path $SERVICE_ROOT "venv"
+$ACTIVATE     = Join-Path $VENV_DIR "Scripts\Activate.ps1"
+$PROJECT_DIR  = Join-Path $SERVICE_ROOT "solar_project"
+$REQUIREMENTS = Join-Path $PROJECT_DIR "requirements.txt"
+$PORT         = 8000
 
 # -- Banner -------------------------------------------------------------------
 Write-Host ""
-Write-Host "==================================================" -ForegroundColor Cyan
-Write-Host "  SolarGenix - Authentication API  (port $PORT)  " -ForegroundColor Cyan
-Write-Host "=================================================="  -ForegroundColor Cyan
+Write-Host "==================================================" -ForegroundColor Yellow
+Write-Host "  SolarGenix - Prediction API  (port $PORT)      " -ForegroundColor Yellow
+Write-Host "=================================================="  -ForegroundColor Yellow
 
-# -- Guard: ensure app directory exists -------------------------------------
-if (-not (Test-Path $APP_DIR)) { Write-Fatal "app/ directory not found at: $APP_DIR" }
+# -- Guard: ensure project directory exists ---------------------------------
+if (-not (Test-Path $PROJECT_DIR)) { Write-Fatal "solar_project/ directory not found at: $PROJECT_DIR" }
 
 # -- Virtual environment -----------------------------------------------------
 Write-Step "Checking virtual environment..."
@@ -51,7 +51,6 @@ Write-Step "Checking dependencies..."
 
 if (-not (Test-Path $REQUIREMENTS)) { Write-Fatal "requirements.txt not found at: $REQUIREMENTS" }
 
-# Only reinstall if site-packages has virtually nothing (fresh venv).
 $sitePackages   = Join-Path $VENV_DIR "Lib\site-packages"
 $installedCount = (Get-ChildItem -Path $sitePackages -Directory -ErrorAction SilentlyContinue | Measure-Object).Count
 
@@ -66,7 +65,7 @@ if ($installedCount -le 2) {
 }
 
 # -- Start server -------------------------------------------------------------
-Write-Step "Starting Authentication API on port $PORT..."
-Set-Location $APP_DIR
+Write-Step "Starting Prediction API on port $PORT..."
+Set-Location $PROJECT_DIR
 Write-Host ""
 python manage.py runserver $PORT
