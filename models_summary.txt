@@ -1,0 +1,34 @@
+# Models Summary
+
+## TokenType (Enum)
+- **ACCESS**: Access token
+- **REFRESH**: Refresh token
+- **OTP**: One-time password (OTP) token
+
+## User
+Custom user model extending Django's AbstractUser and PermissionsMixin, with additional fields:
+- **email** (EmailField, unique): User's email (used as username)
+- **auth_provider** (CharField): Authentication provider (default: email)
+- **is_active** (BooleanField): Whether the user is active
+- **is_email_verified** (BooleanField): Whether the user's email is verified
+- **is_default_password** (BooleanField): Whether the user is using a default password
+- **phone_number** (CharField, unique): User's phone number
+
+## Token
+Stores authentication and session tokens for users:
+- **id** (UUIDField, primary key): Unique token ID
+- **user** (ForeignKey to User): The user this token belongs to
+- **jti** (CharField): JWT ID or unique identifier
+- **token** (TextField): The actual token string (optional)
+- **token_type** (CharField): Type of token (access, refresh, otp)
+- **expire_at** (DateTimeField): Expiry date/time
+- **is_blacklist_at** (DateTimeField): When the token was blacklisted (if any)
+
+## GroupProfile
+Profile for Django auth Groups, allowing extra metadata:
+- **group** (OneToOneField to Group): The Django group
+- **redirect_url** (URLField): URL to redirect users of this group (default: '/')
+
+---
+
+Each model includes standard Django model methods and string representations. The User model uses email as the unique identifier and disables the username field. TokenType is an enum for token categorization.
