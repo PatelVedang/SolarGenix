@@ -1,0 +1,153 @@
+import os
+from pathlib import Path
+
+from pydantic import EmailStr, Field, ValidationError
+from pydantic_settings import BaseSettings
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+
+
+class Settings(BaseSettings):
+    # ::::::::::::: General :::::::::::::
+    SECRET_KEY: str
+    DEBUG: bool = Field(default=False)
+
+    # ::::::::::::: DB Configuration :::::::::::::
+    SQL_ENGINE: str = Field(default="django.db.backends.postgresql")
+    SQL_DATABASE: str = Field(default="postgres")
+    SQL_USER: str = Field(default="postgres")
+    SQL_PASSWORD: str = Field(default="postgres")
+    SQL_DATABASE_HOST: str = Field(default="localhost")
+    SQL_DATABASE_PORT: int = Field(default=6543)
+
+
+    # :::::::::::::: CSRF and CORS :::::::::::::
+    CSRF_TRUSTED_ORIGINS: str = Field(default="http://localhost:8000")
+    CORS_ORIGIN_WHITELIST: str = Field(default="http://localhost:8000")
+
+    # :::::::::::::: Request Throttling :::::::::::::
+    AUTH_THROTTLING_LIMIT: str
+
+    # ::::::::::::: Unit test :::::::::::::
+    UNIT_TEST_USER_EMAIL: EmailStr = Field(default="example@yopmail.com")
+    UNIT_TEST_USER_PASSWORD: str = Field(default="test@123")
+
+
+    # ::::::::::::: Configs :::::::::::::
+    FRONTEND_URL: str = Field(default="http://localhost:8000")
+    SUPERUSER_EMAIL: str = Field(default="admin1@yopmail.com")
+    PROJECT_TITLE: str
+
+    # ::::::::::::: Swagger Authentication :::::::::::::
+    SWAGGER_AUTH_USERNAME: str
+    SWAGGER_AUTH_PASSWORD: str
+    JWT_ALGORITHM: str = Field(default="HS256")
+
+    # ::::::::::::: Token Expiry :::::::::::::
+    # Values in Days
+    AUTH_ACCESS_TOKEN_DAYS: int = Field(default=1)
+    AUTH_REFRESH_TOKEN_DAYS: int = Field(default=30)
+    # Values in Minutes
+    OTP_EXPIRY_MINUTES: int = Field(default=1)
+
+    # CELERY_BROKER_URL: str = Field(default=None)
+
+    # ::::::::::::::: SLACK :::::::::::::::
+    SLACK_BASIC_URL: str
+    DJANGO_RUNTIME_ENVIRONMENT: str = Field(default="Local")
+    AUTH_TYPE: str = Field(default="simplejwt")
+    AWS_ACCESS_KEY_ID: str | None = Field(default=None)
+    AWS_SECRET_ACCESS_KEY: str | None = Field(default=None)
+    # ::::::::::::: Twilio settings :::::::::::::
+    TWILIO_ACCOUNT_SID: str | None = Field(default=None)
+    TWILIO_AUTH_TOKEN: str | None = Field(default=None)
+    TWILIO_PHONE_NUMBER: str | None = Field(default=None)
+
+
+
+    # ::::::::::::: Stage & Storage :::::::::::::
+    STAGE: str = Field(default="DEV")  # Options: 'DEV', 'BETA', 'PROD'
+    AWS_STORAGE_BUCKET_NAME: str | None = Field(default=None)
+    AWS_S3_REGION_NAME: str | None = Field(default=None)
+
+    class Config:
+        env_file = os.path.join(BASE_DIR, ".env")
+        case_sensitive = True
+        extra = "ignore"
+
+
+def load_settings():
+    """
+    Loads application settings from a .env file and validates them.
+
+    This function checks for the existence of a .env file in the BASE_DIR directory.
+    If the file is missing, it raises a FileNotFoundError. It then initializes the
+    Settings object, validates the authentication type, and assigns default values
+    to any empty fields. If validation fails, it prints detailed error messages and
+    raises a ValidationError.
+
+    Returns:
+        Settings: An instance of the Settings class with loaded and validated configuration.
+
+    Raises:
+        FileNotFoundError: If the .env file is not found at the specified path.
+        ValidationError: If any settings fail validation.
+    """
+    env_file_path = os.path.join(BASE_DIR, ".env")
+    if not os.path.isfile(env_file_path):
+        raise FileNotFoundError(f"Missing required .env file at path: {env_file_path}")
+
+    try:
+        settings = Settings()
+        validate_storage_settings(settings)
+
+        # Handle Pydantic v1/v2 field access
+        fields = (
+            settings.model_fields.keys()
+            if hasattr(settings, "model_fields")
+            else settings.__fields__.keys()
+        )
+
+        for field in fields:
+            if getattr(settings, field) is None:
+                # Assign default values if they are None
+                if hasattr(settings, "model_fields"):
+                    default_value = settings.model_fields[field].default
+                else:
+                    default_value = settings.__fields__[field].default
+                setattr(settings, field, default_value)
+        print("Settings loaded successfully.")
+        return settings
+    except ValidationError as e:
+        for error in e.errors():
+            field = error["loc"][0]
+            message = error["msg"]
+            print(f"  - {field}: {message}", "error")
+        raise e
+
+
+
+
+
+def validate_storage_settings(settings: Settings):
+    """
+    Validates that all required AWS S3 settings are present when stage is PROD.
+
+    Args:
+        settings (Settings): The settings object containing storage configuration attributes.
+
+    Raises:
+        ValueError: If any required S3 fields are missing in PROD stage.
+    """
+    if settings.STAGE == "PROD":
+        required_fields = [
+            "AWS_STORAGE_BUCKET_NAME",
+            "AWS_S3_REGION_NAME",
+            "AWS_ACCESS_KEY_ID",
+            "AWS_SECRET_ACCESS_KEY",
+        ]
+        missing = [field for field in required_fields if not getattr(settings, field)]
+        if missing:
+            raise ValueError(
+                f"Missing required AWS S3 fields for PROD stage: {', '.join(missing)}"
+            )

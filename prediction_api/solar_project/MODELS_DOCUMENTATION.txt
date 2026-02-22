@@ -1,0 +1,172 @@
+================================================================================
+                    MODELS DOCUMENTATION - Solar Project
+================================================================================
+Generated on: February 13, 2026
+
+This document provides a comprehensive overview of all Django models used in 
+the solar_project codebase, including their purpose and field definitions.
+
+================================================================================
+
+MODEL 1: Page
+--------------------------------------------------------------------------------
+Location: solar_api/models.py
+Database Table: pages
+
+DESCRIPTION:
+    Model representing a page (URL) that has been indexed. This model is used
+    to track web pages that have been crawled and indexed, typically for RAG
+    (Retrieval-Augmented Generation) functionality. It maintains information
+    about which URLs have been processed and their current status.
+
+FIELDS:
+    1. id (AutoField - Primary Key)
+       - Automatically generated unique identifier
+       - Type: Integer
+       - Auto-increment
+
+    2. url (TextField)
+       - The complete URL of the indexed page
+       - Type: Text (unlimited length)
+       - Unique: Yes
+       - Indexed: Yes (for fast lookups)
+       - Purpose: Stores the web page URL that was crawled
+
+    3. tenant_id (TextField)
+       - Identifier for multi-tenant support
+       - Type: Text
+       - Indexed: Yes
+       - Purpose: Allows multiple tenants/organizations to use the system
+                 with isolated data
+
+    4. content_hash (TextField)
+       - Hash of the page content
+       - Type: Text
+       - Purpose: Used to detect if page content has changed since last crawl
+                 (for efficient re-indexing)
+
+    5. is_active (BooleanField)
+       - Indicates if the page is currently active/valid
+       - Type: Boolean (True/False)
+       - Default: True
+       - Indexed: Yes
+       - Purpose: Allows soft-deletion or deactivation of pages without
+                 removing them from the database
+
+    6. last_indexed (DateTimeField)
+       - Timestamp of when the page was last indexed
+       - Type: DateTime
+       - Default: Current time (timezone.now)
+       - Purpose: Track freshness of indexed content
+
+INDEXES:
+    - Composite index on (tenant_id, is_active) for efficient tenant queries
+    - Index on url field
+    - Index on is_active field
+
+================================================================================
+
+MODEL 2: Document
+--------------------------------------------------------------------------------
+Location: solar_api/models.py
+Database Table: documents
+
+DESCRIPTION:
+    Model representing a document chunk with its embedding. This model stores
+    chunks of text content along with their vector embeddings for semantic
+    search functionality. Each document is a piece of content extracted from
+    a page, processed and stored with its vector representation for RAG
+    (Retrieval-Augmented Generation) operations.
+
+FIELDS:
+    1. id (AutoField - Primary Key)
+       - Automatically generated unique identifier
+       - Type: Integer
+       - Auto-increment
+
+    2. content (TextField)
+       - The actual text content of the document chunk
+       - Type: Text (unlimited length)
+       - Purpose: Stores the chunked text that will be used for retrieval
+                 and context generation
+
+    3. source (TextField)
+       - Source information about where the content came from
+       - Type: Text
+       - Purpose: Track the origin of the document (e.g., filename, URL)
+
+    4. page_url (TextField)
+       - URL of the page this document chunk belongs to
+       - Type: Text
+       - Indexed: Yes
+       - Purpose: Link the document chunk back to its source page
+                 (relates to the Page model)
+
+    5. embedding (TextField)
+       - Vector embedding of the document content
+       - Type: Text (stored as JSON array)
+       - Purpose: Stores the 768-dimensional vector representation of the
+                 content for semantic similarity searches
+       - Note: Designed for PostgreSQL's pgvector extension (vector(768))
+               Currently stored as JSON array for compatibility
+
+    6. hash (TextField)
+       - Unique hash of the document content
+       - Type: Text
+       - Unique: Yes
+       - Indexed: Yes
+       - Purpose: Prevent duplicate document chunks from being stored
+                 and enable fast duplicate detection
+
+INDEXES:
+    - Index on page_url field (for fast page-based queries)
+    - Index on hash field (for duplicate detection)
+
+SPECIAL NOTES:
+    - The embedding field is designed to work with PostgreSQL's pgvector
+      extension which provides efficient vector similarity search
+    - The 768-dimension vector size is standard for many embedding models
+      (e.g., sentence-transformers)
+    - Raw SQL may be used for vector operations (cosine similarity, etc.)
+
+================================================================================
+
+RELATIONSHIPS BETWEEN MODELS:
+--------------------------------------------------------------------------------
+    Page <---> Document
+    
+    - One Page can have multiple Documents (One-to-Many relationship)
+    - Documents are linked to Pages via the page_url field
+    - This is a logical relationship (not enforced by ForeignKey in the code)
+    - When a page is crawled, its content is split into chunks, and each
+      chunk becomes a Document with a reference to the parent Page's URL
+
+================================================================================
+
+COMMON USE CASES:
+--------------------------------------------------------------------------------
+    1. Web Crawling & Indexing:
+       - Create Page records for discovered URLs
+       - Extract content and create Document chunks
+       - Store embeddings for semantic search
+
+    2. RAG (Retrieval-Augmented Generation):
+       - Query Documents using vector similarity
+       - Retrieve relevant context for chatbot responses
+       - Use page_url to trace back to original sources
+
+    3. Multi-Tenant Support:
+       - Filter Pages by tenant_id
+       - Each tenant has isolated set of pages and documents
+
+    4. Content Freshness:
+       - Check last_indexed to determine if re-indexing is needed
+       - Compare content_hash to detect changes
+
+    5. Deduplication:
+       - Use Document.hash to prevent storing duplicate chunks
+       - Use Page.content_hash to detect page changes
+
+================================================================================
+                              END OF DOCUMENTATION
+================================================================================
