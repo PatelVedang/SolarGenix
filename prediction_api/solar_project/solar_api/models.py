@@ -1,5 +1,24 @@
+import uuid
 from django.db import models
 from django.utils import timezone
+from django.contrib.auth.models import AbstractUser
+
+
+class User(AbstractUser):
+    """
+    Minimal User model to match the authentication_api User model.
+    Uses UUID as primary key to resolve simplejwt ID type errors.
+    """
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    email = models.EmailField(unique=True, max_length=255)
+    username = None # REMOVE since it's not in the DB
+    
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = []
+
+    class Meta:
+        db_table = 'core_user'
+        managed = False  # This project does not manage the common User table
 
 
 class Page(models.Model):

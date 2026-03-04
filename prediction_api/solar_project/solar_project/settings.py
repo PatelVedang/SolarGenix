@@ -32,6 +32,9 @@ DEBUG = True
 
 ALLOWED_HOSTS = ["*"]
 CORS_ALLOW_ALL_ORIGINS = True
+
+AUTH_USER_MODEL = 'solar_api.User' # CUSTOM USER MODEL with UUID ID
+
 # Application definition
 
 INSTALLED_APPS = [
