@@ -1,5 +1,6 @@
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import Navbar from "../components/Navbar";
+import BillOptimizationPage from "../pages/BillOptimizationPage";
 import BillPredictionPage from "../pages/BillPredictionPage";
 import DashboardPage from "../pages/DashboardPage";
 import HomePage from "../pages/HomePage";
@@ -16,6 +17,7 @@ const AppRoutes = () => {
 
                 <Route path="/solar-predict" element={<SolarPredictionPage />} />
                 <Route path="/bill-predict" element={<BillPredictionPage />} />
+                <Route path="/bill-optimization" element={<BillOptimizationPage />} />
 
             </Routes>
         </BrowserRouter>

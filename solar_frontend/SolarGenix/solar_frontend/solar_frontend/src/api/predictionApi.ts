@@ -44,7 +44,7 @@ export const predictElectricityBill = async (params: {
         },
         paramsSerializer: (params) => {
           const searchParams = new URLSearchParams();
-          
+
           // append each value separately
           params.consumption_history.forEach((val: number) => {
             searchParams.append("consumption_history", val.toString());
@@ -60,6 +60,26 @@ export const predictElectricityBill = async (params: {
     return response.data;
   } catch (error: any) {
     console.error("Bill Prediction Error:", error.response?.data || error.message);
+    throw error;
+  }
+};
+
+// 💰 3️⃣ Solar Bill Optimization
+export const optimizeBill = async (params: {
+  current_bill: number;
+  target_bill: number;
+  location?: string;
+  has_solar?: boolean;
+  solar_capacity_kw?: number | null;
+}) => {
+  try {
+    const response = await axios.post(
+      `${BASE_URL}/solar_generation/solar/bill-optimization-slab/`,
+      params
+    );
+    return response.data;
+  } catch (error: any) {
+    console.error("Bill Optimization Error:", error.response?.data || error.message);
     throw error;
   }
 };

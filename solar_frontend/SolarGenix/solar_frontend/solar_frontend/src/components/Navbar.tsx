@@ -18,6 +18,7 @@ const Navbar = () => {
         { path: "/dashboard", label: "Dashboard" },
         { path: "/solar-predict", label: "Solar Prediction" },
         { path: "/bill-predict", label: "Bill Prediction" },
+        { path: "/bill-optimization", label: "Bill Optimization" },
     ];
 
     return (
@@ -163,12 +164,11 @@ const Navbar = () => {
                     opacity: 0.3;
                 }
             `}</style>
-            
-            <nav className={`solar-nav fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
-                scrolled 
-                    ? 'bg-slate-950/95 shadow-2xl shadow-amber-500/5' 
+
+            <nav className={`solar-nav fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${scrolled
+                    ? 'bg-slate-950/95 shadow-2xl shadow-amber-500/5'
                     : 'bg-gradient-to-b from-slate-950 to-slate-950/80'
-            }`}>
+                }`}>
                 <div className="nav-backdrop">
                     <div className="max-w-7xl mx-auto px-6 lg:px-8">
                         <div className="flex justify-between items-center h-20">
@@ -199,11 +199,10 @@ const Navbar = () => {
                                         <Link
                                             key={item.path}
                                             to={item.path}
-                                            className={`nav-link px-6 py-2.5 text-sm font-medium tracking-wide transition-all duration-300 relative ${
-                                                isActive 
-                                                    ? 'text-amber-400 active' 
+                                            className={`nav-link px-6 py-2.5 text-sm font-medium tracking-wide transition-all duration-300 relative ${isActive
+                                                    ? 'text-amber-400 active'
                                                     : 'text-slate-300 hover:text-amber-400'
-                                            }`}
+                                                }`}
                                             style={{
                                                 animationDelay: `${index * 0.1}s`
                                             }}
@@ -228,12 +227,12 @@ const Navbar = () => {
                             </div>
                         </div>
                     </div>
-                    
+
                     {/* Animated bottom border */}
                     <div className="beam-line"></div>
                 </div>
             </nav>
-            
+
             {/* Spacer to prevent content from hiding under fixed navbar */}
             <div className="h-20"></div>
         </>
