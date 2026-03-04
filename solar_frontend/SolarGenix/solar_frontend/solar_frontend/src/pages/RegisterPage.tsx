@@ -8,6 +8,7 @@ const RegisterPage = () => {
         last_name: "",
         email: "",
         password: "",
+        phone_number: "",
     });
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
@@ -120,6 +121,19 @@ const RegisterPage = () => {
                             value={formData.email}
                             onChange={handleChange}
                             placeholder="name@company.com"
+                            className="input-field w-full p-4 rounded-xl placeholder:text-slate-600"
+                        />
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-semibold text-slate-300 mb-2">Phone Number</label>
+                        <input
+                            name="phone_number"
+                            type="text"
+                            required
+                            value={formData.phone_number}
+                            onChange={handleChange}
+                            placeholder="+91 9876543210"
                             className="input-field w-full p-4 rounded-xl placeholder:text-slate-600"
                         />
                     </div>

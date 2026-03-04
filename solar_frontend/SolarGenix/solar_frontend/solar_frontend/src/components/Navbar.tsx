@@ -8,11 +8,6 @@ const Navbar = () => {
     const { isAuthenticated, logout, user } = useAuth();
     const [scrolled, setScrolled] = useState(false);
 
-    // Hide navbar on login and register pages
-    if (location.pathname === "/login" || location.pathname === "/register") {
-        return null;
-    }
-
     useEffect(() => {
         const handleScroll = () => {
             setScrolled(window.scrollY > 20);
@@ -20,6 +15,11 @@ const Navbar = () => {
         window.addEventListener('scroll', handleScroll);
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
+
+    // Hide navbar on login and register pages - Move this AFTER all hooks
+    if (location.pathname === "/login" || location.pathname === "/register") {
+        return null;
+    }
 
     const navItems = [
         { path: "/", label: "Home" },

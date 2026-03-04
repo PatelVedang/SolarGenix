@@ -17,9 +17,10 @@ const LoginPage = () => {
         e.preventDefault();
         setLoading(true);
         try {
-            const data = await loginUser({ email, password });
-            // The auth_api returns { user, tokens: { access, refresh } }
-            login(data.user, data.tokens.access);
+            const responseBody = await loginUser({ email, password });
+            // The API returns { message, data: { user, tokens: { access: {token, expires}, refresh } } }
+            const { user, tokens } = responseBody.data;
+            login(user, tokens.access.token);
             navigate(from, { replace: true });
         } catch (err: any) {
             alert(err.response?.data?.detail || "Login failed. Check your credentials.");
