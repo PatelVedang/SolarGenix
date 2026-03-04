@@ -5,7 +5,7 @@ import ChatbotWidget from "../components/ChatbotWidget";
 import { AuthProvider } from "../context/AuthContext";
 import BillOptimizationPage from "../pages/BillOptimizationPage";
 import BillPredictionPage from "../pages/BillPredictionPage";
-import DashboardPage from "../pages/DashboardPage";
+import SolarKnowledgePage from "../pages/SolarKnowledgePage";
 import HomePage from "../pages/HomePage";
 import LoginPage from "../pages/LoginPage";
 import RegisterPage from "../pages/RegisterPage";
@@ -34,7 +34,7 @@ const AppRoutes = () => {
                         path="/dashboard"
                         element={
                             <ProtectedRoute>
-                                <DashboardPage />
+                                <SolarKnowledgePage />
                             </ProtectedRoute>
                         }
                     />
