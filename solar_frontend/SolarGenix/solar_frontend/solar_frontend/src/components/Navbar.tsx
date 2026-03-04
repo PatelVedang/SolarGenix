@@ -1,9 +1,17 @@
 import { useEffect, useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 
 const Navbar = () => {
     const location = useLocation();
+    const navigate = useNavigate();
+    const { isAuthenticated, logout, user } = useAuth();
     const [scrolled, setScrolled] = useState(false);
+
+    // Hide navbar on login and register pages
+    if (location.pathname === "/login" || location.pathname === "/register") {
+        return null;
+    }
 
     useEffect(() => {
         const handleScroll = () => {
@@ -20,6 +28,11 @@ const Navbar = () => {
         { path: "/bill-predict", label: "Bill Prediction" },
         { path: "/bill-optimization", label: "Bill Optimization" },
     ];
+
+    const handleLogout = () => {
+        logout();
+        navigate("/");
+    };
 
     return (
         <>
@@ -166,8 +179,8 @@ const Navbar = () => {
             `}</style>
 
             <nav className={`solar-nav fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${scrolled
-                    ? 'bg-slate-950/95 shadow-2xl shadow-amber-500/5'
-                    : 'bg-gradient-to-b from-slate-950 to-slate-950/80'
+                ? 'bg-slate-950/95 shadow-2xl shadow-amber-500/5'
+                : 'bg-gradient-to-b from-slate-950 to-slate-950/80'
                 }`}>
                 <div className="nav-backdrop">
                     <div className="max-w-7xl mx-auto px-6 lg:px-8">
@@ -200,8 +213,8 @@ const Navbar = () => {
                                             key={item.path}
                                             to={item.path}
                                             className={`nav-link px-6 py-2.5 text-sm font-medium tracking-wide transition-all duration-300 relative ${isActive
-                                                    ? 'text-amber-400 active'
-                                                    : 'text-slate-300 hover:text-amber-400'
+                                                ? 'text-amber-400 active'
+                                                : 'text-slate-300 hover:text-amber-400'
                                                 }`}
                                             style={{
                                                 animationDelay: `${index * 0.1}s`
@@ -213,17 +226,33 @@ const Navbar = () => {
                                 })}
                             </div>
 
-                            {/* Optional: Action Button */}
+                            {/* Action Button / Auth */}
                             <div className="hidden lg:block">
-                                <button className="group relative px-6 py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 text-slate-900 font-semibold text-sm rounded-full overflow-hidden transition-all duration-300 hover:shadow-lg hover:shadow-amber-500/50 hover:scale-105">
-                                    <span className="relative z-10 flex items-center gap-2">
-                                        Get Started
-                                        <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                                        </svg>
-                                    </span>
-                                    <div className="absolute inset-0 bg-gradient-to-r from-orange-500 to-amber-500 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                                </button>
+                                {isAuthenticated ? (
+                                    <div className="flex items-center gap-4">
+                                        <div className="text-slate-300 text-sm font-medium">
+                                            Hi, <span className="text-amber-400">{user?.first_name || 'User'}</span>
+                                        </div>
+                                        <button
+                                            onClick={handleLogout}
+                                            className="px-6 py-2 bg-slate-800 border border-slate-700 text-white font-semibold text-sm rounded-full transition-all hover:bg-slate-700"
+                                        >
+                                            Logout
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <Link to="/login">
+                                        <button className="group relative px-6 py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 text-slate-900 font-semibold text-sm rounded-full overflow-hidden transition-all duration-300 hover:shadow-lg hover:shadow-amber-500/50 hover:scale-105">
+                                            <span className="relative z-10 flex items-center gap-2">
+                                                Sign In
+                                                <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                                                </svg>
+                                            </span>
+                                            <div className="absolute inset-0 bg-gradient-to-r from-orange-500 to-amber-500 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                                        </button>
+                                    </Link>
+                                )}
                             </div>
                         </div>
                     </div>

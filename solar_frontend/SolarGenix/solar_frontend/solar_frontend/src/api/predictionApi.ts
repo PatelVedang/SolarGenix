@@ -2,6 +2,17 @@ import axios from "axios";
 
 const BASE_URL = "http://127.0.0.1:8000"; // Django server
 
+// Helper for authorized axios calls
+const getAuthAxios = () => {
+  const token = localStorage.getItem("solar_token");
+  return axios.create({
+    baseURL: BASE_URL,
+    headers: {
+      Authorization: token ? `Bearer ${token}` : "",
+    },
+  });
+};
+
 // 🌞 1️⃣ Solar Generation Prediction
 export const predictSolarGeneration = async (params: {
   pincode: string;
@@ -10,8 +21,9 @@ export const predictSolarGeneration = async (params: {
   panel_condition: "good" | "average" | "bad";
 }) => {
   try {
-    const response = await axios.get(
-      `${BASE_URL}/solar_generation/predict-production/`,
+    const api = getAuthAxios();
+    const response = await api.get(
+      `/solar_generation/predict-production/`,
       {
         params: {
           pincode: params.pincode,
@@ -35,8 +47,9 @@ export const predictElectricityBill = async (params: {
   cycle_index: number;
 }) => {
   try {
-    const response = await axios.get(
-      `${BASE_URL}/solar_generation/predict-bill/`,
+    const api = getAuthAxios();
+    const response = await api.get(
+      `/solar_generation/predict-bill/`,
       {
         params: {
           cycle_index: params.cycle_index,
@@ -73,8 +86,9 @@ export const optimizeBill = async (params: {
   solar_capacity_kw?: number | null;
 }) => {
   try {
-    const response = await axios.post(
-      `${BASE_URL}/solar_generation/solar/bill-optimization-slab/`,
+    const api = getAuthAxios();
+    const response = await api.post(
+      `/solar_generation/solar/bill-optimization-slab/`,
       params
     );
     return response.data;

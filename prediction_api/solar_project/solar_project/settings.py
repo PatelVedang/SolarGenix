@@ -25,7 +25,7 @@ load_dotenv(os.path.join(BASE_DIR, '.env'))
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-kr2lcv!^jurccxeq8%%bp_4h-4rsz=c^t*o3%d0m_!dy8zo)9_'
+SECRET_KEY = os.getenv('SECRET_KEY', '8c504a81f10a49729ce44af1b9a3b98d')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -36,12 +36,14 @@ CORS_ALLOW_ALL_ORIGINS = True
 
 INSTALLED_APPS = [
     "corsheaders",
+    "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
     'solar_api',
     'rest_framework',
+    'rest_framework_simplejwt',
     'drf_yasg',
 ]
 
@@ -51,6 +53,7 @@ MIDDLEWARE = [
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
+    "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
 ]
 
@@ -70,14 +73,22 @@ TEMPLATES = [
     },
 ]
 
-# Disable default auth for REST Framework
+# REST Framework Configuration
 REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': [],
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ),
     'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.AllowAny',
+        'rest_framework.permissions.IsAuthenticated',
     ],
-    'UNAUTHENTICATED_USER': None,
-    'UNAUTHENTICATED_TOKEN': None,
+}
+
+from datetime import timedelta
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(days=1),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=30),
+    'ALGORITHM': 'HS256',
+    'SIGNING_KEY': SECRET_KEY,
 }
 
 SWAGGER_SETTINGS = {

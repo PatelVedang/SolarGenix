@@ -78,11 +78,11 @@ A Django-based Authentication API featuring secure user registration, login, and
    ```bash
    python app/manage.py runserver
    ```
-   The API will be available at `http://127.0.0.1:8000/`.
+   The API will be available at `http://127.0.0.1:5000/`.
 
 ## API Documentation
 Once the server is running, you can access the Swagger documentation at:
-- `http://127.0.0.1:8000/api/schema/swagger-ui/`
+- `http://127.0.0.1:5000/api/schema/swagger-ui/`
 
 ---
 

@@ -49,10 +49,10 @@ python setup_env.py   # creates .env from .env.example
 
 ### 4. Run the Server
 ```bash
-python manage.py runserver 5000
+python manage.py runserver 8000
 ```
 
-Swagger UI: `http://127.0.0.1:5000/solar_generation/swagger/`
+Swagger UI: `http://127.0.0.1:8000/solar_generation/swagger/`
 
 ---
 
@@ -149,8 +149,8 @@ All endpoints are prefixed with `/solar_generation/`.
 ---
 
 ## Documentation
-- **Swagger UI**: `http://127.0.0.1:5000/solar_generation/swagger/`
-- **ReDoc**: `http://127.0.0.1:5000/solar_generation/redoc/`
+- **Swagger UI**: `http://127.0.0.1:8000/solar_generation/swagger/`
+- **ReDoc**: `http://127.0.0.1:8000/solar_generation/redoc/`
 
 ## Deployment & Security
 - All DB connections use `sslmode=require`.

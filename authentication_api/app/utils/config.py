@@ -22,8 +22,8 @@ class Settings(BaseSettings):
 
 
     # :::::::::::::: CSRF and CORS :::::::::::::
-    CSRF_TRUSTED_ORIGINS: str = Field(default="http://localhost:8000")
-    CORS_ORIGIN_WHITELIST: str = Field(default="http://localhost:8000")
+    CSRF_TRUSTED_ORIGINS: str = Field(default="http://localhost:5000")
+    CORS_ORIGIN_WHITELIST: str = Field(default="http://localhost:5000")
 
     # :::::::::::::: Request Throttling :::::::::::::
     AUTH_THROTTLING_LIMIT: str
@@ -34,7 +34,7 @@ class Settings(BaseSettings):
 
 
     # ::::::::::::: Configs :::::::::::::
-    FRONTEND_URL: str = Field(default="http://localhost:8000")
+    FRONTEND_URL: str = Field(default="http://localhost:5000")
     SUPERUSER_EMAIL: str = Field(default="admin1@yopmail.com")
     PROJECT_TITLE: str
 
