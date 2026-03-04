@@ -97,3 +97,21 @@ export const optimizeBill = async (params: {
     throw error;
   }
 };
+
+// 🤖 4️⃣ Chatbot Assistant
+export const askChatbot = async (question: string) => {
+  try {
+    const api = getAuthAxios();
+    const response = await api.post(
+      `/solar_generation/chatbot/ask/`,
+      {
+        question: question,
+        tenant_id: "solar"
+      }
+    );
+    return response.data;
+  } catch (error: any) {
+    console.error("Chatbot Error:", error.response?.data || error.message);
+    throw error;
+  }
+};

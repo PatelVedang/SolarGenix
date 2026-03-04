@@ -1,6 +1,7 @@
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import ProtectedRoute from "../components/ProtectedRoute";
+import ChatbotWidget from "../components/ChatbotWidget";
 import { AuthProvider } from "../context/AuthContext";
 import BillOptimizationPage from "../pages/BillOptimizationPage";
 import BillPredictionPage from "../pages/BillPredictionPage";
@@ -15,7 +16,9 @@ const AppRoutes = () => {
         <AuthProvider>
             <BrowserRouter>
                 <Navbar />
+                <ChatbotWidget />
                 <Routes>
+
                     <Route
                         path="/"
                         element={
