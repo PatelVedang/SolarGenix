@@ -1,0 +1,1077 @@
+================================================================================
+        SOLARGENIX — COMPLETE USER GUIDE & KNOWLEDGE BASE
+================================================================================
+
+        Version 1.0 — March 2026
+        © SolarGenix. All rights reserved.
+
+================================================================================
+
+
+TABLE OF CONTENTS
+=================
+
+  Part A — About SolarGenix
+    1.  What is SolarGenix?
+    2.  Who is SolarGenix For?
+    3.  Key Features at a Glance
+
+  Part B — Getting Started
+    4.  Creating Your Account (Registration)
+    5.  Logging In
+    6.  Navigating the Website
+    7.  Logging Out
+
+  Part C — Feature Guide
+    8.  Home Page
+    9.  Knowledge Hub (Solar Learning Centre)
+   10.  Solar Generation Prediction
+   11.  Electricity Bill Prediction
+   12.  Bill Optimization (Solar Sizing Calculator)
+   13.  AI Chatbot Assistant
+
+  Part D — Solar Energy Education
+   14.  Introduction to Solar Energy
+   15.  How Solar Panels Work
+   16.  Types of Solar Panels
+   17.  Types of Solar Systems (On-Grid, Off-Grid, Hybrid)
+   18.  Benefits of Installing Solar Panels
+   19.  Cost of Solar Installation in India
+   20.  Government Subsidies & Incentives
+   21.  Maintenance of Solar Panels
+   22.  Lifespan & Warranty
+   23.  Environmental Impact
+   24.  Common Myths About Solar Panels
+   25.  Solar Installation Process — Step by Step
+
+  Part E — Troubleshooting & FAQs
+   26.  Frequently Asked Questions
+   27.  Troubleshooting Common Issues
+   28.  Contact & Support
+
+
+================================================================================
+                       PART A — ABOUT SOLARGENIX
+================================================================================
+
+
+1. WHAT IS SOLARGENIX?
+======================
+
+SolarGenix is a web-based platform that helps homeowners, businesses, and solar
+enthusiasts make smart decisions about solar energy. It uses artificial
+intelligence and data science to provide:
+
+  • Accurate predictions of how much electricity your solar panels will generate.
+  • Forecasts of your upcoming electricity bills based on past consumption.
+  • Recommendations on how many solar panels you need to reduce your bill to a
+    target amount.
+  • An AI-powered chatbot that answers your questions about solar energy, our
+    platform, and anything related to solar power.
+
+Think of SolarGenix as your personal solar energy advisor — available 24/7,
+completely free to use, and backed by real data and machine learning models.
+
+SolarGenix does NOT sell solar panels. It is an information and prediction tool
+that empowers you with knowledge so you can make informed decisions before
+purchasing or installing solar equipment.
+
+
+2. WHO IS SOLARGENIX FOR?
+=========================
+
+SolarGenix is designed for everyone — you do NOT need any technical knowledge
+to use it. It is especially useful for:
+
+  • Homeowners thinking about installing solar panels on their roof.
+  • People who already have solar panels and want to predict output.
+  • Anyone who wants to understand how much they can save on electricity bills.
+  • Students and researchers learning about solar energy.
+  • Small business owners looking to reduce their electricity costs.
+  • Anyone curious about solar energy and its benefits.
+
+
+3. KEY FEATURES AT A GLANCE
+=============================
+
+  ┌──────────────────────────────┬────────────────────────────────────────────┐
+  │ Feature                      │ What It Does                               │
+  ├──────────────────────────────┼────────────────────────────────────────────┤
+  │ Solar Generation Prediction  │ Predicts how much electricity your solar   │
+  │                              │ panels will produce based on your location │
+  │                              │ and panel details.                         │
+  ├──────────────────────────────┼────────────────────────────────────────────┤
+  │ Bill Prediction              │ Forecasts your next electricity bill using │
+  │                              │ your last 6 months of consumption data.    │
+  ├──────────────────────────────┼────────────────────────────────────────────┤
+  │ Bill Optimization            │ Tells you how many solar panels (and what  │
+  │                              │ capacity in kW) you need to reduce your    │
+  │                              │ electricity bill from its current amount   │
+  │                              │ to your desired target amount.             │
+  ├──────────────────────────────┼────────────────────────────────────────────┤
+  │ Knowledge Hub                │ 12 topics covering everything about solar  │
+  │                              │ energy — from basics to installation.      │
+  ├──────────────────────────────┼────────────────────────────────────────────┤
+  │ AI Chatbot                   │ Ask any question about solar energy, our   │
+  │                              │ platform, or your bills. Get instant       │
+  │                              │ answers from our AI assistant.             │
+  └──────────────────────────────┴────────────────────────────────────────────┘
+
+
+================================================================================
+                       PART B — GETTING STARTED
+================================================================================
+
+
+4. CREATING YOUR ACCOUNT (REGISTRATION)
+========================================
+
+Before using SolarGenix, you need to create a free account. Here's how:
+
+Step 1: Open your web browser and go to the SolarGenix website.
+
+Step 2: You will see the Login page. If you don't have an account yet, click on
+        the "Create Account" link at the bottom of the login form.
+
+Step 3: You will be taken to the Registration page. Fill in the following
+        details:
+
+        • First Name — Your first name (e.g., "Vedang")
+        • Last Name — Your last name (e.g., "Patel")
+        • Email Address — A valid email address (e.g., "vedang@gmail.com")
+          This will be your username for logging in.
+        • Phone Number — Your mobile phone number (e.g., "9876543210")
+        • Password — Choose a strong password. It should contain:
+            - At least 8 characters
+            - At least one uppercase letter (A-Z)
+            - At least one lowercase letter (a-z)
+            - At least one number (0-9)
+            - At least one special character (!@#$%^&*)
+
+Step 4: Click the "Create Account" button.
+
+Step 5: If all details are correct, your account will be created and you will
+        be redirected to the login page. You can now log in with your email
+        and password.
+
+IMPORTANT NOTES:
+  • Each email address can only be used for one account.
+  • Each phone number can only be used for one account.
+  • Make sure to remember your password — there is no "forgot password"
+    feature at this time.
+
+
+5. LOGGING IN
+=============
+
+Step 1: Open the SolarGenix website in your browser.
+
+Step 2: You will see the Login page with two fields:
+        • Email Address — Enter the email you used during registration.
+        • Password — Enter your password.
+
+Step 3: Click the "Sign In" button.
+
+Step 4: If your credentials are correct, you will be taken to the Dashboard
+        (Knowledge Hub) page. You are now logged in!
+
+If login fails:
+  • Double-check that your email and password are correct.
+  • Make sure your email has been verified (if verification was required).
+  • Ensure Caps Lock is not accidentally turned on.
+
+
+6. NAVIGATING THE WEBSITE
+==========================
+
+Once logged in, you will see a navigation bar at the top of every page. The
+navigation bar contains the following links:
+
+  ┌────────────────────┬─────────────────────────────────────────────────────┐
+  │ Nav Link           │ Where It Takes You                                  │
+  ├────────────────────┼─────────────────────────────────────────────────────┤
+  │ Home               │ The main landing page with an overview of features │
+  │                    │ and how SolarGenix works.                           │
+  ├────────────────────┼─────────────────────────────────────────────────────┤
+  │ Knowledge Hub      │ A comprehensive learning centre with 12 topics     │
+  │                    │ about solar energy. Each topic has expandable       │
+  │                    │ subtopics — click on a subtopic heading to see      │
+  │                    │ its content.                                        │
+  ├────────────────────┼─────────────────────────────────────────────────────┤
+  │ Solar Prediction   │ Predict how much electricity your solar panels     │
+  │                    │ will generate. Enter your location, sunlight hours, │
+  │                    │ panel count, and panel condition.                    │
+  ├────────────────────┼─────────────────────────────────────────────────────┤
+  │ Bill Prediction    │ Forecast your next month's electricity bill based   │
+  │                    │ on your last 6 months of consumption data.          │
+  ├────────────────────┼─────────────────────────────────────────────────────┤
+  │ Bill Optimization  │ Calculate how many solar panels you need to reduce  │
+  │                    │ your electricity bill to a target amount.           │
+  └────────────────────┴─────────────────────────────────────────────────────┘
+
+Additionally, there is an AI Chatbot button (a glowing orange circle) in the
+bottom-right corner of every page. Click it to open the chatbot and ask
+questions.
+
+The navigation bar also shows your name (if logged in) and a "Logout" button
+on the right side.
+
+
+7. LOGGING OUT
+==============
+
+To log out of your SolarGenix account:
+
+Step 1: Look at the top-right corner of the navigation bar.
+
+Step 2: You will see your name and a "Logout" button.
+
+Step 3: Click the "Logout" button.
+
+Step 4: You will be logged out and redirected to the Home page. If you try to
+        access any feature page, you will be redirected to the Login page.
+
+
+================================================================================
+                       PART C — FEATURE GUIDE
+================================================================================
+
+
+8. HOME PAGE
+============
+
+Path: Click "Home" in the navigation bar, or go to the root URL ("/").
+
+The Home Page is the first page you see after logging in. It provides:
+
+  • A hero section with the SolarGenix tagline:
+    "Predict Solar Output. Forecast Bills. Optimize Savings."
+
+  • Key statistics about the platform:
+    - 98.5% Prediction Accuracy
+    - 50K+ Predictions Made
+    - 24/7 Real-time Monitoring
+    - 15+ Data Parameters
+
+  • Feature cards highlighting the main capabilities:
+    - Solar Generation Prediction
+    - Electricity Bill Estimation
+
+  • A "How It Works" section explaining the 4-step process:
+    1. Input Your Data — Enter your location, panel info, and conditions.
+    2. AI Analysis — Our machine learning model processes weather data.
+    3. Get Predictions — Receive accurate forecasts for energy generation.
+    4. Optimize & Save — Use insights to maximize efficiency.
+
+  • A Call-to-Action button to start using the prediction features.
+
+The Home Page is informational — it doesn't require any input from you. It's
+a great starting point to understand what SolarGenix offers.
+
+
+9. KNOWLEDGE HUB (SOLAR LEARNING CENTRE)
+=========================================
+
+Path: Click "Knowledge Hub" in the navigation bar, or go to "/dashboard".
+
+The Knowledge Hub is a comprehensive educational resource containing 12 major
+topics about solar energy. Each topic is displayed as a card with subtopics
+that you can click to expand (accordion style).
+
+Topics covered:
+  1.  Introduction to Solar Energy
+  2.  Benefits of Installing Solar Panels
+  3.  Should You Install Solar?
+  4.  Cost of Solar Installation
+  5.  Types of Solar Systems
+  6.  Types of Solar Panels
+  7.  Maintenance of Solar Panels
+  8.  Lifespan of Solar Panels
+  9.  Government Subsidies & Incentives
+  10. Environmental Impact
+  11. Common Myths About Solar Panels
+  12. Solar Installation Process
+
+How to use:
+  • Scroll through the page to see all 12 topics.
+  • Each topic has multiple subtopics listed as clickable headings.
+  • Click on any subtopic heading to expand it and see the detailed content.
+  • Click again to collapse it.
+  • You can have multiple subtopics expanded at the same time.
+
+
+10. SOLAR GENERATION PREDICTION
+================================
+
+Path: Click "Solar Prediction" in the navigation bar, or go to "/solar-predict".
+
+This feature predicts how much electricity your solar panels will generate
+based on your specific conditions.
+
+WHAT YOU NEED TO ENTER:
+-----------------------
+
+  ┌─────────────────────┬──────────────────────────────────────────────────┐
+  │ Field               │ What to Enter                                    │
+  ├─────────────────────┼──────────────────────────────────────────────────┤
+  │ Pincode             │ Your area's 6-digit Indian postal code.          │
+  │                     │ Example: 380015 (Ahmedabad), 110001 (Delhi)      │
+  │                     │ This helps the system determine your location's  │
+  │                     │ weather and sunlight conditions.                  │
+  ├─────────────────────┼──────────────────────────────────────────────────┤
+  │ Sunlight Time       │ The average number of hours of direct sunlight   │
+  │ (hours)             │ your roof receives per day.                       │
+  │                     │ Typical range: 4–8 hours.                         │
+  │                     │ Example: 6 (if your roof gets ~6 hours of        │
+  │                     │ direct sunlight daily)                            │
+  │                     │                                                   │
+  │                     │ How to estimate:                                  │
+  │                     │ — Observe your roof from morning to evening.      │
+  │                     │ — Note when direct sunlight starts and ends.      │
+  │                     │ — Subtract shade hours.                           │
+  │                     │ — Most Indian cities: 5–7 hours average.          │
+  ├─────────────────────┼──────────────────────────────────────────────────┤
+  │ Number of Panels    │ The number of solar panels you have (or plan     │
+  │                     │ to install).                                      │
+  │                     │ Example: 10                                       │
+  │                     │                                                   │
+  │                     │ If you're just exploring, try different numbers   │
+  │                     │ (5, 10, 15, 20) to see how output changes.       │
+  ├─────────────────────┼──────────────────────────────────────────────────┤
+  │ Panel Condition     │ The current condition of your solar panels.       │
+  │                     │ Choose ONE:                                       │
+  │                     │ — "Good" — Panels are clean, new, or well-       │
+  │                     │   maintained. Less than 5 years old.              │
+  │                     │ — "Average" — Some dust/wear, 5–15 years old.    │
+  │                     │ — "Bad" — Heavily soiled, damaged, or very old.   │
+  │                     │                                                   │
+  │                     │ If you're planning NEW panels, choose "Good".     │
+  └─────────────────────┴──────────────────────────────────────────────────┘
+
+HOW TO USE:
+-----------
+  1. Navigate to the "Solar Prediction" page.
+  2. Enter your Pincode (6-digit postal code).
+  3. Enter the average sunlight hours your roof receives.
+  4. Enter the number of solar panels.
+  5. Select the panel condition from the dropdown (Good / Average / Bad).
+  6. Click the "Predict" button.
+  7. Wait a few seconds for the AI model to process your data.
+
+WHAT YOU GET BACK:
+------------------
+After clicking Predict, you will receive:
+
+  • Summary Tab:
+    — Predicted daily energy production (in kWh).
+    — Predicted monthly energy production (in kWh).
+    — An efficiency score or rating.
+
+  • Forecast Tab:
+    — Detailed breakdown of hourly or daily production estimates.
+    — Weather-adjusted predictions.
+
+  • Details Tab:
+    — Input parameters summary.
+    — Model confidence score.
+    — Technical details about the prediction.
+
+TIPS:
+  • Higher sunlight hours = more electricity generated.
+  • More panels = more electricity generated.
+  • "Good" condition panels produce more than "Bad" condition panels.
+  • If your pincode is not recognized, try a nearby pincode.
+  • The prediction is based on average weather conditions for your area.
+
+
+11. ELECTRICITY BILL PREDICTION
+=================================
+
+Path: Click "Bill Prediction" in the navigation bar, or go to "/bill-predict".
+
+This feature predicts your NEXT electricity bill based on your past 6 months
+of electricity consumption.
+
+WHAT YOU NEED TO ENTER:
+-----------------------
+
+  ┌───────────────────────┬──────────────────────────────────────────────────┐
+  │ Field                 │ What to Enter                                    │
+  ├───────────────────────┼──────────────────────────────────────────────────┤
+  │ Last 6 Months of      │ Enter the electricity consumption (in kWh or    │
+  │ Consumption            │ "units") for each of the last 6 months.        │
+  │                       │                                                  │
+  │                       │ The page shows 6 input boxes, each labelled     │
+  │                       │ with the month name (e.g., "Sep 2025",          │
+  │                       │ "Oct 2025", etc.).                               │
+  │                       │                                                  │
+  │                       │ Where to find this information:                  │
+  │                       │ — Your monthly electricity bill (printed or      │
+  │                       │   online) shows "Units Consumed" or "kWh".      │
+  │                       │ — Check your electricity provider's app or       │
+  │                       │   website for historical consumption data.       │
+  │                       │                                                  │
+  │                       │ Example values:                                  │
+  │                       │   Month 1: 250                                   │
+  │                       │   Month 2: 280                                   │
+  │                       │   Month 3: 310                                   │
+  │                       │   Month 4: 340                                   │
+  │                       │   Month 5: 300                                   │
+  │                       │   Month 6: 320                                   │
+  ├───────────────────────┼──────────────────────────────────────────────────┤
+  │ Target Cycle Index     │ This tells the system WHICH future billing      │
+  │                       │ cycle you want to predict.                       │
+  │                       │                                                  │
+  │                       │ — Enter "1" to predict the NEXT month's bill.   │
+  │                       │ — Enter "2" to predict 2 months from now.       │
+  │                       │ — Enter "3" to predict 3 months from now.       │
+  │                       │                                                  │
+  │                       │ Most users should enter "1" (next month).       │
+  └───────────────────────┴──────────────────────────────────────────────────┘
+
+HOW TO USE:
+-----------
+  1. Navigate to the "Bill Prediction" page.
+  2. Enter your electricity consumption (in units/kWh) for each of the last
+     6 months. All 6 fields must be filled.
+  3. Set the Target Cycle Index (default is 1 = predict next month).
+  4. Click the "Predict" button.
+  5. Wait for the AI model to analyze your consumption patterns.
+
+WHAT YOU GET BACK:
+------------------
+  • Summary Tab:
+    — Predicted consumption for the target month (in kWh/units).
+    — Predicted bill amount (in ₹).
+    — Which AI model was used for the prediction.
+
+  • Forecast Tab:
+    — Trend analysis showing your consumption pattern.
+    — Comparison with previous months.
+
+  • Details Tab:
+    — Statistical features extracted from your data.
+    — Model confidence and technical details.
+
+TIPS:
+  • Enter ACCURATE consumption data for the best predictions. Approximate
+    values will give approximate results.
+  • The system uses two different AI models:
+    — A "General Model" for normal consumption (below 1,200 units/month).
+    — A "High Consumption Model" for heavy usage (1,200+ units/month).
+    The system automatically selects the right model based on your data.
+  • Consumption naturally varies by season (summer AC usage is higher, etc.).
+    The model accounts for seasonal patterns.
+
+
+12. BILL OPTIMIZATION (SOLAR SIZING CALCULATOR)
+=================================================
+
+Path: Click "Bill Optimization" in the navigation bar, or go to
+      "/bill-optimization".
+
+This feature calculates exactly how many solar panels you need to reduce your
+electricity bill from its current amount to your desired target amount. It
+uses Indian slab-based electricity tariff rates for accurate calculations.
+
+WHAT YOU NEED TO ENTER:
+-----------------------
+
+  ┌─────────────────────────┬────────────────────────────────────────────────┐
+  │ Field                   │ What to Enter                                  │
+  ├─────────────────────────┼────────────────────────────────────────────────┤
+  │ Current Monthly Bill    │ Your current monthly electricity bill in ₹.    │
+  │ (₹)                    │ Example: 3500                                   │
+  │                         │                                                │
+  │                         │ Find this on your latest bill or your          │
+  │                         │ electricity provider's app.                     │
+  ├─────────────────────────┼────────────────────────────────────────────────┤
+  │ Target Monthly Bill     │ How much you WANT your bill to be (in ₹)      │
+  │ (₹)                    │ after installing solar panels.                  │
+  │                         │ Example: 500                                    │
+  │                         │                                                │
+  │                         │ This must be LESS than your current bill.      │
+  │                         │ Enter 0 if you want to eliminate your bill     │
+  │                         │ entirely.                                       │
+  ├─────────────────────────┼────────────────────────────────────────────────┤
+  │ Location (Optional)     │ Your city or area name.                        │
+  │                         │ Example: "Ahmedabad"                           │
+  │                         │ This is optional and for reference only.       │
+  ├─────────────────────────┼────────────────────────────────────────────────┤
+  │ Already Have Solar?      │ Check this box if you ALREADY have solar      │
+  │ (Checkbox)              │ panels installed. Leave unchecked if you       │
+  │                         │ don't have any solar panels yet.               │
+  ├─────────────────────────┼────────────────────────────────────────────────┤
+  │ Existing Solar Capacity  │ If you checked "Already Have Solar", enter    │
+  │ (kW)                    │ your current solar system's capacity in kW.    │
+  │                         │ Example: 2 (for a 2 kW system)                 │
+  │                         │                                                │
+  │                         │ You can find this on your solar inverter or    │
+  │                         │ the original installation documents.            │
+  │                         │ This field only appears if you checked the     │
+  │                         │ "Already Have Solar" checkbox.                  │
+  └─────────────────────────┴────────────────────────────────────────────────┘
+
+HOW TO USE:
+-----------
+  1. Navigate to the "Bill Optimization" page.
+  2. Enter your Current Monthly Bill (in ₹).
+  3. Enter your Target Monthly Bill (in ₹). Must be less than current bill.
+  4. Optionally enter your location.
+  5. If you already have solar panels, check the box and enter your existing
+     solar capacity in kW.
+  6. Click the "Optimize" button.
+
+WHAT YOU GET BACK:
+------------------
+The system will show you:
+
+  • Current Units — How many kWh/units you are currently consuming.
+    (Calculated from your bill using Indian tariff slabs.)
+
+  • Target Units — How many kWh/units your target bill corresponds to.
+
+  • Units to Offset — The difference between current and target units.
+    This is how much solar needs to generate.
+
+  • Recommended Solar Capacity (kW) — The solar system size you need.
+    Example: "2.5 kW" means you need a 2.5 kilowatt solar system.
+
+  • Recommended Number of Panels — How many 540-watt solar panels you need.
+    Example: "5 panels" means you need five 540W panels.
+
+  • Estimated Monthly Generation — How many units the recommended system
+    will produce each month.
+
+HOW THE CALCULATION WORKS (IN SIMPLE TERMS):
+---------------------------------------------
+The system uses Indian electricity tariff slabs to figure out how many units
+(kWh) your bill represents:
+
+  ┌─────────────────────┬──────────────────┐
+  │ Units Consumed      │ Rate (₹ per unit)│
+  ├─────────────────────┼──────────────────┤
+  │ 0 – 50 units        │ ₹3.00            │
+  │ 51 – 100 units      │ ₹3.50            │
+  │ 101 – 200 units     │ ₹5.00            │
+  │ 201+ units          │ ₹7.00            │
+  └─────────────────────┴──────────────────┘
+
+  Assumption: 1 kW of solar panels produces approximately 120 units per month
+              (Indian average).
+
+  Panel size: 540 watts (0.54 kW) per panel — standard size.
+
+Example:
+  Current bill: ₹3,500  →  approximately 507 units consumed.
+  Target bill:  ₹500    →  approximately 143 units.
+  Units to offset: 507 - 143 = 364 units.
+  Solar capacity needed: 364 ÷ 120 = 3.03 kW.
+  Panels needed: 3.03 ÷ 0.54 = 6 panels (rounded up).
+
+
+13. AI CHATBOT ASSISTANT
+========================
+
+Location: Bottom-right corner of every page (glowing orange chat bubble).
+
+The AI Chatbot is your personal solar energy assistant. It can answer questions
+about solar energy, SolarGenix features, electricity bills, government
+subsidies, or anything else related to solar power.
+
+HOW TO USE:
+-----------
+  1. Look for the glowing orange circle with a chat icon in the bottom-right
+     corner of any page.
+  2. Click it to open the chat window.
+  3. Type your question in the text box at the bottom of the chat window.
+  4. Press Enter or click the Send button (arrow icon).
+  5. Wait a moment for the AI to process your question and respond.
+  6. You can ask multiple questions in a row — the chat history is maintained
+     during your session.
+  7. Click the X button or the chat bubble again to close the chat window.
+
+EXAMPLE QUESTIONS YOU CAN ASK:
+------------------------------
+  • "How many solar panels do I need for my home?"
+  • "What is net metering?"
+  • "How do I use the bill prediction feature?"
+  • "What government subsidies are available for solar?"
+  • "How much does a 3kW solar system cost?"
+  • "What is the difference between on-grid and off-grid solar?"
+  • "How to enter data in the solar prediction page?"
+  • "How long do solar panels last?"
+  • "What does pincode mean in solar prediction?"
+  • "Can I use solar panels in a cloudy area?"
+
+TIPS:
+  • Ask clear, specific questions for the best answers.
+  • The chatbot works best for questions about solar energy and SolarGenix.
+  • Questions must be between 3 and 1,000 characters long.
+  • If the chatbot doesn't understand your question, try rephrasing it.
+
+
+================================================================================
+                    PART D — SOLAR ENERGY EDUCATION
+================================================================================
+
+
+14. INTRODUCTION TO SOLAR ENERGY
+==================================
+
+Solar energy is the light and heat that comes from the Sun. It is the most
+abundant energy source available on Earth. Every hour, the Sun delivers more
+energy to our planet than all of humanity uses in an entire year.
+
+Solar energy is harnessed using technologies like solar panels (also called
+photovoltaic panels or PV panels). These panels convert sunlight directly
+into electricity that can power your home, charge your devices, run your
+appliances, and even feed energy back into the electrical grid.
+
+Solar energy is considered "renewable" because the Sun will continue to
+shine for approximately 5 billion more years — making it, for all practical
+purposes, an infinite energy source. Unlike coal, oil, or natural gas, solar
+energy does not produce any pollution or greenhouse gases when generating
+electricity.
+
+India is one of the best places in the world for solar energy. The country
+receives 4 to 7 kWh/m²/day of solar radiation — far more than countries
+like Germany or the UK, which are already major solar energy producers.
+
+
+15. HOW SOLAR PANELS WORK
+===========================
+
+Solar panels work through a phenomenon called the "photovoltaic effect."
+Here's a simple explanation:
+
+Step 1 — Sunlight hits the panel.
+  Solar panels are made of special semiconductor material, usually silicon.
+  When sunlight (which is made of tiny particles of energy called "photons")
+  hits the silicon cells, it transfers energy to the electrons in the silicon.
+
+Step 2 — Electrons start moving.
+  The energy from the sunlight knocks electrons loose from their atoms. This
+  creates a flow of electrons — which is electricity! More specifically, it
+  creates direct current (DC) electricity.
+
+Step 3 — The inverter converts DC to AC.
+  Your home appliances use alternating current (AC) electricity. A device
+  called a "solar inverter" converts the DC electricity from the panels into
+  AC electricity that your appliances can use.
+
+Step 4 — Electricity powers your home.
+  The AC electricity flows through your home's wiring and powers your lights,
+  fans, refrigerator, TV, washing machine, and all other appliances.
+
+Step 5 — Excess goes to the grid (optional).
+  If your panels produce more electricity than you use, the excess can be
+  sent back to the electrical grid through a "net meter." You get credits
+  on your electricity bill for this exported energy.
+
+
+16. TYPES OF SOLAR PANELS
+===========================
+
+There are three main types of solar panels:
+
+A) Monocrystalline Panels
+  — Made from a single, pure crystal of silicon.
+  — The most efficient type (20–24% efficiency).
+  — Dark black in colour.
+  — Last 25–30 years.
+  — Cost: ₹30,000–₹45,000 per kW.
+  — Best for: People who want maximum output from limited roof space.
+
+B) Polycrystalline Panels
+  — Made from multiple silicon crystals melted together.
+  — Slightly less efficient (15–18% efficiency).
+  — Blue-ish colour with a speckled appearance.
+  — Last about 25 years.
+  — Cost: ₹25,000–₹35,000 per kW.
+  — Best for: Budget-conscious buyers who have enough roof space.
+
+C) Thin-Film Panels
+  — Made by depositing a thin layer of photovoltaic material on a surface.
+  — Least efficient (10–13%) but lightest and most flexible.
+  — Can be made semi-transparent.
+  — Last 15–20 years.
+  — Cost: ₹20,000–₹30,000 per kW.
+  — Best for: Large commercial installations or curved surfaces.
+
+
+17. TYPES OF SOLAR SYSTEMS
+============================
+
+A) On-Grid (Grid-Tied) System
+  — Connected to the electricity grid.
+  — No battery required.
+  — Excess power goes to the grid (net metering).
+  — Does NOT work during power cuts (safety feature).
+  — Most affordable option.
+  — Best for: Urban homes with reliable grid supply.
+
+B) Off-Grid System
+  — Completely independent of the grid.
+  — Uses battery storage for nighttime/cloudy days.
+  — Works during power cuts.
+  — More expensive due to battery cost.
+  — Best for: Rural areas, farms, remote locations.
+
+C) Hybrid System
+  — Connected to the grid AND has battery storage.
+  — Best of both worlds — saves money AND provides backup.
+  — Works during power cuts.
+  — Most expensive upfront.
+  — Best for: Areas with frequent power cuts.
+
+
+18. BENEFITS OF INSTALLING SOLAR PANELS
+=========================================
+
+1. Reduced Electricity Bills
+   A well-sized solar system can reduce your bill by 50–90%. Any excess
+   energy exported to the grid earns you credits.
+
+2. Renewable Energy
+   Solar energy is unlimited and free. No fuel costs, no supply disruptions.
+
+3. Environmental Benefits
+   Every kWh of solar avoids approximately 0.7–1.0 kg of CO₂ emissions.
+   A 5 kW system offsets about 5–7 tonnes of CO₂ per year.
+
+4. Government Incentives
+   Subsidies up to ₹78,000 are available for residential systems.
+
+5. Increased Property Value
+   Homes with solar sell for 3–4% more on average.
+
+6. Energy Independence
+   Reduce dependence on the grid and protect yourself from rising tariffs.
+
+7. Low Maintenance
+   Solar panels have no moving parts. Annual maintenance cost: ₹1,000–₹3,000.
+
+8. Long Lifespan
+   Solar panels last 25–30 years with minimal degradation.
+
+
+19. COST OF SOLAR INSTALLATION IN INDIA
+==========================================
+
+Here is a general cost breakdown for residential rooftop solar:
+
+  ┌──────────────────────┬───────────────────────────────────────────────┐
+  │ Component            │ Cost (Approximate)                             │
+  ├──────────────────────┼───────────────────────────────────────────────┤
+  │ Solar Panels         │ ₹25,000 – ₹45,000 per kW                     │
+  │ Inverter             │ ₹8,000 – ₹15,000 per kW                      │
+  │ Mounting Structure   │ ₹5,000 – ₹8,000 per kW                       │
+  │ Wiring & Accessories │ ₹3,000 – ₹5,000 per kW                       │
+  │ Installation Labour  │ ₹5,000 – ₹10,000 per kW                      │
+  ├──────────────────────┼───────────────────────────────────────────────┤
+  │ TOTAL (before subsidy)│ ₹50,000 – ₹80,000 per kW                    │
+  │ Government Subsidy   │ −₹30,000 to −₹78,000 (one-time)              │
+  │ TOTAL (after subsidy)│ ₹30,000 – ₹55,000 per kW                     │
+  └──────────────────────┴───────────────────────────────────────────────┘
+
+Example system costs:
+  • 1 kW system: ₹50,000 – ₹80,000 (before subsidy)
+  • 3 kW system: ₹1,50,000 – ₹2,40,000 (before subsidy)
+  • 5 kW system: ₹2,50,000 – ₹4,00,000 (before subsidy)
+
+Payback Period: 3–5 years (after which electricity is essentially free).
+ROI: 20–30% per year over the 25-year lifetime. Better than most investments.
+
+Annual Maintenance: ₹1,000 – ₹3,000 per year (cleaning + inspection).
+Inverter Replacement: Once in 10–12 years (₹15,000 – ₹30,000).
+
+
+20. GOVERNMENT SUBSIDIES & INCENTIVES
+=======================================
+
+A) PM Surya Ghar Muft Bijli Yojana (Central Government)
+  — Up to ₹30,000 subsidy for 1 kW systems.
+  — Up to ₹60,000 subsidy for 2 kW systems.
+  — Up to ₹78,000 subsidy for 3 kW and above systems.
+  — Direct Benefit Transfer (DBT) — money is sent to your bank account.
+  — Aim: Install rooftop solar on 1 crore homes.
+
+B) Net Metering
+  — Export excess solar power to the grid.
+  — Your meter runs backwards when you export.
+  — Pay only for net consumption at end of billing cycle.
+  — Available in most Indian states.
+
+C) Tax Benefits (Commercial)
+  — 40% accelerated depreciation in the first year.
+  — Significantly reduces taxable income for businesses.
+  — Available for all commercial and industrial installations.
+
+D) State-Level Incentives
+  — Gujarat: Additional state subsidy + favourable net metering.
+  — Maharashtra: MEDA subsidies for residential and agricultural solar.
+  — Karnataka: BESCOM net metering with competitive feed-in tariff.
+  — Delhi: Generation-based incentive (GBI) of ₹2/unit for surplus power.
+  — Rajasthan: Strong solar irradiance + state incentives.
+
+How to Apply:
+  1. Register on the National Portal for Rooftop Solar (solarrooftop.gov.in).
+  2. Select an empanelled vendor/installer.
+  3. Get the system installed and inspected by DISCOM.
+  4. Submit commissioning report and net meter application.
+  5. Receive subsidy via Direct Benefit Transfer (DBT).
+
+
+21. MAINTENANCE OF SOLAR PANELS
+=================================
+
+Solar panels are very low-maintenance. Here's what you need to know:
+
+A) Cleaning (Every 2–4 weeks)
+  — Wash panels with water and a soft sponge or cloth.
+  — Best time: Early morning when panels are cool and dew-covered.
+  — Avoid harsh chemicals or abrasive scrubbers.
+  — In dusty areas, clean more frequently.
+  — Dirty panels can lose 5–25% of their output.
+
+B) Wiring Check (Every 6 months)
+  — Inspect cables for wear, corrosion, or loose connections.
+  — Check that earthing connections are intact.
+  — Look for rodent damage (use conduit protection).
+
+C) Inverter Maintenance
+  — Check inverter indicator lights regularly.
+  — Keep the inverter in a ventilated, shaded area.
+  — Typical lifespan: 10–12 years (micro-inverters: 20+ years).
+  — Budget for one replacement during the panel lifetime.
+
+D) Energy Monitoring
+  — Use your inverter's app to track daily production.
+  — Watch for sudden drops in output (may indicate issues).
+  — Many systems send automatic alerts.
+
+E) Professional Inspection (Annual)
+  — Schedule one professional check-up per year.
+  — Cost: ₹2,000–₹5,000 per year.
+  — Covers panel integrity, wiring, inverter, mounting structure.
+
+
+22. LIFESPAN & WARRANTY
+=========================
+
+Lifespan:
+  — Solar panels typically last 25–30 years.
+  — After 25 years, they still produce 80–87% of original capacity.
+  — Degradation rate: 0.3–0.8% per year.
+
+Warranty Types:
+  — Product Warranty: Covers manufacturing defects. Usually 10–12 years.
+  — Performance Warranty: Guarantees 80–90% output after 25 years.
+  — Inverter Warranty: Typically 5–10 years, extendable to 25 years.
+
+
+23. ENVIRONMENTAL IMPACT
+==========================
+
+  — Every kWh of solar replaces coal-fired electricity.
+  — 5 kW system → offsets 5–7 tonnes of CO₂ per year.
+  — Over 25 years → 125–175 tonnes of CO₂ avoided.
+  — Equivalent to planting 200+ trees per year.
+  — Reduces water consumption (thermal plants use massive amounts of water).
+  — Reduces air pollution and dependence on imported fossil fuels.
+  — India has committed to 500 GW of non-fossil fuel capacity by 2030.
+
+
+24. COMMON MYTHS ABOUT SOLAR PANELS
+======================================
+
+Myth 1: "Solar panels don't work on cloudy days."
+  TRUTH: Solar panels work on LIGHT, not heat. They produce 25–40% output
+  on cloudy days. Germany, one of the cloudiest countries, is a top solar
+  producer.
+
+Myth 2: "Solar panels are too expensive."
+  TRUTH: Prices have dropped 90% in the last decade. After subsidies, a
+  3 kW system costs just ₹1.0–₹1.7 lakh — and pays for itself in 3–5 years.
+
+Myth 3: "Maintenance is difficult and expensive."
+  TRUTH: No moving parts. Just clean with water every 2–4 weeks. Annual
+  maintenance: ₹1,000–₹3,000. Less than a dinner at a restaurant.
+
+Myth 4: "Solar panels damage roofs."
+  TRUTH: Properly installed panels actually PROTECT your roof from sun,
+  rain, and hail. Modern mounting systems don't penetrate the roof.
+
+Myth 5: "Solar only works in hot climates."
+  TRUTH: Solar panels actually work BETTER in cooler temperatures (but with
+  sunlight). Extreme heat can slightly reduce efficiency.
+
+Myth 6: "Solar panels are harmful to the environment."
+  TRUTH: The energy needed to manufacture a panel is recovered in 1–3 years
+  of operation. After that, it produces clean energy for 22+ more years.
+  Most panel materials are recyclable.
+
+
+25. SOLAR INSTALLATION PROCESS — STEP BY STEP
+================================================
+
+Step 1: Site Assessment (1 day)
+  — A solar engineer visits your property.
+  — Checks roof condition, orientation, shading, and available area.
+  — Reviews your electricity consumption and sanctioned load.
+  — Recommends the optimal system size.
+
+Step 2: System Design (1–3 days)
+  — Panel layout is designed for maximum output.
+  — Inverter size is calculated.
+  — Wiring diagram and mounting plan are prepared.
+  — You receive a detailed proposal with costs and expected savings.
+
+Step 3: Installation (1–3 days)
+  — Mounting structures are installed on the roof.
+  — Solar panels are placed and securely fastened.
+  — DC wiring connects panels to the inverter.
+  — Inverter is installed (usually on a wall near the electrical panel).
+  — AC wiring connects the inverter to your home's electrical system.
+  — Earthing and lightning protection are installed.
+  — System is tested and commissioned.
+
+Step 4: Grid Connection & Net Meter (1–4 weeks)
+  — Your electricity distribution company (DISCOM) inspects the system.
+  — A bi-directional net meter is installed.
+  — Once approved, you can start exporting excess power to the grid.
+
+Step 5: Monitoring & Handover
+  — Remote monitoring is configured (app or web portal).
+  — You receive all documentation (warranties, test reports, user manual).
+  — Training on basic maintenance is provided.
+  — You can now track real-time performance from your phone.
+
+
+================================================================================
+                  PART E — TROUBLESHOOTING & FAQs
+================================================================================
+
+
+26. FREQUENTLY ASKED QUESTIONS
+================================
+
+Q: Is SolarGenix free to use?
+A: Yes! Creating an account and using all features is completely free.
+
+Q: Do I need to install anything?
+A: No. SolarGenix is a website that runs in your browser. No downloads or
+   installations are required.
+
+Q: Is my data safe?
+A: Yes. Your account is protected by a secure authentication system with
+   encrypted passwords and JWT tokens.
+
+Q: What is a "pincode" in the Solar Prediction feature?
+A: It's your 6-digit Indian postal code (e.g., 380015 for Ahmedabad). The
+   system uses this to determine your area's weather and sunlight conditions.
+
+Q: What if my pincode doesn't work?
+A: Try using a nearby pincode from the same city or district.
+
+Q: How accurate are the predictions?
+A: Our AI models achieve approximately 98.5% accuracy. However, predictions
+   are based on historical and average data — actual results may vary based
+   on real-time weather conditions.
+
+Q: What is "cycle index" in Bill Prediction?
+A: It's the number of months into the future you want to predict. Enter "1"
+   for next month, "2" for two months from now, etc.
+
+Q: What does "kW" mean?
+A: Kilowatt (kW) is a unit of power. It measures how much electricity a
+   solar system can produce at any given moment. A 1 kW system produces
+   about 120 units (kWh) of electricity per month in India.
+
+Q: What does "kWh" or "unit" mean?
+A: Kilowatt-hour (kWh) is a unit of energy. It's the amount of energy used
+   when you run a 1,000-watt appliance for 1 hour. On your electricity bill,
+   1 kWh = 1 unit.
+
+Q: How many panels do I need for my home?
+A: It depends on your electricity consumption. Use our Bill Optimization
+   feature — enter your current bill and target bill, and it will tell you
+   exactly how many panels you need.
+
+Q: Can I use SolarGenix on my phone?
+A: Yes! The website is responsive and works on phones, tablets, and computers.
+
+Q: What is the chatbot for?
+A: The chatbot is an AI assistant that answers your questions about solar
+   energy, SolarGenix features, or anything related to solar power. Click the
+   orange chat bubble in the bottom-right corner of any page.
+
+Q: I see "Unauthorized" errors when using features. What should I do?
+A: Your session may have expired. Log out and log back in.
+
+Q: Can SolarGenix connect to my solar system?
+A: Not currently. SolarGenix is a prediction and advisory tool. It doesn't
+   connect to physical solar hardware.
+
+
+27. TROUBLESHOOTING COMMON ISSUES
+====================================
+
+Problem: Page is blank after logging in.
+Solution: Refresh the page (press F5 or Ctrl+R). This is usually a one-time
+  issue that resolves after a refresh.
+
+Problem: "Prediction failed" error.
+Solution:
+  — Make sure all input fields are filled.
+  — Check that numbers are positive (greater than 0).
+  — Ensure your internet connection is working.
+  — Try refreshing the page and trying again.
+
+Problem: Can't create an account — email already exists.
+Solution: Each email can only be used for one account. If you already have
+  an account, go to the Login page instead.
+
+Problem: Can't create an account — phone number already exists.
+Solution: Each phone number can only be used for one account. Use a different
+  phone number or log in with your existing account.
+
+Problem: Chatbot is not responding.
+Solution:
+  — Check your internet connection.
+  — Wait a few seconds — the AI may take time to process complex questions.
+  — If it still doesn't work, refresh the page and try again.
+
+Problem: Bill Optimization shows 0 panels needed.
+Solution: This means your target bill is equal to or greater than your
+  current bill. The target must be LESS than the current bill for the
+  calculator to recommend solar panels.
+
+
+28. CONTACT & SUPPORT
+=======================
+
+For questions, feedback, or support, please contact us at:
+
+Email: vedangpatel@gmail.com
+
+We appreciate your interest in solar energy and SolarGenix. Together, we can
+make the world a greener, cleaner place — one rooftop at a time. ☀️
+
+
+================================================================================
+                         END OF KNOWLEDGE BASE
+================================================================================
+
+This document is intended to be used as a knowledge base for the SolarGenix AI
+chatbot assistant. It covers every aspect of the SolarGenix platform, including
+all features, step-by-step usage guides, input/output descriptions, solar
+energy education, government incentives, and frequently asked questions.
+
+Total estimated length: ~35 pages when printed at standard settings.
+
+Document version: 1.0
+Last updated: March 2026
+
+================================================================================
