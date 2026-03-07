@@ -1,17 +1,4 @@
-import axios from "axios";
-
-const BASE_URL = "http://127.0.0.1:8000"; // Django server
-
-// Helper for authorized axios calls
-const getAuthAxios = () => {
-  const token = localStorage.getItem("solar_token");
-  return axios.create({
-    baseURL: BASE_URL,
-    headers: {
-      Authorization: token ? `Bearer ${token}` : "",
-    },
-  });
-};
+import { predictionApi } from "./apiClient";
 
 // 🌞 1️⃣ Solar Generation Prediction
 export const predictSolarGeneration = async (params: {
@@ -21,8 +8,7 @@ export const predictSolarGeneration = async (params: {
   panel_condition: "good" | "average" | "bad";
 }) => {
   try {
-    const api = getAuthAxios();
-    const response = await api.get(
+    const response = await predictionApi.get(
       `/solar_generation/predict-production/`,
       {
         params: {
@@ -47,18 +33,16 @@ export const predictElectricityBill = async (params: {
   cycle_index: number;
 }) => {
   try {
-    const api = getAuthAxios();
-    const response = await api.get(
+    const response = await predictionApi.get(
       `/solar_generation/predict-bill/`,
       {
         params: {
           cycle_index: params.cycle_index,
-          consumption_history: params.consumption_history, // send array directly
+          consumption_history: params.consumption_history,
         },
         paramsSerializer: (params) => {
           const searchParams = new URLSearchParams();
 
-          // append each value separately
           params.consumption_history.forEach((val: number) => {
             searchParams.append("consumption_history", val.toString());
           });
@@ -86,8 +70,7 @@ export const optimizeBill = async (params: {
   solar_capacity_kw?: number | null;
 }) => {
   try {
-    const api = getAuthAxios();
-    const response = await api.post(
+    const response = await predictionApi.post(
       `/solar_generation/solar/bill-optimization-slab/`,
       params
     );
@@ -101,8 +84,7 @@ export const optimizeBill = async (params: {
 // 🤖 4️⃣ Chatbot Assistant
 export const askChatbot = async (question: string) => {
   try {
-    const api = getAuthAxios();
-    const response = await api.post(
+    const response = await predictionApi.post(
       `/solar_generation/chatbot/ask/`,
       {
         question: question,
