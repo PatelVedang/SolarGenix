@@ -3,7 +3,7 @@ import React, { createContext, useContext, useState, useCallback, useMemo } from
 interface AuthContextType {
     user: any;
     token: string | null;
-    login: (userData: any, token: string) => void;
+    login: (userData: any, token: string, refreshToken: string) => void;
     logout: () => void;
     isAuthenticated: boolean;
 }
@@ -24,8 +24,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [token, setToken] = useState<string | null>(() => localStorage.getItem("solar_token"));
     const [user, setUser] = useState<any>(getInitialUser);
 
-    const login = useCallback((userData: any, authToken: string) => {
+    const login = useCallback((userData: any, authToken: string, refreshToken: string) => {
         localStorage.setItem("solar_token", authToken);
+        localStorage.setItem("solar_refresh_token", refreshToken);
         localStorage.setItem("solar_user", JSON.stringify(userData));
         setToken(authToken);
         setUser(userData);
@@ -33,6 +34,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const logout = useCallback(() => {
         localStorage.removeItem("solar_token");
+        localStorage.removeItem("solar_refresh_token");
         localStorage.removeItem("solar_user");
         setToken(null);
         setUser(null);

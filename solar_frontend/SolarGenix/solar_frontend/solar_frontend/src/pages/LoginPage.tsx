@@ -18,9 +18,9 @@ const LoginPage = () => {
         setLoading(true);
         try {
             const responseBody = await loginUser({ email, password });
-            // The API returns { message, data: { user, tokens: { access: {token, expires}, refresh } } }
+            // The API returns { message, data: { user, tokens: { access: {token, expires}, refresh: {token, expires} } } }
             const { user, tokens } = responseBody.data;
-            login(user, tokens.access.token);
+            login(user, tokens.access.token, tokens.refresh.token);
             navigate(from, { replace: true });
         } catch (err: any) {
             alert(err.response?.data?.detail || "Login failed. Check your credentials.");
@@ -98,7 +98,7 @@ const LoginPage = () => {
                     <div>
                         <div className="flex justify-between mb-2">
                             <label className="text-sm font-semibold text-slate-300">Password</label>
-                            <a href="#" className="text-xs text-amber-500 hover:text-amber-400 transition-colors">Forgot Password?</a>
+                            <Link to="/forgot-password" className="text-xs text-amber-500 hover:text-amber-400 transition-colors">Forgot Password?</Link>
                         </div>
                         <input
                             type="password"
