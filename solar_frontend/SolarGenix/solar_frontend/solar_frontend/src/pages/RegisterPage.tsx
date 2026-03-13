@@ -19,7 +19,7 @@ const RegisterPage = () => {
         try {
             await registerUser(formData);
             alert("Registration successful! Please login.");
-            navigate("/login");
+            navigate("login");
         } catch (err: any) {
             alert(err.response?.data?.detail || "Registration failed. Check your details.");
         }

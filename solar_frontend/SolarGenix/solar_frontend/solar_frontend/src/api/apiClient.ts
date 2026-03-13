@@ -1,7 +1,8 @@
 import axios from "axios";
 
-const AUTH_BASE_URL = "http://localhost:5000";
-const PREDICTION_BASE_URL = "http://127.0.0.1:8000";
+// Default to same-origin proxy paths so ngrok frontend works without direct backend exposure.
+const AUTH_BASE_URL = import.meta.env.VITE_AUTH_BASE_URL || "/auth-api";
+const PREDICTION_BASE_URL = import.meta.env.VITE_PREDICTION_BASE_URL || "/prediction-api";
 
 // ─── Token helpers ──────────────────────────────────────────────
 export const getAccessToken = () => localStorage.getItem("solar_token");
@@ -37,7 +38,7 @@ const attemptTokenRefresh = async (): Promise<string> => {
     const refreshToken = getRefreshToken();
     if (!refreshToken) throw new Error("No refresh token");
 
-    const res = await axios.post(`${AUTH_BASE_URL}/api/auth/refresh-token`, {
+    const res = await axios.post(`${AUTH_BASE_URL}/refresh-token`, {
         refresh: refreshToken,
     });
 

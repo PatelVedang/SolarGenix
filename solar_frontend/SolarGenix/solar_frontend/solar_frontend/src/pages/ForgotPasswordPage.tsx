@@ -50,7 +50,7 @@ const ForgotPasswordPage = () => {
                 confirm_password: confirmPassword
             });
             setMessage("Password reset successfully! Redirecting to login...");
-            setTimeout(() => navigate("/login"), 3000);
+            setTimeout(() => navigate("login"), 3000);
         } catch (err: any) {
             // Detailed error extraction based on DRF return format
             let errStr = "Failed to reset password. Please check your data.";

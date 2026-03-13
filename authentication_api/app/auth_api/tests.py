@@ -166,7 +166,8 @@ class BaseAPITestCase(APITestCase):
 
 
 class AuthTest(BaseAPITestCase):
-    prefix = "/api/auth"
+    # Endpoints moved to root (e.g., /register, /login)
+    prefix = ""
 
     def test_register(self):
         """

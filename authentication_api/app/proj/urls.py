@@ -27,18 +27,13 @@ from utils.swagger import swagger_auth_required
 
 urlpatterns = [
     path("admin/", admin.site.urls),
+    # Previously these routes were nested under "api/". They are now included at root.
+    # IMPORT_NEW_ROUTE_HERE
+    path("", include("auth_api.urls")),
+    path("", include("users.urls")),
+    # Expose API schema at root-level "schema/" instead of "api/schema/"
     path(
-        "api/",
-        include(
-            [
-                # IMPORT_NEW_ROUTE_HERE
-                path("", include("auth_api.urls")),
-                path("", include("users.urls")),
-            ]
-        ),
-    ),
-    path(
-        "api/schema/",
+        "schema/",
         SpectacularAPIView.as_view(),
         name="schema",
     ),
