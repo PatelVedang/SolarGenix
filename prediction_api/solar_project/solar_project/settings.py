@@ -18,8 +18,12 @@ import os
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Initialize environment variables
+# Load .env only when it exists (local dev).
+# On Render/production, env vars are injected by the platform — no .env file needed.
 from dotenv import load_dotenv
-load_dotenv(os.path.join(BASE_DIR, '.env'))
+_env_path = os.path.join(BASE_DIR, '.env')
+if os.path.isfile(_env_path):
+    load_dotenv(_env_path)
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
