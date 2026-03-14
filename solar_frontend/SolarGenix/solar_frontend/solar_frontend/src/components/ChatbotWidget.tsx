@@ -88,6 +88,8 @@ const ChatbotWidget: React.FC = () => {
                         </div>
                         <button
                             onClick={() => setIsOpen(false)}
+                            aria-label="Close chat"
+                            title="Close chat"
                             className="text-slate-400 hover:text-white transition-colors p-1"
                         >
                             <CloseIcon />
@@ -115,8 +117,8 @@ const ChatbotWidget: React.FC = () => {
                             <div className="flex justify-start">
                                 <div className="bg-slate-800 border border-slate-700/50 text-slate-400 p-3 rounded-2xl rounded-bl-sm flex space-x-2">
                                     <div className="w-2 h-2 bg-slate-500 rounded-full animate-bounce"></div>
-                                    <div className="w-2 h-2 bg-slate-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                                    <div className="w-2 h-2 bg-slate-500 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
+                                    <div className="w-2 h-2 bg-slate-500 rounded-full animate-bounce typing-dot-delay-1"></div>
+                                    <div className="w-2 h-2 bg-slate-500 rounded-full animate-bounce typing-dot-delay-2"></div>
                                 </div>
                             </div>
                         )}
@@ -140,6 +142,8 @@ const ChatbotWidget: React.FC = () => {
                             <button
                                 type="submit"
                                 disabled={!inputValue.trim() || isLoading}
+                                aria-label="Send message"
+                                title="Send message"
                                 className="bg-amber-500 hover:bg-amber-400 disabled:bg-slate-700 disabled:text-slate-500 text-slate-950 p-2 rounded-lg transition-colors"
                             >
                                 <SendIcon />
@@ -171,6 +175,12 @@ const ChatbotWidget: React.FC = () => {
             box-shadow: 0 0 0 15px rgba(245, 158, 11, 0);
           }
         }
+                .typing-dot-delay-1 {
+                    animation-delay: 0.2s;
+                }
+                .typing-dot-delay-2 {
+                    animation-delay: 0.4s;
+                }
       `}</style>
         </div>
     );
