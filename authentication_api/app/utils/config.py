@@ -71,7 +71,10 @@ class Settings(BaseSettings):
     AWS_S3_REGION_NAME: str | None = Field(default=None)
 
     class Config:
-        env_file = os.path.join(BASE_DIR, ".env")
+        # Load .env only when it exists (local dev). On Render/production,
+        # environment variables are injected directly — no .env file is present.
+        _env_path = os.path.join(BASE_DIR, ".env")
+        env_file = _env_path if os.path.isfile(_env_path) else None
         case_sensitive = True
         extra = "ignore"
 
@@ -93,9 +96,8 @@ def load_settings():
         FileNotFoundError: If the .env file is not found at the specified path.
         ValidationError: If any settings fail validation.
     """
-    env_file_path = os.path.join(BASE_DIR, ".env")
-    if not os.path.isfile(env_file_path):
-        raise FileNotFoundError(f"Missing required .env file at path: {env_file_path}")
+    # .env is optional — on Render, env vars are injected by the platform directly.
+    # If a local .env file exists it will be picked up by the Settings class above.
 
     try:
         settings = Settings()
