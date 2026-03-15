@@ -35,6 +35,7 @@ SECRET_KEY = os.getenv('SECRET_KEY', '8c504a81f10a49729ce44af1b9a3b98d')
 DEBUG = True
 
 ALLOWED_HOSTS = ["*"]
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 CORS_ALLOW_ALL_ORIGINS = True
 
 AUTH_USER_MODEL = 'solar_api.User' # CUSTOM USER MODEL with UUID ID
