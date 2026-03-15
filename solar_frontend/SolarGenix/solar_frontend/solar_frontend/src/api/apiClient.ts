@@ -1,8 +1,8 @@
 import axios from "axios";
 
 // Default to same-origin proxy paths so ngrok frontend works without direct backend exposure.
-const AUTH_BASE_URL = import.meta.env.VITE_AUTH_BASE_URL || "/auth-api";
-const PREDICTION_BASE_URL = import.meta.env.VITE_PREDICTION_BASE_URL || "/prediction-api";
+const AUTH_BASE_URL = import.meta.env.VITE_AUTH_API_URL || "https://solargenix.onrender.com";
+const PREDICTION_BASE_URL = import.meta.env.VITE_PREDICTION_API_URL || "https://vedang2004-prediction-api.hf.space";
 
 // ─── Token helpers ──────────────────────────────────────────────
 export const getAccessToken = () => localStorage.getItem("solar_token");

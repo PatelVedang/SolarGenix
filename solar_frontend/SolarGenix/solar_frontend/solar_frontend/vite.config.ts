@@ -15,12 +15,12 @@ export default defineConfig({
     port: 5173,
     proxy: {
       "/auth-api": {
-        target: "http://localhost:5000",
+        target: process.env.VITE_AUTH_API_URL || "https://solargenix.onrender.com",
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/auth-api/, ""),
       },
       "/prediction-api": {
-        target: "http://localhost:8000",
+        target: process.env.VITE_PREDICTION_API_URL || "https://vedang2004-prediction-api.hf.space",
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/prediction-api/, ""),
       },
