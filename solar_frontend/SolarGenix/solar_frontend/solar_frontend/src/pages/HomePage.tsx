@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 
 const HomePage = () => {
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
-  const [isVisible, setIsVisible] = useState({});
+  const [isVisible, setIsVisible] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     const handleMouseMove = (e) => {
@@ -249,7 +249,7 @@ const HomePage = () => {
               </div>
             </div>
             
-            <h1 className="fade-in-up stagger-2 text-7xl md:text-8xl font-black mb-8 leading-tight">
+            <h1 className="fade-in-up stagger-2 text-5xl md:text-8xl font-black mb-8 leading-tight">
               <span className="gradient-text">Solar Energy</span>
               <br />
               <span className="text-white">Prediction System</span>
@@ -306,8 +306,8 @@ const HomePage = () => {
           className={`relative py-32 px-6 ${isVisible.features ? 'section-visible' : 'opacity-0'}`}
         >
           <div className="max-w-7xl mx-auto">
-            <div className="text-center mb-20">
-              <h2 className="text-5xl md:text-6xl font-black text-white mb-6">
+            <div className="text-center mb-12 md:mb-20">
+              <h2 className="text-4xl md:text-6xl font-black text-white mb-6">
                 Powerful <span className="gradient-text">Features</span>
               </h2>
               <p className="text-xl text-slate-400 max-w-2xl mx-auto">
@@ -386,8 +386,8 @@ const HomePage = () => {
           className={`relative py-32 px-6 ${isVisible['how-it-works'] ? 'section-visible' : 'opacity-0'}`}
         >
           <div className="max-w-7xl mx-auto">
-            <div className="text-center mb-20">
-              <h2 className="text-5xl md:text-6xl font-black text-white mb-6">
+            <div className="text-center mb-12 md:mb-20">
+              <h2 className="text-4xl md:text-6xl font-black text-white mb-6">
                 How It <span className="gradient-text">Works</span>
               </h2>
               <p className="text-xl text-slate-400 max-w-2xl mx-auto">
@@ -440,8 +440,8 @@ const HomePage = () => {
           className={`relative py-32 px-6 ${isVisible.technology ? 'section-visible' : 'opacity-0'}`}
         >
           <div className="max-w-7xl mx-auto">
-            <div className="text-center mb-20">
-              <h2 className="text-5xl md:text-6xl font-black text-white mb-6">
+            <div className="text-center mb-12 md:mb-20">
+              <h2 className="text-4xl md:text-6xl font-black text-white mb-6">
                 Powered by <span className="gradient-text">Advanced AI</span>
               </h2>
               <p className="text-xl text-slate-400 max-w-3xl mx-auto">
@@ -493,8 +493,8 @@ const HomePage = () => {
           className={`relative py-32 px-6 bg-slate-900/30 ${isVisible.parameters ? 'section-visible' : 'opacity-0'}`}
         >
           <div className="max-w-7xl mx-auto">
-            <div className="text-center mb-20">
-              <h2 className="text-5xl md:text-6xl font-black text-white mb-6">
+            <div className="text-center mb-12 md:mb-20">
+              <h2 className="text-4xl md:text-6xl font-black text-white mb-6">
                 Comprehensive <span className="gradient-text">Data Analysis</span>
               </h2>
               <p className="text-xl text-slate-400 max-w-2xl mx-auto">
@@ -540,7 +540,7 @@ const HomePage = () => {
               
               <div className="relative z-10">
                 <div className="text-6xl mb-8">🚀</div>
-                <h2 className="text-5xl md:text-6xl font-black text-white mb-6">
+                <h2 className="text-4xl md:text-6xl font-black text-white mb-6">
                   Ready to <span className="gradient-text">Optimize</span> Your Solar Energy?
                 </h2>
                 <p className="text-xl text-slate-300 mb-12 max-w-2xl mx-auto">

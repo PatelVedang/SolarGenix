@@ -77,7 +77,7 @@ const RegisterPage = () => {
             <div className="solar-glow top-[-250px] right-[-250px]"></div>
             <div className="solar-glow bottom-[-250px] left-[-250px]"></div>
 
-            <div className="register-card w-full max-w-lg p-10 rounded-3xl relative z-10 animate-in fade-in zoom-in duration-500">
+            <div className="register-card w-full max-w-lg p-6 md:p-10 rounded-3xl relative z-10 animate-in fade-in zoom-in duration-500">
                 <div className="text-center mb-10">
                     <div className="text-5xl mb-4">✨</div>
                     <h1 className="text-4xl font-black text-white mb-2">Create <span className="gradient-text">Account</span></h1>
@@ -85,7 +85,7 @@ const RegisterPage = () => {
                 </div>
 
                 <form onSubmit={handleRegister} className="space-y-6">
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label className="block text-sm font-semibold text-slate-300 mb-2">First Name</label>
                             <input

@@ -116,7 +116,7 @@ const ForgotPasswordPage = () => {
             <div className="absolute -top-40 -right-40 w-96 h-96 bg-amber-500 rounded-full mix-blend-multiply filter blur-[128px] opacity-20 animate-pulse"></div>
             <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-orange-500 rounded-full mix-blend-multiply filter blur-[128px] opacity-20"></div>
 
-            <div className="forgot-password-card w-full max-w-md p-10 rounded-3xl relative z-10 transition-all duration-500 hover:border-amber-400/30">
+            <div className="forgot-password-card w-full max-w-md p-6 md:p-10 rounded-3xl relative z-10 transition-all duration-500 hover:border-amber-400/30">
                 <div className="text-center mb-10">
                     <div className="text-5xl mb-4">🔐</div>
                     <h1 className="text-4xl font-black text-white mb-2">

@@ -255,7 +255,7 @@ const SolarPredictionPage = () => {
               <span className="pulse-dot w-2 h-2 bg-amber-400 rounded-full"></span>
               AI-Powered Prediction
             </div>
-            <h1 className="text-5xl md:text-6xl font-black text-white mb-4">
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-black text-white mb-4">
               Solar Energy <span className="bg-gradient-to-r from-amber-400 to-orange-500 bg-clip-text text-transparent">Prediction</span>
             </h1>
             <p className="text-xl text-slate-400 max-w-2xl mx-auto">
@@ -387,7 +387,7 @@ const SolarPredictionPage = () => {
                 <div className="result-card space-y-6">
                   {/* Tab Navigation */}
                   <div className="gradient-border p-2">
-                    <div className="relative flex gap-2">
+                    <div className="relative flex flex-col sm:flex-row gap-2">
                       <button
                         onClick={() => setActiveTab('summary')}
                         className={`flex-1 py-3 px-4 font-semibold rounded-lg transition-all ${activeTab === 'summary'

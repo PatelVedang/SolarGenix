@@ -75,7 +75,7 @@ const LoginPage = () => {
             <div className="solar-glow top-[-250px] left-[-250px]"></div>
             <div className="solar-glow bottom-[-250px] right-[-250px]"></div>
 
-            <div className="login-card w-full max-w-md p-10 rounded-3xl relative z-10 animate-in fade-in zoom-in duration-500">
+            <div className="login-card w-full max-w-md p-6 md:p-10 rounded-3xl relative z-10 animate-in fade-in zoom-in duration-500">
                 <div className="text-center mb-10">
                     <div className="text-5xl mb-4">☀️</div>
                     <h1 className="text-4xl font-black text-white mb-2">Welcome <span className="gradient-text">Back</span></h1>

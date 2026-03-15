@@ -7,6 +7,7 @@ const Navbar = () => {
     const navigate = useNavigate();
     const { isAuthenticated, logout, user } = useAuth();
     const [scrolled, setScrolled] = useState(false);
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
     useEffect(() => {
         const handleScroll = () => {
@@ -204,8 +205,8 @@ const Navbar = () => {
                                 </div>
                             </Link>
 
-                            {/* Navigation Links */}
-                            <div className="flex items-center gap-1">
+                            {/* Desktop Navigation Links */}
+                            <div className="hidden lg:flex items-center gap-1">
                                 {navItems.map((item, index) => {
                                     const isActive = location.pathname === item.path;
                                     return (
@@ -226,7 +227,7 @@ const Navbar = () => {
                                 })}
                             </div>
 
-                            {/* Action Button / Auth */}
+                            {/* Desktop Action Button / Auth */}
                             <div className="hidden lg:block">
                                 {isAuthenticated ? (
                                     <div className="flex items-center gap-4">
@@ -254,7 +255,70 @@ const Navbar = () => {
                                     </Link>
                                 )}
                             </div>
+
+                            {/* Mobile Menu Toggle Button */}
+                            <div className="lg:hidden flex items-center">
+                                <button
+                                    onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                                    className="text-slate-300 hover:text-amber-400 focus:outline-none p-2"
+                                >
+                                    {isMobileMenuOpen ? (
+                                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                        </svg>
+                                    ) : (
+                                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16m-7 6h7" />
+                                        </svg>
+                                    )}
+                                </button>
+                            </div>
                         </div>
+                        
+                        {/* Mobile Navigation Menu */}
+                        {isMobileMenuOpen && (
+                            <div className="lg:hidden animate-[slideDown_0.3s_ease-out_forwards] border-t border-slate-800/50 py-4 bg-slate-950/95 backdrop-blur-xl absolute left-0 right-0 px-6 shadow-2xl z-50">
+                                <div className="flex flex-col space-y-2">
+                                    {navItems.map((item) => {
+                                        const isActive = location.pathname === item.path;
+                                        return (
+                                            <Link
+                                                key={item.path}
+                                                to={item.path}
+                                                onClick={() => setIsMobileMenuOpen(false)}
+                                                className={`px-4 py-3 text-base font-medium transition-all rounded-lg ${isActive
+                                                    ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+                                                    : 'text-slate-300 hover:bg-slate-800/50 hover:text-amber-400'
+                                                    }`}
+                                            >
+                                                {item.label}
+                                            </Link>
+                                        );
+                                    })}
+                                    <div className="pt-4 mt-2 border-t border-slate-800/50">
+                                        {isAuthenticated ? (
+                                            <div className="flex flex-col gap-4">
+                                                <div className="text-slate-300 text-base font-medium px-4">
+                                                    Hi, <span className="text-amber-400">{user?.first_name || 'User'}</span>
+                                                </div>
+                                                <button
+                                                    onClick={() => { handleLogout(); setIsMobileMenuOpen(false); }}
+                                                    className="w-full px-6 py-3 bg-slate-800 border border-slate-700 text-white font-semibold text-center rounded-lg transition-all hover:bg-slate-700"
+                                                >
+                                                    Logout
+                                                </button>
+                                            </div>
+                                        ) : (
+                                            <Link to="/login" onClick={() => setIsMobileMenuOpen(false)}>
+                                                <button className="w-full px-6 py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-slate-900 font-semibold text-center rounded-lg transition-all hover:opacity-90">
+                                                    Sign In
+                                                </button>
+                                            </Link>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     {/* Animated bottom border */}

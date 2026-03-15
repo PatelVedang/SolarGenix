@@ -208,7 +208,7 @@ const BillOptimizationPage = () => {
               <span className="pulse-dot w-2 h-2 bg-amber-400 rounded-full"></span>
               Smart Solar Optimization
             </div>
-            <h1 className="text-5xl md:text-6xl font-black text-white mb-4">
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-black text-white mb-4">
               Bill <span className="bg-gradient-to-r from-amber-400 to-orange-500 bg-clip-text text-transparent">Optimization</span>
             </h1>
             <p className="text-xl text-slate-400 max-w-2xl mx-auto">

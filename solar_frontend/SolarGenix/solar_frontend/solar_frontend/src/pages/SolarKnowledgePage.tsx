@@ -59,7 +59,7 @@ const SolarKnowledgePage = () => {
                     <div className="hero-glow -bottom-64 -right-64"></div>
                     <div className="max-w-5xl mx-auto px-4 py-16 md:py-24 text-center relative z-10">
                         <div className="text-6xl mb-4">☀️</div>
-                        <h1 className="text-4xl md:text-5xl font-extrabold mb-4">
+                        <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold mb-4">
                             Solar <span className="bg-gradient-to-r from-amber-400 to-orange-500 bg-clip-text text-transparent">Knowledge Hub</span>
                         </h1>
                         <p className="text-slate-400 max-w-2xl mx-auto text-lg">
